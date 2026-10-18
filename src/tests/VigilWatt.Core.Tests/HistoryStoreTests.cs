@@ -218,4 +218,37 @@ public sealed class HistoryStoreTests : IDisposable
         Assert.Equal("新名", store.GetDeviceStats().Single().Name);
         Assert.Equal("新名", store.DistinctDevices(T0).Single().Name);
     }
+
+    [Fact]
+    public void H13_备份生成可读的历史库文件()
+    {
+        using var store = NewStore();
+        store.Insert(Dev("mouse", "鼠标", 90, T0));
+
+        var backup = store.Backup("before-merge");
+
+        Assert.NotNull(backup);
+        Assert.True(File.Exists(backup));
+        Assert.True(new FileInfo(backup!).Length > 0);
+        using var restored = new HistoryStore(backup);
+        Assert.Equal(1, restored.GetStats().TotalCount);
+    }
+
+    [Fact]
+    public void H14_迁移把旧设备采样搬到新ID并更新名称()
+    {
+        using var store = NewStore();
+        store.Insert(Dev("old", "旧鼠标", 92, T0));
+        store.Insert(Dev("old", "旧鼠标", 91, T0.AddHours(1)));
+        store.Insert(Dev("new", "新鼠标", 90, T0.AddHours(2)));
+
+        int moved = store.MigrateDevice("old", "new", "新鼠标");
+
+        Assert.Equal(2, moved);
+        Assert.DoesNotContain(store.GetDeviceStats(), s => s.DeviceId == "old");
+        var merged = store.GetDeviceStats().Single(s => s.DeviceId == "new");
+        Assert.Equal(3, merged.Count);
+        Assert.Equal("新鼠标", merged.Name);
+        Assert.Equal(3, store.Query("new", T0, T0.AddDays(1)).Count);
+    }
 }

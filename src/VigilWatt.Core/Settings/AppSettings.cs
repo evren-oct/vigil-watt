@@ -66,6 +66,8 @@ public class AppSettings
         ["Rapoo"] = true,     // 雷柏走纯被动心跳读取，零写入，默认开启
         ["Betop"] = true,     // 北通手柄：发官方同款只读状态查询（cmd=0x5），默认开启
         ["Inphic"] = true,    // 英菲克 report 0x03 被动监听，不发送任何帧
+        ["Delux"] = true,     // DELUX M900 Pro：0x000A 5 字节被动状态帧，零写入
+        ["Aula"] = false,     // 狼蛛 F99 Pro：要写 0x13 会话帧才能读电量，默认关闭
     };
 
     /// <summary>是否把本机（笔记本）电池也纳入监控。默认关闭——它是"另一类设备"，不像外设那样需要盯着，用户明确要时才开（见设置页「监控本机电量」）。
@@ -73,6 +75,12 @@ public class AppSettings
     public bool MonitorSystemBattery { get; set; } = false;
 
     public Dictionary<string, DeviceCustomization> DeviceCustomizations { get; set; } = new();
+
+    /// <summary>设备列表只显示在线设备；纯显示过滤，不删除任何历史。</summary>
+    public bool ShowOnlyOnlineDevices { get; set; }
+
+    /// <summary>已删除的离线条目 ID：只抑制离线墓碑复活；设备重新上线时由 DeviceManager 清除，允许作为新条目出现。</summary>
+    public HashSet<string> DeletedDeviceIds { get; set; } = new();
 
     /// <summary>日志级别。取值见 <see cref="VigilWatt.Core.Utils.LogLevelNames"/>（Off/Debug/Info/Warn/Error），默认 Info；未知取值按 Info。**重启生效**（启动时赋给 Log.MinLevel）。</summary>
     public string LogLevel { get; set; } = VigilWatt.Core.Utils.LogLevelNames.Default;
@@ -112,6 +120,7 @@ public class AppSettings
 
             _cached = loaded ?? new AppSettings();
             _cached.DeviceCustomizations ??= new Dictionary<string, DeviceCustomization>();
+            _cached.DeletedDeviceIds ??= new HashSet<string>();
 
             // 老 settings.json 缺新插件的开关键时补默认值：反序列化会用 JSON 里的字典**整体替换**默认字典，
             // 缺键的插件会被 DeviceManager/设置页的 TryGetValue 判成"关闭"，新增插件（如 Betop）装上去默认不工作、用户还以为是功能没实现。

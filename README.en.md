@@ -35,9 +35,10 @@ Taskbar battery pill:
 - Shows the lowest battery level of online devices in the tray and alerts below a configurable threshold (20% by default).
 - Optional desktop widget, taskbar pill, and system battery monitoring; the system battery is excluded from the tray's lowest level.
 - Stores battery history with 24-hour, 7-day, and 30-day statistics; records can be managed by device.
+- Delete offline entries together with their name/icon and history, or show online devices only; merge history between same-source 2.4 GHz entries and remove the duplicate.
 - Can launch at startup.
 
-**Device plugin switches:** MCHOSE and Logitech plugins are off by default because reading requires sending query reports. Enable them by brand in Settings. Other strictly passive plugins do not write to devices.
+**Device plugin switches:** MCHOSE, AULA and Logitech plugins are off by default because reading requires sending query reports. Enable them by brand in Settings. Other strictly passive plugins do not write to devices.
 
 ## Download and quick start
 
@@ -64,6 +65,8 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | Logitech Bolt receiver (C548 + MX Master 3S) · HID++ | Verified on hardware |
 | Rapoo VT3 Gen 2 · passive `status-report7` | Verified on the developer's device |
 | Inphic ZHEN · passive report `0x03` | Verified on hardware |
+| AULA F99 Pro · `0x13` session/push | Verified on hardware (plugin off by default) |
+| DELUX M900 Pro · passive 5-byte status frame | Verified on hardware |
 | Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |
 | System battery · `GetSystemPowerStatus` | Implemented; can be enabled optionally |
 

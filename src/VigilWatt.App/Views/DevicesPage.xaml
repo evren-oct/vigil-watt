@@ -37,7 +37,7 @@
                             Padding="16,12"
                             Margin="0,0,0,8"
                             RightTapped="DeviceRow_RightTapped">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <Grid ColumnDefinitions="Auto,*,80" ColumnSpacing="14">
                             <FontIcon Grid.Column="0" FontSize="22" Glyph="{x:Bind IconGlyph}" />
                             <StackPanel Grid.Column="1" Spacing="6">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
@@ -59,6 +59,7 @@
                             </StackPanel>
                             <TextBlock Grid.Column="2" Text="{x:Bind PercentText}" FontSize="26"
                                        FontWeight="Bold" VerticalAlignment="Center"
+                                       TextAlignment="Right"
                                        Foreground="{x:Bind PercentBrush}" />
                         </Grid>
                     </Border>
@@ -70,9 +71,9 @@
                     VerticalAlignment="Center" Spacing="6" Visibility="Collapsed">
             <FontIcon Glyph="&#xE702;" FontSize="40" HorizontalAlignment="Center"
                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-            <TextBlock Text="未发现设备" FontSize="15" HorizontalAlignment="Center"
+            <TextBlock x:Name="EmptyTitle" Text="未发现设备" FontSize="15" HorizontalAlignment="Center"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock Text="连接蓝牙设备或插入 2.4G 接收器，然后点击刷新" FontSize="12"
+            <TextBlock x:Name="EmptyHint" Text="连接蓝牙设备或插入 2.4G 接收器，然后点击刷新" FontSize="12"
                        HorizontalAlignment="Center"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
         </StackPanel>

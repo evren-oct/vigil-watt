@@ -218,6 +218,51 @@ public class HistoryStore : IDisposable
     private const string PreferredNameSql =
         "CASE WHEN name = '' OR name = device_id OR INSTR(name, 'Bluetooth#') > 0 THEN 1 ELSE 0 END";
 
+    /// <summary>用 VACUUM INTO 生成一致性备份（WAL 下也安全），返回备份路径；失败返回 null。</summary>
+    public string? Backup(string tag)
+    {
+        lock (_writeGate)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(_dbPath);
+                if (string.IsNullOrEmpty(dir)) dir = ".";
+                var safeTag = string.IsNullOrWhiteSpace(tag) ? "backup" : tag;
+                var path = Path.Combine(dir, $"history-{safeTag}-{DateTime.Now:yyyyMMdd-HHmmss-fff}.db");
+                var escaped = path.Replace("'", "''");
+                using var cmd = _connection.CreateCommand();
+                cmd.CommandText = $"VACUUM INTO '{escaped}'";
+                cmd.ExecuteNonQuery();
+                Log.Info($"历史库已备份: {path}");
+                return path;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("历史库备份失败", ex);
+                return null;
+            }
+        }
+    }
+
+    /// <summary>把 oldId 的全部采样一次性迁移到 newId，并更新显示名；事务内执行，失败回滚。返回迁移条数。</summary>
+    public int MigrateDevice(string oldId, string newId, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(oldId) || string.IsNullOrWhiteSpace(newId) || oldId == newId) return 0;
+        lock (_writeGate)
+        {
+            using var tx = _connection.BeginTransaction();
+            using var cmd = _connection.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = "UPDATE samples SET device_id = $new, name = $name WHERE device_id = $old";
+            cmd.Parameters.AddWithValue("$new", newId);
+            cmd.Parameters.AddWithValue("$name", newName);
+            cmd.Parameters.AddWithValue("$old", oldId);
+            int moved = cmd.ExecuteNonQuery();
+            tx.Commit();
+            return moved;
+        }
+    }
+
     /// <summary>删除指定设备的全部历史，返回删除条数。空集合直接返回 0（不拼 SQL）。</summary>
     public int DeleteDevices(IReadOnlyCollection<string> deviceIds)
     {

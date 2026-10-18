@@ -32,6 +32,8 @@ public sealed class DeviceManager : IDisposable
     private readonly ConcurrentDictionary<string, bool> _lowBatteryNotified = new();
     /// <summary>由历史记录补出的离线占位条目（见 <see cref="RestoreOfflineTombstones"/>）；过期剔除时只能删这些，不能误删"在位但读不到"的真实设备。</summary>
     private readonly HashSet<string> _tombstoneIds = new();
+    /// <summary>保护 <see cref="AppSettings.DeletedDeviceIds"/>：Upsert 在后台线程读，删除/合并在 UI 线程写。</summary>
+    private readonly object _deletedGate = new();
     private System.Threading.Timer? _pollTimer;
     private System.Threading.Timer? _sampleTimer;
     private System.Threading.Timer? _discoveryTimer;
@@ -95,9 +97,131 @@ public sealed class DeviceManager : IDisposable
     }
 
     public IReadOnlyCollection<DeviceStatus> Devices => _devices.Values
+        .Where(d => !IsDeleted(d.Id))
         .OrderByDescending(d => d.IsOnline).ThenBy(d => d.DisplayName).ToList();
 
     public DeviceStatus? Find(string id) => _devices.TryGetValue(id, out var d) ? d : null;
+
+    /// <summary>可作为同一设备合并目标的条目。只允许 2.4G 同插件：换 USB 口才会产生旧/新 ID；
+    /// BLE/经典蓝牙身份基于 MAC，不存在端口漂移，混合同源不同设备的风险不值得承担。</summary>
+    public IReadOnlyList<DeviceStatus> GetMergeCandidates(string id)
+    {
+        if (!_devices.TryGetValue(id, out var source)) return Array.Empty<DeviceStatus>();
+        return _devices.Values
+            .Where(d => !IsDeleted(d.Id) && CanMerge(source, d))
+            .OrderByDescending(d => d.IsOnline)
+            .ThenByDescending(d => d.LastUpdated)
+            .ToList();
+    }
+
+    /// <summary>删除一个离线条目及其名称/图标/历史；在线设备拒绝。删除只清当前数据，不是黑名单：
+    /// 设备重新上线时 <see cref="Upsert"/> 会清掉抑制标记，允许它作为新条目出现。</summary>
+    public (bool Success, string Message) RemoveDevice(string id)
+    {
+        if (!_devices.TryGetValue(id, out var device)) return (false, "设备不存在");
+        if (device.IsOnline) return (false, "请先断开设备");
+        if (device.Source == DeviceSource.System) return (false, "本机电量请在设置中关闭监控");
+
+        MarkDeleted(id);
+        _devices.TryRemove(id, out _);
+        _remainingTimeEstimates.TryRemove(id, out _);
+        _tombstoneIds.Remove(id);
+        _lowBatteryNotified.TryRemove(id, out _);
+        _settings.DeviceCustomizations.Remove(id);
+        _settings.Save();
+
+        try
+        {
+            int deleted = _history.DeleteDevices(new[] { id });
+            if (deleted > 0) _history.Compact();
+            Log.Info($"已删除离线设备: {device.DisplayName} ({id})，历史 {deleted} 条");
+        }
+        catch (Exception ex)
+        {
+            // 条目已经撤掉、ID 已抑制；历史删除失败只影响磁盘占用，不能把 UI 删除回滚成"没删"。
+            Log.Error($"删除离线设备历史失败: {device.DisplayName} ({id})", ex);
+        }
+
+        DevicesChanged?.Invoke();
+        return (true, "");
+    }
+
+    /// <summary>把 oldId 的历史迁移到 newId，然后删除 oldId 条目。oldId 必须离线；只允许同源同插件。</summary>
+    public (bool Success, int Moved, string Message) MergeDevices(string oldId, string newId)
+    {
+        if (!_devices.TryGetValue(oldId, out var oldDevice)) return (false, 0, "要合并的条目不存在");
+        if (!_devices.TryGetValue(newId, out var newDevice)) return (false, 0, "保留的条目不存在");
+        if (oldId == newId) return (false, 0, "不能合并到自身");
+        if (!CanMerge(oldDevice, newDevice)) return (false, 0, "只能合并同插件的 2.4G 条目");
+        if (oldDevice.IsOnline) return (false, 0, "请先断开要删除的设备");
+        if (newDevice.Source == DeviceSource.System) return (false, 0, "本机电量不能合并");
+
+        // 目标没有自定义名称时，继承被删项的名称；历史里的 name 也用它，避免迁移后名称跳变。
+        bool targetHasCustom = _settings.DeviceCustomizations.ContainsKey(newId);
+        string targetName = DeviceCustomizationResolver.ApplyName(newDevice, _settings.DeviceCustomizations).DisplayName;
+        if (!targetHasCustom &&
+            _settings.DeviceCustomizations.TryGetValue(oldId, out var oldCustom) &&
+            !string.IsNullOrWhiteSpace(oldCustom.Name))
+            targetName = oldCustom.Name!;
+
+        string? backup = _history.Backup("before-merge");
+        if (backup == null) return (false, 0, "历史备份失败，未做任何修改");
+
+        int moved;
+        try
+        {
+            moved = _history.MigrateDevice(oldId, newId, targetName);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"合并设备历史失败: {oldId} -> {newId}，备份 {backup}", ex);
+            return (false, 0, "历史迁移失败，原数据未删除");
+        }
+
+        if (!targetHasCustom && _settings.DeviceCustomizations.TryGetValue(oldId, out var inherited))
+            _settings.DeviceCustomizations[newId] = inherited;
+        _settings.DeviceCustomizations.Remove(oldId);
+        MarkDeleted(oldId);
+        _settings.Save();
+
+        _devices.TryRemove(oldId, out _);
+        _remainingTimeEstimates.TryRemove(oldId, out _);
+        _tombstoneIds.Remove(oldId);
+        _lowBatteryNotified.TryRemove(oldId, out _);
+
+        Log.Info($"合并设备历史: {oldDevice.DisplayName} → {newDevice.DisplayName}，迁移 {moved} 条，备份 {backup}");
+        RefreshRemainingTimeEstimate(newDevice, notify: true);
+        DevicesChanged?.Invoke();
+        return (true, moved, "");
+    }
+
+    private static bool CanMerge(DeviceStatus a, DeviceStatus b)
+    {
+        if (a.Id == b.Id) return false;
+        // 只有 2.4G 会因 USB 口变化产生新的设备路径；BLE/经典蓝牙按 MAC 识别，不做跨设备合并。
+        if (a.Source != DeviceSource.Hid24G || b.Source != DeviceSource.Hid24G) return false;
+        var owner = OwnerOf(a.Id);
+        return owner.Length > 0 && string.Equals(owner, OwnerOf(b.Id), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsDeleted(string id)
+    {
+        lock (_deletedGate) return _settings.DeletedDeviceIds.Contains(id);
+    }
+
+    private void MarkDeleted(string id)
+    {
+        lock (_deletedGate) _settings.DeletedDeviceIds.Add(id);
+    }
+
+    private void ClearDeletedOnOnline(string id)
+    {
+        lock (_deletedGate)
+        {
+            if (!_settings.DeletedDeviceIds.Remove(id)) return;
+        }
+        _settings.Save();
+    }
 
     public RemainingTimeEstimateResult GetRemainingTimeEstimate(DeviceStatus device)
     {
@@ -147,6 +271,7 @@ public sealed class DeviceManager : IDisposable
             foreach (var stat in _history.GetDeviceStats())
             {
                 if (stat.Last < cutoff) continue;
+                if (IsDeleted(stat.DeviceId)) continue;
                 if (_devices.ContainsKey(stat.DeviceId)) continue;
 
                 // 用户主动关掉的品牌插件，不要靠历史记录把它"复活"成离线条目——
@@ -499,6 +624,13 @@ public sealed class DeviceManager : IDisposable
 
     private void Upsert(DeviceStatus incoming)
     {
+        // 删除只阻止离线条目复活；设备重新上线时必须清掉标记，允许它作为新条目出现（不是黑名单）。
+        if (IsDeleted(incoming.Id))
+        {
+            if (!incoming.IsOnline) return;
+            ClearDeletedOnOnline(incoming.Id);
+        }
+
         // 数据源（插件/watcher）会复用并原地改写同一个 DeviceStatus 实例。直接把它存进 _devices，
         // 后续再比较就变成"同一对象和自己比"，changed 恒为假（历史即写 / DeviceUpdated / 骤降保护全失效）。
         // 所以先快照 incoming 当"新值"，库里存的始终是独立副本当"旧值"——详见 docs/project/architecture.md §6。

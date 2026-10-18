@@ -77,16 +77,30 @@ public sealed partial class DevicesPage : Page
 
     private void Refresh()
     {
-        var devices = App.Services.Manager.Devices;
+        var allDevices = App.Services.Manager.Devices;
+        var devices = App.Services.Settings.ShowOnlyOnlineDevices
+            ? allDevices.Where(d => d.IsOnline).ToList()
+            : allDevices.ToList();
         DeviceList.ItemsSource = devices.Select(d => DeviceRowModel.From(
             d, App.Services.Settings, App.Services.Manager.GetRemainingTimeEstimate(d))).ToList();
-        var online = devices.Count(d => d.IsOnline);
+        var online = allDevices.Count(d => d.IsOnline);
         // 带上时间戳：即使设备数没变，用户也能一眼看出这次刷新确实跑过了
-        SummaryText.Text = $"{online} 台在线 / 共 {devices.Count} 台 · {DateTime.Now:HH:mm:ss} 更新";
+        var counts = App.Services.Settings.ShowOnlyOnlineDevices
+            ? $"{online} 台在线 · 已隐藏 {allDevices.Count - online} 台离线"
+            : $"{online} 台在线 / 共 {allDevices.Count} 台";
+        SummaryText.Text = $"{counts} · {DateTime.Now:HH:mm:ss} 更新";
 
         bool empty = devices.Count == 0;
         DeviceList.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
         EmptyState.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        if (empty)
+        {
+            bool onlyOffline = allDevices.Count > 0;
+            EmptyTitle.Text = onlyOffline ? "当前没有在线设备" : "未发现设备";
+            EmptyHint.Text = onlyOffline
+                ? "关闭设置中的「只显示在线设备」可查看离线条目"
+                : "连接蓝牙设备或插入 2.4G 接收器，然后点击刷新";
+        }
     }
 
     private async void CustomizeDevice_Click(object sender, RoutedEventArgs e)
@@ -293,15 +307,165 @@ public sealed partial class DevicesPage : Page
         if (device == null || device.Source == DeviceSource.System) return;
 
         var menu = new MenuFlyout();
-        menu.Items.Add(new MenuFlyoutItem
+        var customize = new MenuFlyoutItem
         {
             Text = "自定义名称和图标",
             Tag = model.Id,
-        });
-        var item = (MenuFlyoutItem)menu.Items[0];
-        item.Click += CustomizeDevice_Click;
+        };
+        customize.Click += CustomizeDevice_Click;
+        menu.Items.Add(customize);
+
+        menu.Items.Add(new MenuFlyoutSeparator());
+        if (device.IsOnline)
+        {
+            menu.Items.Add(new MenuFlyoutItem
+            {
+                Text = "删除设备（请先断开设备）",
+                IsEnabled = false,
+            });
+        }
+        else
+        {
+            if (App.Services.Manager.GetMergeCandidates(model.Id).Count > 0)
+            {
+                var merge = new MenuFlyoutItem
+                {
+                    Text = "与另一台同源设备合并…",
+                    Tag = model.Id,
+                };
+                merge.Click += MergeDevice_Click;
+                menu.Items.Add(merge);
+            }
+
+            var delete = new MenuFlyoutItem
+            {
+                Text = "删除设备…",
+                Tag = model.Id,
+            };
+            delete.Click += DeleteDevice_Click;
+            menu.Items.Add(delete);
+        }
+
         menu.ShowAt(row, new FlyoutShowOptions { Position = e.GetPosition(row) });
         e.Handled = true;
+    }
+
+    private async void DeleteDevice_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuFlyoutItem { Tag: string id }) return;
+        var device = App.Services.Manager.Find(id);
+        if (device == null) return;
+        if (device.IsOnline)
+        {
+            await ShowMessageAsync("请先断开设备", "在线设备不能删除，请先断开连接。");
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "删除设备",
+            Content = new TextBlock
+            {
+                Text = $"将删除「{device.DisplayName}」及其历史记录、名称和图标。\n" +
+                       "删除后，设备下次连接时会作为新条目重新出现。",
+                TextWrapping = TextWrapping.Wrap,
+            },
+            PrimaryButtonText = "删除",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        var (success, message) = App.Services.Manager.RemoveDevice(id);
+        if (!success)
+        {
+            await ShowMessageAsync("删除失败", message);
+            return;
+        }
+        Refresh();
+    }
+
+    private async void MergeDevice_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuFlyoutItem { Tag: string id }) return;
+        var oldDevice = App.Services.Manager.Find(id);
+        if (oldDevice == null) return;
+        if (oldDevice.IsOnline)
+        {
+            await ShowMessageAsync("请先断开设备", "要删除的那一条必须离线，请先断开设备。");
+            return;
+        }
+
+        var candidates = App.Services.Manager.GetMergeCandidates(id);
+        if (candidates.Count == 0)
+        {
+            await ShowMessageAsync("没有可合并的条目", "没有找到同插件的另一条 2.4G 记录。");
+            return;
+        }
+
+        var targetCombo = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch };
+        foreach (var candidate in candidates)
+        {
+            targetCombo.Items.Add(new ComboBoxItem
+            {
+                Tag = candidate,
+                Content = $"{candidate.DisplayName} · {DeviceSourceInfo.ShortLabel(candidate.Source)} · " +
+                          $"{(candidate.IsOnline ? "在线" : "离线")} · 更新于 {candidate.LastUpdated:HH:mm:ss}",
+            });
+        }
+        targetCombo.SelectedIndex = 0;
+
+        var body = new StackPanel { Spacing = 10, MinWidth = 420 };
+        body.Children.Add(new TextBlock
+        {
+            Text = $"将把「{oldDevice.DisplayName}」的历史迁移到保留项，然后删除这一条。",
+            TextWrapping = TextWrapping.Wrap,
+        });
+        body.Children.Add(new TextBlock { Text = "保留哪一条", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        body.Children.Add(targetCombo);
+        body.Children.Add(new TextBlock
+        {
+            Text = "只允许同插件的 2.4G 条目（用于换 USB 口后的旧/新条目）；操作前会自动备份 history.db。",
+            FontSize = 12,
+            Foreground = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush,
+            TextWrapping = TextWrapping.Wrap,
+        });
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "合并同源设备",
+            Content = body,
+            PrimaryButtonText = "合并",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (targetCombo.SelectedItem is not ComboBoxItem { Tag: DeviceStatus target }) return;
+
+        var (success, moved, message) = App.Services.Manager.MergeDevices(id, target.Id);
+        if (!success)
+        {
+            await ShowMessageAsync("合并失败", message);
+            return;
+        }
+
+        await ShowMessageAsync("合并完成",
+            $"已把 {moved} 条历史迁移到「{target.DisplayName}」，并删除「{oldDevice.DisplayName}」。");
+        Refresh();
+    }
+
+    private async Task ShowMessageAsync(string title, string message)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = title,
+            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+            CloseButtonText = "知道了",
+        };
+        await dialog.ShowAsync();
     }
 
     private static (string Text, int SelectionStart, int SelectionLength) FilterDeviceNameInput(

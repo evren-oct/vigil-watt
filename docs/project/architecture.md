@@ -30,7 +30,9 @@ VigilWatt.sln
 │   │   ├── Rapoo/RapooPlugin          # 雷柏 status-report7（纯被动零写入）
 │   │   ├── Mchose/MchosePlugin        # 0x13 会话协议（在用）+ QHW 0x4D（备用）
 │   │   ├── Betop/BetopPlugin          # 北通手柄：厂商接口 0x15 状态报告 + T9 被动流 + BetopCodec（纯逻辑）
-│   │   └── Inphic/                    # 英菲克 report 0x03 被动状态帧
+│   │   ├── Inphic/                    # 英菲克 report 0x03 被动状态帧
+│   │   ├── Delux/DeluxPlugin          # DELUX M900 Pro：0x000A 5 字节被动状态帧
+│   │   └── Aula/AulaPlugin            # AULA F99 Pro：复用 0x13 会话/推送协议
 │   ├── Models/DeviceStatus            # 统一设备状态快照（Id/电量/充电/在线）
 │   ├── Settings/AppSettings           # settings.json 读写
 │   ├── Storage/HistoryStore           # SQLite（Microsoft.Data.Sqlite）：写入/查询/按设备删除/VACUUM
@@ -87,6 +89,9 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
 | **历史写入双通道** | 定时采样（SampleIntervalMinutes，无变化也写点）+ 电量变化立即写（Upsert 里），保证曲线既平滑又不漏跳变 |
 | **删除历史后立即 VACUUM** | SQLite 的 `DELETE` 只把页标成空闲、**不缩小文件**；不 VACUUM 的话用户删完看到文件大小没变，会以为删除没生效。删除是低频操作，VACUUM 的整库重写开销可接受 |
 | **HistoryStore 支持注入库路径** | `HistoryStore(dbPath)` 可选参数让单测指向临时库，使删除/统计逻辑能进纯 net8.0 测试项目跑真 SQLite（不碰真实 history.db） |
+| **删除离线条目（`DeletedDeviceIds`）** | 只允许离线；删除条目/名称/图标/历史；已删除 ID 只抑制离线墓碑复活，设备重新上线时清标记，允许作为新条目出现——不是黑名单 |
+| **只显示在线设备（`ShowOnlyOnlineDevices`）** | 纯设备列表 UI 过滤，不删历史；设备上线自动出现，避免把"隐藏"误做成"删除" |
+| **同源历史合并（`MergeDevices`）** | 只允许 2.4G 同插件（换 USB 口后的旧/新条目）；被删项必须离线；`samples.device_id` 一次性事务迁移，迁移前 `VACUUM INTO` 备份；BLE/经典蓝牙身份稳定，直接删除重复条目不合并，避免把两台不同设备合到一起 |
 | **统一 DeviceStatus.Id** | BLE=蓝牙地址、2.4G=设备路径哈希（`mchose:{StableHash}`）。改协议后设备 ID 会变（旧曲线对不上新 ID）——历史库里同时存在 `mchose:D78E…`（错误时代）和 `mchose:0F60…`（现在）即此原因 |
 | **非打包部署（WindowsPackageType=None + SelfContained）** | 免安装免签名，双击就跑；代价是要自己带 Windows App SDK 运行时（`publish/` 已含） |
 

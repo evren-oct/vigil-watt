@@ -79,6 +79,7 @@ public sealed partial class SettingsPage : Page
         AutostartToggle.IsOn = AutostartService.IsEnabled();
         WidgetToggle.IsOn = s.WidgetEnabled;
         SystemBatteryToggle.IsOn = s.MonitorSystemBattery;
+        ShowOnlyOnlineToggle.IsOn = s.ShowOnlyOnlineDevices;
 
         // 小组件显示方式：与"窗口背景"同一套路，下拉框存偏好、副标题写实际行为
         var mode = WidgetDisplayMode.Normalize(s.WidgetDisplayMode);
@@ -418,6 +419,7 @@ public sealed partial class SettingsPage : Page
         s.HistoryRetentionDays = (int)RetentionBox.Value;
         s.StartMinimized = StartMinimizedToggle.IsOn;
         s.Autostart = AutostartToggle.IsOn;
+        s.ShowOnlyOnlineDevices = ShowOnlyOnlineToggle.IsOn;
         s.WidgetEnabled = WidgetToggle.IsOn;
         s.MonitorSystemBattery = SystemBatteryToggle.IsOn;
         s.WidgetDisplayMode = WidgetModeCombo.SelectedItem is ComboBoxItem modeItem && modeItem.Tag is string modeTag

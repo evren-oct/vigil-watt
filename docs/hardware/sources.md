@@ -19,8 +19,12 @@
 | Rapoo V2 `status-report7` | [pedro3z0/rapoo-software-linux](https://github.com/pedro3z0/rapoo-software-linux)（基于 A HUB 1.0.19 逆向及官方 Web 驱动抓包）；[D3m0nZOnFire/mousectl](https://github.com/D3m0nZOnFire/mousectl)（VT3 PRO 一代实测）。 | 参考协议分析后自行实现被动心跳解析；本机 VT3 二代 `24AE:1412` 已验证，部分状态以本机样本为准。 | `rapoo-software-linux` 标注 MIT；`mousectl` 的许可需以其仓库当前声明为准。两来源设备型号与本机不同，不能直接替代本机验证。 |
 | Betop / 北通厂商接口 | [oitsukiii/betop-battery](https://github.com/oitsukiii/betop-battery) 的 `docs/protocol.md`：对北通官方 Electron 客户端做互操作性分析，不含厂商代码。 | 参考协议文档实现；本机 T9 被动流已验证。 | 项目标注 MIT；本项目验证情况与限制见 [protocols.md](protocols.md)。 |
 | Inphic ZHEN `report 0x03` | 英菲克官方 ZHEN 网页驱动的 WebHID 行为、驱动显示与本机被动输入样本。 | 只读解析输入 report `0x03`，充放电状态经实机接线验证；不发送网页驱动的 report `0x04`。 | 基于官方行为和本机样本自行实现；未记录外部代码复用。见 [protocols.md](protocols.md)。 |
+| DELUX M900 Pro `0x000A` 状态帧 | DeLUX 官方 M900Pro 8K 驱动实际读取的 5 字节输入帧；本机关闭官方驱动后仍被动复现。 | 只读解析输入帧，不发送任何命令；本机 89% 与官方驱动显示逐点一致，充电标志经插拔实测。 | 基于官方软件行为与本机样本自行实现；未复用其代码。见 [protocols.md](protocols.md) §7。 |
+| AULA F99 Pro `0x13` 会话/推送 | VigilWatt 迈从 G87 的 `0x13` 协议文档与接口指纹；本机对 `3554:FA09` 实发会话帧并收到 100% 推送。 | 复用 `MchoseV1Codec`，只发 `13 05 01` 会话帧；`13 4A` 查询无应答。 | 参考本项目已真机验证的协议说明；未抓 AULA 官方驱动，未复用外部代码。见 [protocols.md](protocols.md) §8。 |
 | 弱水时砂炽天使 2.4G | 官方 RoseLink（Flutter + BLE 自定义协议）及官方升级助手逆向；同时检查 2.4G dongle 的 HID 通道。 | 用于确认 RoseLink 电量协议不含电量命令、正常 2.4G 模式无可用电量通道；本项目不接入该设备电量。 | 逆向结论用于能力边界判断，不包含外部代码复用。见 [protocols.md](protocols.md)。 |
 | Classic Bluetooth 耳机电量 | Windows HFP 网关设备节点的 `DEVPKEY_Device_BatteryLevel` 属性；与 Windows 设置显示同源。 | 通过 PnP 设备节点读取；本机 EDIFIER W820NB 已验证。 | Windows 系统属性读取方案；不是 BLE AEP 属性。实现背景见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |
+
+> DELUX M900 Pro 的官方驱动下载页：<https://www.deluxworld.com/en/service/>（M900Pro 8K）。官方网页驱动 `controlhub.top/delux` 为 Compx HUB WEB，使用另一套 report ID 8 协议，与本机 8K 接收器不通用。
 
 ## 应用功能与实现方案
 

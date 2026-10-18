@@ -198,6 +198,9 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 gone.Status.IsOnline = false;
                 _claims.Release(path, Name);
                 Log.Info($"{DisplayName} 设备已移除: {path}");
+                // 必须把离线状态上报给 DeviceManager：它只 Upsert 本方法返回的条目，
+                // 不上报的话旧条目会永远显示在线（2026-10-18 实测：鼠标换口后旧条目停在最后读数）。
+                claimed.Add(gone.Status);
             }
         }
 

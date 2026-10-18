@@ -67,6 +67,8 @@ public sealed class MchosePlugin : BatteryPluginBase
         if (info.VendorId == Betop.BetopPlugin.BetopVid) return false;
         // 英菲克接收器也暴露 64 字节 vendor 输出接口；避免误发迈从会话/查询帧
         if (info.VendorId == Inphic.InphicPlugin.InphicVid) return false;
+        // 狼蛛 F99 Pro 也是 0x13 20/20 接口，但它归 AulaPlugin，避免两个插件抢同一接口
+        if (info.VendorId == Aula.AulaPlugin.AulaVid) return false;
         // consumer/system/标准键盘接口即使产品名含 MCHOSE 也不是配置通道，必须是 vendor 用法 + ≥20/20 的 I/O
         bool vendor = info.UsagePage >= 0xFF00 || info.Usage >= 0xFF00;
         if (!vendor) return false;

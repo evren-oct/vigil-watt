@@ -13,6 +13,9 @@ public static class WatcherProps
     /// <summary>连接状态属性。</summary>
     public const string Connected = "System.Devices.Aep.IsConnected";
 
+    public static string ResolveName(string? currentName, string? deviceName)
+        => !string.IsNullOrWhiteSpace(currentName) ? currentName : deviceName?.Trim() ?? "";
+
     /// <summary>
     /// 读连接状态。<b>属性缺失返回 null，绝不能当成 false</b>：<c>Updated</c> 事件只带发生变化的属性，
     /// 默认 false 会把已连接设备误判离线（真机 2026-10-08：戴尔 WK717 已连接却被后续 Updated 判离线）。

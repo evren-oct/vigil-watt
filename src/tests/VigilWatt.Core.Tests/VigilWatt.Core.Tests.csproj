@@ -32,6 +32,9 @@
   -->
   <ItemGroup>
     <Compile Include="..\..\VigilWatt.Core\Plugins\BatteryReadingFilter.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Sony\DualSenseCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV9ProCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Ganss\GanssCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\PluginUtils.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\DeviceClaimRegistry.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\OfflinePolicy.cs" />

@@ -177,7 +177,7 @@ public sealed partial class SettingsPage : Page
 
         var row = new Grid { ColumnSpacing = 16, Padding = new Thickness(0, 12, 0, 12) };
         AutomationProperties.SetName(row, $"{plugin.DisplayName} {plugin.Name}");
-        AutomationProperties.SetHelpText(row, $"2.4G 设备插件 · {KindText(plugin.Kind)}");
+        AutomationProperties.SetHelpText(row, $"外设插件 · {KindText(plugin.Kind)}");
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Grid.SetColumn(text, 0);

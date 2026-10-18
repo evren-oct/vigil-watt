@@ -99,6 +99,15 @@ public class BatteryReadingFilterTests
     }
 
     [Fact]
+    public void ExplicitOnePercentFloorPreservesLowBatteryReadings()
+    {
+        var filter = new BatteryReadingFilter(20, TimeSpan.FromMinutes(5), minValidPercent: 1);
+        filter.Seed(2);
+        Assert.Equal(ReadingVerdict.Accept, filter.Evaluate(1, T0));
+        Assert.Equal(ReadingVerdict.InvalidValue, filter.Evaluate(0, T0.AddMinutes(1)));
+    }
+
+    [Fact]
     public void A9_上涨方向_小步采信_大步先过滤()
     {
         var f = NewFilter();

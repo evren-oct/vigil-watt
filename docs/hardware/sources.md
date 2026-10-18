@@ -13,6 +13,9 @@
 
 | 设备 / 方案 | 来源与参考内容 | 本项目采用及验证 | 许可 / 边界 |
 |---|---|---|---|
+| Sony DualSense 蓝牙 | [Linux hid-playstation.c](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-playstation.c) 帧格式、CRC 与电量含义，以及本机 0x31 样本。 | 根据协议事实独立实现 C# 解析；本机放电档位 1。 | Linux 源码为 GPL-2.0-or-later，此处未复制其实现主体；不将其代码作为 MIT 源码引入，见 [dualsense.md](dualsense.md)。 |
+| MCHOSE V9 Pro | 官方 MCHOSE HUB 电量页的 USB 查询/响应抓包。 | 自行实现 55 65 01 固定查询，接口严格限定。 | 仅 100% 真机验证，未知充电标志不映射，见 [mchose-v9-pro.md](mchose-v9-pro.md)。 |
+| GANSS GS3104T-Pro | 官方客户端配置、显示行为与 USB 抓包。 | 自行实现固定查询；标准 BLE 180F/2A19 读取并补全空名称。 | 单台短时验证；充电和休眠恢复待验，见 [ganss.md](ganss.md)。 |
 | MCHOSE G87 旧代 dongle（report `0x13`） | 官方 M HUB 的会话与电量交互；通过官方软件抓包和 dongle 实机观测确认帧结构、校验、查询和推送。 | 按抓包与实机样本实现；本机 G87 已验证。 | 官方软件交互是协议依据，不表示引用其代码。具体帧与未定语义见 [protocols.md](protocols.md)。 |
 | MCHOSE QHW（新代 dongle） | [MCHOSE M HUB WEB](https://www.mchose.com.cn/#/home) 前端 JS 中的 `QhwCmdQueueItem`、命令表及 CZ 相关脚本。 | 按官方前端协议实现备用路径；适用于 `0x3837` 世代 dongle。当前用户设备 `41E4:2001` 不适用。 | 官方资料，非开源代码复用。入口与设备范围见 [protocols.md](protocols.md)。 |
 | Logitech HID++ 电量 | Logitech HID++ 1.0 / 2.0 的设备发现与电池特征；实时电量通知行为与 Logi Battery Dashboard 同源。 | 本项目自行实现 HID++ 报文与特征解析；Bolt + MX Master 3S 已真机验证。 | 现有协议手册未记录外部代码复用；Logi Battery Dashboard 只作为行为 / 协议线索。实现细节见 [protocols.md](protocols.md)。 |

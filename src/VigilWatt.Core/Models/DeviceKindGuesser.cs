@@ -20,7 +20,9 @@ public static class DeviceKindGuesser
                         "mx master", "mx anywhere", "mx ergo", "mx vertical",
                         "g502", "g304", "g305", "g pro", "superlight"))
             return DeviceKind.Mouse;
-        if (Contains(n, "键盘", "keyboard")) return DeviceKind.Keyboard;
+        if (Contains(n, "键盘", "keyboard")
+            || n.Trim() is "gs3104t pro" or "gs3104t-pro" or "ganss gs3104t pro" or "ganss gs3104t-pro")
+            return DeviceKind.Keyboard;
         if (Contains(n, "音箱", "speaker")) return DeviceKind.Speaker;
         // ⚠️ 不用裸 "head"（会命中 Ahead/Headway）；无关键字的真耳机靠服务 UUID 判定，见 ClassicDeviceKindResolver
         if (Contains(n, "耳机", "耳麦", "headset", "headphone", "earphone", "earbud", "airpods", "buds"))

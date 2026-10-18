@@ -10,6 +10,17 @@ namespace VigilWatt.Core.Tests;
     /// </summary>
     public class DeviceKindGuesserTests
 {
+    [Theory]
+    [InlineData("GS3104T PRO")]
+    [InlineData("GS3104T-PRO")]
+    [InlineData("GANSS GS3104T-Pro")]
+    public void GanssVerifiedKeyboardNamesAreRecognized(string name)
+        => Assert.Equal(DeviceKind.Keyboard, DeviceKindGuesser.Guess(name));
+
+    [Fact]
+    public void GanssBrandAloneDoesNotImplyKeyboard()
+        => Assert.Equal(DeviceKind.Unknown, DeviceKindGuesser.Guess("GANSS unknown device"));
+
     [Fact]
     public void K1_手柄优先于键盘鼠标()
     {

@@ -10,6 +10,15 @@ namespace VigilWatt.Core.Tests;
 /// </summary>
 public class DeviceSourceInfoTests
 {
+    [Theory]
+    [InlineData("dualsense:123", DeviceSource.BluetoothClassic)]
+    [InlineData("btc:123", DeviceSource.BluetoothClassic)]
+    [InlineData("ble:123", DeviceSource.Ble)]
+    [InlineData("sys:battery", DeviceSource.System)]
+    [InlineData("ganss:123", DeviceSource.Hid24G)]
+    public void HistorySourceMatchesLiveTransport(string id, DeviceSource expected)
+        => Assert.Equal(expected, DeviceSourceInfo.FromId(id));
+
     [Fact]
     public void S1_三种来源各有标签()
     {

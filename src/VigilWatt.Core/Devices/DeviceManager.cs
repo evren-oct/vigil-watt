@@ -189,10 +189,7 @@ public sealed class DeviceManager : IDisposable
     }
 
     private static DeviceSource SourceFromId(string id) =>
-        id.StartsWith("btc:", StringComparison.Ordinal) ? DeviceSource.BluetoothClassic
-        : id.StartsWith("ble:", StringComparison.Ordinal) ? DeviceSource.Ble
-        : id.StartsWith("sys:", StringComparison.Ordinal) ? DeviceSource.System
-        : DeviceSource.Hid24G;
+        DeviceSourceInfo.FromId(id);
 
     /// <summary>剔除超期的离线占位。真实设备（哪怕离线）不在此列——它们由插件继续维护。</summary>
     private void ExpireTombstones()

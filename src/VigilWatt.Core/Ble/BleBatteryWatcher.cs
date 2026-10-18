@@ -169,35 +169,51 @@ public sealed class BleBatteryWatcher : IDisposable
                 if (ble.ConnectionStatus != BluetoothConnectionStatus.Connected)
                     return;
 
-                var svcResult = await ble
-                    .GetGattServicesForUuidAsync(GattServiceUuids.Battery, BluetoothCacheMode.Uncached)
-                    .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
-                if (svcResult.Status != GattCommunicationStatus.Success || svcResult.Services.Count == 0) return;
-
-                var chrResult = await svcResult.Services[0]
-                    .GetCharacteristicsForUuidAsync(GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Uncached)
-                    .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
-                if (chrResult.Status != GattCommunicationStatus.Success || chrResult.Characteristics.Count == 0) return;
-
-                var read = await chrResult.Characteristics[0]
-                    .ReadValueAsync(BluetoothCacheMode.Uncached)
-                    .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
-                if (read.Status != GattCommunicationStatus.Success) return;
-
-                var reader = DataReader.FromBuffer(read.Value);
-                int percent = reader.ReadByte();
-                if (percent is > 0 and <= 100)
+                var resolvedName = WatcherProps.ResolveName(status.Name, ble.Name);
+                if (resolvedName != status.Name)
                 {
-                    bool wasOffline = !status.IsOnline;
-                    status.IsOnline = true;
-                    status.BatteryPercent = percent;
-                    status.LastUpdated = DateTimeOffset.Now;
+                    status.Name = resolvedName;
                     if (status.Kind == DeviceKind.Unknown)
                         status.Kind = DeviceKindGuesser.Guess(status.Name);
                     DeviceUpdated?.Invoke(status);
-                    Log.Info(wasOffline
-                        ? $"BLE GATT 直读(恢复在线): {status.DisplayName} {percent}%"
-                        : $"BLE GATT 直读: {status.DisplayName} {percent}%");
+                }
+
+                var svcResult = await ble
+                    .GetGattServicesForUuidAsync(GattServiceUuids.Battery, BluetoothCacheMode.Uncached)
+                    .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
+                try
+                {
+                    if (svcResult.Status != GattCommunicationStatus.Success || svcResult.Services.Count == 0) return;
+
+                    var chrResult = await svcResult.Services[0]
+                        .GetCharacteristicsForUuidAsync(GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Uncached)
+                        .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
+                    if (chrResult.Status != GattCommunicationStatus.Success || chrResult.Characteristics.Count == 0) return;
+
+                    var read = await chrResult.Characteristics[0]
+                        .ReadValueAsync(BluetoothCacheMode.Uncached)
+                        .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
+                    if (read.Status != GattCommunicationStatus.Success || read.Value.Length != 1) return;
+
+                    using var reader = DataReader.FromBuffer(read.Value);
+                    int percent = reader.ReadByte();
+                    if (percent is > 0 and <= 100)
+                    {
+                        bool wasOffline = !status.IsOnline;
+                        status.IsOnline = true;
+                        status.BatteryPercent = percent;
+                        status.LastUpdated = DateTimeOffset.Now;
+                        if (status.Kind == DeviceKind.Unknown)
+                            status.Kind = DeviceKindGuesser.Guess(status.Name);
+                        DeviceUpdated?.Invoke(status);
+                        Log.Info(wasOffline
+                            ? $"BLE GATT 直读(恢复在线): {status.DisplayName} {percent}%"
+                            : $"BLE GATT 直读: {status.DisplayName} {percent}%");
+                    }
+                }
+                finally
+                {
+                    foreach (var service in svcResult.Services) service.Dispose();
                 }
             }
         }

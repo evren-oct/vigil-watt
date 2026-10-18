@@ -18,6 +18,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>本插件处理的设备类型（UI 选图标用）。</summary>
     public abstract DeviceKind Kind { get; }
 
+    protected virtual DeviceSource Source => DeviceSource.Hid24G;
+
     /// <summary>
     /// 见 <see cref="IBatteryPlugin.SupportsFastDiscovery"/>：是否参与 DeviceManager 的 15 秒快速发现节拍。
     /// 默认 false（会写帧的插件保持默认值）；**只有纯被动零写入插件**才该覆盖成 true。
@@ -140,6 +142,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// </summary>
     protected virtual int MaxPlausibleStepPercent => 20;
 
+    protected virtual int MinValidPercent => 2;
+
     /// <summary>
     /// 异常读数需持续这么久才最终采信（期间读数一直偏离才算数）：既挡住休眠瞬间的伪读数，
     /// 又不会把真实的深度掉电永久锁死。
@@ -257,7 +261,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             {
                 Id = $"{Name.ToLowerInvariant()}:{PluginUtils.StableHash(o.Info.DevicePath)}",
                 Name = BuildDisplayName(o.Info),
-                Source = DeviceSource.Hid24G,
+                Source = Source,
                 Kind = Kind,
                 Protocol = protocol,
                 BatteryPercent = percent,
@@ -653,7 +657,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>新建一台设备的读数过滤器，并用探测读到的值建立初始基准。</summary>
     private BatteryReadingFilter CreateFilter(int? probedPercent)
     {
-        var filter = new BatteryReadingFilter(MaxPlausibleStepPercent, AnomalyPersistWindow);
+        var filter = new BatteryReadingFilter(MaxPlausibleStepPercent, AnomalyPersistWindow, MinValidPercent);
         if (probedPercent.HasValue) filter.Seed(probedPercent.Value);
         return filter;
     }

@@ -46,6 +46,9 @@
 
 | 插件 | 写入开关（= 插件开关） | 默认 | 说明 |
 |---|---|---|---|
+| DualSense 蓝牙手柄 | `PluginEnabled["DualSense"]` | **true** | 纯被动 054C:0CE6 / 蓝牙 HID / 0x31；无输出或 Feature 请求，见 dualsense.md |
+| MCHOSE V9 Pro 耳机 | `PluginEnabled["MchoseV9Pro"]` | **false** | 独立于键盘插件，仅 291D:385D / Col05 固定查询，见 mchose-v9-pro.md |
+| GANSS GS3104T-Pro | `PluginEnabled["Ganss"]` | **false** | 仅 05AC:024F / MI_03 / FF60:0061 的固定查询，见 ganss.md |
 | 迈从 | `PluginEnabled["Mchose"]` | **false** | dongle 协议未破解，探测写入可能干扰设备，故默认关；开插件即授权写帧 |
 | 北通 | `PluginEnabled["Betop"]` | **true** | 查询是官方客户端同款只读命令（cmd=0x5），风险低，故默认开 |
 | 罗技 | `PluginEnabled["Logitech"]` | **false** | 发现与读数**全靠写帧**；不继承基类，故自建闸门（`HidppIO.WritesAllowed`）+ 熔断 + 同一张递增退避表（`Plugins/WriteBackoff.cs`） |

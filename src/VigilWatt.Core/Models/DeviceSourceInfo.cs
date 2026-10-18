@@ -7,6 +7,13 @@ namespace VigilWatt.Core.Models;
 /// </summary>
 public static class DeviceSourceInfo
 {
+    public static DeviceSource FromId(string id) =>
+        id.StartsWith("btc:", StringComparison.Ordinal) || id.StartsWith("dualsense:", StringComparison.Ordinal)
+            ? DeviceSource.BluetoothClassic
+        : id.StartsWith("ble:", StringComparison.Ordinal) ? DeviceSource.Ble
+        : id.StartsWith("sys:", StringComparison.Ordinal) ? DeviceSource.System
+        : DeviceSource.Hid24G;
+
     /// <summary>来源徽标短标签：蓝牙 / 2.4G / 本机。</summary>
     public static string ShortLabel(DeviceSource source) => source switch
     {

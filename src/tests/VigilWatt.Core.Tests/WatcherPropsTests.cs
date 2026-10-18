@@ -10,6 +10,15 @@ namespace VigilWatt.Core.Tests;
 /// </summary>
 public class WatcherPropsTests
 {
+    [Theory]
+    [InlineData("", "GS3104T PRO", "GS3104T PRO")]
+    [InlineData(null, "GS3104T PRO", "GS3104T PRO")]
+    [InlineData("  ", " GS3104T PRO ", "GS3104T PRO")]
+    [InlineData("Existing keyboard", "GS3104T PRO", "Existing keyboard")]
+    [InlineData("", null, "")]
+    public void DeviceNameFallbackDoesNotOverwriteKnownName(string? current, string? resolved, string expected)
+        => Assert.Equal(expected, WatcherProps.ResolveName(current, resolved));
+
     private static Dictionary<string, object> Props(params (string Key, object Value)[] items)
     {
         var d = new Dictionary<string, object>();

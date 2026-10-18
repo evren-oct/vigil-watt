@@ -58,6 +58,9 @@
 
 | 设备 / 协议 | 当前状态 |
 |---|---|
+| Sony DualSense · 蓝牙完整 0x31 报告 | 贡献者单台放电验证，约 10% 档位估算；见 docs/hardware/dualsense.md |
+| MCHOSE V9 Pro 耳机 · 2.4G | 贡献者单台 100% 电量验证；非满电变化待验，见 docs/hardware/mchose-v9-pro.md |
+| GANSS GS3104T-Pro · 2.4G / 标准 BLE | 贡献者单台设备验证，充电与休眠恢复待验；见 docs/hardware/ganss.md |
 | 迈从 G87 · 2.4G `0x13` | 本机验证 |
 | 迈从新代 dongle · QHW（如 `3837:3033`） | 已实现，待对应设备验证 |
 | 北通 T9 · 厂商接口被动流 | 真机验证 |

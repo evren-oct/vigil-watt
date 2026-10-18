@@ -8,6 +8,8 @@
 
 | 编号 | 一句话 | 证据 | 状态 |
 |---|---|---|---|
+| **CR-67** | DualSense 插件有电量条目与经典蓝牙 watcher 的无电量条目可并存，尚未跨来源合并 | `DualSensePlugin.cs`、`BluetoothClassicWatcher.cs:HandleDevice` | `open` |
+| **CR-66** | BLE GATT 的 WaitAsync 超时只结束等待，底层晚返回的服务结果仍需完整清理；既有生命周期，本次仅释放正常返回结果 | `BleBatteryWatcher.cs:ReadBatteryViaGattAsync` | `open` |
 | **CR-57** | 小组件自绘投影未做。原判据基于 Win10 19045，本机已升到 26200（Win11），需按新系统重判 | `WidgetWindow.xaml.cs:ApplyWin10Chrome` | `open` |
 | **CR-60** | 贴片右键菜单的 owner 是任务栏子窗口，弹出和关闭未真机看 | `TaskbarPillWindow.cs:OnRightClick` | `open` |
 | **CR-63** | 贴片与 explorer 输入队列串在一起，UI 线程长阻塞可能冻住任务栏。未实测 | `TaskbarPillWindow.cs` | `open` |

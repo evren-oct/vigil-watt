@@ -61,6 +61,9 @@ public class AppSettings
     /// 不再有独立的"写入许可"开关（CR-37）。会写帧的插件默认关闭（见各项注释）。</summary>
     public Dictionary<string, bool> PluginEnabled { get; set; } = new()
     {
+        ["DualSense"] = true,
+        ["MchoseV9Pro"] = false,
+        ["Ganss"] = false,
         ["Logitech"] = false,   // 罗技 HID++ 的发现与读数全靠写帧（自建闸门见 CR-01）
         ["Mchose"] = false,   // 迈从 dongle 协议未破解，探测写入可能干扰设备
         ["Rapoo"] = true,     // 雷柏走纯被动心跳读取，零写入，默认开启

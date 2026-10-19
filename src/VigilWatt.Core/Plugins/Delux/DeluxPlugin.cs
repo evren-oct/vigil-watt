@@ -63,15 +63,25 @@ public sealed class DeluxPlugin : BatteryPluginBase
     /// <summary>读数由后台被动监听负责；轮询不再占 ReadInput。</summary>
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice _) => null;
 
-    /// <summary>解析 5 字节状态帧；非本协议帧返回 null。</summary>
+    /// <summary>底座充电失真过滤：0x03 期间电量是装饰值，详见 <see cref="DockChargeFilter"/>。</summary>
+    private readonly DockChargeFilter _dockFilter = new();
+
+    /// <summary>解析 5 字节状态帧并过底座失真过滤器；非本协议帧返回 null。</summary>
     protected override (int? Percent, ChargingState Charging, bool Offline)? TryParsePassiveInput(
         TrackedDevice dev, byte[] input)
     {
-        if (!DeluxCodec.TryParse(input, out int percent, out var charging, out byte chargeFlag)) return null;
+        if (!DeluxCodec.TryParse(input, out int percent, out _, out byte chargeFlag)) return null;
 
-        Log.InfoOnChange($"delux-status:{dev.Status.Id}", $"{chargeFlag}|{percent}",
-            $"DELUX 状态帧: 标志=0x{chargeFlag:X2} 电量={percent}% 原始={Log.Hex(input)}");
-        return (percent, charging, Offline: false);
+        _dockFilter.Seed(dev.Status.BatteryPercent);
+        int filtered = _dockFilter.Apply(chargeFlag, percent, DateTimeOffset.Now);
+        // 状态用过滤后的电量重新推导：避免保持值 <100 时仍显示"已充满"。
+        var charging = chargeFlag == DeluxCodec.FlagFull
+            ? ChargingState.Full
+            : ChargingStateMap.FromChargingFlag(chargeFlag == DeluxCodec.FlagCharging, filtered);
+
+        Log.InfoOnChange($"delux-status:{dev.Status.Id}", $"{chargeFlag}|{percent}|{filtered}",
+            $"DELUX 状态帧: 标志=0x{chargeFlag:X2} 电量={percent}% 上报={filtered}% 原始={Log.Hex(input)}");
+        return (filtered, charging, Offline: false);
     }
 
     private static async Task<(int Percent, ChargingState Charging)?> ListenStatusAsync(

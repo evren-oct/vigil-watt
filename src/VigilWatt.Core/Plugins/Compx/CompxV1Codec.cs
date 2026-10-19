@@ -1,4 +1,4 @@
-namespace VigilWatt.Core.Plugins.Mchose;
+namespace VigilWatt.Core.Plugins.Compx;
 
 /// <summary>0A 推送帧（[13 0A …]）的解析结果类型。</summary>
 internal enum V1PushKind
@@ -26,11 +26,11 @@ internal enum V1ResponseKind
 internal readonly record struct V1Push(V1PushKind Kind, byte Type, byte Payload, int Percent, byte ChargeFlag);
 
 /// <summary>
-/// 功 能： 迈从键盘 V1 协议（report 0x13）的**纯帧编解码**，不碰句柄、不写日志，便于单测。
-/// 2026/10/06 15:53:36 xliu
-/// 帧布局（全部 20 字节，校验 = 前 19 字节之和 mod 256）见 docs/hardware/protocols.md §1。
+/// 功 能： Compx（中颖）键盘 V1 协议（report 0x13）的**纯帧编解码**，不碰句柄、不写日志，便于单测。
+/// 2026/10/19 19:30:00 Bamlax
+/// 迈从 G87 与凌豹 K98 共用同一套帧布局，见 docs/hardware/protocols.md §1、§1.6。
 /// </summary>
-internal static class MchoseV1Codec
+internal static class CompxV1Codec
 {
     public const byte ReportId = 0x13;
     public const byte SessionCmd = 0x05;
@@ -44,7 +44,7 @@ internal static class MchoseV1Codec
 
     /// <summary>
     /// 状态通知 payload 的实测取值之一（与 <see cref="StatePayloadOne"/> 全天交替出现）。
-    /// **语义未定论**，只当"值得立刻核实一下"的触发器用（见 MchosePlugin 的被动解析），
+    /// **语义未定论**，只当"值得立刻核实一下"的触发器用（见 MchosePlugin / LingbaoPlugin 的被动解析），
     /// 绝不作为离线证据。
     /// </summary>
     public const byte StatePayloadZero = 0x00;

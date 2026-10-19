@@ -47,6 +47,8 @@
 | 插件 | 写入开关（= 插件开关） | 默认 | 说明 |
 |---|---|---|---|
 | 迈从 | `PluginEnabled["Mchose"]` | **false** | dongle 协议未破解，探测写入可能干扰设备，故默认关；开插件即授权写帧 |
+| 迈从鼠标 | `PluginEnabled["MchoseMouse"]` | **false** | RealTek 0xFF01：`0B AA` 触发 `0xE2`（读类重载），要写 feature `0x11`，故默认关 |
+| 凌豹 | `PluginEnabled["Lingbao"]` | **false** | K98 复用 Compx V1 帧，探测/电量查询要写帧，故默认关；开插件即授权写帧 |
 | 北通 | `PluginEnabled["Betop"]` | **true** | 查询是官方客户端同款只读命令（cmd=0x5），风险低，故默认开 |
 | 罗技 | `PluginEnabled["Logitech"]` | **false** | 发现与读数**全靠写帧**；不继承基类，故自建闸门（`HidppIO.WritesAllowed`）+ 熔断 + 同一张递增退避表（`Plugins/WriteBackoff.cs`） |
 | 雷柏 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`，零写入 |

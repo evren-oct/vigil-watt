@@ -123,6 +123,20 @@ public sealed class HidDeviceHandle : IDisposable
     }
 
     /// <summary>
+    /// 发送**指定长度**的 feature report。接口里各 report ID 的长度可以不同
+    /// （迈从鼠标 0xFF01 接口：feature 0x11 只有 20 字节，而 caps 报的是最大 65），
+    /// 此时不能用 <see cref="SetFeature(byte, byte[])"/> 的 caps 长度，否则 HidD 会按错误长度拒收。
+    /// </summary>
+    public bool SetFeature(byte reportId, byte[] payload, int totalLength)
+    {
+        if (totalLength < 1 || Info.FeatureReportLength == 0) return false;
+        var buffer = new byte[totalLength];
+        buffer[0] = reportId;
+        Array.Copy(payload, 0, buffer, 1, Math.Min(payload.Length, totalLength - 1));
+        return NativeHid.HidD_SetFeature(_stream.SafeFileHandle, buffer, (uint)totalLength);
+    }
+
+    /// <summary>
     /// 写 output report（WriteFile，异步带超时）。buffer[0] 是 report ID。
     /// <paramref name="quiet"/> = true 时不把失败记成 WARN——调用方已知该失败是**预期结果**（如探测不属于本协议的通道，写失败正是"不是这条通道"的判据）。
     /// **别用它掩盖真正的写入故障。**

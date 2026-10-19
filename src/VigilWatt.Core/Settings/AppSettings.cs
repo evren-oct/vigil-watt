@@ -63,6 +63,8 @@ public class AppSettings
     {
         ["Logitech"] = false,   // 罗技 HID++ 的发现与读数全靠写帧（自建闸门见 CR-01）
         ["Mchose"] = false,   // 迈从 dongle 协议未破解，探测写入可能干扰设备
+        ["MchoseMouse"] = false, // 迈从鼠标 RealTek 0xFF01 协议要写 0B AA 触发 0xE2，默认关
+        ["Lingbao"] = false,  // 凌豹 K98 复用 Compx V1 帧，探测/查询要写帧，默认关闭
         ["Rapoo"] = true,     // 雷柏走纯被动心跳读取，零写入，默认开启
         ["Betop"] = true,     // 北通手柄：发官方同款只读状态查询（cmd=0x5），默认开启
         ["Inphic"] = true,    // 英菲克 report 0x03 被动监听，不发送任何帧

@@ -219,9 +219,9 @@ AppWindow.Resize(new SizeInt32((int)(widthDip * Scale), (int)(WindowHeight * Sca
    正常电量推送 `13 0A 01 00 04 **05** 42 01 …`（0x05=电量，[6]=66%），休眠时推
    `13 0A 01 00 04 **02** 01 …`（0x02=设备状态通知，[6]=0x01 是 payload 不是电量）。
    旧代码不看下标 5 的类型位、直接读下标 6，于是把 payload 的 0x01 显示成 1%。
-   **正确做法：先认类型位**（`MchoseV1Codec.ParsePush`），并把这个 0x02 帧当"设备已休眠"信号
+   **正确做法：先认类型位**（`CompxV1Codec.ParsePush`），并把这个 0x02 帧当"设备已休眠"信号
    立即标离线（基类 `RequestOffline`）。原始帧两边的校验和都对得上，可自洽验证。
-1. **解析层**（`MchosePlugin` + `MchoseV1Codec`）：按类型位识别（见上）；另有 `InvalidPercentFloor = 1`
+1. **解析层**（`MchosePlugin` / `LingbaoPlugin` + `CompxV1Codec`）：按类型位识别（见上）；另有 `InvalidPercentFloor = 1`
    兜底（≤1 一律无效）。判无效后返回 null → 计入熔断失败 → 3 次后设备标离线，符合"键盘确实睡了"。
 2. **基类层**（`BatteryPluginBase.Poll` → `BatteryReadingFilter`）：每设备一个过滤器实例，两条规则——① 数值低于 2（即 0/1）或 >100 直接判无效，永不采信；② 与上次采信值相比涨跌超过 20 点则本轮不采用，需**持续 5 分钟**才采信（回弹即清零计时）。这是通用的，挡所有插件的任意异常值，涨跌双向都管。基准**不随离线清空**。
 3. **告警层**（`DeviceManager.CheckLowBattery`）：低电量值比上次已知值低超过 20 点时暂缓提醒一轮。最后一道闸。

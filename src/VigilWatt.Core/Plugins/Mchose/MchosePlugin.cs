@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Plugins.Compx;
 using VigilWatt.Core.Utils;
 
 namespace VigilWatt.Core.Plugins.Mchose;
@@ -8,7 +9,7 @@ namespace VigilWatt.Core.Plugins.Mchose;
 /// <summary>
 /// 功 能： 迈从 (MCHOSE) 2.4G 插件。
 /// 2026/10/06 15:53:36 xliu
-/// 帧结构见 <see cref="MchoseV1Codec"/> 与 docs/hardware/protocols.md §1。
+/// 帧结构见 <see cref="CompxV1Codec"/> 与 docs/hardware/protocols.md §1。
 /// </summary>
 public sealed class MchosePlugin : BatteryPluginBase
 {
@@ -22,8 +23,8 @@ public sealed class MchosePlugin : BatteryPluginBase
     private const byte QhwReportId = 0x4D;
     private const ushort CmdGetBattery = 0x0904;  // 2308
 
-    /// <summary>无效电量下界（0/1 是设备休眠/关机的占位值），单一来源在 <see cref="MchoseV1Codec"/>。</summary>
-    private const byte InvalidPercentFloor = MchoseV1Codec.InvalidPercentFloor;
+    /// <summary>无效电量下界（0/1 是设备休眠/关机的占位值），单一来源在 <see cref="CompxV1Codec"/>。</summary>
+    private const byte InvalidPercentFloor = CompxV1Codec.InvalidPercentFloor;
 
     /// <summary>认领后后台听 0A/CZ 推送，插拔电不必等 60 秒主动查询。</summary>
     protected override bool SupportsPassiveListen => true;
@@ -165,7 +166,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     {
         if (dev.Protocol is "keyboard-v1")
         {
-            var push = MchoseV1Codec.ParsePush(input);
+            var push = CompxV1Codec.ParsePush(input);
             if (push.Kind == V1PushKind.Battery)
                 return (push.Percent, ParseKeyboardV1Charge(push.ChargeFlag, push.Percent), Offline: false);
             if (push.Kind == V1PushKind.StateNotify)
@@ -173,7 +174,7 @@ public sealed class MchosePlugin : BatteryPluginBase
                 // payload 0x00/0x01 语义**至今未定论**（全天交替，且每次通知后设备仍能正常应答查询），
                 // 绝不能当离线证据；但可以当**触发器**：让基类立刻补一次核实查询，把"键盘真关机了"
                 // 的发现从分钟级压到秒级。只认 0x00——选哪个值只影响触发时机，不影响判定结果。
-                if (push.Payload == MchoseV1Codec.StatePayloadZero)
+                if (push.Payload == CompxV1Codec.StatePayloadZero)
                 {
                     Log.Info($"迈从 被动收到设备状态通知 payload=0x00，触发一次核实查询: {Log.Hex(input)}");
                     RequestConfirm(dev);
@@ -378,7 +379,7 @@ public sealed class MchosePlugin : BatteryPluginBase
 
     /// <summary>
     /// 键盘 V1 协议（本机 dongle 41E4:2001 实测打通，与官方 M HUB WEB 抓包一致）。
-    /// 帧格式与解析全部在 <see cref="MchoseV1Codec"/>（纯函数，有单测）；帧结构见
+    /// 帧格式与解析全部在 <see cref="CompxV1Codec"/>（纯函数，有单测）；帧结构见
     /// docs/hardware/protocols.md §1。会话必须先开，否则 dongle 不响应；被崩溃进程占住会话时
     /// 所有人都会静音，需重新插拔释放。
     ///
@@ -390,7 +391,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         if (!IsWritesEnabled(SettingsKey)) return null;
 
         // 开会话（官方时序），失败不影响下一步——实测 dongle 记住会话状态
-        SendKeyboardV1Frame(handle, MchoseV1Codec.SessionCmd, 0x01);
+        SendKeyboardV1Frame(handle, CompxV1Codec.SessionCmd, 0x01);
         var deadline0 = DateTime.UtcNow + TimeSpan.FromSeconds(1.2);
         while (DateTime.UtcNow < deadline0)
         {
@@ -410,7 +411,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         // 电量查询，最多重试 2 次（键盘休眠时先醒来）
         for (int attempt = 1; attempt <= 2; attempt++)
         {
-            if (!SendKeyboardV1Frame(handle, MchoseV1Codec.BatteryQueryCmd, 0x01))
+            if (!SendKeyboardV1Frame(handle, CompxV1Codec.BatteryQueryCmd, 0x01))
             {
                 Log.Debug($"迈从 keyboard-v1 第{attempt}次写失败: {handle.Info.DevicePath}");
                 continue;
@@ -439,8 +440,8 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>构造并发送 V1 帧：[0x13, cmd, param, 0×16, sum(前19字节)]。</summary>
     private static bool SendKeyboardV1Frame(HidDeviceHandle handle, byte cmd, byte param)
     {
-        if (handle.Info.OutputReportLength < MchoseV1Codec.FrameLength) return false;
-        return handle.WriteOutput(MchoseV1Codec.BuildFrame(cmd, param), TimeSpan.FromMilliseconds(500));
+        if (handle.Info.OutputReportLength < CompxV1Codec.FrameLength) return false;
+        return handle.WriteOutput(CompxV1Codec.BuildFrame(cmd, param), TimeSpan.FromMilliseconds(500));
     }
 
     /// <summary>
@@ -451,7 +452,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     {
         stop = false;
 
-        var push = MchoseV1Codec.ParsePush(input);
+        var push = CompxV1Codec.ParsePush(input);
         switch (push.Kind)
         {
             case V1PushKind.Battery:
@@ -478,7 +479,7 @@ public sealed class MchosePlugin : BatteryPluginBase
                 return null;
         }
 
-        switch (MchoseV1Codec.ParseBatteryResponse(input, out int pct, out byte flag))
+        switch (CompxV1Codec.ParseBatteryResponse(input, out int pct, out byte flag))
         {
             case V1ResponseKind.Battery:
                 Log.Info($"迈从 keyboard-v1 解析: 电量={pct} 状态字节=0x{flag:X2} 原始={Log.Hex(input)}");
@@ -504,7 +505,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     {
         if (!IsWritesEnabled(SettingsKey)) return null;
 
-        if (!SendKeyboardV1Frame(dev.Handle, MchoseV1Codec.BatteryQueryCmd, 0x01)) return null;
+        if (!SendKeyboardV1Frame(dev.Handle, CompxV1Codec.BatteryQueryCmd, 0x01)) return null;
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(1.2);
         while (DateTime.UtcNow < deadline)
         {

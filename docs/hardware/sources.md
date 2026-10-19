@@ -27,7 +27,6 @@
 | MCHOSE V9 Pro 64 字节查询帧 | 贡献者 luze258 在官方 MCHOSE HUB 显示 100% 时的 USB 抓包（PR #15），单条请求与响应。 | 只发 `55 65 01 …`，响应 `[2]` 为电量；并入迈从插件共用品牌级开关。充电状态未知，恒为 Unknown。 | 未复用厂商代码，按抓包事实自行实现。本机无该设备，未复测。见 [mchose-v9-pro.md](mchose-v9-pro.md)。 |
 | 弱水时砂炽天使 2.4G | 官方 RoseLink（Flutter + BLE 自定义协议）及官方升级助手逆向；同时检查 2.4G dongle 的 HID 通道。 | 用于确认 RoseLink 电量协议不含电量命令、正常 2.4G 模式无可用电量通道；本项目不接入该设备电量。 | 逆向结论用于能力边界判断，不包含外部代码复用。见 [protocols.md](protocols.md)。 |
 | Classic Bluetooth 耳机电量 | Windows HFP 网关设备节点的 `DEVPKEY_Device_BatteryLevel` 属性；与 Windows 设置显示同源。 | 通过 PnP 设备节点读取；本机 EDIFIER W820NB 已验证。 | Windows 系统属性读取方案；不是 BLE AEP 属性。实现背景见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |
-
 | 狼蛛 G9 耳机 `AB 47 4D` 状态帧 | 贡献者 wx2995 对官方耳机驱动与接收器 `38A6:0030` 的被动监听（PR #）。 | 只读解析 `0x86` 状态帧的 `[6]`/`[7]`，零写入；每秒一条。固件 `V0.0.4` 电量字段恒 0，需升到 `V0.0.5`。 | 未复用厂商代码，按抓包事实自行实现。见 [protocols.md](protocols.md) §13。 |
 | 狼蛛 L9 Ultra `0x85` 查询帧 | 贡献者 wx2995 对官方 A HUB 3.0 网页驱动（hub.aulacn.com）的 WebHID 双向抓包（PR #）。 | 只发 `0B | 85 00` 一条查询，解析 `0x0A` 回包的 `[9]`/`[10]`；其余三个厂商接口写入被系统拒绝，未接触。 | 未复用厂商代码。充电标志待上底座复核。见 [protocols.md](protocols.md) §14。 |
 | VGN V98 Pro `0x1A` 查询帧 | 贡献者 wx2995 对官方 VGN HUB 网页驱动（hub.vgnlab.com）的 WebHID 双向抓包（PR #）。 | 只发 `00 00 1A 06 00 00 00` 一条查询，解析回包 `raw[8]`/`raw[9]`。官方 JS 里的 16 字节 CRC 命令表在本机无效（只回 `FF` 回显）。 | 未复用厂商代码，按抓包事实自行实现。见 [protocols.md](protocols.md) §15。 |

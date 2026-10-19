@@ -37,6 +37,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\OfflinePolicy.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\WriteBackoff.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV1Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCodec.cs" />

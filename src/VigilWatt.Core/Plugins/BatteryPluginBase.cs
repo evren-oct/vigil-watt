@@ -258,7 +258,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 Id = $"{Name.ToLowerInvariant()}:{PluginUtils.StableHash(o.Info.DevicePath)}",
                 Name = BuildDisplayName(o.Info),
                 Source = DeviceSource.Hid24G,
-                Kind = Kind,
+                Kind = ResolveKind(protocol),
                 Protocol = protocol,
                 BatteryPercent = percent,
                 Charging = charging,
@@ -657,6 +657,12 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         if (probedPercent.HasValue) filter.Seed(probedPercent.Value);
         return filter;
     }
+
+    /// <summary>
+    /// 按设备细分类型（<see cref="DeviceStatus.Kind"/> 的最终值）。默认 = <see cref="Kind"/>；
+    /// 一个插件管多种设备的品牌（如迈从的键+鼠）覆盖它。在探测落地时调用，只影响图标。
+    /// </summary>
+    protected virtual DeviceKind ResolveKind(string protocol) => Kind;
 
     /// <summary>接口是否属于本插件（按 VID/usage/报告长度严格过滤——多滤不会漏设备，少滤可能碰别家硬件）。</summary>
     protected abstract bool IsCandidate(HidDeviceInfo info);

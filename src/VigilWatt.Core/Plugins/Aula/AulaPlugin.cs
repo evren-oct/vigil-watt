@@ -1,5 +1,6 @@
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Plugins.Compx;
 using VigilWatt.Core.Plugins.Mchose;
 using VigilWatt.Core.Utils;
 
@@ -14,6 +15,9 @@ public sealed class AulaPlugin : BatteryPluginBase
 {
     public const ushort AulaVid = 0x3554;
     public const ushort F99ProPid = 0xFA09;
+
+    /// <summary>F99 Pro 会话 ACK 的型号码；凌豹 K98 是 0x0212，靠它避免抢错同 VID/PID 的接口。</summary>
+    public const ushort F99ProModelCode = 0x0158;
 
     private const string SettingsKey = "Aula";
 
@@ -69,6 +73,16 @@ public sealed class AulaPlugin : BatteryPluginBase
         {
             var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
             if (input == null) continue;
+
+            if (CompxSessionAck.TryGetModelCode(input, out ushort model))
+            {
+                if (model != F99ProModelCode)
+                {
+                    Log.Debug($"AULA 会话ACK型号=0x{model:X4}，不是 F99 Pro，放弃认领");
+                    return null;
+                }
+                continue;
+            }
 
             var push = MchoseV1Codec.ParsePush(input);
             if (push.Kind == V1PushKind.Battery)

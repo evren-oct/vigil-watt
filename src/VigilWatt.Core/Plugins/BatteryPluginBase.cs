@@ -157,7 +157,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     private readonly Dictionary<string, DateTimeOffset> _probeFailedAt = new();
     private DeviceClaimRegistry _claims = null!;
 
-    public async Task<IReadOnlyList<DeviceStatus>> AttachAsync(
+    public virtual async Task<IReadOnlyList<DeviceStatus>> AttachAsync(
         IReadOnlyList<HidDeviceInfo> availableDevices, DeviceClaimRegistry claims)
     {
         _claims = claims;

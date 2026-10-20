@@ -69,6 +69,7 @@ public class AppSettings
         ["Hecate"] = true,    // HECATE/漫步者电竞：厂商集合 0xFF1C/0x0092 被动状态帧，零写入（见 docs/hardware/protocols.md §7）
         ["Delux"] = false,    // 与英菲克同为 1D57:FA65，只读 0x000A；本机尚未扫到该接收器，默认关
         ["Aula"] = false,     // 狼蛛 F99 Pro：要写 0x13 会话帧才能读电量，默认关闭
+        ["Lingbao"] = false,  // 凌豹 K98：与 AULA 同为 3554:FA09，靠会话型号码区分；要写会话帧，默认关闭
         ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/dualsense.md）
         ["Ganss"] = false,   // GANSS GS3104T-Pro：发固定查询帧才能读电量（会写），默认关闭
     };

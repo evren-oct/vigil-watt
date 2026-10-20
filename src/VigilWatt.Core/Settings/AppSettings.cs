@@ -71,6 +71,10 @@ public class AppSettings
         ["Aula"] = false,     // 狼蛛 F99 Pro：要写 0x13 会话帧才能读电量，默认关闭
         ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/dualsense.md）
         ["Ganss"] = false,   // GANSS GS3104T-Pro：发固定查询帧才能读电量（会写），默认关闭
+        ["AulaG9"] = true,    // 狼蛛 G9 耳机：被动监听 AB 47 4D 状态帧，零写入，默认开启
+        ["AulaL9"] = false,   // 狼蛛 L9 Ultra 鼠标：发一条状态查询（会写），默认关闭
+        ["Vgn"] = false,      // VGN V98 Pro 键盘：发一条 7 字节查询（会写），默认关闭
+
     };
 
     /// <summary>是否把本机（笔记本）电池也纳入监控。默认关闭——它是"另一类设备"，不像外设那样需要盯着，用户明确要时才开（见设置页「监控本机电量」）。

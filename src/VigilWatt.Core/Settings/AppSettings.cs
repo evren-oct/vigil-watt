@@ -54,6 +54,8 @@ public class AppSettings
 
     public bool StartMinimized { get; set; } = true;
 
+    public bool TrayIconEnabled { get; set; } = true;
+
     /// <summary>窗口背景材质。取值见 <c>VigilWatt.App.Services.WindowBackdrop</c>：Auto（跟随系统能力）/ Mica（云母，仅 Win11，不满足自动降级）/ Acrylic（磨砂，Win10 1809+）/ Solid（纯色分层底）；未知取值按 Auto。</summary>
     public string WindowBackdrop { get; set; } = "Auto";
 
@@ -62,7 +64,7 @@ public class AppSettings
     public Dictionary<string, bool> PluginEnabled { get; set; } = new()
     {
         ["Logitech"] = false,   // 罗技 HID++ 的发现与读数全靠写帧（自建闸门见 CR-01）
-        ["Mchose"] = false,   // 迈从 dongle 协议未破解，探测写入可能干扰设备
+        ["Mchose"] = false,   // 迈从键盘和鼠标读取需主动查询，默认关闭
         ["Rapoo"] = true,     // 雷柏走纯被动心跳读取，零写入，默认开启
         ["Betop"] = true,     // 北通手柄：发官方同款只读状态查询（cmd=0x5），默认开启
         ["Inphic"] = true,    // 英菲克 report 0x03 被动监听，不发送任何帧
@@ -71,6 +73,9 @@ public class AppSettings
         ["Aula"] = false,     // 狼蛛 F99 Pro：要写 0x13 会话帧才能读电量，默认关闭
         ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/dualsense.md）
         ["Ganss"] = false,   // GANSS GS3104T-Pro：发固定查询帧才能读电量（会写），默认关闭
+        ["Cherry"] = false,   // 官方同款 report 0x04 电量查询，需要主动写帧
+        ["Haute"] = true,     // 只读取固件和状态 Feature Report
+        ["Razer"] = false,    // 官方同款 report 0x02 电量/充电查询，需要主动写帧
     };
 
     /// <summary>是否把本机（笔记本）电池也纳入监控。默认关闭——它是"另一类设备"，不像外设那样需要盯着，用户明确要时才开（见设置页「监控本机电量」）。
@@ -121,20 +126,7 @@ public class AppSettings
             // 老 settings.json 缺新插件的开关键时补默认值：反序列化会用 JSON 里的字典**整体替换**默认字典，
             // 缺键的插件会被 DeviceManager/设置页的 TryGetValue 判成"关闭"，新增插件（如 Betop）装上去默认不工作、用户还以为是功能没实现。
             // 这里按默认表补齐缺失键（缺键才补，不覆盖用户已保存的值）。
-            var defaults = new AppSettings();
-            if (_cached.PluginEnabled == null)
-                _cached.PluginEnabled = defaults.PluginEnabled;
-            else
-                foreach (var (name, on) in defaults.PluginEnabled)
-                    _cached.PluginEnabled.TryAdd(name, on);
-
-            // 反向清理：插件被删掉后遗留的键（如已删除的 Elan 插件）留在配置里只会误导人以为它还在。
-            // 默认表就是"当前存在的插件"的唯一清单，不在这张表里的键一律丢弃；下次保存时从 settings.json 消失。
-            // 对降级场景无害：老版本会按自己的默认表重新补键。
-            if (_cached.PluginEnabled != null)
-                foreach (var stale in _cached.PluginEnabled.Keys
-                             .Where(k => !defaults.PluginEnabled.ContainsKey(k)).ToList())
-                    _cached.PluginEnabled.Remove(stale);
+            _cached.NormalizePluginSettings();
 
             return _cached;
         }
@@ -148,6 +140,7 @@ public class AppSettings
     /// </summary>
     public void Save()
     {
+        NormalizePluginSettings();
         var tmp = SettingsPath + ".tmp";
         try
         {
@@ -166,5 +159,19 @@ public class AppSettings
             Log.Error("settings.json 保存失败", ex);
             try { if (File.Exists(tmp)) File.Delete(tmp); } catch { /* 清不掉临时文件不致命，忽略 */ }
         }
+    }
+
+    internal void NormalizePluginSettings()
+    {
+        var defaults = new AppSettings();
+        PluginEnabled ??= new Dictionary<string, bool>();
+        // 废弃的型号开关不能自动开启品牌写入许可，保留用户的 Mchose 选择。
+        PluginEnabled.Remove("MchoseMouse");
+        foreach (var (name, enabled) in defaults.PluginEnabled)
+            PluginEnabled.TryAdd(name, enabled);
+        // 反向清理：插件被删掉后遗留的键（如已删除的 Elan 插件）留在配置里只会误导人以为它还在。
+        foreach (var stale in PluginEnabled.Keys
+                     .Where(k => !defaults.PluginEnabled.ContainsKey(k)).ToList())
+            PluginEnabled.Remove(stale);
     }
 }

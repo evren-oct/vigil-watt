@@ -1,0 +1,5 @@
+<RunSettings>
+  <RunConfiguration>
+    <DotNetHostPath>%ProgramFiles%\dotnet\dotnet.exe</DotNetHostPath>
+  </RunConfiguration>
+</RunSettings>

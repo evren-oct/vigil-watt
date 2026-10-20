@@ -168,7 +168,7 @@ public partial class App : Application
         Services.Tray.Initialize();
 
         Services.MainWindow.Activate();
-        if (Services.Settings.StartMinimized)
+        if (Services.Settings.StartMinimized && AppVisibilityPolicy.CanHideMainWindow(Services.Settings))
         {
             Services.MainWindow.AppWindow.Hide();
         }
@@ -214,7 +214,7 @@ public partial class App : Application
             var version = update.TargetFullRelease.Version.ToString();
             UpdateStatusMessage = $"发现新版本 {version}";
             Log.Info($"{updater.SourceName} 发现新版本 {version}");
-            if (Services.Settings.StartMinimized)
+            if (Services.Settings.StartMinimized && AppVisibilityPolicy.CanHideMainWindow(Services.Settings))
             {
                 Services.Tray.ShowUpdateAvailable(version);
             }

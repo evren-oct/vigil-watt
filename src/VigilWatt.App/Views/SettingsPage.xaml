@@ -116,8 +116,8 @@
                             <Border Style="{StaticResource RowDividerStyle}" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="启动时最小化到托盘" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="开机后直接驻留托盘，不弹出主窗口" Style="{StaticResource RowDescStyle}" />
+                                    <TextBlock Text="启动时隐藏主窗口" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="通过托盘、任务栏贴片或小组件打开；所有入口关闭时仍显示主窗口" Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="StartMinimizedToggle"
                                               OnContent="开" OffContent="关"
@@ -271,6 +271,17 @@
                                                Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="TaskbarToggle"
+                                              OnContent="开" OffContent="关"
+                                              MinWidth="0" VerticalAlignment="Center" />
+                            </Grid>
+                            <Border Style="{StaticResource RowDividerStyle}" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="显示 VigilWatt 托盘图标" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="可关闭图标并只保留电量贴片；双击贴片或使用其右键菜单打开主窗口。关闭后不弹托盘提醒"
+                                               Style="{StaticResource RowDescStyle}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" x:Name="TrayIconToggle"
                                               OnContent="开" OffContent="关"
                                               MinWidth="0" VerticalAlignment="Center" />
                             </Grid>

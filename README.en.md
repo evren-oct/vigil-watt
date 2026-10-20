@@ -37,7 +37,7 @@ Taskbar battery pill:
 - Stores battery history with 24-hour, 7-day, and 30-day statistics; records can be managed by device.
 - Can launch at startup.
 
-**Device plugin switches:** MCHOSE and Logitech plugins are off by default because reading requires sending query reports. Enable them by brand in Settings. Other strictly passive plugins do not write to devices.
+**Device plugin switches:** CHERRY, Razer, MCHOSE, MCHOSE mouse and Logitech plugins are off by default because reading requires sending query reports. Enable them individually in Settings. Haute only reads feature reports and is enabled by default. Other strictly passive plugins do not write to devices.
 
 ## Download and quick start
 
@@ -59,6 +59,10 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | Device / protocol | Status |
 |---|---|
 | MCHOSE G87 · 2.4 GHz `0x13` | Verified on the developer's device |
+| CHERRY MX BOARD 8.2 Xaga · receiver `046A:01C3` | Battery reading verified on hardware; charging states await cable testing |
+| Razer Kraken V4 · receiver `1532:056C` | Battery reading verified on hardware; charging states await cable testing |
+| MCHOSE A5 V2 Ultra · receiver `3837:100C` | Battery reading verified on hardware (feature `0x11`) |
+| Haute Adapter 4DS + DualSense · `054C:0CE6` | Battery reading verified on firmware Haute42 3.23 |
 | New-generation MCHOSE dongles · QHW (e.g. `3837:3033`) | Implemented; awaiting matching hardware validation |
 | MCHOSE G87 V2 / A7 V2 Pro · mouse V2 passive frames | Implemented, off by default; contributor hardware only, only G87 V1 retested here |
 | Betop T9 · passive vendor-interface stream | Verified on hardware |

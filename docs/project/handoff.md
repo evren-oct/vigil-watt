@@ -8,7 +8,7 @@
 
 当前安装包 **1.2.2**（`dist/`，本机试装用；尚未上传正式 Release）。正式线上以 GitHub 最新 Release 为准，Gitee 是回退源；更新源 GitHub 优先、8 秒不通回退 Gitee。发新版时保留上一版 `*-full.nupkg` 作为 delta 基准；规则见 `dev/build.md` §8。
 
-本机已打通：迈从 G87（0x13）、雷柏 VT3（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）。罗技 Bolt 接收器（C548）+ MX Master 3S 已真机验证。本机电量可选，默认关。弱水时砂 2.4G 无电量通道，不再投入。
+本机已打通：迈从 G87（0x13）、雷柏 VT3（status-report7，纯被动）、北通 T9（被动流）、雷蛇 Kraken V4（dongle `1532:056C`，report `0x02`）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）。罗技 Bolt 接收器（C548）+ MX Master 3S 已真机验证。本机电量可选，默认关。弱水时砂 2.4G 无电量通道，不再投入。
 
 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），不是 WinUI 覆盖窗。小组件仍用 `TransparentWindowSurface`；Win10 上因此没有 DWM 投影（BACKLOG **CR-57**，未做）。旧覆盖窗的白框、裁字、抢 Z 序在新贴片上已不存在。原理见 `dev/runtime-pitfalls.md` §16；§17 只对小组件。
 
@@ -21,6 +21,8 @@
 审查标准在 `docs/dev/review-standard.md`，未修项全集在 `docs/reviews/BACKLOG.md`（不要在本文再抄一份）。
 
 社区分支 `integrate/community-contributions` 已收 6 个提交（HECATE → AULA/DELUX → DualSense → 迈从鼠标 V2 → GANSS → V9 Pro 耳机），2026-10-19 以 `--no-ff` 合并进 `main`（合并提交 `90cf94b`），该分支按用户要求**留在本地，未推送也未删除**。设备接入到此为止；设备管理类改动（#14 双通道去重、#16 设备管理）、#15 的 BLE 大改、issue #12/#11 都按 BACKLOG CR-68 ~ CR-72 排队，本轮不做。
+
+2026-10-19 设备扩展：CHERRY MX 8.2、迈从 A5 与 Haute + DualSense 均已真机读取；A5 归迈从品牌，托盘图标可独立关闭，Haute 使用芯片 ID 并支持读取恢复。CHERRY / Mchose / Razer 默认关闭，Haute 仅读取默认开启。协议与历史兼容边界见 `hardware/protocols.md` §13–§16，长期观察见 CR-74，审查见 `reviews/archive/reconnect-2026-10-19.md`。
 
 更新说明是用户向的 `docs/project/release-notes.md`，随包分发：关于页「更新日志」离线可看全部历史，更新确认框显示目标版本的内容（来自更新源 notes，缺失时只显示版本行）。规则见 `dev/build.md` §8。
 
@@ -41,6 +43,7 @@
 | DualSense（VID_054C&PID_0CE6） | 蓝牙 HID report `0x31` | 代码已接入，默认开、零写入。约 10% 一档。贡献者声明，本机未复测（dualsense.md） |
 | GANSS GS3104T-Pro（VID_05AC&PID_024F） | 33 字节查询帧 `00 20 01 … 21` + 响应 `[3]` | 代码已接入，默认关。会写帧，不进 15 秒发现。贡献者声明，本机无该设备未复测（ganss.md） |
 | MCHOSE V9 Pro 耳机（VID_291D&PID_385D） | 64 字节查询帧 `55 65 01 …` + 响应 `[2]` | 代码已接入（并入迈从插件，共用 `Mchose` 开关），默认关。会写帧。贡献者声明，本机无该设备未复测（mchose-v9-pro.md） |
+| 雷蛇 Kraken V4（VID_1532&PID_056C） | MI_05 col04（`FF14/0001`，report `0x02`） | 已打通，`0x21`/`0x2A` 只读查询交替；充电中待接线校准（protocols.md §16） |
 | 北通 T9（PID_5073）/ 鲲鹏20（PID_5191） | 厂商接口 0xFF00；T9 走 Col04 被动流 | T9 已真机验证；鲲鹏20 主动查询未验证 |
 | 弱水时砂 2.4G（38FF:0001） | — | 无电量通道（protocols.md §3），不再投入 |
 | EDIFIER W820NB | HFP 网关 `DEVPKEY_Device_BatteryLevel` | 已打通，与设置页一致 |
@@ -66,6 +69,7 @@
 9. **Win11 26200 复核**：本机已升到 26200（见 §1），CR-57（小组件自绘投影）等基于 Win10 的结论需按新系统重判；任务栏贴片在 Win11 上的表现（CR-39/41/42/48）也值得重看。
 10. **GANSS 认领判据（CR-66）**：需要有 GANSS 设备的人做三件事——记下接收器自报的产品名/厂商名；抓一次官方配置软件的包，看它怎么定位接口、有没有取型号的命令；换 USB 口与固件后复测 `&mi_03#` 是否稳定。清单在 `hardware/ganss.md` §6.1。
 11. **V9 Pro 耳机（CR-67）**：需要有设备的人补三个电量点（满电/中间/低电）与充电时的样本，确认 `[3]` 是否充电标志；顺带确认接收器会不会把主机写入回显到输入队列。清单在 `hardware/mchose-v9-pro.md` §5。
+12. **雷蛇充电中/充满**：插线看 `0x2A` 是否返回 `1`、充满时返回什么；蓝牙模式不在支持范围，要测需单开。
 
 ## 5. 给下一个 AI 的注意事项
 

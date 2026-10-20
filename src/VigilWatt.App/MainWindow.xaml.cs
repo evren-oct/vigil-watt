@@ -42,11 +42,13 @@ public sealed partial class MainWindow : Window
         Root.Loaded += (_, _) => SyncTitleBarButtonColors();
         Root.ActualThemeChanged += (_, _) => SyncTitleBarButtonColors();
 
-        // 关闭按钮 = 隐藏到托盘
         AppWindow.Closing += (s, e) =>
         {
             e.Cancel = true;
-            AppWindow.Hide();
+            if (AppVisibilityPolicy.CanHideMainWindow(App.Services.Settings))
+                AppWindow.Hide();
+            else
+                TrayService.ExitApplication();
         };
 
         // 初次进入设备页

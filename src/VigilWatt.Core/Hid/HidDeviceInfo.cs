@@ -73,15 +73,23 @@ public sealed class HidDeviceHandle : IDisposable
         _stream = stream;
     }
 
-    /// <summary>发送 feature report 并立即读回同 ID 的响应（HidD 同步调用，自带设备层超时）；buffer[0] 必须是 report ID。</summary>
-    public byte[]? GetFeature(byte reportId)
+    /// <summary>读取 Feature Report；reportLength 可指定单个报文长度，默认用接口最大长度，返回值含 report ID。</summary>
+    public byte[]? GetFeature(byte reportId, int? reportLength = null)
+        => GetFeature(reportId, out _, reportLength);
+
+    public byte[]? GetFeature(byte reportId, out int error, int? reportLength = null)
     {
-        ushort len = Info.FeatureReportLength;
+        error = 0;
+        int len = reportLength ?? Info.FeatureReportLength;
         if (len == 0) return null;
+        if (len < 1 || len > Info.FeatureReportLength) throw new ArgumentOutOfRangeException(nameof(reportLength));
         var buffer = new byte[len];
         buffer[0] = reportId;
-        if (!NativeHid.HidD_GetFeature(_stream.SafeFileHandle, buffer, len))
+        if (!NativeHid.HidD_GetFeature(_stream.SafeFileHandle, buffer, (uint)len))
+        {
+            error = Marshal.GetLastWin32Error();
             return null;
+        }
         return buffer;
     }
 
@@ -111,15 +119,16 @@ public sealed class HidDeviceHandle : IDisposable
         }
     }
 
-    /// <summary>发送 feature report（带自定义 payload），成功后可选择立刻读回。</summary>
-    public bool SetFeature(byte reportId, byte[] payload)
+    /// <summary>发送 Feature Report；reportLength 包含 report ID，默认用接口最大长度。</summary>
+    public bool SetFeature(byte reportId, byte[] payload, int? reportLength = null)
     {
-        ushort len = Info.FeatureReportLength;
+        int len = reportLength ?? Info.FeatureReportLength;
         if (len == 0) return false;
+        if (len < 1 || len > Info.FeatureReportLength) throw new ArgumentOutOfRangeException(nameof(reportLength));
         var buffer = new byte[len];
         buffer[0] = reportId;
         Array.Copy(payload, 0, buffer, 1, Math.Min(payload.Length, len - 1));
-        return NativeHid.HidD_SetFeature(_stream.SafeFileHandle, buffer, len);
+        return NativeHid.HidD_SetFeature(_stream.SafeFileHandle, buffer, (uint)len);
     }
 
     /// <summary>

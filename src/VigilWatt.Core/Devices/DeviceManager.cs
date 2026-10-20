@@ -3,6 +3,7 @@ using VigilWatt.Core.Ble;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Plugins;
+using VigilWatt.Core.Plugins.Haute;
 using VigilWatt.Core.Power;
 using VigilWatt.Core.Settings;
 using VigilWatt.Core.Storage;
@@ -146,6 +147,8 @@ public sealed class DeviceManager : IDisposable
             int added = 0;
             foreach (var stat in _history.GetDeviceStats())
             {
+                // 路径生成的旧 Haute ID 无法证明物理身份；保留历史，但不能再补成重复设备。
+                if (HauteCodec.IsLegacyPathId(stat.DeviceId)) continue;
                 if (stat.Last < cutoff) continue;
                 if (_devices.ContainsKey(stat.DeviceId)) continue;
 
@@ -329,17 +332,13 @@ public sealed class DeviceManager : IDisposable
 
     /// <summary>设备 Id 的归属前缀（<c>{插件名小写}:</c>），用来判断条目属于哪个插件，省一套归属账本。</summary>
     private static string OwnerOf(string deviceId)
-    {
-        int i = deviceId.IndexOf(':');
-        return i <= 0 ? "" : deviceId[..i];
-    }
+        => PluginUtils.OwnerOf(deviceId);
 
     /// <summary>插件被禁用后，把它此前认领的设备从列表里撤掉。`_devices` 从不移除条目、`Detach()` 又不上报状态，不显式撤就会带着旧电量继续显示（2026-10-06 用户复报）。</summary>
     private void DropDevicesOf(string pluginName)
     {
-        var prefix = pluginName.ToLowerInvariant() + ":";
         var dropped = _devices.Keys
-            .Where(id => id.StartsWith(prefix, StringComparison.Ordinal))
+            .Where(id => string.Equals(OwnerOf(id), pluginName, StringComparison.OrdinalIgnoreCase))
             .ToList();
         if (dropped.Count == 0) return;
 

@@ -9,7 +9,7 @@ namespace VigilWatt.Core.Plugins;
 /// </summary>
 public sealed class DeviceClaimRegistry
 {
-    private readonly ConcurrentDictionary<string, string> _ownerByPath = new();
+    private readonly ConcurrentDictionary<string, string> _ownerByPath = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>认领接口。返回 false = 已被其他插件持有。</summary>
     public bool TryClaim(string devicePath, string pluginName)

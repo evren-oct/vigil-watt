@@ -66,6 +66,7 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 - 运行：从 `src\VigilWatt.App\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\` 启动。
   必须用 **sln** 构建（产物在 `bin\x64\...`），直接构建 csproj 的产物在 `bin\...`，不要混用。
 - 测试：`dotnet test src/tests/VigilWatt.Core.Tests`
+- 后续自动测试默认交给 `.github/workflows/ci.yml`，不再本地执行；仅用户明确要求本机复现时例外。本地环境局限与 CI 范围见 `docs/dev/build.md` §4.1–§4.2。
 - 发布：`dotnet publish src/VigilWatt.App -c Release -p:Platform=x64 -o publish`
   发布前确认没有实例在运行——exe 被占用会导致 `MSB3027` 构建失败。
 
@@ -89,8 +90,7 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 
 ## 8. 审查（提交前必过三条）
 
-- **L0 机械层**：构建 `0 警告 0 错误`；改了帧解析 / 读数过滤 / 历史库 / 离线判定必须重跑对应测试类
-  （用 `--no-build --filter "FullyQualifiedName~<类名>"`，全量 `dotnet test` 在本机会卡住，见 `docs/dev/build.md` §4.1）。
+- **L0 机械层**：由 GitHub Actions 构建 `0 警告 0 错误` 并运行完整核心测试；改了帧解析 / 读数过滤 / 历史库 / 离线判定必须有对应回归覆盖。不再默认本地跑测试，首次 CI 尚未运行时不得将静态检查写成通过，见 `docs/dev/build.md` §4.1–§4.2。
 - **L1 自查**：碰了红线区域（硬件写入 / 状态模型 / 线程 / 资源释放 / 异常）就对着 R 清单过一遍，
   标准见 `docs/dev/review-standard.md`。其中 **R2「插件必须继承 `BatteryPluginBase`」** 是历史事故的唯一成因，无例外。
 - **发现必须进 `docs/reviews/BACKLOG.md`**——只写在审查报告或 changelog 里等于没记。报告只承载证据与推理。

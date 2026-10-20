@@ -39,7 +39,7 @@ public sealed class TrayService : IDisposable
     {
         CreateMessageWindow();
         UpdateIcon();
-        Log.Info("托盘图标已创建");
+        Log.Info(_iconAdded ? "托盘图标已创建" : "托盘图标未显示");
     }
 
     /// <summary>
@@ -186,6 +186,11 @@ public sealed class TrayService : IDisposable
 
     public void UpdateIcon()
     {
+        if (!_services.Settings.TrayIconEnabled)
+        {
+            RemoveIcon();
+            return;
+        }
         try
         {
             var (hIcon, tip) = Render();
@@ -309,6 +314,7 @@ public sealed class TrayService : IDisposable
 
     public void ShowLowBattery(DeviceStatus device)
     {
+        if (!_services.Settings.TrayIconEnabled || !_iconAdded) return;
         try
         {
             var data = new Native.NOTIFYICONDATAW
@@ -349,6 +355,7 @@ public sealed class TrayService : IDisposable
 
     private void ShowBalloon(string title, string body)
     {
+        if (!_services.Settings.TrayIconEnabled || !_iconAdded) return;
         try
         {
             var data = new Native.NOTIFYICONDATAW
@@ -377,6 +384,9 @@ public sealed class TrayService : IDisposable
     }
 
     public void Dispose()
+        => RemoveIcon();
+
+    private void RemoveIcon()
     {
         if (_iconAdded && _hwnd != IntPtr.Zero)
         {

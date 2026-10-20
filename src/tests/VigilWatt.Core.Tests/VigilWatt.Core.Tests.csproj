@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <RootNamespace>VigilWatt.Core.Tests</RootNamespace>
+    <RunSettingsFilePath Condition="'$(OS)' == 'Windows_NT' and '$(RunSettingsFilePath)' == '' and Exists('$(ProgramFiles)\dotnet\dotnet.exe')">$(MSBuildThisFileDirectory)vstest.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +33,8 @@
   -->
   <ItemGroup>
     <Compile Include="..\..\VigilWatt.Core\Plugins\BatteryReadingFilter.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\BatteryPluginBase.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\IBatteryPlugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\PluginUtils.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\DeviceClaimRegistry.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\OfflinePolicy.cs" />
@@ -40,6 +43,13 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV9ProCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseA5Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseProtocol.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Hid\HidDeviceInfo.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Hid\NativeHid.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Cherry\CherryCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Haute\HauteCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Hecate\HecateCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Delux\DeluxCodec.cs" />
@@ -56,6 +66,7 @@
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceSourceInfo.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatus.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\DeviceCustomization.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Settings\AppSettings.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatusFormatter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ChargingStateMap.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceStatusMerger.cs" />
@@ -70,6 +81,7 @@
     <Compile Include="..\..\VigilWatt.Core\Utils\LogLevel.cs" />
     <!-- 小组件 OS 能力判定也是零依赖纯逻辑，链接真源文件而非复制 -->
     <Compile Include="..\..\VigilWatt.App\Services\WidgetCompat.cs" />
+    <Compile Include="..\..\VigilWatt.App\Services\AppVisibilityPolicy.cs" />
     <!-- 任务栏贴片的定位数学与取值收敛同样是零依赖纯逻辑（只碰 int/Math），定位算错必须能在单测里复现 -->
     <Compile Include="..\..\VigilWatt.App\Services\TaskbarLayout.cs" />
     <Compile Include="..\..\VigilWatt.App\Services\TaskbarBatteryMode.cs" />

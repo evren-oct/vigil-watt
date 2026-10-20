@@ -16,6 +16,17 @@ public class BatteryReadingFilterTests
         => new(maxStepPercent: 20, persistWindow: TimeSpan.FromMinutes(5));
 
     [Fact]
+    public void ProtocolWithExplicitDisconnectSentinelAllowsRealZeroAndOnePercent()
+    {
+        var filter = new BatteryReadingFilter(20, TimeSpan.FromMinutes(5), minValidPercent: 0);
+        filter.Seed(2);
+        Assert.Equal(ReadingVerdict.Accept, filter.Evaluate(1, T0));
+        Assert.Equal(ReadingVerdict.Accept, filter.Evaluate(0, T0.AddMinutes(1)));
+        Assert.Equal(ReadingVerdict.InvalidValue, filter.Evaluate(-1, T0.AddMinutes(2)));
+        Assert.Equal(ReadingVerdict.InvalidValue, filter.Evaluate(101, T0.AddMinutes(3)));
+    }
+
+    [Fact]
     public void A1_正常放电_小步下降逐步采信()
     {
         var f = NewFilter();

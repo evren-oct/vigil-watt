@@ -27,6 +27,9 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>鼠标 V2 世代：纯被动 E2 状态帧 + 0x11/0x06 触发上报。</summary>
     private const string ProtocolMouseV2 = "mouse-v2";
 
+    /// <summary>A5 V2 Ultra：反码 Feature 0x11 查询（与 E2 状态帧不同链路，见 <see cref="MchoseA5Codec"/>）。</summary>
+    private const string ProtocolMouseA5 = "mouse-a5";
+
     /// <summary>V9 Pro 耳机：64 字节固定查询帧（帧结构与判据见 <see cref="MchoseV9ProCodec"/>）。同品牌另一条链路，与键鼠判据完全独立。</summary>
     private const string ProtocolHeadsetV9 = "headset-v9";
 
@@ -83,8 +86,21 @@ public sealed class MchosePlugin : BatteryPluginBase
         // AULA F99 Pro 也是 20 字节 0x13 接口，会话帧只能由 AulaPlugin 在开关打开后发送
         if (info.VendorId == Aula.AulaPlugin.AulaVid) return false;
         // 品牌排除之后，判据全在分类器里（耳机先分流、键鼠白名单、厂商用法、报告长度），有单测覆盖
-        return Classify(info) != MchoseInterfaceKind.None;
+        return Classify(info) != MchoseInterfaceKind.None || MchoseMouseProtocol.IsCandidate(info);
     }
+
+    /// <summary>A5 接收器只支持反码 Feature 查询，电量下界 0；键盘下界仍由 <see cref="MchoseV1Codec"/> 兜住。</summary>
+    protected override int MinValidPercent => 0;
+
+    /// <summary>A5 鼠标失败探测冷却 60 秒：合并进品牌后不能跟着键盘的 15 秒发现节拍增加写入。</summary>
+    protected override TimeSpan ResolveProbeCooldown(HidDeviceInfo info)
+        => MchoseMouseProtocol.IsReceiver(info) ? TimeSpan.FromSeconds(60) : base.ResolveProbeCooldown(info);
+
+    /// <summary>试用版鼠标 ID 前缀要保留，否则历史记录和自定义名称会断。</summary>
+    protected override string BuildDeviceId(HidDeviceInfo info)
+        => MchoseMouseProtocol.IsReceiver(info)
+            ? $"mchosemouse:{PluginUtils.StableHash(info.DevicePath)}"
+            : base.BuildDeviceId(info);
 
     /// <summary>把 <see cref="HidDeviceInfo"/> 摊成分类器要的字段，避免判据在两处各写一遍。</summary>
     private static MchoseInterfaceKind Classify(HidDeviceInfo info)
@@ -96,6 +112,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         => protocol switch
         {
             ProtocolMouseV2 => DeviceKind.Mouse,
+            ProtocolMouseA5 => DeviceKind.Mouse,
             ProtocolHeadsetV9 => DeviceKind.Headset,
             _ => DeviceKind.Keyboard,
         };
@@ -107,6 +124,8 @@ public sealed class MchosePlugin : BatteryPluginBase
         // 耳机接收器是独立 VID/PID，只对应已验证的 V9 Pro；协议里没有型号回执，型号名只能写死
         if (info.VendorId == MchoseV9ProCodec.VendorId && info.ProductId == MchoseV9ProCodec.ProductId)
             return "迈从 V9 Pro";
+        if (MchoseMouseProtocol.IsReceiver(info))
+            return "迈从 A5 V2 Ultra";
 
         var product = string.IsNullOrEmpty(info.Product) ? "" : info.Product.Replace("MCHOSE", "").Trim();
         var model = KnownModelByPath.TryGetValue(info.DevicePath, out var m) ? m : "";
@@ -146,6 +165,15 @@ public sealed class MchosePlugin : BatteryPluginBase
         if (handle.Info.OutputReportLength < 20 || handle.Info.InputReportLength < 20) return null;
 
         var path = handle.Info.DevicePath;
+
+        // A5 V2 Ultra 是反码 Feature 查询，与 E2 状态帧协议不同：必须先于分类器分流，不能落到 mouse-v2。
+        if (MchoseMouseProtocol.IsReceiver(handle.Info))
+        {
+            var a5 = TryMouseA5(handle);
+            if (a5 != null) KnownProtocolByPath[path] = ProtocolMouseA5;
+            return a5;
+        }
+
         var kind = MchoseInterfaceClassifier.Classify(handle.Info.VendorId, handle.Info.ProductId, path,
             handle.Info.UsagePage, handle.Info.Usage, handle.Info.InputReportLength,
             handle.Info.OutputReportLength, handle.Info.FeatureReportLength, handle.Info.OutputReportId);
@@ -200,6 +228,7 @@ public sealed class MchosePlugin : BatteryPluginBase
             "qhw" or "qhw-push" => TryQhw(handle),
             ProtocolKeyboardV1 => TryKeyboardV1(handle) is { } kb ? (ProtocolKeyboardV1, kb.Percent, kb.Charging) : null,
             ProtocolMouseV2 => TryMouseV2(handle),
+            ProtocolMouseA5 => TryMouseA5(handle),
             ProtocolHeadsetV9 => TryHeadsetV9(handle),
             _ => null,
         };
@@ -214,6 +243,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         var read = dev.Protocol switch
         {
             "qhw" => PollQhw(dev),
+            ProtocolMouseA5 => MchoseMouseProtocol.QueryAsync(dev.Handle, WritesEnabled).GetAwaiter().GetResult(),
             ProtocolKeyboardV1 => PollKeyboardV1(dev),
             ProtocolHeadsetV9 => PollHeadsetV9(dev),
             _ => null,
@@ -457,6 +487,11 @@ public sealed class MchosePlugin : BatteryPluginBase
         }
         return null;
     }
+
+    /// <summary>A5 V2 Ultra 探测：反码 Feature 0x11 查询，等通知后再读回（见 <see cref="MchoseMouseProtocol"/>）。</summary>
+    private static (string Protocol, int? Percent, ChargingState Charging)? TryMouseA5(HidDeviceHandle handle)
+        => MchoseMouseProtocol.QueryAsync(handle, IsWritesEnabled(SettingsKey)).GetAwaiter().GetResult() is { } read
+            ? (ProtocolMouseA5, read.Percent, read.Charging) : null;
 
     /// <summary>
     /// 鼠标 V2 探测：先纯被动等 E2 状态帧（接收器约 10 秒推一次）；等不到才发一次触发帧

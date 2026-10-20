@@ -8,6 +8,7 @@
 
 | 脚本 | 用途 |
 |---|---|
+| `.research/Smoke/`（临时，未入库） | 本机三设备协议验证；`--haute-recovery` 仅 GET Haute 电量，验证品牌元数据、关闭写入闸门及失效句柄恢复，不保存设置、不替换运行版 |
 | `build-installer.ps1` | 打安装包：`dotnet publish`（Release x64 self-contained）→ 读发布 exe 的 FileVersion 当版本（截 3 段）→ `vpk pack`。产物落 `dist/`（Setup.exe、Portable.zip、`releases.win.json`、`RELEASES`、`*.nupkg`）。发新版**别清 `dist/`**，留着上一版全量包才有 delta；详见 `docs/dev/build.md` §8 |
 | `publish-gitee.ps1` | 将 `dist/` 全部打包产物作为当前版本的 Gitee Release 附件发布；需要已推送的 `v<版本>` 标签与 Gitee 写权限令牌（`-Token` 或 `GITEE_TOKEN`，**脚本不读令牌文件**；本机令牌在仓库根 `.vpk-github-token`）。完整发版序列与三个 Gitee 特有坑见 `docs/dev/build.md` §8 |
 | `get-release-notes.ps1` | 发布流水线共用函数：按版本号从 `docs/project/release-notes.md` 截出当前版本段（`Get-ReleaseNotes`），并以 UTF-8 无 BOM 落临时文件（`Write-ReleaseNotesFile`）。`build-installer.ps1` 与 `publish-gitee.ps1` 都 dot-source 它；格式契约见该 md 文件头 |

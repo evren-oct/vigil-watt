@@ -65,6 +65,16 @@ grep -a "时间基准" app-*.log                 # 文件首行：本地时区 +
 - CDP 驱动页面用的是独立 user-data-dir，不会污染用户浏览器配置；但 `taskkill msedge.exe` 会连用户的 Edge 一起杀——**先提醒或让用户自己关**。
 - 官方抓到的帧先和公开逆向文档（arutkowski00/mchose-hid-bridge 的 K99 V1）对照，命名/校验逻辑能对上再写进插件。
 
+### 1.6 Electron 官方软件：翻它自己的日志和前端缓存
+
+Razer Synapse 4（`RazerAppEngine`）这类 Electron 客户端会把**每次 HID 收发**写进按产品分的日志，命令表与帧构造则在它下载的前端 JS 里——不装抓包工具也能拿到字节级依据（2026-10-19 Kraken V4 就是这样做的）：
+
+1. **日志**：`%LOCALAPPDATA%\<厂商>\<客户端>\User Data\Logs\products_*_mw*.log`。搜 `getBatteryStatus` / `hid.read data is` / `dataHeader`，能直接看到请求头、应答帧和"命令→描述"表（日志里的数组是十进制）。
+2. **前端 JS**：Chromium 缓存里是 **gzip 过的 webpack chunk**（`User Data\Default\Cache\Cache_Data\f_*`），按开头 `1F 8B 08` 解压后搜类名（如 `AudioBillieT2Dongle`）。读 `_createDataSend` / `_calculateChecksum` / 应答解析函数即可复原帧布局；设备清单（productId/claimInterface）在 IndexedDB blob 里。
+3. **交叉验证**：日志应答帧要与 JS 的校验和、字段布局逐字节对上，再上真机发一帧确认。
+
+注意日志/缓存可能不是当前安装版本（官方滚动更新），发帧前用真机应答复核一次。
+
 ## 2. HID 直测（拿到帧之后的验证）
 
 `pip install hidapi`，比手搓 SetupAPI/CtecTypes 快十倍：

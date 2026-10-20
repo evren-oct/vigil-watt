@@ -48,7 +48,7 @@
 
 | 插件 | 写入开关（= 插件开关） | 默认 | 说明 |
 |---|---|---|---|
-| 迈从 | `PluginEnabled["Mchose"]` | **false** | dongle 协议未破解，探测写入可能干扰设备，故默认关；开插件即授权写帧。**一个开关管键盘、鼠标、V9 Pro 耳机三类设备**（品牌级，`AGENTS.md` §9） |
+| 迈从 | `PluginEnabled["Mchose"]` | **false** | 品牌级一个开关管键盘、鼠标（含 A5 V2 Ultra 反码 Feature）与 V9 Pro 耳机；dongle 协议未破解，探测写入可能干扰设备，故默认关（`AGENTS.md` §9） |
 | 北通 | `PluginEnabled["Betop"]` | **true** | 查询是官方客户端同款只读命令（cmd=0x5），风险低，故默认开 |
 | 罗技 | `PluginEnabled["Logitech"]` | **false** | 发现与读数**全靠写帧**；不继承基类，故自建闸门（`HidppIO.WritesAllowed`）+ 熔断 + 同一张递增退避表（`Plugins/WriteBackoff.cs`） |
 | 雷柏 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`，零写入 |
@@ -58,6 +58,9 @@
 | AULA | `PluginEnabled["Aula"]` | **false** | 只发 `13 05 01` 会话帧；不进 15 秒发现 |
 | GANSS | `PluginEnabled["Ganss"]` | **false** | 发固定查询帧才能读电量；不进 15 秒发现 |
 | DualSense | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读蓝牙 HID `054C:0CE6` |
+| CHERRY | `PluginEnabled["Cherry"]` | **false** | 仅发送已核对的 MX 8.2 Xaga report `0x04` 电量查询；支持被动应答监听 |
+| Haute | 无（仅读取） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；只 GET `0xF8` 固件、`0xF9` 状态与 `0xFA` 芯片标识 |
+| 雷蛇 | `PluginEnabled["Razer"]` | **false** | 只发官方同款 `0x21` / `0x2A` 两条只读查询（report `0x02`）；电池与充电交替，每轮 1 帧 |
 
 三条硬约束：
 

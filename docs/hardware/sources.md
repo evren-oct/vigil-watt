@@ -28,6 +28,17 @@
 | 弱水时砂炽天使 2.4G | 官方 RoseLink（Flutter + BLE 自定义协议）及官方升级助手逆向；同时检查 2.4G dongle 的 HID 通道。 | 用于确认 RoseLink 电量协议不含电量命令、正常 2.4G 模式无可用电量通道；本项目不接入该设备电量。 | 逆向结论用于能力边界判断，不包含外部代码复用。见 [protocols.md](protocols.md)。 |
 | Classic Bluetooth 耳机电量 | Windows HFP 网关设备节点的 `DEVPKEY_Device_BatteryLevel` 属性；与 Windows 设置显示同源。 | 通过 PnP 设备节点读取；本机 EDIFIER W820NB 已验证。 | Windows 系统属性读取方案；不是 BLE AEP 属性。实现背景见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |
 
+## 新增设备协议依据
+
+2026-10-19 新增设备的协议依据：
+
+- **CHERRY MX BOARD 8.2 Xaga**：本机 CHERRY Utility Software 的 `CherryDll.dll` 1.1.0.0，SHA-256 `369964336C35D1DA37FBACA132DBB9F6308119DF66A4AF2A0DBA6D37927F2EA5`。静态核对 `0x100D3530` 的 `0x1A` 读取帧构造及调用方（长度 6、偏移 0），与官方运行时被动应答、独立查询结果交叉验证。仅记录互操作协议，自行实现；不分发厂商二进制或代码。
+- **MCHOSE A5 V2 Ultra**：[官方 M HUB WEB](https://www.mchose.com.cn/#/home) 的 `assets/purify.es-CjCZz1i7.js`（2026-10-19）。`Oat` / `jat` 定义 `11 06` 查询及设备信息解析；`LG` 对 payload 取反，等待 Input 通知再 GET Feature。设备表将 `3837:100C` 识别为 A5 V2 Ultra。本项目独立实现，未复制厂商代码；真机验证了 21 字节传输及 100% 响应。
+- **Haute Adapter 4DS**：[官方配置工具](https://engine.haute42.cn/) 的 `assets/index-CgADd3rA.js`（2026-10-19），`readFirmwareVersion` / `readSignalStrength` / `readDeviceInfo` 及 `Uc` / `Wc` 定义 GET `0xF8` / `0xF9` / `0xFA`、电量字段与 8 字节芯片标识。仅读取，不涉及配置、保存、固件更新或 GIP 命令；本机 Haute42 3.23 + DualSense 已验证。仅参考协议，自行实现。
+- **Razer Kraken V4**：本机 Razer Synapse 4（`RazerAppEngine` 4.0.827）的运行日志 `%LOCALAPPDATA%\Razer\RazerAppEngine\User Data\Logs\products_1387_mw*.log`（`protocolAudio.getBatteryStatus` / `getDeviceChargingStatus` 的收发帧与命令表）与前端缓存模块 `AudioBillieT2Dongle` / `AudioMxicDevice` / `protocolAudio`（`_createDataSendGeneral`、`_getElectronTransferInResult`）。据此自行实现 `0x21` / `0x2A` 两条只读查询；真机 `1532:056C` 读到 63% 与未充电。仅记录互操作协议，不分发厂商二进制或代码。
+
+精确字段、样本、硬件验证范围见 [protocols.md](protocols.md) §13–§16。网页资源文件名会随官方更新改变，需从各自 HTML 的脚本引用重新定位。
+
 ## 应用功能与实现方案
 
 | 功能 | 来源 / 设计依据 | 本项目实现与边界 |

@@ -76,6 +76,7 @@ public sealed partial class SettingsPage : Page
         SampleBox.Value = s.SampleIntervalMinutes;
         RetentionBox.Value = s.HistoryRetentionDays;
         StartMinimizedToggle.IsOn = s.StartMinimized;
+        TrayIconToggle.IsOn = s.TrayIconEnabled;
         AutostartToggle.IsOn = AutostartService.IsEnabled();
         WidgetToggle.IsOn = s.WidgetEnabled;
         SystemBatteryToggle.IsOn = s.MonitorSystemBattery;
@@ -407,6 +408,7 @@ public sealed partial class SettingsPage : Page
         s.SampleIntervalMinutes = (int)SampleBox.Value;
         s.HistoryRetentionDays = (int)RetentionBox.Value;
         s.StartMinimized = StartMinimizedToggle.IsOn;
+        s.TrayIconEnabled = TrayIconToggle.IsOn;
         s.Autostart = AutostartToggle.IsOn;
         s.WidgetEnabled = WidgetToggle.IsOn;
         s.MonitorSystemBattery = SystemBatteryToggle.IsOn;
@@ -469,6 +471,7 @@ public sealed partial class SettingsPage : Page
         }
 
         // 窗口背景即时生效：改完就想看到效果，不该逼用户重启应用
+        App.Services.Tray.RequestUpdate();
         App.Services.MainWindow?.ApplyBackdrop();
 
         // 历史清理立即执行一次

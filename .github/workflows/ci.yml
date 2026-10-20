@@ -1,0 +1,72 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            build-target: src/tests/VigilWatt.Core.Tests/VigilWatt.Core.Tests.csproj
+          - os: windows-2022
+            build-target: VigilWatt.sln
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 8
+        id: dotnet
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Select the installed .NET 8 SDK
+        run: dotnet new globaljson --sdk-version "${{ steps.dotnet.outputs.dotnet-version }}" --roll-forward disable --force
+
+      - name: Restore
+        run: dotnet restore "${{ matrix.build-target }}"
+
+      - name: Build
+        run: dotnet build "${{ matrix.build-target }}" --configuration Debug --no-restore --warnaserror
+
+      - name: Run all core tests
+        run: >-
+          dotnet test src/tests/VigilWatt.Core.Tests/VigilWatt.Core.Tests.csproj
+          --configuration Debug --no-build --no-restore
+          --logger "trx;LogFileName=core-tests.trx"
+          --results-directory TestResults
+          --blame-hang-timeout 2m --blame-hang-dump-type mini
+          --blame-crash --blame-crash-dump-type mini
+
+      - name: Upload test results and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: TestResults/
+          if-no-files-found: warn
+          retention-days: 7

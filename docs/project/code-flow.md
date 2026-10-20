@@ -31,6 +31,8 @@ PollOnceAsync
 └── DevicesChanged?.Invoke()
 ```
 
+`BatteryPluginBase.AttachAsync` 先释放本轮已消失接口的监听、句柄与认领，再探测新接口；同一身份重连成功时，新状态替换返回列表中的旧离线快照，探测失败则保留旧离线状态。仍存在的同身份别名只释放新探测句柄，不创建重复条目。设备路径、探测退避键与全局接口认领均忽略大小写。
+
 ### 2.1 快速发现（DiscoverOnlyAsync，每 15 秒）
 
 `RequestDiscoveryAsync` 走**同一个闸门**，所以永远不会和主轮询并发；主轮询在跑时它直接返回那一轮。
@@ -162,6 +164,8 @@ BatteryPluginBase.Attach(hidDevices, claims)
 现在三个位置各只记第一次——"这条通道不是 QHW"、"未授权写入"、"keyboard-v1 两次询问无响应"，
 恢复正常时 `Log.ResetOnce` 清标记，于是"好了之后又出问题"会重新记一条（与北通占位帧同一记法）。
 
+`AttachAsync` 先释放扫描中已消失或请求重认领的接口；返回移除设备的离线快照，供 DeviceManager 更新独立副本。若同一轮已由新路径认领相同稳定 ID，就只返回新状态，避免旧离线快照覆盖新在线状态。候选路径按 Windows 大小写不敏感去重；同一物理 ID 的重复探测句柄也会立即释放。Haute 用芯片标识生成稳定 ID，其他插件沿用原 ID 规则。
+
 ### 4.2 轮询（Poll，基类骨架 + 子类 PollDevice）
 
 `PollDevice` 按 `dev.Protocol` 分派：`keyboard-v1` → `PollKeyboardV1`（发一条 `13 4A 01`，1.2 秒内解析 4A 响应或 `13 0A` 自发推送）。**所有帧解析走纯函数单元 `MchoseV1Codec`**（`BuildFrame`/`ParsePush`/`ParseBatteryResponse`，零依赖，单测在 `src/tests/VigilWatt.Core.Tests/`）。关键：0A 推送帧的**类型位（下标 5）必须先认**——0x05=电量（[6]=%、[7]=标志），0x02=设备状态通知（实测键盘休眠，[6] **不是电量**）。失败记账：迈从把 `OfflinePolicy.CountPollFailures` 置 false（`null` 与"没开写入 / 熔断中"不可区分），改由 `PollDevice` 在**发过帧**的分支调 `ReportPollFailure` / `ReportPollAnswered` 自己报账；**连续 `OfflinePolicy.MaxFailures`（默认 3）次 → `WritesDisabled=true` 熔断停写**，之后各协议分支只走被动监听；退避期**递增**（30 秒起、封顶 5 分钟，`Plugins/WriteBackoff.cs`），期满由 `CanWrite` 自动放行一轮（对付键盘休眠唤醒，safety.md §3 规则 3）。`WritesEnabled=false`（插件关闭）时轮询/探测直接短路，不写任何字节。子类判定"设备已休眠"时调基类 `RequestOffline(dev)` → 立即标离线，不等 3 次失败（省约 3 分钟）。
@@ -248,7 +252,7 @@ SafeSample（每 SampleIntervalMinutes 分钟）:
 - **SettingsPage**：插件开关按 `Manager.Plugins`（反射发现结果）动态生成，保存时遍历开关写回 `PluginEnabled`——新增插件无需改设置页。
 - **StatsPage**：设备下拉 + 时间范围按钮组（24h/7d/30d ToggleButton 互斥）→ 查 `History.Query(deviceId, from, to)` → 顶部 4 张指标卡（当前/最高/最低/平均，当前值优先取实时在线读数）+ BatteryChartControl 画曲线。事件处理器开头判空（XAML 解析期会触发 SelectionChanged）。**设备下拉按历史库取**：所选时间范围内有过采样的设备都在列（含已下线 / 换过 Id 的历史设备），**不跟随当前在线设备**——否则昨天用旧协议采的曲线永远选不到。
 - **HistoryPage**（历史管理，2026-10-06 加）：`History.GetStats()` + `GetDeviceStats()` 填概览卡与设备列表 → 勾选/单行删除 → ContentDialog 二次确认 → `DeleteDevices(ids)` → **`Compact()`（VACUUM）** → 重新 Reload。**不订阅设备事件**：后台每分钟采样会重建列表、打断用户勾选（StatsPage 踩过同款坑），数据陈旧靠手动刷新。
-- **MainWindow**：关窗被拦截 → `AppWindow.Hide()`（隐藏到托盘而不是退出）；真正退出走托盘菜单 Exit（`Environment.Exit(0)`）。
+- **MainWindow**：存在托盘、任务栏贴片或小组件入口时，关闭隐藏主窗口；全部入口关闭时走统一退出并释放资源。启动隐藏同样遵循 `AppVisibilityPolicy`，避免后台运行却无法重新打开。
 - **WidgetWindow**：订阅同样的设备事件 → 重建芯片（颜色按电量分档/充电蓝色，充电中额外在百分比左侧显示 ⚡，与列表页同款标识）→ 按芯片数重算窗口宽度（DIP×RasterizationScale 物理像素）→ ClampToWorkArea 收边。可拖动（GetCursorPos 偏移）。
 
 ## 8. 托盘（TrayService，纯 Win32）
@@ -256,6 +260,8 @@ SafeSample（每 SampleIntervalMinutes 分钟）:
 Initialize：RegisterClassW 建隐藏消息窗口（类名带 GUID）→ Shell_NotifyIconW NIM_ADD（图标 = System.Drawing 画 32×32 彩色圆+百分比文字 → GetHicon）。消息窗口 WndProc 收到回调消息 0x8C40：左键/双击 → ShowMainWindow；右键 → SetForegroundWindow + TrackPopupMenuEx(TPM_RETURNCMD)（打开主界面 / 退出）。任务栏重建（Explorer 重启）监听 TaskbarCreated 重新添加图标。低电量气泡 = NIF_INFO。
 
 `Render()` 遍历 `Manager.Devices` 取**在线且有电量**的最低者 → 图标显示其百分比/⚡，`szTip` 显示其名字。**`DeviceSource.System`（本机电量）在此被 `continue` 跳过**（2026-10-08）——本机是"用到 30% 也正常"的另一类设备，不该抢托盘那一个数字，否则真正的"外设快没电了"信号会被盖掉。托盘提示文字变化才记日志（`托盘提示已更新`），是最常用的托盘排错线索。
+
+`TrayIconEnabled` 默认 true，与 `TaskbarBatteryEnabled` 独立保存。关闭时 `NIM_DELETE` 并释放图标，保留消息窗口以便重新开启；设备更新、Explorer 重建和气泡均不能重新添加已关闭的图标。贴片仍可双击打开主窗口，右键打开/退出；不改贴片内的设备小图标。设置页修改后点击保存生效。
 
 ## 9. 设置流（SettingsPage.Save）
 
@@ -265,4 +271,4 @@ Initialize：RegisterClassW 建隐藏消息窗口（类名带 GUID）→ Shell_N
 
 ## 10. 退出流
 
-托盘 Exit → TrayService 删托盘图标（NIM_DELETE）→ Environment.Exit(0)。**不走** MainWindow.Close（那是隐藏）。插件句柄靠进程终止回收（正常路径 AppServices.Dispose 由窗口关闭触发的场景不存在，是已知取舍）。
+托盘、贴片或小组件的退出，以及无后台入口时关闭主窗口，均走 `TrayService.ExitApplication`：删托盘图标 → `AppServices.Dispose` 释放组件、设备管理器和历史库 → 释放互斥量/日志 → `Environment.Exit(0)`。

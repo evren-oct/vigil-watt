@@ -1,4 +1,4 @@
-﻿# 打安装包：dotnet publish（self-contained）+ vpk pack（Velopack），产物在 dist\。
+# 打安装包：dotnet publish（self-contained）+ vpk pack（Velopack），产物在 dist\。
 # 产物：VigilWattApp-win-Setup.exe（仅当前用户安装、无 UAC、自动建开始菜单+桌面快捷方式）
 #       releases.win.json + RELEASES + *.nupkg（Velopack 更新清单与全量/增量包）
 # 用法：powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 [-Version 1.0.1]
@@ -15,7 +15,7 @@ cmd /c "taskkill /IM VigilWatt.App.exe /F >nul 2>&1"
 # 2) 发布 self-contained（含 Windows App SDK 运行时，目标机器无需装任何依赖）
 $publishDir = Join-Path $root "publish"
 $csproj = Join-Path $root "src\VigilWatt.App\VigilWatt.App.csproj"
-dotnet publish $csproj -c Release -p:Platform=x64 -o $publishDir
+dotnet publish $csproj -c Release -p:Platform=x64 --self-contained true -o $publishDir
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish 失败" }
 
 # 3) 版本号：默认从发布 exe 的 FileVersion 读（单一来源是 csproj 的 <Version>）。

@@ -24,10 +24,14 @@
 ## 4. 发布
 
 ```
-dotnet publish src/VigilWatt.App -c Release -p:Platform=x64 -o publish
+dotnet publish src/VigilWatt.App -c Release -p:Platform=x64 --self-contained true -o publish
 ```
 
-self-contained（含 Windows App SDK 运行时），约 102MB，无需安装任何依赖。产物落在仓库根 `publish/`（已 gitignore）。sln 的 GUID 是手写的，VS 能正常打开。
+self-contained（含 .NET 运行时与 Windows App SDK 运行时），约 102MB / 335 个文件，无需安装任何依赖。产物落在仓库根 `publish/`（已 gitignore）。sln 的 GUID 是手写的，VS 能正常打开。
+
+⚠ **`--self-contained true` 不能省**（2026-10-19 实测）：csproj 里虽然写了 `RuntimeIdentifier=win-x64`，但 .NET 7 起带 RID 发布不再隐含自包含。本机 SDK 10 下不带该参数只出 **153 个文件、缺 `coreclr.dll`/`hostfxr.dll`**，安装包会要求目标机自备 .NET 8，与「self-contained 无需依赖」的承诺不符。
+
+**手工替换便携版 `current` 时（2026-10-19 实踩）**：先对比目标 `current` 与 `publish/` 的文件清单。`sq.version` 由 Velopack 生成、`dotnet publish` **不产出**；漏掉它，启动器 `VigilWatt.exe` 会**静默退出（退出码 0、无任何提示）**，表现为"exe 打不开"。
 
 **发布位只有这一个**：仓库根 `publish/`。2026-10-06 目录重整时曾迁到过 `src/publish/`，但打包脚本 `scripts/build-installer.ps1` 一直用仓库根，2026-10-09 统一回仓库根——`changelog.md` 里残留的 `src/publish` 是历史流水账，不要照着它改回来。
 
@@ -39,6 +43,10 @@ Debug 构建不启用该生成器，所以**只有 Release 打包时暴露**（`
 
 ## 4.1 测试
 
+后续自动化验证以 `.github/workflows/ci.yml` 为准，在 GitHub Actions 的干净 Windows / Ubuntu 环境中运行完整核心测试；本机默认不再执行自动测试。Windows 同时构建整个 WinUI 解决方案，Ubuntu 只构建 `net8.0` 核心测试项目。CI 的触发、报告和验证边界见 §4.2。
+
+以下命令保留用于用户明确要求的本机故障复现：
+
 ```
 dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<测试类名>"
 ```
@@ -46,10 +54,30 @@ dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedNa
 **不带 `--filter` 的全量 `dotnet test` 在本机会卡住**（复现于 2026-10-09：卡在"正在启动测试执行"之后无任何输出，单跑 `LogTests` 即复现）。
 这是**环境问题，与代码改动无关**——所以验证时一律用 `--no-build --filter "FullyQualifiedName~<类名>"` 指定相关测试类，秒级返回。
 
+**2026-10-20 的启动权限错误**：仓库根存在可继承的 `Low Mandatory Level` 标签，默认 `testhost.exe` 继承后以 Low 运行，无法取得监听 Medium 父进程退出所需的权限，在 `SetParentProcessExitCallback` → `Process.EnableRaisingEvents` 处抛 `Win32Exception (5)`，尚未执行用例。同一临时副本只切换 EXE 标签即复现 Low 失败、Medium 通过，详见 `docs/reviews/rebase-check-2026-10-20.md` §6。标签设置来源与时间未追溯，不归因于代理软件。
+
+测试项目在 Windows 标准 .NET 安装存在时，默认加载 `vstest.runsettings`，由 Program Files 中的 `dotnet.exe` 加载同一个 `testhost.dll`，不修改仓库或沙箱的权限标签。原测试命令可直接使用；需要手工指定宿主时：
+
+```powershell
+dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<测试类名>" -- "RunConfiguration.DotNetHostPath=$env:ProgramFiles\dotnet\dotnet.exe"
+```
+
+键名必须是 **`DotNetHostPath`**（大写 N）：写成 `DotnetHostPath` 会被 VSTest 忽略，只有诊断日志提示无效 XML 节点。自定义 .NET 安装路径可用该参数或 `--settings` 显式覆盖；Linux 不启用 Windows 宿主配置。无需关闭系统防护或修改产品依赖。
+
 xUnit 项目（`net8.0`、AnyCPU），用 `<Compile Include>` 直接链接 `src/VigilWatt.Core` 里的真源文件，不引 WinRT。
 **链接清单就是"可测边界"**：文件在 `VigilWatt.Core.Tests.csproj` 里出现，才谈得上单测覆盖；新增纯逻辑文件应一并加进去（见 `docs/dev/review-standard.md` R8）。
 
 **绝不要并行跑 `dotnet build` 和 `dotnet test`**：会抢 `bin/` 锁，构建报 MSB4166 被掐死、测试吐假的"测试主机进程崩溃"。
+
+## 4.2 持续集成与本地验证边界
+
+`push`、`pull_request` 与手动触发运行同一套 workflow，fork 也可独立使用。两种 runner 都安装并显式选择 .NET 8 SDK，顺序还原、构建和执行完整 `VigilWatt.Core.Tests`，不使用测试类过滤。Windows 用 sln 构建，保留 WinUI/XAML 编译检查；Ubuntu 不尝试运行 WinUI 或真实 HID。
+
+CI 的构建将警告视为错误。单项测试挂起超过 2 分钟时中止测试宿主并采集诊断，整个 job 限时 20 分钟；TRX 和故障诊断无论成功失败均尝试上传，保存 7 天。工作流只有仓库内容读取权限，不依赖发布凭据，也不上传安装包。
+
+本机曾因 NTFS Low 完整性标签导致 VSTest 在执行用例前就失败；这说明本地权限、SDK 和常驻工具会影响验证结果。CI 提供可复现的独立环境，不能替代 Windows 界面、任务栏集成、真实设备读写、充电编码和休眠重连验证。全量仅指测试项目当前纳入的全部用例，不代表整个应用所有功能均有自动测试。
+
+外部贡献者的 workflow 可能需要上游维护者批准后才运行；CI 是否纳入上游由维护者决定。首次 GitHub 运行尚未完成前，只能报告配置已静态检查，不能报告 CI 通过。
 
 ## 5. NuGet 版本降级链
 

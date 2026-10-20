@@ -46,7 +46,7 @@ public sealed class AulaL9Plugin : BatteryPluginBase
         HidDeviceHandle handle)
     {
         var read = await QueryAsync(handle, TimeSpan.FromMilliseconds(1200)).ConfigureAwait(false);
-        return read is { } value ? ("aula-l9-status85", value.Percent, value.Charging) : null;
+        return read is { } value ? ("aula-l9-status81", value.Percent, value.Charging) : null;
     }
 
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)

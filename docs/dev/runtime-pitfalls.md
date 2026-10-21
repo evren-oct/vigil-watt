@@ -534,6 +534,39 @@ Windows 任务栏**自己就有一个电池图标**，贴片再重复一遍纯�
 3. **悬停用 `TrackMouseEvent(TME_HOVER)`**——在 `WndProc` 里启 `DispatcherQueueTimer` 不可靠；等 `WM_MOUSEHOVER` 期间不要再次 Track，否则计时被清零。
 4. 命中矩形与绘制同源；定位在 `TaskbarLayout.PlaceTooltip` / `HitTest`。
 
+### 16.11 别用「创建时 WS_CHILD」替换「WS_POPUP + SetParent + 改 GWL_STYLE」（2026-10-21 实测教训）
+
+**背景**：1.2.7 排查贴片消失时，把 `CreateWindowExW` 的样式从 `WS_POPUP` 改成 `WS_CHILD`
+并把父窗口直接传成 `Shell_TrayWnd`（理由是"更原生"）。结果**贴片照样几秒内消失**，
+而 1.2.6 装机版同一台机器实测正常（13:53 抓到「键盘 93% ｜ 鼠标 100%」）。
+→ 该改动已回滚，1.2.7 源码恢复成1.2.6 的 `WS_POPUP` + `SetParent` + 改 `GWL_STYLE`。
+
+**两条实测结论（Python ctypes 探针，非推测）**：
+
+| 创建方式 | 结果 |
+|---|---|
+| `WS_CHILD` + 父窗口 = `Shell_TrayWnd` | 创建成功，1 秒后仍存活 |
+| `WS_CHILD` + 父窗口 = NULL | **`CreateWindowExW` 直接返回 0**（1400+ 类通用错误） |
+| `WS_POPUP` + `SetParent` + 事后改 `GWL_STYLE` 切 `WS_CHILD` | 长期稳定（1.2.6 装机验证） |
+
+- **`WS_CHILD` 必须在创建时就给对父窗口**。`WS_CHILD` 语义上就是"父窗口的孩子"，
+  父为 NULL 时窗口根本建不出来。
+- **跨进程 reparent 之后再改 `GWL_STYLE` 切 `WS_CHILD` 是危险动作**：改样式会让 Windows
+  按"子窗口"重新走一遍创建流程，跨进程场景下旧窗口句柄会被销毁重建
+  （现象：`IsWindow` 由 true 转 false，本进程 `DestroyWindow` 无任何记录，日志里也查不到）。
+- 顺带一个坑：`RegisterClassW` 的返回值必须检查。首次注册失败（类名已存在会返回
+  `ERROR_CLASS_ALREADY_EXISTS` = 1406）而代码没检查、还把 `_classRegistered` 置了 true，
+  后面每秒重试创建窗口，日志被 1406 刷满，掩盖真正的失败原因。
+
+**排查贴片消失时的正确顺序**（下次直接照做，别再走弯路）：
+1. 先确认 **DPI awareness**——非 DPI-aware 进程里 `GetSystemMetrics(0/1)` 返回 1536×864
+   而真实主屏是 1920×1080，抓屏坐标全偏，会误判成"贴片空白 / 读数被裁掉"。
+2. 再看**是不是根本没有第二块屏**：`DisplayDevices()` 枚举显示器，别假设只有一块。
+3. `TaskbarPillWindow` 的窗口创建成功 ≠ 存活。必须在 `EnsureWindow` 里记 `hwnd`，
+   并在后续某一拍复查 `IsWindow`——跨进程子窗口被系统回收时不会有任何本地回调。
+4. Python ctypes 起一个同参数的独立窗口做对照，能区分"我们的代码有问题"还是"这个位置不能放窗口"。
+5. **没验证成功的改动不要进交付包**。宁可保留一个已知可用但不够优雅的实现。
+
 ## 17. WinUI3 窗口的两层背景：小组件白底（2026-10-10 起；§17.1 于 10-12 更正）
 
 > **2026-10-12 起，本节只对"小组件"（`WidgetWindow`，仍是 WinUI 3 窗口）适用。**

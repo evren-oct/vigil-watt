@@ -46,6 +46,13 @@ public class AppSettings
     /// <summary>任务栏贴片最多显示几台设备，超出显示 "+N"。合法范围见 <c>VigilWatt.App.Services.TaskbarBatteryOptions</c>（1~5，默认 3）。</summary>
     public int TaskbarBatteryMaxDevices { get; set; } = 3;
 
+    /// <summary>
+    /// 任务栏贴片只显示这些设备（按显示名匹配，大小写不敏感）。空 = 不过滤（显示全部在线设备）。
+    /// 存名字而不是设备 Id：Id 由 USB 路径哈希而来，同一只设备插线/换口就变（详见 DeviceManager 的去重说明），
+    /// 名字在两种连接方式下是稳定的。
+    /// </summary>
+    public List<string> TaskbarBatterySelectedDevices { get; set; } = new();
+
     /// <summary>任务栏贴片相对"托盘左侧默认位"的水平偏移（物理像素，正数向右）。用户拖动后写入，重启沿用。</summary>
     public int TaskbarBatteryOffsetX { get; set; }
 
@@ -70,7 +77,8 @@ public class AppSettings
         ["Delux"] = false,    // 与英菲克同为 1D57:FA65，只读 0x000A；本机尚未扫到该接收器，默认关
         ["Aula"] = false,     // 狼蛛 F99 Pro：要写 0x13 会话帧才能读电量，默认关闭
         ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/dualsense.md）
-        ["Ganss"] = false,   // GANSS GS3104T-Pro：发固定查询帧才能读电量（会写），默认关闭
+        ["Ganss"] = false,   // GANSS GS3104T-Pro / 狼蛛 F108 Pro（同硅方案）：发固定查询帧才能读电量（会写），默认关闭
+        ["Vgn"] = true,       // VGN 蜻蜓：kc2 的 0x06 配置帧 / y2 的 0x04 电量查询，都是官方只读命令（与北通同级）
     };
 
     /// <summary>是否把本机（笔记本）电池也纳入监控。默认关闭——它是"另一类设备"，不像外设那样需要盯着，用户明确要时才开（见设置页「监控本机电量」）。

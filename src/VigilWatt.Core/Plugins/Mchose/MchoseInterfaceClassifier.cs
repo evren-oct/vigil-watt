@@ -12,6 +12,9 @@ public enum MchoseInterfaceKind
     /// <summary>鼠标 V2 世代厂商接口（≥60 字节，含 report ID）。</summary>
     MouseV2,
 
+    /// <summary>鼠标 K7 V2 Ultra+ 的命令通道（64 字节 output `0x4D`，3837:1018）。</summary>
+    MouseK7,
+
     /// <summary>V9 Pro 耳机（64 字节、reportId `0x55`）。</summary>
     HeadsetV9,
 }
@@ -55,6 +58,12 @@ public static class MchoseInterfaceClassifier
 
         if (outputLength == KeyboardReportLength && inputLength == KeyboardReportLength)
             return MchoseInterfaceKind.KeyboardV1;
+
+        // K7 必须排在下面的"≥60 字节只走鼠标"之前：它的命令通道正好也是 64/64，
+        // 落到 V2 分支会被当成"等 E2 状态帧"的接收器，白等两轮、一帧读不到。
+        // 判据是完整指纹（PID + 厂商用法 + 双方向长度），同 VID 的其它 PID 不受影响。
+        if (MchoseK7Codec.IsSupportedInterface(vendorId, productId, usagePage, usage, inputLength, outputLength))
+            return MchoseInterfaceKind.MouseK7;
 
         // 鼠标接收器厂商接口 65 = 64 数据 + 1 report ID；V2 世代长度差异大，按 ≥60 收口
         if (outputLength >= 60 && inputLength >= 60) return MchoseInterfaceKind.MouseV2;

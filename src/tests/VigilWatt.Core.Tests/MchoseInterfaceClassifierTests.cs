@@ -27,6 +27,10 @@ public sealed class MchoseInterfaceClassifierTests
     [InlineData(0x3837, 0x100A, @"\\?\hid#vid_3837&pid_100a&mi_02&col03#test", 0xFF00, 0x0002, 65, 65, 0, 0x11, MchoseInterfaceKind.MouseV2)]
     // 鼠标：QHW 世代 dongle（3837:3033）
     [InlineData(0x3837, 0x3033, @"\\?\hid#vid_3837&pid_3033&mi_01&col01#test", 0xFF00, 0x0002, 64, 64, 0, 0x4D, MchoseInterfaceKind.MouseV2)]
+    // 鼠标：K7 V2 Ultra+ 的命令通道（3837:1018，FF01/0x0001，64 字节 output 0x4D）——必须抢在 MouseV2 之前
+    [InlineData(0x3837, 0x1018, @"\\?\hid#vid_3837&pid_1018&mi_02&col02#test", 0xFF01, 0x0001, 64, 64, 0, 0x4D, MchoseInterfaceKind.MouseK7)]
+    // 同一颗 K7 dongle 的另一条接口（FF0B/0x00C4，61 字节）：实测零报文，仍按普通鼠标接口走
+    [InlineData(0x3837, 0x1018, @"\\?\hid#vid_3837&pid_1018&mi_02&col01#test", 0xFF0B, 0x00C4, 61, 61, 0, 0x00, MchoseInterfaceKind.MouseV2)]
     // 标准键盘用法：即使 VID 是迈从也不是配置通道
     [InlineData(0x3837, 0x201B, @"\\?\hid#vid_3837&pid_201b&mi_00&col01#test", 0x0001, 0x0006, 20, 20, 0, 0x00, MchoseInterfaceKind.None)]
     // 别家 VID：罗技（046D）、雷柏（24AE）、AULA（3554）都不能进迈从链路

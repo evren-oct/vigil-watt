@@ -10,6 +10,7 @@ VigilWatt 的设备适配大多来自社区：有人提供抓包样本，有人�
 | **Baron77777** | AULA F99 Pro（`3554:FA09`，`0x13` 会话/推送）与 DELUX M900 Pro（`1D57:FA65`，被动 5 字节状态帧）两个插件 | [PR #16](https://github.com/evren-oct/vigil-watt/pull/16) |
 | **luze258** | 三台设备：DualSense 蓝牙电量（report `0x31` + CRC）、GANSS GS3104T-Pro（33 字节查询帧）、MCHOSE V9 Pro 耳机（64 字节查询帧）；以及 GANSS 认领判据的风险分析 | [PR #15](https://github.com/evren-oct/vigil-watt/pull/15) |
 | **zi-ha** | 迈从鼠标 V2（A7 V2 Pro `3837:100A`）与 G87 V2（`3837:201B`）支持；按协议区分键鼠图标的 `ResolveKind`；用官方密码表识别型号 | [PR #17](https://github.com/evren-oct/vigil-watt/pull/17) |
+| **Mightling** | 迈从 K7 V2 Ultra+（`3837:1018`）支持：`0x0900` 查询 + `0x0600` 事件协议；从官方 M HUB 运行时 JS 取出帧构造与解析，真机验证 | 待合并 |
 
 ## 还能怎么帮
 

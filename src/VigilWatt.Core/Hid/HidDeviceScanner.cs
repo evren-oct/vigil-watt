@@ -143,6 +143,7 @@ public static class HidDeviceScanner
             OutputReportId = outReportId,
             Product = GetString(safe, NativeHid.HidD_GetProductString) ?? "",
             Manufacturer = GetString(safe, NativeHid.HidD_GetManufacturerString) ?? "",
+            Serial = GetString(safe, NativeHid.HidD_GetSerialNumberString) ?? "",
         };
     }
 

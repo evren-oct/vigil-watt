@@ -43,7 +43,7 @@ public sealed class GanssPlugin : BatteryPluginBase
     protected override async Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
         HidDeviceHandle handle)
     {
-        var percent = await QueryAsync(handle).ConfigureAwait(false);
+        var percent = await QueryAsync(handle, null).ConfigureAwait(false);
         if (!percent.HasValue) return null;
         var protocol = GanssCodec.LooksLikeAulaF108(handle.Info.Product) ? "aula-f108-v1" : "ganss-gs3104t-pro-v1";
         return (protocol, percent, ChargingState.Unknown);
@@ -52,7 +52,7 @@ public sealed class GanssPlugin : BatteryPluginBase
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
         if (!CanWrite(dev)) return null;
-        var percent = QueryAsync(dev.Handle).GetAwaiter().GetResult();
+        var percent = QueryAsync(dev.Handle, dev).GetAwaiter().GetResult();
         if (!percent.HasValue)
         {
             ReportPollFailure(dev);
@@ -62,12 +62,16 @@ public sealed class GanssPlugin : BatteryPluginBase
         return (percent, ChargingState.Unknown);
     }
 
-    private async Task<int?> QueryAsync(HidDeviceHandle handle)
+    private async Task<int?> QueryAsync(HidDeviceHandle handle, TrackedDevice? owner)
     {
         // 写点再次校验开关和完整接口，禁止把同 VID/PID 的其它集合当作厂商通道。
         if (!WritesEnabled || !IsCandidate(handle.Info)) return null;
         if (!handle.WriteOutput(GanssCodec.CreateQuery(), TimeSpan.FromMilliseconds(500)))
+        {
+            // 写失败 = 句柄本身废了（设备被拔插但路径没变），读超时不是。
+            if (owner != null) owner.HandleStale = true;
             return null;
+        }
         var elapsed = Stopwatch.StartNew();
         var window = TimeSpan.FromMilliseconds(750);
         while (elapsed.Elapsed < window)

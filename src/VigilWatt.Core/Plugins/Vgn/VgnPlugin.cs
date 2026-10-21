@@ -105,7 +105,7 @@ public sealed class VgnPlugin : BatteryPluginBase
         }
         Log.ResetOnce($"{handle.Info.DevicePath}|vgn-no-permit");
 
-        var reading = IsY2(handle.Info) ? QueryY2(handle) : Query(handle);
+        var reading = IsY2(handle.Info) ? QueryY2(handle, null) : Query(handle, null);
         if (reading == null)
         {
             Log.Debug($"VGN 探测无应答: {handle.Info.DevicePath}");
@@ -120,7 +120,7 @@ public sealed class VgnPlugin : BatteryPluginBase
     {
         if (!CanWrite(dev)) return null;
 
-        var reading = IsY2(dev.Handle.Info) ? QueryY2(dev.Handle) : Query(dev.Handle);
+        var reading = IsY2(dev.Handle.Info) ? QueryY2(dev.Handle, dev) : Query(dev.Handle, dev);
         if (reading == null)
         {
             // 失败自己数（基类那条路会熔断停写，见 Offline 注释）：够了只标离线，不停写
@@ -140,13 +140,17 @@ public sealed class VgnPlugin : BatteryPluginBase
     /// 写一个该接口没声明的 ID 会直接被驱动拒（ERROR_INVALID_PARAMETER 87），
     /// 所以"写成功"本身就是这道接口能不能用的判据。
     /// </summary>
-    private static (int Percent, ChargingState Charging)? Query(HidDeviceHandle handle)
+    private static (int Percent, ChargingState Charging)? Query(HidDeviceHandle handle, TrackedDevice? owner)
     {
         foreach (byte reportId in ReportIdCandidates(handle))
         {
             if (!handle.WriteOutput(VgnCodec.BuildConfigRequest(reportId),
                     TimeSpan.FromMilliseconds(300), quiet: true))
+            {
+                // 写失败 = 句柄本身废了（设备被拔插但路径没变），读超时不是。
+                if (owner != null) owner.HandleStale = true;
                 continue;
+            }
 
             var reading = ReadBattery(handle);
             if (reading != null) return reading;
@@ -158,12 +162,14 @@ public sealed class VgnPlugin : BatteryPluginBase
     /// y2 协议（蜻蜓 F2 大师+）：report ID 固定 <c>0x08</c>，发一条 <c>BatteryLevel</c>（cmd 0x04）等应答。
     /// 与 kc2 不同，这里不需要试 report ID——官方驱动写死 8，写别的 ID 会被驱动直接拒。
     /// </summary>
-    private static (int Percent, ChargingState Charging)? QueryY2(HidDeviceHandle handle)
+    private static (int Percent, ChargingState Charging)? QueryY2(HidDeviceHandle handle, TrackedDevice? owner)
     {
         if (!handle.WriteOutput(VgnY2Codec.BuildCommand(VgnY2Codec.CmdBatteryLevel),
                 TimeSpan.FromMilliseconds(500), quiet: true))
         {
-            Log.Debug($"VGN y2 写帧失败（接口不收 17 字节 0x08 帧）: {handle.Info.DevicePath}");
+            Log.Debug($"VGN y2 写帧失败（接口不收 17 字节 0x08 帧，或句柄已失效）: {handle.Info.DevicePath}");
+            // 写失败 = 句柄本身废了（设备被拔插但路径没变），读超时不是。
+            if (owner != null) owner.HandleStale = true;
             return null;
         }
 

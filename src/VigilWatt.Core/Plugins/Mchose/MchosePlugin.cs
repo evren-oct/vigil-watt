@@ -30,6 +30,9 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>K7 V2 Ultra+：64 字节 output 0x4D，0x0900 查询 + 0x0600 事件（帧与判据见 <see cref="MchoseK7Codec"/>）。</summary>
     private const string ProtocolMouseK7 = "mouse-k7";
 
+    /// <summary>Gmouse 世代鼠标（G3 V2 等）：65 字节主动查询帧（55 30 A5…），判据与帧见 <see cref="MchoseGmouseCodec"/>。</summary>
+    private const string ProtocolGmouse = "gmouse";
+
     /// <summary>V9 Pro 耳机：64 字节固定查询帧（帧结构与判据见 <see cref="MchoseV9ProCodec"/>）。同品牌另一条链路，与键鼠判据完全独立。</summary>
     private const string ProtocolHeadsetV9 = "headset-v9";
 
@@ -100,6 +103,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         {
             ProtocolMouseV2 => DeviceKind.Mouse,
             ProtocolMouseK7 => DeviceKind.Mouse,
+            ProtocolGmouse => DeviceKind.Mouse,
             ProtocolHeadsetV9 => DeviceKind.Headset,
             _ => DeviceKind.Keyboard,
         };
@@ -144,6 +148,8 @@ public sealed class MchosePlugin : BatteryPluginBase
     private const string LogKeyV9Silent = "v9-silent"; // "V9 Pro 查询没等到电量响应"
     private const string LogKeyK7NoPermit = "k7-no-permit"; // "没开写入许可，跳过 K7 主动查询"
     private const string LogKeyK7Asleep = "k7-asleep";      // "K7 只回 1 字节 0xFF，鼠标多半在睡"
+    private const string LogKeyGmouseNoPermit = "gmouse-no-permit"; // "没开写入许可，跳过 Gmouse 主动查询"
+    private const string LogKeyGmouseSilent = "gmouse-silent";      // "Gmouse 查询没等到电量响应"
 
     /// <summary>协议探测：鼠标 V2（被动等 E2）→ 官方 QHW（新世代）→ 键盘 V1 会话协议（G87 / G87 V2）。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
@@ -172,6 +178,15 @@ public sealed class MchosePlugin : BatteryPluginBase
             var k7 = TryMouseK7(handle);
             if (k7 != null) KnownProtocolByPath[path] = ProtocolMouseK7;
             return k7;
+        }
+
+        // Gmouse 主动查询接口（usagePage 0xFF01/usage 0x10）：先于 MouseV2 判定，发 Gmouse 查询帧而非 E2 触发帧。
+        // 它同样是 ≥60 字节，但应答的是 AA 30 前缀帧，落到 V2 分支会白等被动 E2。
+        if (kind == MchoseInterfaceKind.Gmouse)
+        {
+            var gm = TryGmouse(handle);
+            if (gm != null) KnownProtocolByPath[path] = ProtocolGmouse;
+            return gm;
         }
 
         // ≥60 的接口只可能是鼠标接收器：它不是 0x13 会话通道，在这条通道上发键盘帧没有意义
@@ -216,6 +231,7 @@ public sealed class MchosePlugin : BatteryPluginBase
             ProtocolKeyboardV1 => TryKeyboardV1(handle) is { } kb ? (ProtocolKeyboardV1, kb.Percent, kb.Charging) : null,
             ProtocolMouseV2 => TryMouseV2(handle),
             ProtocolMouseK7 => TryMouseK7(handle),
+            ProtocolGmouse => TryGmouse(handle),
             ProtocolHeadsetV9 => TryHeadsetV9(handle),
             _ => null,
         };
@@ -237,6 +253,7 @@ public sealed class MchosePlugin : BatteryPluginBase
             "qhw" => PollQhw(dev),
             ProtocolKeyboardV1 => PollKeyboardV1(dev),
             ProtocolHeadsetV9 => PollHeadsetV9(dev),
+            ProtocolGmouse => PollGmouse(dev),
             _ => null,
         };
 
@@ -688,6 +705,79 @@ public sealed class MchosePlugin : BatteryPluginBase
         2 => ChargingState.Full,
         _ => ChargingState.Unknown,
     };
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Gmouse 主动查询（3837:4245 等，usagePage 0xFF01/usage 0x10，65 字节）
+    //  帧格式与字段表见 MchoseGmouseCodec；依据是官方 M HUB 网页端 /gmouse。
+    // ══════════════════════════════════════════════════════════════════
+
+    /// <summary>Gmouse 查询的应答等待窗口。实测 dongle 回包在 1 秒内。</summary>
+    private static readonly TimeSpan GmouseReplyWindow = TimeSpan.FromSeconds(1.2);
+
+    /// <summary>
+    /// Gmouse 探测：发一条电量查询帧（见 <see cref="MchoseGmouseCodec"/>），最多 2 次。
+    /// 与 mouse-v2 的被动 E2 不同，Gmouse 没有自发推送，必须主动查询。
+    /// 写失败直接返回 null（说明不是这条通道）；拿到电量才认领。
+    /// </summary>
+    private static (string Protocol, int? Percent, ChargingState Charging)? TryGmouse(HidDeviceHandle handle)
+    {
+        if (!IsWritesEnabled(SettingsKey))
+        {
+            Log.Once(LogLevel.Info, LogKey(handle, LogKeyGmouseNoPermit),
+                $"迈从 Gmouse: 未开启写入许可，跳过主动查询: {handle.Info.DevicePath}");
+            return null;
+        }
+        Log.ResetOnce(LogKey(handle, LogKeyGmouseNoPermit));
+
+        var result = QueryGmouse(handle);
+        return result.HasValue ? (ProtocolGmouse, result.Value.Percent, result.Value.Charging) : null;
+    }
+
+    /// <summary>
+    /// 写 Gmouse 查询帧并等响应。响应前缀 <c>AA 30</c>，电量在 <c>[offset+8]</c>、充电在 <c>[offset+9]</c>。
+    /// 无应答只在状态变化时记一条 Debug：鼠标不在位时每 15 秒重探一次，逐次记录会把日志刷满。
+    /// </summary>
+    private static (int Percent, ChargingState Charging)? QueryGmouse(HidDeviceHandle handle)
+    {
+        for (int attempt = 1; attempt <= 2; attempt++)
+        {
+            if (!handle.WriteOutput(MchoseGmouseCodec.CreateQuery(), TimeSpan.FromMilliseconds(500), quiet: true))
+            {
+                // quiet：非 Gmouse 通道写失败是预期结果（"不是这条通道"的判据）
+                Log.Debug($"迈从 Gmouse 第{attempt}次写失败: {handle.Info.DevicePath}");
+                return null;
+            }
+
+            var deadline = DateTime.UtcNow + GmouseReplyWindow;
+            while (DateTime.UtcNow < deadline)
+            {
+                var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
+                if (input == null) continue;
+
+                if (!MchoseGmouseCodec.TryParse(input, out int percent, out bool charging))
+                {
+                    if (Log.IsEnabled(LogLevel.Debug)) Log.Debug($"迈从 Gmouse 忽略非电量响应: {Log.Hex(input)}");
+                    continue;
+                }
+
+                Log.ResetOnce(LogKey(handle, LogKeyGmouseSilent));
+                Log.Info($"迈从 Gmouse 电量查询: 电量={percent} 充电={charging} 原始={Log.Hex(input)}");
+                return (percent, charging ? ChargingState.Charging : ChargingState.Discharging);
+            }
+        }
+
+        Log.Once(LogLevel.Debug, LogKey(handle, LogKeyGmouseSilent),
+            $"迈从 Gmouse 查询无响应（鼠标多半在关机/休眠；恢复应答后会再记一条）: {handle.Info.DevicePath}");
+        return null;
+    }
+
+    /// <summary>Gmouse 轮询：只发一条查询帧。失败记账仍由 <see cref="PollDevice"/> 在发过帧的分支里报。</summary>
+    private static (int? Percent, ChargingState Charging)? PollGmouse(TrackedDevice dev)
+    {
+        if (!IsWritesEnabled(SettingsKey)) return null;
+        var result = QueryGmouse(dev.Handle);
+        return result.HasValue ? (result.Value.Percent, result.Value.Charging) : null;
+    }
 
     /// <summary>
     /// V9 Pro 耳机探测：发一条固定查询帧（见 <see cref="MchoseV9ProCodec"/>），750 毫秒内解析响应。

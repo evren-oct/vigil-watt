@@ -5,6 +5,7 @@
 
 ## 2026-10-21
 
+- **MCHOSE G3 V2（`3837:4245`）**：接入 `gmouse` 主动查询协议——65 字节查询帧 `00 55 30 A5 0B 2E…`、应答前缀 `AA 30`，电量 `[off+8]` / 充电 `[off+9]`。这颗接收器的厂商接口被动监听零报文、也不走 QHW，靠 usagePage `0xFF01` / usage `0x10` 的完整指纹与同厂的 K7（`0x0001`）、V2 被动 E2 链路区分。帧取自官方 M HUB `/gmouse` 与社区 aliezzzz/mchose-battery。新增 `MchoseGmouseCodec`（纯函数 + 用例），分类器加 `Gmouse` 并排在 `MouseV2` 之前。见 `hardware/mchose.md` §4。
 - **MCHOSE K7 V2 Ultra+（`3837:1018`）**：接入 `mouse-k7` 协议——`0x0900` 查询设备信息、被动解析 `0x0600` 电源事件。这颗 dongle 的 feature 通道写通读不通（`GetFeature` 恒 `ERROR_GEN_FAILURE`），原有的 feature 读族与 E2 被动路径一个都不成立，这才是它原先完全读不到电量的根因。帧取自官方 M HUB 运行时 JS 的 `i1e()` / `_K()` / `LA()`，不是猜的。新增 `MchoseK7Codec`（纯函数 + 16 个真机帧向量用例），分类器加 `MouseK7` 并排在 `MouseV2` 之前。见 `hardware/protocols.md` §15。
 - **K7 的 `0xFF` 不能按失败记账**：真机常态应答是 `4D 01 01 01 … 00 FF`（鼠标在睡）。按普通失败记，睡着的鼠标三轮就被判离线并熔断停写、醒了也不再被问，所以 `PollMouseK7` 自己记账——收到任何 `0x4D` 帧就算应答。
 - **新增 CHERRY 插件（PIXIU75 蔚蓝档案 圣园未花联动款）**：64 字节块协议（report `0x04`，块 `0x1A` = 电量 + 充电位），真机 48% 与官方软件一致，插线后 55% 判充电中；有线（`046A:01E2`）与 2.4G（`046A:01E4`）共用同一块通道。见 `hardware/protocols.md` §13。

@@ -26,6 +26,7 @@
 | GANSS GS3104T-Pro 33 字节查询帧 | 贡献者 luze258 对官方软件通信的 USB 抓包（PR #15），只有固定查询帧与响应样本。 | 只发这一条固定查询帧，响应 `[3]` 为电量，校验和按"除末字节求和取低字节"；会写帧故默认关。判据与风险见 §6。 | 未复用厂商代码，按抓包事实自行实现。本机无该设备，未复测。见 [ganss.md](ganss.md)。 |
 | MCHOSE V9 Pro 64 字节查询帧 | 贡献者 luze258 在官方 MCHOSE HUB 显示 100% 时的 USB 抓包（PR #15），单条请求与响应。 | 只发 `55 65 01 …`，响应 `[2]` 为电量；并入迈从插件共用品牌级开关。充电状态未知，恒为 Unknown。 | 未复用厂商代码，按抓包事实自行实现。本机无该设备，未复测。见 [mchose-v9-pro.md](mchose-v9-pro.md)。 |
 | MCHOSE K7 V2 Ultra+ `0x4D` / `0x0900` / `0x0600` | 官方 M HUB WEB 运行时加载的打包 JS（`purify.es-*.js`）中的帧构造器 `i1e()`、设备信息解析 `_K()`、事件解析 `LA()`；用 CDP hook WebHID 取得原始报文后按命令码定位。 | 按其字段表自行实现 `MchoseK7Codec`；只发 `0x0900` 查询，被动解析 `0x0600` 事件。本机 K7 V2 Ultra+ 真机验证（连续 6.5 小时零告警），充电/断连两态未留证。 | 官方前端是协议依据，不表示引用其代码；未复制任何厂商源码。接口地图、帧格式与失败应答见 [mchose.md](mchose.md) §3。 |
+| MCHOSE Gmouse 主动查询（`3837:4245` 等） | 官方 M HUB 网页端 `/gmouse` 打包 JS 与社区项目 [aliezzzz/mchose-battery](https://github.com/aliezzzz/mchose-battery) 的查询帧/应答格式。 | 只发一条 `00 55 30 A5 0B 2E 01 01 01…`（65 字节）查询帧，应答前缀 `AA 30`，电量 `[off+8]`、充电 `[off+9]`；并入迈从插件共用品牌级开关，默认关。 | 未复用厂商/社区代码，按公开协议事实自行实现。本机 G3 V2 真机验证（读到 86% 未充电）。见 [mchose.md](mchose.md) §4。 |
 | 弱水时砂炽天使 2.4G | 官方 RoseLink（Flutter + BLE 自定义协议）及官方升级助手逆向；同时检查 2.4G dongle 的 HID 通道。 | 用于确认 RoseLink 电量协议不含电量命令、正常 2.4G 模式无可用电量通道；本项目不接入该设备电量。 | 逆向结论用于能力边界判断，不包含外部代码复用。见 [protocols.md](protocols.md)。 |
 | Classic Bluetooth 耳机电量 | Windows HFP 网关设备节点的 `DEVPKEY_Device_BatteryLevel` 属性；与 Windows 设置显示同源。 | 通过 PnP 设备节点读取；本机 EDIFIER W820NB 已验证。 | Windows 系统属性读取方案；不是 BLE AEP 属性。实现背景见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |
 

@@ -62,6 +62,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | New-generation MCHOSE dongles · QHW (e.g. `3837:3033`) | Implemented; awaiting matching hardware validation |
 | MCHOSE G87 V2 / A7 V2 Pro · mouse V2 passive frames | Implemented, off by default; contributor hardware only, only G87 V1 retested here |
 | MCHOSE K7 V2 Ultra+ · `0x0900` query + `0x0600` events | Contributor-verified on real hardware; shares the MCHOSE plugin switch |
+| MCHOSE G3 V2 · Gmouse active query (`3837:4245`) | Contributor-verified on real hardware; shares the MCHOSE plugin switch |
 | Betop T9 · passive vendor-interface stream | Verified on hardware |
 | Logitech Bolt receiver (C548 + MX Master 3S) · HID++ | Verified on hardware |
 | Rapoo VT3 Gen 2 · passive `status-report7` | Verified on the developer's device |

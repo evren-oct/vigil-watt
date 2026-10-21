@@ -61,6 +61,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | MCHOSE G87 · 2.4 GHz `0x13` | Verified on the developer's device |
 | New-generation MCHOSE dongles · QHW (e.g. `3837:3033`) | Implemented; awaiting matching hardware validation |
 | MCHOSE G87 V2 / A7 V2 Pro · mouse V2 passive frames | Implemented, off by default; contributor hardware only, only G87 V1 retested here |
+| MCHOSE K7 V2 Ultra+ · `0x0900` query + `0x0600` events | Contributor-verified on real hardware; shares the MCHOSE plugin switch |
 | Betop T9 · passive vendor-interface stream | Verified on hardware |
 | Logitech Bolt receiver (C548 + MX Master 3S) · HID++ | Verified on hardware |
 | Rapoo VT3 Gen 2 · passive `status-report7` | Verified on the developer's device |
@@ -70,6 +71,8 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | DELUX M900 Pro · passive 5-byte status | Implemented, off by default; same VID/PID as Inphic, receiver not seen here |
 | DualSense · passive Bluetooth HID | Implemented, on by default; contributor hardware only |
 | GANSS GS3104T-Pro · 33-byte query frame | Implemented, off by default; writes frames. Contributor hardware only |
+| AULA F108 Pro · same protocol as GANSS | Implemented, off by default; writes frames. Maintainer-verified on real hardware (identical interface criteria, brand resolved by product string) |
+| VGN Dragonfly F2 Master+ · `vgn-y2` report `0x08` | Implemented, on by default; read-only query frame. Maintainer-verified on real hardware |
 | MCHOSE V9 Pro headset · 64-byte query frame | Implemented, off by default; writes frames, shares the MCHOSE switch. Contributor hardware only |
 | Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |
 | System battery · `GetSystemPowerStatus` | Implemented; can be enabled optionally |

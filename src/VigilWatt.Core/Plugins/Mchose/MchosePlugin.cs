@@ -27,6 +27,9 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>鼠标 V2 世代：纯被动 E2 状态帧 + 0x11/0x06 触发上报。</summary>
     private const string ProtocolMouseV2 = "mouse-v2";
 
+    /// <summary>K7 V2 Ultra+：64 字节 output 0x4D，0x0900 查询 + 0x0600 事件（帧与判据见 <see cref="MchoseK7Codec"/>）。</summary>
+    private const string ProtocolMouseK7 = "mouse-k7";
+
     /// <summary>V9 Pro 耳机：64 字节固定查询帧（帧结构与判据见 <see cref="MchoseV9ProCodec"/>）。同品牌另一条链路，与键鼠判据完全独立。</summary>
     private const string ProtocolHeadsetV9 = "headset-v9";
 
@@ -96,6 +99,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         => protocol switch
         {
             ProtocolMouseV2 => DeviceKind.Mouse,
+            ProtocolMouseK7 => DeviceKind.Mouse,
             ProtocolHeadsetV9 => DeviceKind.Headset,
             _ => DeviceKind.Keyboard,
         };
@@ -138,6 +142,8 @@ public sealed class MchosePlugin : BatteryPluginBase
     private const string LogKeyMouseSilent = "mouse-silent";  // "鼠标探测没等到 E2 帧"
     private const string LogKeyMousePokeFail = "mouse-poke-fail"; // "触发帧写失败（接口无输出通道）"
     private const string LogKeyV9Silent = "v9-silent"; // "V9 Pro 查询没等到电量响应"
+    private const string LogKeyK7NoPermit = "k7-no-permit"; // "没开写入许可，跳过 K7 主动查询"
+    private const string LogKeyK7Asleep = "k7-asleep";      // "K7 只回 1 字节 0xFF，鼠标多半在睡"
 
     /// <summary>协议探测：鼠标 V2（被动等 E2）→ 官方 QHW（新世代）→ 键盘 V1 会话协议（G87 / G87 V2）。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
@@ -157,6 +163,15 @@ public sealed class MchosePlugin : BatteryPluginBase
             var headset = TryHeadsetV9(handle);
             if (headset != null) KnownProtocolByPath[path] = ProtocolHeadsetV9;
             return headset;
+        }
+
+        // K7 的命令通道同样是 64 字节，但它说的是 0x4D 帧，不是 V2 世代那套 E2 状态帧——
+        // 落到下面等于白等两轮再发一条无意义的触发帧。指纹已精确命中，直接交给 K7 协议。
+        if (kind == MchoseInterfaceKind.MouseK7)
+        {
+            var k7 = TryMouseK7(handle);
+            if (k7 != null) KnownProtocolByPath[path] = ProtocolMouseK7;
+            return k7;
         }
 
         // ≥60 的接口只可能是鼠标接收器：它不是 0x13 会话通道，在这条通道上发键盘帧没有意义
@@ -200,6 +215,7 @@ public sealed class MchosePlugin : BatteryPluginBase
             "qhw" or "qhw-push" => TryQhw(handle),
             ProtocolKeyboardV1 => TryKeyboardV1(handle) is { } kb ? (ProtocolKeyboardV1, kb.Percent, kb.Charging) : null,
             ProtocolMouseV2 => TryMouseV2(handle),
+            ProtocolMouseK7 => TryMouseK7(handle),
             ProtocolHeadsetV9 => TryHeadsetV9(handle),
             _ => null,
         };
@@ -210,6 +226,11 @@ public sealed class MchosePlugin : BatteryPluginBase
         // mouse-v2 的读数是接收器自发 E2 推送，这里发帧只会干扰鼠标。
         if (!CanWrite(dev) || dev.Protocol is "qhw-push" or ProtocolMouseV2)
             return null;
+
+        // K7 的记账规则与其它协议不同——"只回 1 字节 0xFF"也算应答，故整段交给 PollMouseK7 自己数，
+        // 不走下面那套"有读数算应答 / 无读数算失败"的通用规则（理由见该方法注释）。
+        if (dev.Protocol == ProtocolMouseK7)
+            return PollMouseK7(dev);
 
         var read = dev.Protocol switch
         {
@@ -275,6 +296,21 @@ public sealed class MchosePlugin : BatteryPluginBase
                 return (cz.Value.Percent,
                     cz.Value.Charging ? ChargingState.Charging : ChargingState.Discharging,
                     Offline: false);
+        }
+
+        if (dev.Protocol == ProtocolMouseK7)
+        {
+            if (!MchoseK7Codec.TryParseStatusEvent(input, out var evt)) return null;
+
+            // 0x0600 事件一次只带一个字段（电量帧 / 充电帧是两条不同的帧），缺的那个沿用当前值，
+            // 否则会把另一项冲成 Unknown。连历史电量都没有就没什么可报的，等下一帧。
+            int? percent = evt.Percent ?? dev.Status.BatteryPercent;
+            if (!percent.HasValue) return null;
+            var charging = evt.ChargeStatus is { } raw ? MapK7Charge(raw, percent.Value) : dev.Status.Charging;
+
+            Log.Debug($"迈从 K7 状态事件: 电量={evt.Percent?.ToString() ?? "(未带)"} " +
+                      $"充电={evt.ChargeStatus?.ToString() ?? "(未带)"} 原始={Log.Hex(input)}");
+            return (percent, charging, Offline: false);
         }
 
         return null;
@@ -506,6 +542,152 @@ public sealed class MchosePlugin : BatteryPluginBase
         }
         return null;
     }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  K7 V2 Ultra+（3837:1018，output 0x4D 单通道）
+    //  帧格式与字段表见 MchoseK7Codec；依据是官方 M HUB 的 i1e / _K / LA，不是猜的。
+    // ══════════════════════════════════════════════════════════════════
+
+    /// <summary>K7 查询的应答等待窗口。实测 dongle 回包在 1 秒内，鼠标在睡时会回 1 字节 0xFF。</summary>
+    private static readonly TimeSpan K7ReplyWindow = TimeSpan.FromSeconds(1.2);
+
+    /// <summary>
+    /// K7 探测：发一条 <c>0x0900</c> 读设备信息，最多 3 次。
+    ///
+    /// 与其它协议的关键差别：**"只回 0xFF" 也是协议确认成功**。0xFF 的含义是"鼠标在睡 / 2.4G 暂时
+    /// 联系不上"，官方 <c>hgt()</c> 对它的处理也正是重试 + 容忍无读数。所以即使这轮拿不到电量，
+    /// 只要帧写得进去就返回 <c>("mouse-k7", null, Unknown)</c> 把设备认领下来——读数交给后续轮询与
+    /// <c>0x0600</c> 事件帧；认领后 <c>IsOnline</c> 为 false（在位但不可读），鼠标一动就会被事件帧翻回在线。
+    ///
+    /// 反过来，**写失败就直接返回 null**：这颗 dongle 只有一条 output 通道，写不进去说明不是它。
+    /// </summary>
+    private static (string Protocol, int? Percent, ChargingState Charging)? TryMouseK7(HidDeviceHandle handle)
+    {
+        if (handle.Info.OutputReportLength < MchoseK7Codec.FrameLength) return null;
+
+        if (!IsWritesEnabled(SettingsKey))
+        {
+            Log.Once(LogLevel.Info, LogKey(handle, LogKeyK7NoPermit),
+                $"迈从 K7: 未开启写入许可，跳过主动查询: {handle.Info.DevicePath}");
+            return null;
+        }
+        Log.ResetOnce(LogKey(handle, LogKeyK7NoPermit));
+
+        var query = MchoseK7Codec.BuildDeviceInfoQuery();
+        bool wrote = false;
+        byte[]? lastAnswer = null;
+
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true))
+            {
+                // quiet：非 K7 通道写失败是预期结果（"不是这条通道"的判据），逐次 WARN 只会掩盖真故障
+                Log.Debug($"迈从 K7 第{attempt}次写失败: {handle.Info.DevicePath}");
+                return null;
+            }
+            wrote = true;
+
+            var deadline = DateTime.UtcNow + K7ReplyWindow;
+            while (DateTime.UtcNow < deadline)
+            {
+                var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
+                if (input == null) continue;
+
+                // 这颗 dongle 会把自己的 output 报告原样回显成一条输入帧；回显不是应答，必须跳过
+                if (input.AsSpan().SequenceEqual(query)) continue;
+                lastAnswer = input;
+
+                if (MchoseK7Codec.TryParseDeviceInfo(input, out int percent, out byte charge, out byte connect))
+                {
+                    Log.ResetOnce(LogKey(handle, LogKeyK7Asleep));
+                    Log.Info($"迈从 K7 设备信息: 电量={percent} 充电状态={charge} 连接状态={connect} " +
+                             $"原始={Log.Hex(input)}");
+                    return (ProtocolMouseK7, percent, MapK7Charge(charge, percent));
+                }
+            }
+            Thread.Sleep(150);
+        }
+
+        if (!wrote) return null;
+
+        Log.Once(LogLevel.Info, LogKey(handle, LogKeyK7Asleep),
+            $"迈从 K7 三次都没拿到设备信息（鼠标多半在睡，唤醒后会由 0x0600 事件补上；" +
+            $"恢复应答后会再记一条）: {handle.Info.DevicePath} 最后应答={(lastAnswer == null ? "(无)" : Log.Hex(lastAnswer))}");
+        return (ProtocolMouseK7, null, ChargingState.Unknown);
+    }
+
+    /// <summary>
+    /// K7 轮询：一次 <c>0x0900</c>，最多重试 2 次。
+    ///
+    /// **记账由本方法自己做**，规则是"dongle 回了任何 0x4D 帧就算有应答"，<b>包含</b>只回 1 字节 0xFF 的
+    /// "鼠标在睡"。若按普通失败记，睡着的鼠标连续三轮就会被判离线并熔断停写，之后醒了也不会再被问——
+    /// 这是这颗 dongle 与其它协议最大的不同，也是它不能走 <see cref="PollDevice"/> 通用记账的原因。
+    /// </summary>
+    private (int? Percent, ChargingState Charging)? PollMouseK7(TrackedDevice dev)
+    {
+        var handle = dev.Handle;
+        if (handle.Info.OutputReportLength < MchoseK7Codec.FrameLength) return null;
+
+        var query = MchoseK7Codec.BuildDeviceInfoQuery();
+        bool answered = false;
+        byte[]? lastAnswer = null;
+
+        for (int attempt = 1; attempt <= 2; attempt++)
+        {
+            if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500)))
+            {
+                Log.Debug($"迈从 K7 轮询第{attempt}次写失败: {handle.Info.DevicePath}");
+                continue;
+            }
+
+            var deadline = DateTime.UtcNow + K7ReplyWindow;
+            while (DateTime.UtcNow < deadline)
+            {
+                var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
+                if (input == null) continue;
+                if (input.AsSpan().SequenceEqual(query)) continue;   // 写回显，不是应答
+
+                if (MchoseK7Codec.LooksLikeReply(input))
+                {
+                    answered = true;
+                    lastAnswer = input;
+                }
+
+                if (MchoseK7Codec.TryParseDeviceInfo(input, out int percent, out byte charge, out byte connect))
+                {
+                    ReportPollAnswered(dev);
+                    Log.Info($"迈从 K7 轮询: 电量={percent} 充电状态={charge} 连接状态={connect}");
+                    return (percent, MapK7Charge(charge, percent));
+                }
+            }
+        }
+
+        if (answered)
+        {
+            // dongle 在、只是鼠标在睡：算有应答，只是这轮没读数
+            ReportPollAnswered(dev);
+            Log.Once(LogLevel.Debug, LogKey(handle, LogKeyK7Asleep),
+                $"迈从 K7 轮询只收到拒绝应答（鼠标多半在睡，唤醒后自动恢复；恢复后会再记一条）: " +
+                $"{handle.Info.DevicePath} 最后应答={(lastAnswer == null ? "(无)" : Log.Hex(lastAnswer))}");
+        }
+        else
+        {
+            ReportPollFailure(dev);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// K7 的充电状态字节：0 未充电 / 1 充电中 / 2 已充满。未充电且 100% 按"已充满"收尾——
+    /// 这条收尾规则全项目共用 <see cref="ChargingStateMap.FromChargingFlag"/>。
+    /// </summary>
+    private static ChargingState MapK7Charge(byte chargeStatus, int percent) => chargeStatus switch
+    {
+        0 => ChargingStateMap.FromChargingFlag(charging: false, percent),
+        1 => ChargingStateMap.FromChargingFlag(charging: true, percent),
+        2 => ChargingState.Full,
+        _ => ChargingState.Unknown,
+    };
 
     /// <summary>
     /// V9 Pro 耳机探测：发一条固定查询帧（见 <see cref="MchoseV9ProCodec"/>），750 毫秒内解析响应。

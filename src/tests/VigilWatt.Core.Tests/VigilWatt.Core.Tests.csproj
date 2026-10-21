@@ -63,6 +63,7 @@
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatusFormatter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ChargingStateMap.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceStatusMerger.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Devices\DeviceDisplayDeduplicator.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceChangeDetector.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\RemainingTimeEstimator.cs" />
     <Compile Include="..\..\VigilWatt.Core\Power\SystemPowerReader.cs" />

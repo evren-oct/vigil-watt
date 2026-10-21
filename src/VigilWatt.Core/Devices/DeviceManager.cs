@@ -94,8 +94,12 @@ public sealed class DeviceManager : IDisposable
         return list;
     }
 
-    public IReadOnlyCollection<DeviceStatus> Devices => _devices.Values
-        .OrderByDescending(d => d.IsOnline).ThenBy(d => d.DisplayName).ToList();
+    public IReadOnlyCollection<DeviceStatus> Devices => DeviceDisplayDeduplicator.Dedupe(
+        _devices.Values
+            .OrderByDescending(d => d.IsOnline)
+            .ThenBy(d => d.DisplayName)
+            .ToList());
+
 
     public DeviceStatus? Find(string id) => _devices.TryGetValue(id, out var d) ? d : null;
 

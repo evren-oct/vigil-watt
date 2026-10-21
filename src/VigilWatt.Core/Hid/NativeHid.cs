@@ -165,6 +165,10 @@ internal static class NativeHid
     [DllImport("hid.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern bool HidD_GetManufacturerString(SafeFileHandle handle, [Out] char[] buffer, uint bufferLength);
 
+    /// <summary>序列号字符串。同一只设备的多个接口（无线接收器 / 插线）会报同一个 SN，是"是不是同一台机器"的可靠依据。</summary>
+    [DllImport("hid.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern bool HidD_GetSerialNumberString(SafeFileHandle handle, [Out] char[] buffer, uint bufferLength);
+
     [DllImport("hid.dll", SetLastError = true)]
     public static extern bool HidD_SetFeature(SafeFileHandle handle, byte[] reportBuffer, uint reportBufferLength);
 

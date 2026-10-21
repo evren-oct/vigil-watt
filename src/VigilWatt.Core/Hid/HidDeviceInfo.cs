@@ -27,6 +27,13 @@ public sealed class HidDeviceInfo
     public string Product { get; init; } = "";
     public string Manufacturer { get; init; } = "";
 
+    /// <summary>
+    /// 序列号。同一只设备的多个接口（无线接收器 / 插线）会报同一个 SN，
+    /// 因此它是"这两条接口是不是同一台物理设备"的可靠依据（产品名会被不同批次复用，SN 不会）。
+    /// 设备不报序列号时为空字符串。
+    /// </summary>
+    public string Serial { get; init; } = "";
+
     public string VidPid => $"VID_{VendorId:X4}&PID_{ProductId:X4}";
 
     public override string ToString() =>

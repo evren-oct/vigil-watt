@@ -76,6 +76,16 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     protected virtual TimeSpan ProbeCooldown => TimeSpan.FromSeconds(30);
 
     /// <summary>
+    /// 插件用它把"同一物理设备的另一条接口"从本轮里摘掉。
+    ///
+    /// 典型场景：同一只鼠标插线后会多出一条接口（无线接收器 + 插线两条同时在场），
+    /// 两条都认领就会在设备列表里变成两行互相矛盾的读数（一行充电中、一行还是旧电量）。
+    /// 返回本轮要跳过的接口路径；默认不跳过。
+    /// </summary>
+    protected virtual IReadOnlyCollection<string> SkipPathsForThisPass(
+        IReadOnlyList<HidDeviceInfo> availableDevices) => Array.Empty<string>();
+
+    /// <summary>
     /// 是否允许向设备写探测/查询帧。**唯一授权入口是插件开关**（<c>AppSettings.PluginEnabled[Name]</c>）——
     /// 开插件即授权它工作所需的写入，不再有第二个"写入许可"开关（safety.md §3 规则 2）。
     /// 这里读插件开关而非直接返回 true，是给写点留一道纵深防御（R1：写入必须能被一个开关挡住）。
@@ -163,10 +173,27 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         _claims = claims;
         var claimed = new List<DeviceStatus>();
 
+        // 同一物理设备的多接口合并：先释放被跳过的接口，否则它会一直留在列表里当第二行。
+        var skipPaths = SkipPathsForThisPass(availableDevices);
+        var skipSet = new HashSet<string>(skipPaths, StringComparer.OrdinalIgnoreCase);
+        if (skipSet.Count > 0)
+        {
+            foreach (var path in skipSet)
+            {
+                if (!_devices.Remove(path, out var dropped)) continue;
+                StopPassiveListen(dropped);
+                dropped.Handle.Dispose();
+                dropped.Status.IsOnline = false;
+                _claims.Release(path, Name);
+                Log.Info($"{DisplayName} 同一设备的另一条接口已接管，释放: {path}");
+            }
+        }
+
         // 第一遍（快）：已有设备直接返回；筛出本轮需要新探测的接口（冷却中/被他人认领的跳过）
         var toProbe = new List<HidDeviceInfo>();
         foreach (var info in availableDevices)
         {
+            if (skipSet.Contains(info.DevicePath)) continue;
             if (!IsCandidate(info)) continue;
 
             if (_devices.TryGetValue(info.DevicePath, out var known))

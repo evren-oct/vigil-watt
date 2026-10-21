@@ -67,6 +67,21 @@ public sealed class VgnPlugin : BatteryPluginBase
         => VgnY2Codec.IsMatch(info.VendorId, info.ProductId, info.UsagePage, info.Usage,
             info.InputReportLength, info.OutputReportLength);
 
+    /// <summary>
+    /// 同一只鼠标插线后会多出一条接口（无线接收器 + 插线两条同时在场），
+    /// 两条都认领会在设备列表里变成两行互相矛盾的读数（一行充电中、一行还是插线前的旧电量）。
+    /// 这里只保留**插线**那条——只有它带充电状态；配对依据是序列号（同一只设备两个接口同一个 SN），
+    /// 所以用户真有两台同型号鼠标时不会被误合并。
+    /// </summary>
+    protected override IReadOnlyCollection<string> SkipPathsForThisPass(
+        IReadOnlyList<HidDeviceInfo> availableDevices)
+    {
+        var refs = availableDevices
+            .Select(d => new VgnInterfaceRef(d.DevicePath, d.VendorId, d.ProductId, d.Product, d.Serial))
+            .ToList();
+        return VgnDevicePairing.WirelessPathsToSkip(refs);
+    }
+
     /// <summary>系统给的名字是 <c>Geek Yanxuan | Dragonfly F1 V5 Turbo+</c>，去掉厂商前缀。</summary>
     protected override string BuildDisplayName(HidDeviceInfo info)
     {

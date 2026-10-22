@@ -29,6 +29,8 @@
 | 黑爵 AJAZZ | AK870 | `3151:4011` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |
 | 雷神 THUNDEROBOT | ML903 NearLink Se | `369B:0234` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |
 | 弱水时砂 ROSE | FIRST ANGEL | `38FF:0001` | [rose.md](rose.md) | ❌ 2.4G 无电量通道，不再投入 |
+| 飞智 FLYDIGI | APEX5 2.4G 接收器 | `37D7:2501` | [flydigi.md](flydigi.md) | 贡献者真机，维护者未复测 |
+| ATK | N9 系列耳机（dongle） | `373B:1204` | [atk-n9.md](atk-n9.md) | 协议已记录，**未实现**（电量走 CDC-ACM 串口） |
 
 ## 2. 共用号段的陷阱（认领前必读）
 

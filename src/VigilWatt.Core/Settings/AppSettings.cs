@@ -88,6 +88,7 @@ public class AppSettings
         ["Cherry"] = false,   // CHERRY PIXIU75：64 字节块通道读块 0x1A，要写帧，默认关闭
         ["Pulsar"] = false,   // 派世 X2 V2：17 字节 STATUS/POWER 查询，要写帧，默认关闭
         ["Eweadn"] = false,   // 前行者 X87 键盘 / S9 鼠标：两套协议都要发查询帧，默认关闭（eweadn.md §1）
+        ["Flydigi"] = false,  // 飞智 APEX5：发官方同款心跳（帧出自官方 service_log），会写，默认关闭（flydigi.md §2）
     };
 
     /// <summary>是否把本机（笔记本）电池也纳入监控。默认关闭——它是"另一类设备"，不像外设那样需要盯着，用户明确要时才开（见设置页「监控本机电量」）。

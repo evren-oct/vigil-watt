@@ -28,6 +28,8 @@
 | MCHOSE K7 V2 Ultra+ `0x4D` / `0x0900` / `0x0600` | 官方 M HUB WEB 运行时加载的打包 JS（`purify.es-*.js`）中的帧构造器 `i1e()`、设备信息解析 `_K()`、事件解析 `LA()`；用 CDP hook WebHID 取得原始报文后按命令码定位。 | 按其字段表自行实现 `MchoseK7Codec`；只发 `0x0900` 查询，被动解析 `0x0600` 事件。本机 K7 V2 Ultra+ 真机验证（连续 6.5 小时零告警），充电/断连两态未留证。 | 官方前端是协议依据，不表示引用其代码；未复制任何厂商源码。接口地图、帧格式与失败应答见 [mchose.md](mchose.md) §3。 |
 | 弱水时砂炽天使 2.4G | 官方 RoseLink（Flutter + BLE 自定义协议）及官方升级助手逆向；同时检查 2.4G dongle 的 HID 通道。 | 用于确认 RoseLink 电量协议不含电量命令、正常 2.4G 模式无可用电量通道；本项目不接入该设备电量。 | 逆向结论用于能力边界判断，不包含外部代码复用。见 [protocols.md](protocols.md)。 |
 | Classic Bluetooth 耳机电量 | Windows HFP 网关设备节点的 `DEVPKEY_Device_BatteryLevel` 属性；与 Windows 设置显示同源。 | 通过 PnP 设备节点读取；本机 EDIFIER W820NB 已验证。 | Windows 系统属性读取方案；不是 BLE AEP 属性。实现背景见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |
+| 飞智 APEX5 NewXInput 心跳 | 官方 Space Station 的 `service_log` 原文（帧一字未改）与一周心跳应答记录；贡献者 2026-10-19 的真机采集（插线前后 47 次采样、XInput 交叉验证）。 | 按官方帧自行实现 `FlydigiCodec`；只发这一条心跳，不做命令枚举。充电位 `0x11` 已三方印证，直接映射。本机无该设备，未复测。 | 官方软件日志是协议依据，不表示引用其代码。见 [flydigi.md](flydigi.md)。 |
+| ATK N9 耳机串口帧 | 贡献者 2026-10-19 的 CDC-ACM 采集（ATK HUB `app.asar` 里的串口参数与命令字节）。 | **只记录协议，未实现**：通道不是 HID，基类不支持；品牌开关也与 ATK 鼠标冲突。见 §5。 | 未复用官方代码；本机无该设备。见 [atk-n9.md](atk-n9.md)。 |
 
 ## 应用功能与实现方案
 

@@ -35,6 +35,9 @@
 | **CR-81** | 查询型插件休眠即判离线：CHERRY 深度休眠块通道静音 → 3 轮 `ReportPollFailure` 转离线 + 熔断，唤醒后最长等 5 分钟退避才恢复。GANSS / 雷神 ML903 同病，需要一次跨插件的「休眠不等于失联」方案 | `Plugins/Cherry/CherryPlugin.cs:PollDevice`、`Plugins/Ganss/GanssPlugin.cs:PollDevice`（cherry.md §1.6） | `open` |
 | **CR-82** | CHERRY 2.4G 与有线是两台设备（`PIXIU75 Dongle` / `PIXIU 75`），显示名不同，历史库各占一行、互报离线；要合并得改设备 ID 口径 | `Plugins/Cherry/CherryPlugin.cs:BuildDisplayName`（cherry.md §1.6） | `open` |
 | **CR-83** | DARKRIM 一条状态帧的尾部 CRC 与算法不符：同批另三条向量都能通过，这条实算 `0x5737`、帧里写 `0x3AEF`。疑似抓包转录错误，也可能是另一种 CRC 口径。用例已拆成 `[Fact(Skip)]` 保留证据，**不得改帧里的 CRC 值来让它变绿**；待作者真机复核 | `Tests/DarkrimCodecTests.cs:RealFrames_CrcMismatch_PendingAuthorCheck`（darkrim.md §1.2） | `open` |
+| **CR-86** | 飞智 APEX5 只测过接收器被拔，**手柄关机/休眠两态没测**；现在"关机"与"睡够 3 轮无应答"在界面上同为转离线。另：蓝牙模式 `0x1003` 心跳能通但电量字段未证实，按 PID 排除 | `Plugins/Flydigi/FlydigiPlugin.cs:PollDevice`（flydigi.md §6） | `open` |
+| **CR-87** | ATK N9 耳机协议已记录但**未实现**：电量走 CDC-ACM 串口，基类只有 HID 句柄；要落地需先给基类加传输抽象，且必须并进 ATK 品牌插件（§9 一行开关） | `docs/hardware/atk-n9.md` §5 | `open` |
+| **CR-88** | 写通道兜底没统一：`HidDeviceHandle.SetOutputReport` 只加在 `feat/atk`（ATK 那台 dongle 的 WriteFile 不通），飞智分支只用 `WriteOutput`。两支合并时统一成「先 `WriteOutput`、失败回落 `SetOutputReport`」，并确认飞智是否也需要 | `Hid/HidDeviceInfo.cs:SetOutputReport`、`Plugins/Flydigi/FlydigiPlugin.cs:Query`（flydigi.md §2） | `open` |
 
 ## 重构候选（未做）
 

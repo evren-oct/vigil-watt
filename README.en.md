@@ -76,6 +76,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | Pulsar X2 V2 · 17-byte STATUS/POWER | Implemented, off by default; writes frames. Contributor hardware only |
 | AJAZZ AK870 · feature `F7` status query | Implemented, off by default; writes frames. Contributor hardware only |
 | Thunderobot ML903 NearLink Se · `0xA0` device-info TLV | Implemented, off by default; writes frames. Contributor hardware only |
+| FLYDIGI APEX5 · NewXInput heartbeat (20% steps) | Implemented, off by default; writes frames. Contributor hardware only |
 | Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |
 | System battery · `GetSystemPowerStatus` | Implemented; can be enabled optionally |
 

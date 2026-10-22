@@ -62,6 +62,7 @@
 | AULA | `PluginEnabled["Aula"]` | **false** | 只发 `13 05 01` 会话帧；不进 15 秒发现 |
 | GANSS | `PluginEnabled["Ganss"]` | **false** | 发固定查询帧才能读电量；不进 15 秒发现 |
 | DualSense | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读蓝牙 HID `054C:0CE6` |
+| 飞智 | `PluginEnabled["Flydigi"]` | **false** | `37D7:2501` 厂商口 `0xFFA0/0x0001` 发官方同款心跳（帧出自官方 `service_log`）；见 `flydigi.md` §2 |
 
 三条硬约束：
 

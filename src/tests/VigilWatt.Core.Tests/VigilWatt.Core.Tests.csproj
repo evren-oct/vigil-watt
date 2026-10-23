@@ -56,6 +56,8 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\GameSir\GameSirCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnKeyboardCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnMouseCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\HyperX\Cf2Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Ble\ClassicDeviceName.cs" />
     <Compile Include="..\..\VigilWatt.Core\Ble\WatcherProps.cs" />

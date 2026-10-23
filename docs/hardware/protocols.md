@@ -25,6 +25,8 @@
 | 派世 PULSAR | X2 V2 | `3554:F508` | [pulsar.md](pulsar.md) | 贡献者真机 |
 | 寸渊影弑 DARKRIM | SHADOW | `3654:6901` | [darkrim.md](darkrim.md) | 贡献者真机 |
 | 盖世小鸡 GameSir | G7 Pro CE | `3537` | [gamesir.md](gamesir.md) | 贡献者真机 |
+| ATK / VXE | 无线鼠标（F1 Pro Max / F1 V3 ULTIMATE+） | `373B:101B` / `101A` / `1303` | [atk.md](atk.md) | 本机验证 |
+| HyperX | Cloud Flight 2 飓风炫彩版 | `03F0:0AC1` | [hyperx-cf2.md](hyperx-cf2.md) | 本机验证 |
 | 前行者 EWEADN | X87 键盘 / S9 鼠标 | `0C45:FEFE` / `372E:1026` | [eweadn.md](eweadn.md) | 贡献者真机 |
 | 黑爵 AJAZZ | AK870 | `3151:4011` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |
 | 雷神 THUNDEROBOT | ML903 NearLink Se | `369B:0234` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |

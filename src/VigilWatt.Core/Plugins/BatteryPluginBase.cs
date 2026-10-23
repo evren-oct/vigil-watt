@@ -89,7 +89,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         AppSettings.Load().PluginEnabled.TryGetValue(pluginName, out var on) && on;
 
     /// <summary>设备 ID：插件名 + 设备路径哈希。认领、黑名单、上报三处必须同一套规则，故只此一处生成。</summary>
-    protected string IdFor(string devicePath) => $"{Name.ToLowerInvariant()}:{PluginUtils.StableDeviceHash(devicePath)}";
+    protected virtual string IdFor(string devicePath) => $"{Name.ToLowerInvariant()}:{PluginUtils.StableDeviceHash(devicePath)}";
 
     /// <summary>
     /// <see cref="Probe"/> 是否会向设备写帧：写帧的插件（迈从会话帧 / 北通查询）保持默认 true，

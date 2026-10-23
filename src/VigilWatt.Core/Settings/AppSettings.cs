@@ -88,6 +88,10 @@ public class AppSettings
         ["Cherry"] = false,   // CHERRY PIXIU75：64 字节块通道读块 0x1A，要写帧，默认关闭
         ["Pulsar"] = false,   // 派世 X2 V2：17 字节 STATUS/POWER 查询，要写帧，默认关闭
         ["Eweadn"] = false,   // 前行者 X87 键盘 / S9 鼠标：两套协议都要发查询帧，默认关闭（eweadn.md §1）
+        ["Atk"] = false,      // ATK 8K 接收器（FF02 口 17B）：发 08 04…49 只读查询。
+                              // 会写帧故默认关；已实测 95% 且与 ATK HUB 共存无冲突（见 docs/hardware/atk.md）
+        ["HyperX"] = true,    // HyperX CF2（03F0:0AC1 FF90 口）：零写入，纯被动监听
+                              // 每变化 1% 的电量推送帧（见 docs/hardware/hyperx-cf2.md）
     };
 
     /// <summary>是否把本机（笔记本）电池也纳入监控。默认关闭——它是"另一类设备"，不像外设那样需要盯着，用户明确要时才开（见设置页「监控本机电量」）。

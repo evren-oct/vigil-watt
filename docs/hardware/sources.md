@@ -28,6 +28,8 @@
 | MCHOSE K7 V2 Ultra+ `0x4D` / `0x0900` / `0x0600` | 官方 M HUB WEB 运行时加载的打包 JS（`purify.es-*.js`）中的帧构造器 `i1e()`、设备信息解析 `_K()`、事件解析 `LA()`；用 CDP hook WebHID 取得原始报文后按命令码定位。 | 按其字段表自行实现 `MchoseK7Codec`；只发 `0x0900` 查询，被动解析 `0x0600` 事件。本机 K7 V2 Ultra+ 真机验证（连续 6.5 小时零告警），充电/断连两态未留证。 | 官方前端是协议依据，不表示引用其代码；未复制任何厂商源码。接口地图、帧格式与失败应答见 [mchose.md](mchose.md) §3。 |
 | 弱水时砂炽天使 2.4G | 官方 RoseLink（Flutter + BLE 自定义协议）及官方升级助手逆向；同时检查 2.4G dongle 的 HID 通道。 | 用于确认 RoseLink 电量协议不含电量命令、正常 2.4G 模式无可用电量通道；本项目不接入该设备电量。 | 逆向结论用于能力边界判断，不包含外部代码复用。见 [protocols.md](protocols.md)。 |
 | Classic Bluetooth 耳机电量 | Windows HFP 网关设备节点的 `DEVPKEY_Device_BatteryLevel` 属性；与 Windows 设置显示同源。 | 通过 PnP 设备节点读取；本机 EDIFIER W820NB 已验证。 | Windows 系统属性读取方案；不是 BLE AEP 属性。实现背景见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |
+| ATK / VXE 无线鼠标 17 字节查询帧 | 公开逆向项目 [0x44oge-ATK](https://github.com/ReformedDoge/0x44oge-ATK)（含 `calculateAtkChecksum` 与 "Only one that works" 的写入方式说明），本项目另做真机复核。 | 自行实现帧编解码（`AtkCodec`）；本机 F1 Pro Max `373B:101B` 已验证 95% / 4092 mV，与 ATK HUB 共存无冲突。 | 参考公开的协议分析自行实现，未复制其代码。休眠占位帧与设备归一见 [atk.md](atk.md)。 |
+| HyperX CF2 2.4G 推送帧 | 本机对 `FF90` 口的被动抓包（脚本独立于本项目），充电/放电状态与官方 NGENUITY 3.1.0 显示逐次对照。 | 零写入被动解析（`Cf2Codec`）；本机 CF2 飓风炫彩版 `03F0:0AC1` 已验证（放电 40%、充电 94→96%）。 | 全部由本机抓包事实得出，未复用厂商代码。字段推断被实机证伪两次的过程见 [hyperx-cf2.md](hyperx-cf2.md) §4。 |
 
 ## 应用功能与实现方案
 

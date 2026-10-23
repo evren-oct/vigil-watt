@@ -76,6 +76,8 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | Pulsar X2 V2 · 17-byte STATUS/POWER | Implemented, off by default; writes frames. Contributor hardware only |
 | AJAZZ AK870 · feature `F7` status query | Implemented, off by default; writes frames. Contributor hardware only |
 | Thunderobot ML903 NearLink Se · `0xA0` device-info TLV | Implemented, off by default; writes frames. Contributor hardware only |
+| ATK / VXE wireless mouse · 17-byte query frame | Implemented, off by default; writes frames. Verified on F1 Pro Max and F1 V3 ULTIMATE+ |
+| HyperX Cloud Flight 2 · passive 2.4 GHz push frames | Implemented, on by default; zero writes. Verified on a CF2 |
 | Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |
 | System battery · `GetSystemPowerStatus` | Implemented; can be enabled optionally |
 

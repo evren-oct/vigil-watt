@@ -62,6 +62,8 @@
 | AULA | `PluginEnabled["Aula"]` | **false** | 只发 `13 05 01` 会话帧；不进 15 秒发现 |
 | GANSS | `PluginEnabled["Ganss"]` | **false** | 发固定查询帧才能读电量；不进 15 秒发现 |
 | DualSense | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读蓝牙 HID `054C:0CE6` |
+| ATK | `PluginEnabled["Atk"]` | **false** | 只发一条固定查询帧 `08 04 …49`；该设备独占 `WriteFile` 不可用，回落 `HidD_SetOutputReport`（与 ATK HUB 共存实测无冲突） |
+| HyperX | 无（纯被动） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；dongle 固件只实现 interrupt OUT，写帧一律 `ERROR_INVALID_FUNCTION`，只读 `FF90` 推送帧 |
 
 三条硬约束：
 

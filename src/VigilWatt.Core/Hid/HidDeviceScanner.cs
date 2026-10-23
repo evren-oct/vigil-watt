@@ -12,6 +12,12 @@ public static class HidDeviceScanner
 {
     private static readonly object CacheGate = new();
     private static readonly Dictionary<string, HidDeviceInfo> Cache = new(StringComparer.OrdinalIgnoreCase);
+    private static DateTimeOffset? _cacheUpdatedAt;
+
+    public static (DateTimeOffset? UpdatedAt, IReadOnlyList<HidDeviceInfo> Devices) CachedSnapshot()
+    {
+        lock (CacheGate) return (_cacheUpdatedAt, Cache.Values.ToArray());
+    }
 
     /// <summary>只列接口路径，**不开任何句柄**（<see cref="Scan"/> 在它为每个新路径读 caps 之前先拿清单）。</summary>
     public static string[] EnumeratePaths()
@@ -37,7 +43,11 @@ public static class HidDeviceScanner
         var paths = EnumeratePaths();
         if (paths.Length == 0)
         {
-            lock (CacheGate) Cache.Clear();
+            lock (CacheGate)
+            {
+                Cache.Clear();
+                _cacheUpdatedAt = DateTimeOffset.Now;
+            }
             return list;
         }
 
@@ -72,6 +82,7 @@ public static class HidDeviceScanner
                 foreach (var key in Cache.Keys.Where(k => !seen.Contains(k)).ToList())
                     Cache.Remove(key);
             }
+            _cacheUpdatedAt = DateTimeOffset.Now;
         }
 
         // 明细只在设备集合变化时打，去重交给 Log.InfoOnChange（见 docs/dev/logging.md）。

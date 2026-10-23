@@ -18,6 +18,7 @@
 - [runtime-pitfalls.md](dev/runtime-pitfalls.md)：HID、蓝牙、窗口、DPI 和 XAML 运行时问题。
 - [monitor-identity.md](dev/monitor-identity.md)：显示器身份与名称（贴片选屏），三套 API 实测对照与降级链。
 - [logging.md](dev/logging.md)：日志级别、文件位置、保留和排障用法。
+- [diagnostics.md](dev/diagnostics.md)：本地诊断包、脱敏范围与缓存快照边界。
 - [comment-style.md](dev/comment-style.md)：代码注释规范。
 - [review-standard.md](dev/review-standard.md)：审查标准、红线和闭环流程。
 

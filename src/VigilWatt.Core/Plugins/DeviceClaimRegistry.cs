@@ -11,6 +11,9 @@ public sealed class DeviceClaimRegistry
 {
     private readonly ConcurrentDictionary<string, string> _ownerByPath = new();
 
+    public IReadOnlyDictionary<string, string> Snapshot() => _ownerByPath.ToArray()
+        .ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+
     /// <summary>认领接口。返回 false = 已被其他插件持有。</summary>
     public bool TryClaim(string devicePath, string pluginName)
     {

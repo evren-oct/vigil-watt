@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using VigilWatt.Core.Diagnostics;
 using System.Linq;
 using VigilWatt.App.Services;
 using VigilWatt.Core.Plugins;
@@ -587,6 +588,35 @@ public sealed partial class SettingsPage : Page
                 "可以从资源管理器直接双击 VigilWatt.App.exe 再试一次。",
                 "VigilWatt 开机自启未生效",
                 0x00000030 /* MB_ICONWARNING */);
+        }
+    }
+
+    private async void ExportDiagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Services.MainWindow == null) return;
+        ExportDiagnosticsButton.IsEnabled = false;
+        try
+        {
+            var owner = WinRT.Interop.WindowNative.GetWindowHandle(App.Services.MainWindow);
+            var path = DiagnosticSaveDialog.Choose(owner);
+            if (path == null) return;
+            var version = GetType().Assembly.GetName().Version?.ToString(3) ?? "未知";
+            var snapshot = App.Services.Manager.CreateDiagnosticSnapshot(version);
+            var logDirectory = Path.Combine(AppPaths.RootDir, "logs");
+            var privateValues = new[] { Environment.UserName, Environment.MachineName, Environment.UserDomainName };
+            await Task.Run(() => DiagnosticArchive.Export(path, snapshot, logDirectory, privateValues));
+            Log.Info("已导出脱敏诊断包");
+            ShowSavedFeedback("诊断包已保存，分享前请检查内容");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("诊断包导出失败", ex);
+            Native.MessageBoxW(IntPtr.Zero, "无法导出诊断包：\r\n" + ex.Message,
+                "VigilWatt 导出失败", 0x00000010);
+        }
+        finally
+        {
+            ExportDiagnosticsButton.IsEnabled = true;
         }
     }
 

@@ -35,6 +35,9 @@
 | **CR-81** | 查询型插件休眠即判离线：CHERRY 深度休眠块通道静音 → 3 轮 `ReportPollFailure` 转离线 + 熔断，唤醒后最长等 5 分钟退避才恢复。GANSS / 雷神 ML903 同病，需要一次跨插件的「休眠不等于失联」方案 | `Plugins/Cherry/CherryPlugin.cs:PollDevice`、`Plugins/Ganss/GanssPlugin.cs:PollDevice`（cherry.md §1.6） | `open` |
 | **CR-82** | CHERRY 2.4G 与有线是两台设备（`PIXIU75 Dongle` / `PIXIU 75`），显示名不同，历史库各占一行、互报离线；要合并得改设备 ID 口径 | `Plugins/Cherry/CherryPlugin.cs:BuildDisplayName`（cherry.md §1.6） | `open` |
 | **CR-83** | DARKRIM 一条状态帧的尾部 CRC 与算法不符：同批另三条向量都能通过，这条实算 `0x5737`、帧里写 `0x3AEF`。疑似抓包转录错误，也可能是另一种 CRC 口径。用例已拆成 `[Fact(Skip)]` 保留证据，**不得改帧里的 CRC 值来让它变绿**；待作者真机复核 | `Tests/DarkrimCodecTests.cs:RealFrames_CrcMismatch_PendingAuthorCheck`（darkrim.md §1.2） | `open` |
+| **CR-84** | PR #43（`03e9111`）仅在 `IsCandidate` 排除官方进程，官方后启动时已有句柄、被动监听和认领仍保留，未真正让位；合入前补释放与恢复的生命周期验证 | `PR #43:DarkrimPlugin.IsCandidate`、`BatteryPluginBase.AttachAsync`；见 `archive/pr43-review-2026-10-23.md` | `open` |
+| **CR-85** | PR #43（`03e9111`）进程探测异常返回 false，把“无法判断”当成“官方未运行”并恢复硬件访问；应暂缓接管并允许后续重查 | `PR #43:OfficialAppGuard.IsRunning`；见 `archive/pr43-review-2026-10-23.md` | `open` |
+| **CR-86** | PR #43（`03e9111`）的 PID 0575“真机帧”用例按生产偏移常量拼帧，偏移一起改错仍通过；需独立的固定抓包向量 | `PR #43:GameSirCodecTests.ParsesRealFrameFromPid0575`；见 `archive/pr43-review-2026-10-23.md` | `open` |
 
 ## 重构候选（未做）
 

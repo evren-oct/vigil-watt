@@ -385,6 +385,17 @@
                                     </Button>
                                 </StackPanel>
                             </Grid>
+                            <Border Style="{StaticResource RowDividerStyle}" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="诊断包" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="导出现有设备状态与最近日志，默认脱敏，仅保存到本机"
+                                               Style="{StaticResource RowDescStyle}" />
+                                </StackPanel>
+                                <Button Grid.Column="1" x:Name="ExportDiagnosticsButton"
+                                        Content="导出诊断包" VerticalAlignment="Center"
+                                        Click="ExportDiagnostics_Click" />
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </StackPanel>

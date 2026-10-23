@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using VigilWatt.Core.Ble;
+using VigilWatt.Core.Diagnostics;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Plugins;
@@ -112,6 +113,21 @@ public sealed class DeviceManager : IDisposable
         .OrderByDescending(d => d.IsOnline).ThenBy(d => d.DisplayName).ToList();
 
     public DeviceStatus? Find(string id) => _devices.TryGetValue(id, out var d) ? d : null;
+
+    public DiagnosticSnapshot CreateDiagnosticSnapshot(string appVersion)
+    {
+        var cached = HidDeviceScanner.CachedSnapshot();
+        var claims = _claims.Snapshot();
+        return new DiagnosticSnapshot(DateTimeOffset.Now, appVersion, Environment.OSVersion.VersionString,
+            System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString(), TimeZoneInfo.Local.Id,
+            Log.MinLevel.ToString(), _settings.LogLevel, new Dictionary<string, bool>(_settings.PluginEnabled),
+            Devices.Select(d => d.Clone()).Select(d => new DiagnosticDevice(d.Id, d.Name, d.Source.ToString(),
+                d.Protocol, d.IsOnline, d.BatteryPercent, d.Charging.ToString(), d.LastUpdated)).ToArray(),
+            cached.UpdatedAt, cached.Devices.Select(i => new DiagnosticHidInterface(i.DevicePath, i.VidPid,
+                i.UsagePage, i.Usage, i.InputReportLength, i.OutputReportLength, i.FeatureReportLength,
+                i.OutputReportId, i.Product, i.Manufacturer,
+                claims.TryGetValue(i.DevicePath, out var owner) ? owner : null)).ToArray());
+    }
 
     public RemainingTimeEstimateResult GetRemainingTimeEstimate(DeviceStatus device)
     {

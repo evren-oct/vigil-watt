@@ -17,6 +17,7 @@
 | 北通 BETOP | T9 / 鲲鹏20 | `20BC:5073` / `5191` | [betop.md](betop.md) | T9 本机验证；鲲鹏20 未验 |
 | 英菲克 ZHEN | 接收器 | `1D57:FA65` | [inphic.md](inphic.md) | 本机验证 |
 | HECATE | G5M Pro | `35BB:D00B` | [hecate.md](hecate.md) | 贡献者真机 |
+| HECATE | G3M Pro 升级版（Wireless Receiver） | `35BB:D3FB` | [hecate.md](hecate.md) §2 | 本机实测 |
 | DELUX | M900 Pro | `1D57:FA65` | [delux.md](delux.md) | 贡献者真机 |
 | AULA | F99 Pro | `3554:FA09` | [aula.md](aula.md) | 贡献者真机 |
 | 索尼 | DualSense 蓝牙 | `054C:0CE6` | [dualsense.md](dualsense.md) | 贡献者真机 |

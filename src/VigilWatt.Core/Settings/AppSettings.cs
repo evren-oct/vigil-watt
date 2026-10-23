@@ -81,6 +81,7 @@ public class AppSettings
         ["Darkrim"] = false,  // 寸渊影弑：发官方同款 GetBasicInfo(0x09) 才拿得到电量，会写帧，默认关（§16）
         ["GameSir"] = true,   // 盖世小鸡：每轮发一帧官方心跳开启状态流，60 秒突发读一次，默认开（§17）
         ["Hecate"] = true,    // HECATE/漫步者电竞：厂商集合 0xFF1C/0x0092 被动状态帧，零写入（见 docs/hardware/hecate.md §1）
+        ["HecateWireless"] = false, // HECATE Wireless Receiver 35BB:D3FB：17 字节 STATUS/POWER 查询，要写帧，默认关闭（hecate.md §2）
         ["Delux"] = false,    // 与英菲克同为 1D57:FA65，只读 0x000A；本机尚未扫到该接收器，默认关
         ["Aula"] = false,     // 狼蛛 F99 Pro：要写 0x13 会话帧才能读电量，默认关闭
         ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/dualsense.md）

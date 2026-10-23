@@ -57,6 +57,7 @@
 | 樱桃 | `PluginEnabled["Cherry"]` | **false** | 046A 块通道读 `0x1A` 必须发帧；`SupportsDiscoveryProbe` + `ProbeCooldown` 10s；见 `cherry.md` §1.7 |
 | 派世 | `PluginEnabled["Pulsar"]` | **false** | 3554:F508 的 STATUS/POWER 两帧查询；同上节拍；见 `pulsar.md` §1.6 |
 | 英菲克 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；仅读 report `0x03` |
+| HECATE（查询型） | `PluginEnabled["HecateWireless"]` | **false** | 35BB:D3FB 只发 STATUS `08 03` / POWER `08 04` 两条只读查询；走 15 秒发现节拍，见 `hecate.md` §2 |
 | HECATE | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；仅读 `35BB:D00B` 的 report `0x04` |
 | DELUX | 无（纯被动） | **false** | 与英菲克同 VID/PID，只读 `0x000A`；本机未扫到接收器，故默认关 |
 | AULA | `PluginEnabled["Aula"]` | **false** | 只发 `13 05 01` 会话帧；不进 15 秒发现 |

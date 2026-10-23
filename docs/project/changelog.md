@@ -3,6 +3,10 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-10-23
+
+- **新增 HECATE Wireless Receiver（`35BB:D3FB`）插件 `HecateWireless`**：接收器带与派世同族的 17 字节 `0xFF02` 通道，本机 STATUS/POWER 实测 50% / 3848 mV，复用 `PulsarCodec`。要写两条只读查询，所以与被动的 `Hecate` 插件分开、默认关。鼠标型号协议里没找到，由用户告知为 G3M Pro 升级版，设备名据此写死；充电位未验证。见 `hardware/hecate.md` §2。
+
 ## 2026-10-21
 
 - **MCHOSE K7 V2 Ultra+（`3837:1018`）**：接入 `mouse-k7` 协议——`0x0900` 查询设备信息、被动解析 `0x0600` 电源事件。这颗 dongle 的 feature 通道写通读不通（`GetFeature` 恒 `ERROR_GEN_FAILURE`），原有的 feature 读族与 E2 被动路径一个都不成立，这才是它原先完全读不到电量的根因。帧取自官方 M HUB 运行时 JS 的 `i1e()` / `_K()` / `LA()`，不是猜的。新增 `MchoseK7Codec`（纯函数 + 16 个真机帧向量用例），分类器加 `MouseK7` 并排在 `MouseV2` 之前。见 `hardware/protocols.md` §15。

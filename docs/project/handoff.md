@@ -36,6 +36,7 @@
 | 雷柏 VT3 二代（VID_24AE&PID_1412） | status-report7 被动心跳 | 已打通，零写入。雷柏不是 HID++，勿让 Logitech 插件认领 |
 | 英菲克 ZHEN（VID_1D57&PID_FA65） | report 0x03 被动状态帧 | 已打通，零写入；放电 `0x01` / 充电 `0x03` 已校准（inphic.md §1） |
 | HECATE G5M Pro（VID_35BB&PID_D00B） | report 0x04 被动状态帧 | 代码已接入，默认开、零写入。帧与充放电是贡献者声明，本机未复测（hecate.md §1） |
+| HECATE G3M Pro 升级版（接收器 VID_35BB&PID_D3FB） | 17 字节 `0xFF02` 通道，STATUS `08 03` / POWER `08 04` | 本机实测 50% / 3848 mV，默认关、会写两条只读帧。充电位未验证（hecate.md §2） |
 | AULA F99 Pro（VID_3554&PID_FA09） | `0x13` 会话后读推送 | 代码已接入，默认关。不进 15 秒发现。贡献者声明，本机未复测（aula.md §1） |
 | DELUX M900 Pro（VID_1D57&PID_FA65） | `0x000A` 被动 5 字节帧 | 代码已接入，默认关。与英菲克同 VID/PID；2026-10-19 本机没扫到 `1D57`（delux.md §1） |
 | DualSense（VID_054C&PID_0CE6） | 蓝牙 HID report `0x31` | 代码已接入，默认开、零写入。约 10% 一档。贡献者声明，本机未复测（dualsense.md） |

@@ -78,8 +78,8 @@ public class AppSettings
         ["Ajazz"] = false,
         ["Thunderobot"] = false,
         ["Inphic"] = true,    // 英菲克 report 0x03 被动监听，不发送任何帧
-        ["Darkrim"] = false,  // 寸渊影弑：发官方同款 GetBasicInfo(0x09) 才拿得到电量，会写帧，默认关（§16）
-        ["GameSir"] = true,   // 盖世小鸡：每轮发一帧官方心跳开启状态流，60 秒突发读一次，默认开（§17）
+        ["Darkrim"] = false,  // 寸渊影弑：发官方同款 GetBasicInfo(0x09) 才拿得到电量，会写帧（darkrim.md §1.6）
+        ["GameSir"] = false,  // 盖世小鸡：要发心跳帧才能读到电量，属主动通信（gamesir.md §1.4）
         ["Hecate"] = true,    // HECATE/漫步者电竞：厂商集合 0xFF1C/0x0092 被动状态帧，零写入（见 docs/hardware/hecate.md §1）
         ["Delux"] = false,    // 与英菲克同为 1D57:FA65，只读 0x000A；本机尚未扫到该接收器，默认关
         ["Aula"] = false,     // 狼蛛 F99 Pro：要写 0x13 会话帧才能读电量，默认关闭

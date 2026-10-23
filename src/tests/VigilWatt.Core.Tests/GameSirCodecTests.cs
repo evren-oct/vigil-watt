@@ -132,4 +132,23 @@ public class GameSirCodecTests
     [InlineData("", "")]
     public void CleanProductName_StripsVendorPrefix(string input, string expected)
         => Assert.Equal(expected, GameSirCodec.CleanProductName(input));
+
+    /// <summary>真机帧（2026-10-23，PID 0x0575 / Col03）：布局与 0x10B9 相同，两种 PID 共用一套偏移。</summary>
+    [Fact]
+    public void ParsesRealFrameFromPid0575()
+    {
+        var frame = new byte[64];
+        frame[0] = GameSirCodec.StateReportId;
+        frame[1] = 0x7F;
+        frame[2] = 0x80;
+        frame[3] = 0x7F;
+        frame[4] = 0x80;
+        frame[5] = 0x0F;
+        frame[GameSirCodec.ChargeStateOffset] = 0x00;
+        frame[GameSirCodec.BatteryOffset] = 0x64;
+
+        Assert.True(GameSirCodec.TryParseState(frame, out var state));
+        Assert.Equal(100, state.Percent);
+        Assert.False(state.Charging);
+    }
 }

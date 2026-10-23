@@ -10,7 +10,7 @@
     <RootNamespace>VigilWatt.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 版本号单一来源：打包脚本 scripts/build-installer.ps1 从发布 exe 的 FileVersion 读取 -->
-    <Version>1.2.3</Version>
+    <Version>1.2.4</Version>
     <Authors>evren-oct</Authors>
     <Company>evren-oct</Company>
     <Product>VigilWatt</Product>

@@ -53,6 +53,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Sony\DualSenseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Darkrim\DarkrimCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Darkrim\OfficialAppGuard.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\GameSir\GameSirCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnKeyboardCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnMouseCodec.cs" />

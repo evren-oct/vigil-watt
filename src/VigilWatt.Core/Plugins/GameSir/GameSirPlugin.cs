@@ -19,7 +19,7 @@ public sealed class GameSirPlugin : BatteryPluginBase
 
     public override string Name => "GameSir";
     public override string DisplayName => "盖世小鸡";
-    public override string DisplayNameEn => "GameSir";
+    public override string DisplayNameEn => "GAMESIR";
     public override DeviceKind Kind => DeviceKind.Gamepad;
 
     /// <summary>心跳要写帧，不参与 15 秒快速发现（走 <see cref="ProbeCooldown"/> 控制重试）。</summary>
@@ -114,6 +114,8 @@ public sealed class GameSirPlugin : BatteryPluginBase
 
         var deadline = DateTime.UtcNow + window;
         int frames = 0;
+        var reportIds = new Dictionary<byte, int>();
+        byte? firstId = null;
         while (DateTime.UtcNow < deadline)
         {
             var remaining = deadline - DateTime.UtcNow;
@@ -124,13 +126,20 @@ public sealed class GameSirPlugin : BatteryPluginBase
             if (input == null) continue;
             frames++;
 
+            byte id = input.Length > 0 ? input[0] : (byte)0;
+            firstId ??= id;
+            reportIds[id] = reportIds.TryGetValue(id, out var n) ? n + 1 : 1;
+
             if (!GameSirCodec.TryParseState(input, out var state)) continue;
 
             Log.Info($"盖世小鸡 状态帧: 电量={state.Percent}% 充电={state.Charging} 原始={Log.Hex(input)}");
             return (state.Percent, state.Charging);
         }
 
-        Log.Info($"盖世小鸡 心跳后无有效状态帧（收到 {frames} 帧）: {info.DevicePath}");
+        // 记 report ID 分布：收到几千帧却解析不出时，才能立刻看出是"接到了别的集合"还是"布局变了"。
+        var dist = string.Join(",", reportIds.OrderByDescending(kv => kv.Value).Take(4)
+            .Select(kv => $"0x{kv.Key:X2}×{kv.Value}"));
+        Log.Info($"盖世小鸡 心跳后无有效状态帧（收到 {frames} 帧，report={dist}，首帧 id=0x{(firstId ?? 0):X2}）: {info.DevicePath}");
         return null;
     }
 

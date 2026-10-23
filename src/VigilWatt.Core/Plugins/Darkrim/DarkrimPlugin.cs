@@ -52,13 +52,20 @@ public sealed class DarkrimPlugin : BatteryPluginBase
     /// 候选接口：寸渊影弑 VID/PID + 厂商页 0xFF02。
     /// dongle 是复合设备，只有 MI_03 与 MI_04&Col02 两个厂商集合会跑 0x11 通知，
     /// 其余（音频 / consumer / HID-compliant headset）不碰。
+    ///
+    /// 官方客户端在跑时直接不认领：两边撞同一个应答队列会让 dongle 重置链路（见 darkrim.md §1.7）。
+    /// 不认领 = 不打开句柄 = 真正让位；官方退出后下一轮自动恢复。
     /// </summary>
     protected override bool IsCandidate(HidDeviceInfo info)
     {
+        if (OfficialAppGuard.IsRunning()) return false;
         if (info.VendorId != DarkrimVid || info.ProductId != ShadowPid) return false;
         if (info.UsagePage != VendorUsagePage) return false;
         return info.Usage == VendorUsage || info.InputReportLength >= 32;
     }
+
+    /// <summary>让位期间即便句柄还在（官方刚启动），也不再发查询。</summary>
+    protected override bool ProbeWrites => !OfficialAppGuard.IsRunning();
 
     /// <summary>
     /// 探测 = 发一条 GetBasicInfo 查询，窗口内等电量通知。
@@ -79,9 +86,10 @@ public sealed class DarkrimPlugin : BatteryPluginBase
         return (ProtocolName, value.Percent, DarkrimCodec.MapCharging(value.Percent, value.Charging));
     }
 
-    /// <summary>轮询 = 发一条 GetBasicInfo 查询。写入被开关/熔断挡住时不发帧。</summary>
+    /// <summary>轮询 = 发一条 GetBasicInfo 查询。写入被开关/熔断/官方让位挡住时不发帧。</summary>
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
+        if (OfficialAppGuard.IsRunning()) return null;
         if (!CanWrite(dev)) return null;
 
         var read = QueryAsync(dev.Handle, TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();

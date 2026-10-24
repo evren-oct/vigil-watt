@@ -5,9 +5,12 @@ using VigilWatt.Core.Utils;
 namespace VigilWatt.Core.Plugins.Hecate;
 
 /// <summary>
-/// 功 能： HECATE 2.4G 鼠标插件，只被动读取状态帧。
-/// 2026/10/19 14:55:00 xliu
-/// 帧布局见 docs/hardware/hecate.md §1。6 秒内没有任何报文则不认领。
+/// 功 能： HECATE 2.4G 鼠标插件：被动听状态帧 + 主动查询（写 0x04 查询帧，见 HecateCodec.CreateQuery）。
+/// 2026/10/21 00:00:00 xliu
+/// 主动查询使电量不依赖 HECATE Connect（Connect 关闭也能读），离线判定同时变为真实
+/// （查询无应答 = 设备真的不在，不再被接收器会话心跳污染，见 issue #11 现象 1 残余形态）。
+/// 会向设备写帧：品牌开关 PluginEnabled["Hecate"] 默认关闭（会写帧的插件按贡献指南
+/// 默认关闭），用户在设置页手动开启后主动查询与被动监听同时生效。帧布局见 docs/hardware/hecate.md §1。
 /// </summary>
 public sealed class HecatePlugin : BatteryPluginBase
 {
@@ -20,24 +23,26 @@ public sealed class HecatePlugin : BatteryPluginBase
     public override string DisplayName => "漫步者电竞";
     public override string DisplayNameEn => "HECATE";
     public override DeviceKind Kind => DeviceKind.Mouse;
-    public override bool SupportsFastDiscovery => true;
+    // 会写帧的插件不进 15 秒快速发现档（避免探测写入被抬到 4 倍频），走 ≤60 秒常规节拍。
+    public override bool SupportsFastDiscovery => false;
     protected override TimeSpan ProbeCooldown => TimeSpan.FromSeconds(5);
-    protected override bool WritesEnabled => false;
-    protected override bool ProbeWrites => false;
+    protected override bool WritesEnabled => true;
+    protected override bool ProbeWrites => true;
     protected override bool SupportsPassiveListen => true;
 
     /// <summary>只有心跳、没有电量帧时设备仍在；标离线会从列表里消失。</summary>
     protected override bool NullPercentMeansOffline => false;
 
-    public const string DormantProtocol = "2.4G（电量推送休眠：打开一次 HECATE Connect 唤醒）";
+    /// <summary>探针听到了报文但没有电量帧：设备无应答（关机/休眠/不在 2.4G）。
+    /// 主动查询模式下下一轮轮询会自动重试，不再需要用户打开 Connect 唤醒。</summary>
+    public const string DormantProtocol = "2.4G（未收到应答：设备可能关机或休眠，恢复后自动更新）";
 
-    /// <summary>没有查询命令，轮询返回 null 不是失联。静音 60 秒才离线。</summary>
-    protected override OfflinePolicy Offline { get; } = new()
-    {
-        Confirm = TimeSpan.FromSeconds(10),
-        Silence = TimeSpan.FromSeconds(60),
-        CountPollFailures = false,
-    };
+    /// <summary>主动查询模式离线判定（GANSS 同款）：Silence = Zero——查询帧就是存活探针，
+    /// 不再用沉默判定（Connect 关闭时查询周期 60s ≈ 沉默阈值会造成在线/离线横跳；
+    /// Connect 开启时心跳又会污染沉默判定）。离线 = 连续 3 次查询无应答（MaxFailures=3），
+    /// 约 3 个主轮询周期（≈3 分钟），行为确定、零横跳。深度休眠的鼠标也会在约 3 分钟后
+    /// 显示离线，动一下鼠标即恢复——查询无应答与真实离线不可区分，固有限制取中庸。</summary>
+    protected override OfflinePolicy Offline { get; } = new() { CountPollFailures = false };
 
     protected override bool IsCandidate(HidDeviceInfo info)
         => info.VendorId == HecateVid && info.ProductId == G5mProPid
@@ -51,13 +56,48 @@ public sealed class HecatePlugin : BatteryPluginBase
     protected override async Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
         HidDeviceHandle handle)
     {
+        // 主动查询先写一帧：Connect 关闭时被动流是静默的，查询让状态帧立刻回来，认领从
+        // "6 秒等不到→休眠态" 变成 "亚秒级拿到真实电量"。
+        if (WritesEnabled && ProbeWrites)
+            handle.WriteOutput(HecateCodec.CreateQuery(), TimeSpan.FromMilliseconds(500));
+
         var heard = await ListenAsync(handle, TimeSpan.FromSeconds(6)).ConfigureAwait(false);
         if (heard.Percent.HasValue) return ("2.4G", heard.Percent, heard.Charging);
         if (!heard.AnyInput) return null;
         return (DormantProtocol, null, ChargingState.Unknown);
     }
 
-    protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice _) => null;
+    /// <summary>主动查询：连问 3 次（间隔 300ms）排除瞬态，仍无应答计一次轮询失败
+    /// （鼠标关机/深度休眠/不在 2.4G）。</summary>
+    protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
+    {
+        if (!CanWrite(dev)) return null;
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            var result = QueryAsync(dev.Handle).GetAwaiter().GetResult();
+            if (result.HasValue)
+            {
+                if (attempt > 1) Log.Info($"HECATE 第 {attempt} 次查询成功");
+                ReportPollAnswered(dev);
+                return result;
+            }
+            if (attempt < 3) Thread.Sleep(300);
+        }
+        Log.Warn("HECATE 连续 3 次查询无应答（鼠标关机/深度休眠/不在 2.4G）");
+        ReportPollFailure(dev);
+        return null;
+    }
+
+    private async Task<(int? Percent, ChargingState Charging)?> QueryAsync(HidDeviceHandle handle)
+    {
+        if (!WritesEnabled || !IsCandidate(handle.Info)) return null;
+        if (!handle.WriteOutput(HecateCodec.CreateQuery(), TimeSpan.FromMilliseconds(500)))
+            return null;
+        var heard = await ListenAsync(handle, TimeSpan.FromMilliseconds(750)).ConfigureAwait(false);
+        if (heard.Percent.HasValue) return (heard.Percent, heard.Charging);
+        Log.Warn("HECATE 电量查询未收到有效响应（鼠标可能关机/休眠，动一下鼠标再试）");
+        return null;
+    }
 
     protected override (int? Percent, ChargingState Charging, bool Offline)? TryParsePassiveInput(
         TrackedDevice dev, byte[] input)

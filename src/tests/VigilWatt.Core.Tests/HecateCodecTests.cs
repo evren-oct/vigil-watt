@@ -113,4 +113,17 @@ public class HecateCodecTests
 
         Assert.Equal(expected, s.Charging);
     }
+    [Fact]
+    public void CreateQuery_builds_status_query_frame()
+    {
+        var q = HecateCodec.CreateQuery();
+
+        Assert.Equal(HecateCodec.ReportLength, q.Length);
+        Assert.Equal(HecateCodec.StatusReportId, q[0]);
+        Assert.Equal(HecateCodec.StatusMarker, q[HecateCodec.StatusMarkerIndex]);
+        for (int i = 0; i < q.Length; i++)
+            if (i != 0 && i != HecateCodec.StatusMarkerIndex)
+                Assert.Equal(0, q[i]);
+    }
+
 }

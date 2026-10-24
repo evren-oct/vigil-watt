@@ -54,6 +54,21 @@ internal static class HecateCodec
     public static bool IsHeartbeat(byte[] input)
         => input.Length >= 8 && input[0] == StatusReportId && input[1] == 0xAA && input[3] == 0xAA;
 
+    /// <summary>
+    /// 功 能： 电量查询帧。写 0x04 输出报告（其余字节补零），设备即时回 0x04 状态帧。
+    /// 2026/10/21 00:00:00 xliu
+    /// 实测（1.2.2/1.2.3，Connect 完全关闭）：5/5 成功、延迟 &lt;1ms，电量与充电标志
+    /// 与官方 Connect 显示一致。命令 ID 0x1A 来自 Connect 主程序命令表
+    /// （04 00 00 {1A,18,19,17,16,0B}，见 docs/hardware/hecate.md §2）。
+    /// </summary>
+    public static byte[] CreateQuery()
+    {
+        var frame = new byte[ReportLength];
+        frame[0] = StatusReportId;
+        frame[StatusMarkerIndex] = StatusMarker;
+        return frame;
+    }
+
     private static HecateStatus NotStatus() =>
         new(HecateFrameKind.NotStatus, 0, ChargingState.Unknown, 0);
 }

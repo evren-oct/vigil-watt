@@ -9,5 +9,9 @@ namespace VigilWatt.Core.Devices;
 /// </summary>
 public static class DeviceBlocklist
 {
-    public static bool IsBlocked(string deviceId) => AppSettings.Load().BlockedDevices.ContainsKey(deviceId);
+    public static bool IsBlocked(string deviceId)
+    {
+        var settings = AppSettings.Load();
+        return settings.BlockedDevices.ContainsKey(settings.CanonicalDeviceId(deviceId));
+    }
 }

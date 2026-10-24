@@ -35,6 +35,7 @@
 | **CR-81** | 查询型插件休眠即判离线：CHERRY 深度休眠块通道静音 → 3 轮 `ReportPollFailure` 转离线 + 熔断，唤醒后最长等 5 分钟退避才恢复。GANSS / 雷神 ML903 同病，需要一次跨插件的「休眠不等于失联」方案 | `Plugins/Cherry/CherryPlugin.cs:PollDevice`、`Plugins/Ganss/GanssPlugin.cs:PollDevice`（cherry.md §1.6） | `open` |
 | **CR-82** | CHERRY 2.4G 与有线是两台设备（`PIXIU75 Dongle` / `PIXIU 75`），显示名不同，历史库各占一行、互报离线；要合并得改设备 ID 口径 | `Plugins/Cherry/CherryPlugin.cs:BuildDisplayName`（cherry.md §1.6） | `open` |
 | **CR-83** | DARKRIM 一条状态帧的尾部 CRC 与算法不符：同批另三条向量都能通过，这条实算 `0x5737`、帧里写 `0x3AEF`。疑似抓包转录错误，也可能是另一种 CRC 口径。用例已拆成 `[Fact(Skip)]` 保留证据，**不得改帧里的 CRC 值来让它变绿**；待作者真机复核 | `Tests/DarkrimCodecTests.cs:RealFrames_CrcMismatch_PendingAuthorCheck`（darkrim.md §1.2） | `open` |
+| **CR-87** | 罗技充电直连误扫六槽、USB/无线缺少物理身份关联：代码已修，保留采样与用户配置，待真机插拔验收 | `LogitechPlugin.DiscoverDevices`、`HidppDeviceIdentity`、`HistoryStore.ReassignDeviceIds`；见 `archive/logitech-charging-review-2026-10-24.md` | `doing` |
 
 ## 重构候选（未做）
 

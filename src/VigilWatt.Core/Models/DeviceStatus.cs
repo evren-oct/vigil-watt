@@ -27,6 +27,8 @@ public class DeviceStatus
     /// <summary>稳定唯一 ID：BLE 用蓝牙地址，2.4G 用 HID 路径哈希 + 设备索引。</summary>
     public required string Id { get; init; }
 
+    public IReadOnlyList<string> PreviousIds { get; init; } = Array.Empty<string>();
+
     public required string Name { get; set; }
 
     public required DeviceSource Source { get; init; }
@@ -50,9 +52,10 @@ public class DeviceStatus
     public string DisplayName => string.IsNullOrEmpty(Name) ? Id : Name;
 
     /// <summary>深拷贝。数据源会复用并原地改写自己的实例，入库前必须快照，否则变化判定比较同一对象恒为假（见 docs/project/architecture.md §6）。</summary>
-    public DeviceStatus Clone() => new()
+    public DeviceStatus Clone(string? id = null) => new()
     {
-        Id = Id,
+        Id = id ?? Id,
+        PreviousIds = PreviousIds.ToArray(),
         Name = Name,
         Source = Source,
         Kind = Kind,

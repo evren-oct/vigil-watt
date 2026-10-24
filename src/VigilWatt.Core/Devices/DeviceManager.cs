@@ -37,6 +37,9 @@ public sealed class DeviceManager : IDisposable
     private readonly List<IBatteryPlugin> _plugins;
     private readonly DeviceClaimRegistry _claims = new();
     private readonly ConcurrentDictionary<string, DeviceStatus> _devices = new();
+    private readonly object _identityGate = new();
+    private readonly Dictionary<string, string> _appliedAliases = new();
+    private bool _aliasesRestored;
     private readonly ConcurrentDictionary<string, RemainingTimeEstimateResult> _remainingTimeEstimates = new();
 
     /// <summary>每台设备"是否已就低电量提醒过"。电量回到阈值之上（或充电）就复位，下次跌破再提醒一次；
@@ -72,6 +75,7 @@ public sealed class DeviceManager : IDisposable
     {
         _settings = settings;
         _history = history;
+        _history.DeviceIdResolver = _settings.CanonicalDeviceId;
         _plugins = DiscoverPlugins();
         _ble.DeviceUpdated += d => Upsert(d);
         _classic.DeviceUpdated += Upsert;
@@ -111,7 +115,7 @@ public sealed class DeviceManager : IDisposable
     public IReadOnlyCollection<DeviceStatus> Devices => _devices.Values
         .OrderByDescending(d => d.IsOnline).ThenBy(d => d.DisplayName).ToList();
 
-    public DeviceStatus? Find(string id) => _devices.TryGetValue(id, out var d) ? d : null;
+    public DeviceStatus? Find(string id) => _devices.TryGetValue(_settings.CanonicalDeviceId(id), out var d) ? d : null;
 
     public RemainingTimeEstimateResult GetRemainingTimeEstimate(DeviceStatus device)
     {
@@ -160,11 +164,12 @@ public sealed class DeviceManager : IDisposable
             int added = 0;
             foreach (var stat in _history.GetDeviceStats())
             {
+                var restoredId = _settings.CanonicalDeviceId(stat.DeviceId);
                 if (stat.Last < cutoff) continue;
-                if (_devices.ContainsKey(stat.DeviceId)) continue;
+                if (_devices.ContainsKey(restoredId)) continue;
                 // 用户删掉/屏蔽的设备不要再从历史补回来（历史通常已随删除清掉，这里是纵深防御）
-                if (_settings.BlockedDevices.ContainsKey(stat.DeviceId)) continue;
-                if (_settings.DismissedDevices.ContainsKey(stat.DeviceId)) continue;
+                if (_settings.BlockedDevices.ContainsKey(restoredId)) continue;
+                if (_settings.DismissedDevices.ContainsKey(restoredId)) continue;
 
                 // 用户主动关掉的品牌插件，不要靠历史记录把它"复活"成离线条目——
                 // 那会让"关了开关却还显示"的老问题换个形式回来。
@@ -181,7 +186,7 @@ public sealed class DeviceManager : IDisposable
 
                 Upsert(new DeviceStatus
                 {
-                    Id = stat.DeviceId,
+                    Id = restoredId,
                     Name = stat.Name,
                     Source = SourceFromId(stat.DeviceId),
                     Kind = stat.Kind != DeviceKind.Unknown ? stat.Kind
@@ -193,7 +198,7 @@ public sealed class DeviceManager : IDisposable
                     LastUpdated = stat.Last,
                     IsOnline = false,
                 });
-                _tombstoneIds.TryAdd(stat.DeviceId, 0);
+                _tombstoneIds.TryAdd(restoredId, 0);
                 added++;
             }
             if (added > 0)
@@ -433,6 +438,7 @@ public sealed class DeviceManager : IDisposable
     /// </summary>
     public DeviceRemoveResult RemoveOfflineDevice(string id, bool block)
     {
+        id = _settings.CanonicalDeviceId(id);
         if (!_devices.TryGetValue(id, out var device)) return DeviceRemoveResult.NotFound;
         if (device.Source == DeviceSource.System) return DeviceRemoveResult.SystemDevice;
         if (device.IsOnline) return DeviceRemoveResult.Online;
@@ -523,6 +529,7 @@ public sealed class DeviceManager : IDisposable
     {
         try
         {
+            RestoreDeviceAliases();
             var hidDevices = HidDeviceScanner.Scan();
 
             var attachTasks = new List<Task<(IBatteryPlugin Plugin, IReadOnlyList<DeviceStatus> Claimed)>>();
@@ -631,6 +638,9 @@ public sealed class DeviceManager : IDisposable
 
     private void Upsert(DeviceStatus incoming)
     {
+        AdoptDeviceIdentity(incoming);
+        var canonical = _settings.CanonicalDeviceId(incoming.Id);
+        if (canonical != incoming.Id) incoming = incoming.Clone(canonical);
         // 删除过的设备每轮都会被插件重新上报（接口还在位），黑名单与删除标记在这里一刀切。
         if (DeviceRemoval.ShouldDrop(_settings.BlockedDevices, _settings.DismissedDevices, incoming.Id, incoming.IsOnline))
             return;
@@ -680,6 +690,37 @@ public sealed class DeviceManager : IDisposable
 
         CheckLowBattery(status, previousPercent);
         RefreshRemainingTimeEstimate(status, notify: true);
+    }
+
+    private void AdoptDeviceIdentity(DeviceStatus incoming)
+    {
+        var aliases = incoming.PreviousIds.Where(id => id != incoming.Id).Distinct(StringComparer.Ordinal).ToArray();
+        if (aliases.Length == 0) return;
+        lock (_identityGate)
+        {
+            if (aliases.All(id => _appliedAliases.TryGetValue(id, out var target) && target == incoming.Id)) return;
+            if (!DeviceIdentityMigration.TryApply(_settings, incoming.Id, aliases, _settings.Save))
+                throw new IOException("设备身份映射保存失败，暂缓合并历史。");
+            int migrated = _history.ReassignDeviceIds(_settings.DeviceAliases);
+            foreach (var pair in _settings.DeviceAliases)
+            {
+                DropEntry(pair.Key);
+                _appliedAliases[pair.Key] = pair.Value;
+            }
+            Log.Info($"设备身份已关联 {aliases.Length} 个旧标识，保留并归并 {migrated} 条历史采样");
+            DevicesChanged?.Invoke();
+        }
+    }
+
+    private void RestoreDeviceAliases()
+    {
+        lock (_identityGate)
+        {
+            if (_aliasesRestored) return;
+            _history.ReassignDeviceIds(_settings.DeviceAliases);
+            foreach (var pair in _settings.DeviceAliases) _appliedAliases[pair.Key] = pair.Value;
+            _aliasesRestored = true;
+        }
     }
 
     private void RefreshRemainingTimeEstimate(DeviceStatus device, bool notify)

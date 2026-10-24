@@ -20,6 +20,7 @@
     { "pid": "C53D", "family": "lightspeed", "maxSlots": 1, "reportPreference": "long" },
     { "pid": "C53F", "family": "lightspeed", "maxSlots": 1, "reportPreference": "long" },
     { "pid": "C541", "family": "lightspeed", "maxSlots": 1, "reportPreference": "long" },
+    { "pid": "C543", "family": "lightspeed", "maxSlots": 1, "reportPreference": "long" },
     { "pid": "C545", "family": "lightspeed", "maxSlots": 1, "reportPreference": "long" },
     { "pid": "C547", "family": "lightspeed", "maxSlots": 1, "reportPreference": "long" },
     { "pid": "C548", "family": "bolt", "maxSlots": 6, "reportPreference": "long" }

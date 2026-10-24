@@ -31,6 +31,12 @@
     它靠 HistoryStore(dbPath) 的可选构造参数指向临时库，测试因此不碰真实 history.db。
   -->
   <ItemGroup>
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppDeviceIdentity.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Devices\DeviceIdentityMigration.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Settings\AppSettings.cs" />
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Logitech\logitech-hidpp.json"
+                      LogicalName="VigilWatt.Core.Plugins.Logitech.logitech-hidpp.json" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Thunderobot\ThunderobotCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Ajazz\AjazzCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\BatteryReadingFilter.cs" />

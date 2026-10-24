@@ -84,6 +84,7 @@ public sealed class LogitechPlugin : IBatteryPlugin
          info.UsagePage == VendorUsagePage || info.Usage == VendorUsagePage);
 
     private readonly ConcurrentDictionary<string, ReceiverSession> _sessions = new();
+    private readonly HidppDeviceIdentity _identity = new();
 
     /// <summary>认领表：Attach 时记下来，<see cref="ReconcileRemovals"/> 没有 claims 参数也要能释放。</summary>
     private DeviceClaimRegistry? _claims;
@@ -114,8 +115,9 @@ public sealed class LogitechPlugin : IBatteryPlugin
         public bool DirectDevice;                       // true = 设备本体直连，false = 接收器
         public bool InitialScanDone;                    // 首次全槽扫描已完成
         public int NotReadyScans;                       // 连续"整轮一个都没应答"的次数（接收器刚插上时会这样）
-        public readonly Dictionary<byte, DevEntry> Devices = new();
-        public readonly Dictionary<byte, DateTimeOffset> EmptySlotUntil = new();
+        public readonly ConcurrentDictionary<byte, DevEntry> Devices = new();
+        public readonly ConcurrentDictionary<byte, byte> ProbingSlots = new();
+        public readonly ConcurrentDictionary<byte, DateTimeOffset> EmptySlotUntil = new();
         public Action<byte, byte[]>? NotifyHandler;
         public CancellationTokenSource? ListenCts;
         public Task? ListenTask;
@@ -160,7 +162,7 @@ public sealed class LogitechPlugin : IBatteryPlugin
                 continue;
 
             var session = _sessions.GetOrAdd(info.DevicePath,
-                p => new ReceiverSession { Info = info });
+                p => new ReceiverSession { Info = info, DirectDevice = !HidppCatalog.IsReceiver(info.ProductId) });
 
             session.Info = info;
 
@@ -190,7 +192,7 @@ public sealed class LogitechPlugin : IBatteryPlugin
                 EnsureListening(session);
                 DiscoverDevices(session);
                 if (session.Devices.Count > 0)
-                    claimed.AddRange(session.Devices.Values.Select(d => d.Status));
+                    claimed.AddRange(session.Devices.Select(d => Publish(session, d.Key, d.Value)));
             }
         }
 
@@ -213,11 +215,11 @@ public sealed class LogitechPlugin : IBatteryPlugin
 
             StopListening(session);
             session.Io?.Dispose();
-            foreach (var d in session.Devices.Values)
+            foreach (var (idx, d) in session.Devices)
             {
-                d.Status.IsOnline = false;
+                lock (d.Status) d.Status.IsOnline = false;
                 // 不上报的话拔出后条目永远在线（基类同一处坑的注释）。
-                gone.Add(d.Status);
+                gone.Add(_identity.Remove(session.Info.DevicePath + ":" + idx, d.Status));
             }
             _claims?.Release(path, Name);
             Log.Info($"罗技接口已移除: {path}");
@@ -234,7 +236,7 @@ public sealed class LogitechPlugin : IBatteryPlugin
         // 永久移除的设备：不再 ping 它的槽位，已跟踪的也一并丢掉
         foreach (var idx in session.Devices.Keys.Where(k => DeviceBlocklist.IsBlocked(SlotId(session, k))).ToList())
         {
-            session.Devices.Remove(idx);
+            session.Devices.TryRemove(idx, out _);
             Log.Info($"罗技设备已永久移除，停止轮询 devIdx={idx}");
         }
 
@@ -256,10 +258,9 @@ public sealed class LogitechPlugin : IBatteryPlugin
                 }
 
                 var t = session.Devices.Count > 0 ? FastSlotTimeout : DiscoverTimeout;
-                if (Ping(io, idx, out var major, t))
+                if (ProbeSlot(session, idx, t))
                 {
-                    session.EmptySlotUntil.Remove(idx);
-                    AddDevice(session, idx, major);
+                    session.EmptySlotUntil.TryRemove(idx, out _);
                 }
                 else
                 {
@@ -276,11 +277,10 @@ public sealed class LogitechPlugin : IBatteryPlugin
                 || DateTimeOffset.Now >= until;
             if (allowDirect && (initial || probesThisPass < 1) && !DeviceBlocklist.IsBlocked(SlotId(session, 0xFF)))
             {
-                if (Ping(io, 0xFF, out var major, DiscoverTimeout))
+                if (ProbeSlot(session, 0xFF, DiscoverTimeout))
                 {
-                    session.EmptySlotUntil.Remove(0xFF);
+                    session.EmptySlotUntil.TryRemove(0xFF, out _);
                     session.DirectDevice = true;
-                    AddDevice(session, 0xFF, major);
                 }
                 else
                 {
@@ -318,22 +318,48 @@ public sealed class LogitechPlugin : IBatteryPlugin
         int maxSlots = HidppCatalog.MaxSlots(session.Info.ProductId);
         if (idx > maxSlots) return;
         if (DeviceBlocklist.IsBlocked(SlotId(session, idx))) return;
-        session.EmptySlotUntil.Remove(idx);
-        if (Ping(session.Io, idx, out var major, FastSlotTimeout))
-            AddDevice(session, idx, major);
-        else
+        session.EmptySlotUntil.TryRemove(idx, out _);
+        if (!ProbeSlot(session, idx, FastSlotTimeout))
             session.EmptySlotUntil[idx] = DateTimeOffset.Now + EmptySlotCooldown;
     }
 
-    /// <summary>设备 ID：接收器**端口无关**路径哈希 + 槽位（换 USB 口不产生新设备）。认领、黑名单、上报三处必须同一套规则。</summary>
+    private bool ProbeSlot(ReceiverSession session, byte idx, TimeSpan timeout)
+    {
+        if (HidppDeviceIdentity.LegacyIds(session.Info.DevicePath, session.DirectDevice, idx)
+            .Any(DeviceBlocklist.IsBlocked)) return false;
+        if (!session.ProbingSlots.TryAdd(idx, 0)) return false;
+        try
+        {
+            if (!Ping(session.Io!, idx, out var major, timeout)) return false;
+            if (idx == 0xFF) session.DirectDevice = true;
+            AddDevice(session, idx, major);
+            return session.Devices.ContainsKey(idx);
+        }
+        finally { session.ProbingSlots.TryRemove(idx, out _); }
+    }
+
+    /// <summary>发现前用旧通道 ID 查询别名；已知物理身份后查询统一 ID，保持黑名单闸门一致。</summary>
     private static string SlotId(ReceiverSession session, byte idx)
-        => $"logitech:{PluginUtils.StableDeviceHash(session.Info.DevicePath)}:{idx}";
+        => session.Devices.TryGetValue(idx, out var device) ? device.Status.Id
+            : $"logitech:{PluginUtils.StableDeviceHash(session.Info.DevicePath)}:{idx}";
 
     private void AddDevice(ReceiverSession session, byte idx, byte protocolMajor)
     {
         if (DeviceBlocklist.IsBlocked(SlotId(session, idx))) return;
 
         var io = session.Io!;
+        var previousIds = HidppDeviceIdentity.LegacyIds(session.Info.DevicePath, session.DirectDevice, idx);
+        var id = AppSettings.Load().CanonicalDeviceId($"logitech:{PluginUtils.StableDeviceHash(session.Info.DevicePath)}:{idx}");
+        if (protocolMajor >= 2)
+        {
+            byte identityFeature = ResolveFeature(io, idx, 0x0003);
+            if (identityFeature != 0)
+            {
+                var response = io.Request(idx, HidppCodec.FeatureFunc(identityFeature, 0), ReadOnlySpan<byte>.Empty);
+                id = response == null ? id : HidppDeviceIdentity.ParseDeviceId(response) ?? id;
+            }
+        }
+        if (DeviceBlocklist.IsBlocked(id) || previousIds.Any(DeviceBlocklist.IsBlocked)) return;
         string name = ReadDeviceName(io, idx) ?? $"罗技设备 {idx}";
         var kind = DeviceKind.Unknown;
         ushort? wpid = null;
@@ -347,7 +373,8 @@ public sealed class LogitechPlugin : IBatteryPlugin
 
         var status = new DeviceStatus
         {
-            Id = SlotId(session, idx),
+            Id = id,
+            PreviousIds = previousIds,
             Name = name,
             Source = DeviceSource.Hid24G,
             Kind = kind,
@@ -448,7 +475,7 @@ public sealed class LogitechPlugin : IBatteryPlugin
             var curve = HidppCatalog.CurveFor(dev.WirelessPid, adcFeature: false);
             if (!HidppCodec.TryParseBatteryVoltage(data, curve, out var pctV, out var chgV, out _))
                 return;
-            PushIfChanged(dev, pctV, chgV);
+            PushIfChanged(session, devIdx, dev, pctV, chgV);
             return;
         }
 
@@ -457,23 +484,28 @@ public sealed class LogitechPlugin : IBatteryPlugin
             var curve = HidppCatalog.CurveFor(dev.WirelessPid, adcFeature: true);
             if (!HidppCodec.TryParseAdcMeasurement(data, curve, out var pctA, out var chgA, out _))
                 return;
-            PushIfChanged(dev, pctA, chgA);
+            PushIfChanged(session, devIdx, dev, pctA, chgA);
             return;
         }
 
         if (!HidppCodec.TryParseBattery20(data, out var pct, out var chg)) return;
-        PushIfChanged(dev, pct, chg);
+        PushIfChanged(session, devIdx, dev, pct, chg);
     }
 
-    private void PushIfChanged(DevEntry dev, int pct, ChargingState chg)
+    private void PushIfChanged(ReceiverSession session, byte idx, DevEntry dev, int pct, ChargingState chg)
     {
-        bool changed = dev.Status.BatteryPercent != pct
-                    || dev.Status.Charging != chg
-                    || !dev.Status.IsOnline;
-        ApplyBattery(dev.Status, pct, chg);
+        bool changed;
+        lock (dev.Status)
+        {
+            changed = dev.Status.BatteryPercent != pct || dev.Status.Charging != chg || !dev.Status.IsOnline;
+            ApplyBattery(dev.Status, pct, chg);
+        }
         if (changed)
-            StatusPushed?.Invoke(dev.Status);
+            StatusPushed?.Invoke(Publish(session, idx, dev));
     }
+
+    private DeviceStatus Publish(ReceiverSession session, byte idx, DevEntry dev)
+        => _identity.Update(session.Info.DevicePath + ":" + idx, session.DirectDevice, dev.Status);
 
     public IReadOnlyList<DeviceStatus> Poll()
     {
@@ -500,7 +532,7 @@ public sealed class LogitechPlugin : IBatteryPlugin
 
                     if (RefreshBattery(session, idx, dev))
                     {
-                        updated.Add(dev.Status);
+                        updated.Add(Publish(session, idx, dev));
                         dev.ConsecutiveFailures = 0;
                         dev.BreakerTrips = 0;
                     }
@@ -515,8 +547,8 @@ public sealed class LogitechPlugin : IBatteryPlugin
                             Log.Warn($"罗技 {dev.Status.DisplayName} 连续 {MaxConsecutiveFailures} 次查询失败，熔断停写（第 {dev.BreakerTrips} 次，退避 {WriteBackoff.For(dev.BreakerTrips).TotalSeconds:0} 秒）");
                             if (dev.Status.IsOnline)
                             {
-                                dev.Status.IsOnline = false;
-                                updated.Add(dev.Status);
+                                lock (dev.Status) dev.Status.IsOnline = false;
+                                updated.Add(Publish(session, idx, dev));
                             }
                         }
                     }
@@ -666,19 +698,22 @@ public sealed class LogitechPlugin : IBatteryPlugin
 
     private static void ApplyBattery(DeviceStatus status, int percent, ChargingState charging)
     {
-        bool pctChanged = status.BatteryPercent != percent;
-        bool chgChanged = status.Charging != charging;
-        status.BatteryPercent = percent;
-        status.Charging = charging;
-        status.LastUpdated = DateTimeOffset.Now;
-        if (!status.IsOnline)
+        lock (status)
         {
-            status.IsOnline = true;
-            Log.Info($"罗技设备重新上线: {status.DisplayName} {percent}% {charging}");
-        }
-        else if (pctChanged || chgChanged)
-        {
-            Log.Info($"罗技电量更新: {status.DisplayName} {percent}% {charging}");
+            bool pctChanged = status.BatteryPercent != percent;
+            bool chgChanged = status.Charging != charging;
+            status.BatteryPercent = percent;
+            status.Charging = charging;
+            status.LastUpdated = DateTimeOffset.Now;
+            if (!status.IsOnline)
+            {
+                status.IsOnline = true;
+                Log.Info($"罗技设备重新上线: {status.DisplayName} {percent}% {charging}");
+            }
+            else if (pctChanged || chgChanged)
+            {
+                Log.Info($"罗技电量更新: {status.DisplayName} {percent}% {charging}");
+            }
         }
     }
 
@@ -790,6 +825,7 @@ public sealed class LogitechPlugin : IBatteryPlugin
             session.Io?.Dispose();
         }
         _sessions.Clear();
+        _identity.Clear();
         if (released > 0) Log.Info($"罗技插件已卸载，释放 {released} 个会话");
     }
 }

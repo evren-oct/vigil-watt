@@ -238,4 +238,58 @@ public sealed class HistoryStoreTests : IDisposable
         Assert.Null(none.First);
         Assert.Null(none.Last);
     }
+
+    [Fact]
+    public void H14_归并设备身份保留每条采样并可重复执行()
+    {
+        using var store = NewStore();
+        store.Insert(Dev("wireless", "鼠标", 96, T0));
+        store.Insert(Dev("usb:1", "鼠标", 98, T0.AddMinutes(1), true));
+        store.Insert(Dev("usb:6", "鼠标", 100, T0.AddMinutes(2), true));
+        var original = store.GetStats();
+        var aliases = new Dictionary<string, string>
+        {
+            ["wireless"] = "physical", ["usb:1"] = "physical", ["usb:6"] = "physical",
+        };
+        Assert.Equal(3, store.ReassignDeviceIds(aliases));
+        Assert.Equal(0, store.ReassignDeviceIds(aliases));
+        Assert.Equal(original.TotalCount, store.GetStats().TotalCount);
+        Assert.Equal(1, store.GetStats().DeviceCount);
+        var samples = store.Query("physical", T0, T0.AddHours(1));
+        Assert.Equal(new[] { 96, 98, 100 }, samples.Select(s => s.Percent));
+        Assert.Equal(new[] { T0, T0.AddMinutes(1), T0.AddMinutes(2) }, samples.Select(s => s.Timestamp));
+        Assert.True(samples[1].Charging);
+    }
+
+    [Fact]
+    public void H15_归并异常回滚整批更新()
+    {
+        using var store = NewStore();
+        store.Insert(Dev("a", "鼠标", 80, T0));
+        store.Insert(Dev("b", "鼠标", 90, T0));
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={_dbPath}"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "CREATE TRIGGER fail_merge BEFORE UPDATE ON samples WHEN OLD.device_id = 'b' BEGIN SELECT RAISE(ABORT, 'test rollback'); END";
+            command.ExecuteNonQuery();
+        }
+        Assert.Throws<Microsoft.Data.Sqlite.SqliteException>(() => store.ReassignDeviceIds(
+            new Dictionary<string, string> { ["a"] = "physical", ["b"] = "physical" }));
+        Assert.Equal(new[] { "a", "b" }, store.GetDeviceStats().Select(s => s.DeviceId).OrderBy(x => x));
+        Assert.Equal(2, store.GetStats().TotalCount);
+    }
+
+    [Fact]
+    public void H16_迁移后旧引用写入和查询也使用新身份()
+    {
+        using var store = NewStore();
+        store.DeviceIdResolver = id => id == "old" ? "physical" : id;
+        store.Insert(Dev("old", "鼠标", 80, T0));
+        Assert.Equal("physical", store.GetDeviceStats().Single().DeviceId);
+        Assert.Single(store.Query("old", T0, T0.AddHours(1)));
+        Assert.Equal(1, store.GetDeviceSummary("old").Count);
+        Assert.Equal(1, store.DeleteDevices(new[] { "old" }));
+        Assert.Empty(store.GetDeviceStats());
+    }
 }

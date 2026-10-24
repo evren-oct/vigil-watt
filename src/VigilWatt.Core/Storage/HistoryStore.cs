@@ -25,6 +25,7 @@ public class HistoryStore : IDisposable
     private readonly SqliteConnection _connection;
     private readonly object _writeGate = new();
     private readonly string _dbPath;
+    public Func<string, string> DeviceIdResolver { get; set; } = id => id;
 
     /// <param name="dbPath">库文件路径；null = 默认 %LOCALAPPDATA%\VigilWatt\history.db。
     /// 显式传入供单测用临时库，避免碰真实数据。</param>
@@ -88,7 +89,7 @@ public class HistoryStore : IDisposable
             using var cmd = _connection.CreateCommand();
             cmd.CommandText =
                 "INSERT INTO samples(device_id, name, kind, percent, charging, ts) VALUES($id, $name, $kind, $p, $c, $ts)";
-            cmd.Parameters.AddWithValue("$id", device.Id);
+            cmd.Parameters.AddWithValue("$id", DeviceIdResolver(device.Id));
             cmd.Parameters.AddWithValue("$name", device.DisplayName);
             cmd.Parameters.AddWithValue("$kind", (int)device.Kind);
             cmd.Parameters.AddWithValue("$p", percent);
@@ -108,7 +109,7 @@ public class HistoryStore : IDisposable
             cmd.CommandText =
                 "SELECT id, device_id, name, kind, percent, charging, ts FROM samples " +
                 "WHERE device_id = $id AND ts BETWEEN $from AND $to ORDER BY ts";
-            cmd.Parameters.AddWithValue("$id", deviceId);
+            cmd.Parameters.AddWithValue("$id", DeviceIdResolver(deviceId));
             cmd.Parameters.AddWithValue("$from", from.ToUnixTimeMilliseconds());
             cmd.Parameters.AddWithValue("$to", to.ToUnixTimeMilliseconds());
             using var reader = cmd.ExecuteReader();
@@ -228,7 +229,7 @@ public class HistoryStore : IDisposable
         {
             using var cmd = _connection.CreateCommand();
             cmd.CommandText = "SELECT COUNT(*), MIN(ts), MAX(ts) FROM samples WHERE device_id = $id";
-            cmd.Parameters.AddWithValue("$id", deviceId);
+            cmd.Parameters.AddWithValue("$id", DeviceIdResolver(deviceId));
             using var reader = cmd.ExecuteReader();
             if (!reader.Read()) return new DeviceHistorySummary(0, null, null);
             return new DeviceHistorySummary(
@@ -249,8 +250,32 @@ public class HistoryStore : IDisposable
             using var cmd = _connection.CreateCommand();
             cmd.CommandText = $"DELETE FROM samples WHERE device_id IN ({string.Join(",", placeholders)})";
             int i = 0;
-            foreach (var id in deviceIds) cmd.Parameters.AddWithValue($"$id{i++}", id);
+            foreach (var id in deviceIds) cmd.Parameters.AddWithValue($"$id{i++}", DeviceIdResolver(id));
             return cmd.ExecuteNonQuery();
+        }
+    }
+
+    public int ReassignDeviceIds(IReadOnlyDictionary<string, string> aliases)
+    {
+        if (aliases.Count == 0) return 0;
+        lock (_writeGate)
+        {
+            using var transaction = _connection.BeginTransaction();
+            using var command = _connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "UPDATE samples SET device_id = $target WHERE device_id = $source";
+            var source = command.Parameters.Add("$source", SqliteType.Text);
+            var target = command.Parameters.Add("$target", SqliteType.Text);
+            int changed = 0;
+            foreach (var pair in aliases)
+            {
+                if (pair.Key == pair.Value) continue;
+                source.Value = pair.Key;
+                target.Value = pair.Value;
+                changed += command.ExecuteNonQuery();
+            }
+            transaction.Commit();
+            return changed;
         }
     }
 

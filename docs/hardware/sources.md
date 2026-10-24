@@ -31,6 +31,8 @@
 
 ## 应用功能与实现方案
 
+罗技充电通道身份关联（2026-10-24）补充依据：[Solaar GetDeviceInfo 解析](https://github.com/pwr-Solaar/Solaar/blob/master/lib/logitech_receiver/hidpp20.py) 的 unit/model 字段、[特征常量](https://github.com/pwr-Solaar/Solaar/blob/master/lib/logitech_receiver/hidpp20_constants.py) 的 `0x0003`，以及 [USB 产品分区](https://github.com/pwr-Solaar/Solaar/blob/master/lib/logitech_receiver/base_usb.py)。仅参考协议事实自行实现，未复制 GPL-2.0-or-later 源码；合成向量与本机实测边界见 [logitech.md](logitech.md) §1。
+
 | 功能 | 来源 / 设计依据 | 本项目实现与边界 |
 |---|---|---|
 | 任务栏电量贴片 | 基于 Windows 任务栏窗口层级与 Win32 子窗口行为的本项目探索；现有资料未确认采用外部应用项目的代码或设计。 | `SetParent` 将原生子窗口挂入 `Shell_TrayWnd`，自行处理布局、绘制、拖动和自动隐藏。实现坑与依据见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |

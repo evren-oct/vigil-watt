@@ -38,7 +38,7 @@
                             Margin="0,0,0,8"
                             RightTapped="DeviceRow_RightTapped">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                            <ContentPresenter Grid.Column="0" Content="{x:Bind Icon}" VerticalAlignment="Center" />
+                            <FontIcon Grid.Column="0" FontSize="22" Glyph="{x:Bind IconGlyph}" />
                             <StackPanel Grid.Column="1" Spacing="6">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                     <TextBlock Text="{x:Bind Name}" FontSize="15" FontWeight="SemiBold"
@@ -59,7 +59,6 @@
                             </StackPanel>
                             <TextBlock Grid.Column="2" Text="{x:Bind PercentText}" FontSize="26"
                                        FontWeight="Bold" VerticalAlignment="Center"
-                                       MinWidth="78" TextAlignment="Right"
                                        Foreground="{x:Bind PercentBrush}" />
                         </Grid>
                     </Border>

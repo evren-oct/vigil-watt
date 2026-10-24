@@ -38,8 +38,7 @@
      认领成功后 `Attach` 对已知设备直接返回，该路径**零写入**。
      发帧内容不变——仍然只有官方/实测的会话帧与 0x4A 电量查询，**没有引入任何新命令**。
      该属性是插件级的，所以同一插件的鼠标与 V9 Pro 耳机也按 15 秒节拍重探：鼠标最多 1 条 `0x11/0x06`
-     触发帧、耳机最多 1 条 64 字节查询帧、G3 V2 的 gmouse 最多 2 条 65 字节查询帧（1.2 秒窗口 × 2 次尝试），
-     都比键盘链路（1 条会话 + 最多 2 条查询）更省。
+     触发帧、耳机最多 1 条 64 字节查询帧，都比键盘链路（1 条会话 + 最多 2 条查询）更省。
 5. **被动优先**：能靠监听（input report / feature GET）解决的不写入。迈从 dongle 的自发推送（`13 0A` 帧）就是免费数据源。
 6. **新设备接入流程**：先被动监听看日志 → 再查官方驱动是否支持（支持就抓官方的包）→ 拿到精确帧后才允许写入验证。全程用户知情。
 7. **任何"诊断/扫描"代码不得留在正常执行路径上**（哪怕有开关）。要实验就在独立脚本（test-*.ps1 / python）里做，用户点头后再跑。
@@ -49,9 +48,9 @@
 
 | 插件 | 写入开关（= 插件开关） | 默认 | 说明 |
 |---|---|---|---|
-| 迈从 | `PluginEnabled["Mchose"]` | **false** | dongle 协议未破解，探测写入可能干扰设备，故默认关；开插件即授权写帧。**一个开关管键盘、鼠标、V9 Pro 耳机、K7 鼠标、G3 V2（gmouse）五类设备**（品牌级，`AGENTS.md` §9） |
+| 迈从 | `PluginEnabled["Mchose"]` | **false** | dongle 协议未破解，探测写入可能干扰设备，故默认关；开插件即授权写帧。**一个开关管键盘、鼠标、V9 Pro 耳机、K7 鼠标四类设备**（品牌级，`AGENTS.md` §9） |
 | 北通 | `PluginEnabled["Betop"]` | **true** | 查询是官方客户端同款只读命令（cmd=0x5），风险低，故默认开 |
-| 罗技 | `PluginEnabled["Logitech"]` | **false** | Centurion 新路径继承 `BatteryPluginBase`，复用公共写入闸门、读数过滤和熔断退避；HID++ 历史路径保留 `HidppIO.WritesAllowed` 与专用会话处理 |
+| 罗技 | `PluginEnabled["Logitech"]` | **false** | 发现与读数**全靠写帧**；不继承基类，故自建闸门（`HidppIO.WritesAllowed`）+ 熔断 + 同一张递增退避表（`Plugins/WriteBackoff.cs`） |
 | 雷柏 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`，零写入 |
 | 黑爵 | `PluginEnabled["Ajazz"]` | **false** | 3151:4011 已验证 F7 状态查询；见 `ak870-ml903.md` |
 | 雷神 | `PluginEnabled["Thunderobot"]` | **false** | 369B:0234 官方 02 设备信息查询；见 `ak870-ml903.md` |
@@ -63,6 +62,8 @@
 | AULA | `PluginEnabled["Aula"]` | **false** | 只发 `13 05 01` 会话帧；不进 15 秒发现 |
 | GANSS | `PluginEnabled["Ganss"]` | **false** | 发固定查询帧才能读电量；不进 15 秒发现 |
 | DualSense | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读蓝牙 HID `054C:0CE6` |
+| ATK | `PluginEnabled["Atk"]` | **false** | 只发一条固定查询帧 `08 04 …49`；该设备独占 `WriteFile` 不可用，回落 `HidD_SetOutputReport`（与 ATK HUB 共存实测无冲突） |
+| HyperX | 无（纯被动） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；dongle 固件只实现 interrupt OUT，写帧一律 `ERROR_INVALID_FUNCTION`，只读 `FF90` 推送帧 |
 
 三条硬约束：
 

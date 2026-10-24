@@ -60,10 +60,6 @@ public class ClassicDeviceKindResolverTests
     [InlineData("Audio.Headphone", DeviceKind.Headset)]
     [InlineData("Communication.Headset.Bluetooth", DeviceKind.Headset)]
     [InlineData("Audio.Speakers.Wireless", DeviceKind.Speaker)]
-    [InlineData("Phone.Cellular", DeviceKind.Phone)]
-    [InlineData("Communication.Phone", DeviceKind.Phone)]
-    [InlineData("Tablet.Slate", DeviceKind.Tablet)]
-    [InlineData("Wearable.Watch", DeviceKind.Watch)]
     [InlineData("Input.Digitizer.Touchpad", DeviceKind.Unknown)]
     [InlineData("Network.Bluetooth", DeviceKind.Unknown)]
     [InlineData("Other", DeviceKind.Unknown)]
@@ -94,24 +90,5 @@ public class ClassicDeviceKindResolverTests
         Assert.Equal("经典蓝牙 HIDP", ClassicDeviceKindResolver.DescribeProtocol(new[] { "00001124", "00001200" }));
         Assert.Equal("经典蓝牙", ClassicDeviceKindResolver.DescribeProtocol(Array.Empty<string>()));
         Assert.Equal("经典蓝牙", ClassicDeviceKindResolver.DescribeProtocol(null));
-    }
-
-    [Fact]
-    public void C10_手机平板手表带音频服务也不会画成耳机()
-    {
-        // 经典蓝牙手机同时暴露 HFP/HSP，旧逻辑"有音频服务 = 耳机"会把手机显示成耳机
-        Assert.Equal(DeviceKind.Phone, ClassicDeviceKindResolver.Resolve(
-            "iPhone 15", null, new[] { "0000111e", "0000110b" }));
-        Assert.Equal(DeviceKind.Tablet, ClassicDeviceKindResolver.Resolve(
-            "iPad Air", null, new[] { "0000110b" }));
-        Assert.Equal(DeviceKind.Watch, ClassicDeviceKindResolver.Resolve(
-            "Apple Watch", null, new[] { "0000110b" }));
-    }
-
-    [Fact]
-    public void C11_Headphone类别不被phone关键字抢走()
-    {
-        // 类别串 "Audio.Headphone" 里也含 "phone"，判定顺序错了耳机就变手机
-        Assert.Equal(DeviceKind.Headset, ClassicDeviceKindResolver.Resolve("某耳机", new[] { "Audio.Headphone" }, null));
     }
 }

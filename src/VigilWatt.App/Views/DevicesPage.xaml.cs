@@ -11,7 +11,6 @@ using Microsoft.UI.Xaml.Navigation;
 using VigilWatt.App.Services;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
-using System.Collections.ObjectModel;
 using System.Text;
 
 namespace VigilWatt.App.Views;
@@ -28,15 +27,10 @@ public sealed partial class DevicesPage : Page
     /// <summary>事件是否已订阅：Loaded 可能重复触发，不挡住就会叠加回调。</summary>
     private bool _hooked;
 
-    /// <summary>列表数据源。只在构造时赋给 ItemsSource，之后按 Id 增量同步——
-    /// 整块换 ItemsSource 会让 ListView 丢弃所有行容器重建，每分钟轮询都闪一下。</summary>
-    private readonly ObservableCollection<DeviceRowModel> _rows = new();
-
     public DevicesPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
-        DeviceList.ItemsSource = _rows;
         Loaded += OnPageLoaded;
         Unloaded += OnPageUnloaded;
     }
@@ -85,27 +79,8 @@ public sealed partial class DevicesPage : Page
     private void Refresh()
     {
         var devices = App.Services.Manager.Devices;
-        var settings = App.Services.Settings;
-
-        // 按 Id 取旧行，内容指纹相同就整行复用（连 Icon 元素一起），避免静止设备跟着重建
-        var existing = new Dictionary<string, DeviceRowModel>(_rows.Count);
-        foreach (var row in _rows) existing[row.Id] = row;
-
-        var fresh = new List<DeviceRowModel>(devices.Count);
-        foreach (var d in devices)
-        {
-            existing.TryGetValue(d.Id, out var previous);
-            fresh.Add(DeviceRowModel.From(d, settings, App.Services.Manager.GetRemainingTimeEstimate(d), previous));
-        }
-
-        // 逐位比较引用：复用的行原地不动，只替换真正变了的那些
-        for (int i = 0; i < fresh.Count; i++)
-        {
-            if (i >= _rows.Count) _rows.Add(fresh[i]);
-            else if (!ReferenceEquals(_rows[i], fresh[i])) _rows[i] = fresh[i];
-        }
-        while (_rows.Count > fresh.Count) _rows.RemoveAt(_rows.Count - 1);
-
+        DeviceList.ItemsSource = devices.Select(d => DeviceRowModel.From(
+            d, App.Services.Settings, App.Services.Manager.GetRemainingTimeEstimate(d))).ToList();
         var online = devices.Count(d => d.IsOnline);
         // 带上时间戳：即使设备数没变，用户也能一眼看出这次刷新确实跑过了
         SummaryText.Text = $"{online} 台在线 / 共 {devices.Count} 台 · {DateTime.Now:HH:mm:ss} 更新";
@@ -172,22 +147,18 @@ public sealed partial class DevicesPage : Page
             : device.Kind;
         DeviceKind? selectedKind = current?.IconKind;
         var iconChoices = new List<(RadioButton Button, Border Card)>();
-        const int iconColumns = 4;
         var iconGrid = new Grid { ColumnSpacing = 8, RowSpacing = 8 };
-        for (int i = 0; i < iconColumns; i++)
+        for (int i = 0; i < 4; i++)
             iconGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        for (int i = 0; i < 2; i++)
+            iconGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         var options = new (DeviceKind? Value, DeviceKind Preview, string Label)[]
         {
             (null, automaticKind, "自动"), (DeviceKind.Unknown, DeviceKind.Unknown, "通用"),
             (DeviceKind.Mouse, DeviceKind.Mouse, "鼠标"), (DeviceKind.Keyboard, DeviceKind.Keyboard, "键盘"),
             (DeviceKind.Headset, DeviceKind.Headset, "耳机"), (DeviceKind.Speaker, DeviceKind.Speaker, "音箱"),
             (DeviceKind.Gamepad, DeviceKind.Gamepad, "手柄"), (DeviceKind.Computer, DeviceKind.Computer, "电脑"),
-            (DeviceKind.Phone, DeviceKind.Phone, "手机"), (DeviceKind.Tablet, DeviceKind.Tablet, "平板"),
-            (DeviceKind.Watch, DeviceKind.Watch, "手表"),
         };
-        // 行数由选项数推出来：以后再加图标只要往 options 里追加，不用动布局
-        for (int i = 0; i < (options.Length + iconColumns - 1) / iconColumns; i++)
-            iconGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         var primaryBrush = Application.Current.Resources["TextFillColorPrimaryBrush"] as SolidColorBrush;
         var iconColor = primaryBrush?.Color ?? Color.FromArgb(255, 80, 80, 80);
         Brush GetBrush(string key, Brush fallback) =>
@@ -249,8 +220,8 @@ public sealed partial class DevicesPage : Page
                 UpdateIconChoiceCards();
             };
             iconChoices.Add((radio, card));
-            Grid.SetColumn(radio, i % iconColumns);
-            Grid.SetRow(radio, i / iconColumns);
+            Grid.SetColumn(radio, i % 4);
+            Grid.SetRow(radio, i / 4);
             iconGrid.Children.Add(radio);
         }
 

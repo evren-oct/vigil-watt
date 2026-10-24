@@ -69,19 +69,13 @@ public class MchoseMouseCodecTests
     [Fact]
     public void M15_会话ACK提型号()
     {
-        // 真机 ACK（2026-10-24 抓自 G87 V1 接收器 41E4:2001）：密码从 [5] 起
-        byte[] realAck = TestFrames.Hex("13 05 01 00 0A 03 00 00 00 02 1C 01 00 00 00 00 00 00 00 45");
-        Assert.Equal("G87", MchoseMouseCodec.ModelFromSessionAck(realAck));
-
-        // 旧合成样本在 [5] 多一个字节、密码从 [6] 起——两种布局都要认（否则历史样本会回归）
-        byte[] legacyAck = TestFrames.Hex("13 05 01 00 0A 03 03 00 00 00 02 1C 00 00 00 00 00 00 00 45");
-        Assert.Equal("G87", MchoseMouseCodec.ModelFromSessionAck(legacyAck));
-
+        // 老真机 SessionAck 的密码段是 02 1C? 不是——用一段合成 ACK 验证布局即可
+        byte[] ack = TestFrames.Hex("13 05 01 00 0A 03 03 00 00 00 02 1C 00 00 00 00 00 00 00 45");
+        Assert.Equal("G87", MchoseMouseCodec.ModelFromSessionAck(ack));
         // reportId 前缀右移一字节后仍能识别
-        byte[] shifted = new byte[realAck.Length + 1];
-        Array.Copy(realAck, 0, shifted, 1, realAck.Length);
+        byte[] shifted = new byte[ack.Length + 1];
+        Array.Copy(ack, 0, shifted, 1, ack.Length);
         Assert.Equal("G87", MchoseMouseCodec.ModelFromSessionAck(shifted));
-
         // 4A 响应不是会话 ACK → null
         Assert.Null(MchoseMouseCodec.ModelFromSessionAck(TestFrames.Response66));
     }

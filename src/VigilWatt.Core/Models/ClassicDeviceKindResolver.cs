@@ -29,21 +29,16 @@ public static class ClassicDeviceKindResolver
         var byCategory = FromCategories(categories);
         if (byCategory != DeviceKind.Unknown) return byCategory;
 
-        var named = DeviceKindGuesser.Guess(displayName);
-
-        // 手机/平板/手表同样暴露 HFP/HSP：名字认得出就必须先返回，否则下面"有音频服务 = 耳机"会把手机画成耳机
-        if (named is DeviceKind.Phone or DeviceKind.Tablet or DeviceKind.Watch) return named;
-
         // 有音频服务 = 确实是音频设备（与名字有无关键字无关）；"音频 + HID 按键"并存的游戏耳机也归这里
         if (HasAudioService(serviceUuids))
         {
-            return named == DeviceKind.Speaker
+            return DeviceKindGuesser.Guess(displayName) == DeviceKind.Speaker
                 ? DeviceKind.Speaker
                 : DeviceKind.Headset;
         }
 
         // HID 设备（HIDP 服务）只能到这一步才知道是鼠标还是键盘；猜不出就 Unknown
-        return named;
+        return DeviceKindGuesser.Guess(displayName);
     }
 
     /// <summary>服务 UUID → 协议描述（<see cref="DeviceStatus.Protocol"/>，UI 副标题会显示）。</summary>
@@ -54,9 +49,8 @@ public static class ClassicDeviceKindResolver
         return "经典蓝牙";
     }
 
-    /// <summary>Windows 设备类别 → 类型（经典蓝牙读注册表，BLE 读 <c>System.Devices.Aep.Category</c>，两处共用）。
-    /// 厂商可自定义取值（XSD 允许任意字符串），所以按关键字匹配而不是穷举枚举。</summary>
-    public static DeviceKind FromCategories(IReadOnlyList<string>? categories)
+    /// <summary>Windows 设备类别 → 类型。厂商可自定义取值（XSD 允许任意字符串），所以按关键字匹配而不是穷举枚举。</summary>
+    private static DeviceKind FromCategories(IReadOnlyList<string>? categories)
     {
         if (categories == null) return DeviceKind.Unknown;
 
@@ -82,14 +76,6 @@ public static class ClassicDeviceKindResolver
                 return DeviceKind.Headset;
             if (c.Contains("speaker", StringComparison.Ordinal))
                 return DeviceKind.Speaker;
-            // ⚠️ phone 必须排在 headphone/headset 之后：类别串 "Audio.Headphone" 里也含 "phone"
-            if (c.Contains("phone", StringComparison.Ordinal))
-                return DeviceKind.Phone;
-            if (c.Contains("tablet", StringComparison.Ordinal))
-                return DeviceKind.Tablet;
-            if (c.Contains("watch", StringComparison.Ordinal) ||
-                c.Contains("wearable", StringComparison.Ordinal))
-                return DeviceKind.Watch;
         }
 
         return DeviceKind.Unknown;

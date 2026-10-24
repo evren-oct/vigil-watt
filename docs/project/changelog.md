@@ -3,21 +3,8 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
-## 2026-10-24
-
-- **设备图标补手机 / 平板 / 手表**：`DeviceKind` 追加 `Phone`/`Tablet`/`Watch`（只能追加在末尾——`IconKind` 以数字存进 settings.json，插中间会让老用户的自定义图标整体错位），`DeviceIconFactory` 的 XAML 与 GDI 两套造型同步加。
-- **修「手机显示成耳机」**：经典蓝牙手机同样暴露 HFP/HSP，旧逻辑「有音频服务 = 耳机」会把它画成耳机。`ClassicDeviceKindResolver.Resolve` 现在先按名字判掉手机/平板/手表，再走音频服务分支；`FromCategories` 的 `phone` 判定排在 `headphone/headset` 之后（类别串 `Audio.Headphone` 里也含 `phone`）。`DeviceKindGuesser` 的手机关键字不收裸 `phone`，避免命中 headphone / microphone。
-- **设备列表页图标改用矢量**：`DeviceRowModel.GlyphFor` 的 Segoe MDL2 码位映射删掉，改调 `DeviceIconFactory.Scaled`（名义框统一 14×13 再缩放，各类型视觉大小一致），与小组件、任务栏贴片共用一套造型，新增类型不必再赌字体字形。设备外观对话框的图标选择由硬编码 4×2 改为按选项数推行数。
-- **蓝牙双通道去重（手机不再出现两条）**：同一台设备在系统里同时注册经典 AEP 与 LE AEP（手机最明显），项目按 `btc:` / `ble:` 前缀当成两台。新增 `Ble/DualChannelId` 按 MAC 归一，`DeviceManager.AbsorbDualChannel` 收敛到经典那条——LE 端点有电量就补给经典，没有就丢弃。关闭 CR-68（PR #14 的按显示名方案不再需要）。
-- **BLE 端点无名时显示「BLE 设备」**：不再把裸设备 ID 摆进列表。注意手机连上后仍只有在线/离线、没有百分比——Windows 不通过 HFP 暴露手机电池，这是系统限制，不是漏实现。
-- **BLE 设备类型改为系统类别优先**：`BleBatteryWatcher` 原来只按显示名猜类型，真机 `MCHOSE G87 5.0` 里一个品类词都没有，键盘被画成通用圆点。现在名字只作首帧的即时兜底，`System.Devices.Aep.Category`（系统给 `Input.Keyboard` / `Communication.Phone`）一到就覆盖——名字是厂商随手起的，可能含误导词，系统类别才是设备自己声明的。复用 `ClassicDeviceKindResolver.FromCategories`（由 private 改 public），每台只查一次。
-- **收进 PR #14 的两处**（dotisland）：BLE 端点在 GATT 直读时补全缓存名（Watcher 的 Added 常带空名，之前只能显示「BLE 设备」），设备列表电量列固定最小宽度并右对齐（`99%` 与 `--` 宽度不同会让相邻行错位）。未采纳其「按显示名合并双通道」，理由见 `contributions.md`。
-- **修迈从键盘型号识别（偏移差一位）**：`ModelFromSessionAck` 从 ACK 的 `[6]` 取密码，而真机帧是 `13 05 01 00 0A 03 00 00 00 02 1C 01`，密码在 `[5]`（`03 00 00 00 02 1C` = G87）。取错位置导致**整张 18 项型号表对所有键盘都匹配不到**，显示名一直退回产品名「MCHOSE 2.4G Wireless」。现在两种偏移都试（兼容当初那段多一字节的合成样本），真机复测显示名变「迈从 G87」。
-- **设备列表改增量更新**：每次刷新都整体替换 `ItemsSource`，ListView 会丢弃所有行容器重建，每分钟轮询都闪一下（图标换成 `UIElement` 后更明显）。改为构造时设一次 `ObservableCollection`，之后按 Id 对位同步——内容指纹（不含 Icon）相同就整行复用，连图标元素都不重建，只替换真正变化的行。
-
 ## 2026-10-21
 
-- **MCHOSE G3 V2（`3837:4245`）**：接入 `gmouse` 主动查询协议——65 字节查询帧 `00 55 30 A5 0B 2E…`、应答前缀 `AA 30`，电量 `[off+8]` / 充电 `[off+9]`。这颗接收器的厂商接口被动监听零报文、也不走 QHW，靠 usagePage `0xFF01` / usage `0x10` 的完整指纹与同厂的 K7（`0x0001`）、V2 被动 E2 链路区分。帧取自官方 M HUB `/gmouse` 与社区 aliezzzz/mchose-battery。新增 `MchoseGmouseCodec`（纯函数 + 用例），分类器加 `Gmouse` 并排在 `MouseV2` 之前。见 `hardware/mchose.md` §4。
 - **MCHOSE K7 V2 Ultra+（`3837:1018`）**：接入 `mouse-k7` 协议——`0x0900` 查询设备信息、被动解析 `0x0600` 电源事件。这颗 dongle 的 feature 通道写通读不通（`GetFeature` 恒 `ERROR_GEN_FAILURE`），原有的 feature 读族与 E2 被动路径一个都不成立，这才是它原先完全读不到电量的根因。帧取自官方 M HUB 运行时 JS 的 `i1e()` / `_K()` / `LA()`，不是猜的。新增 `MchoseK7Codec`（纯函数 + 16 个真机帧向量用例），分类器加 `MouseK7` 并排在 `MouseV2` 之前。见 `hardware/protocols.md` §15。
 - **K7 的 `0xFF` 不能按失败记账**：真机常态应答是 `4D 01 01 01 … 00 FF`（鼠标在睡）。按普通失败记，睡着的鼠标三轮就被判离线并熔断停写、醒了也不再被问，所以 `PollMouseK7` 自己记账——收到任何 `0x4D` 帧就算应答。
 - **新增 CHERRY 插件（PIXIU75 蔚蓝档案 圣园未花联动款）**：64 字节块协议（report `0x04`，块 `0x1A` = 电量 + 充电位），真机 48% 与官方软件一致，插线后 55% 判充电中；有线（`046A:01E2`）与 2.4G（`046A:01E4`）共用同一块通道。见 `hardware/protocols.md` §13。
@@ -205,11 +192,3 @@
 | 1.2.1 | 10-18 | 剩余时间估算及原因提示、设备右键重命名简介；本机打包 |
 | 1.2.3 | 10-21 | 9 款社区设备适配；删除离线设备与永久屏蔽、贴片拖动/选屏/尺寸三处修复、失败不再静默；本机试装 |
 | 1.2.2 | 10-19 | 8 款社区设备适配（会写帧的默认关）、更新说明与贡献者页；本机试装 |
-
-## 2026-10-23
-
-- 为罗技 PRO X 2 LIGHTSPEED 增加 Centurion 查询路径、严格接口判据与解析单测，并让新路径复用 `BatteryPluginBase` 的读数过滤和熔断；真机覆盖放电、充电和休眠唤醒，并修正拔充电线时短暂超时导致的离线误判。
-- 诊断版真机复核确认耳机按分钟轮询读到充电/放电变化、状态不变时列表更新时间与鼠标同步，并核验关闭罗技开关后插件卸载且不再查询；随后确认蓝牙模式通过 Windows HFP 设备节点读到与系统设置一致的 60%，无需加入 Centurion 协议。详见 `hardware/logitech.md` §2。
-- 将经典蓝牙中识别为耳机且名称为 `PRO X 2` 的条目显示为 `PRO X 2 LIGHTSPEED`，避免与罗技 2.4G 鼠标混淆；依据用户提供的 G HUB 型号及电量截图。
-- 合并 #45 后的收口：改正 `WritesEnabled` 注释（Centurion 是第二个写点，不再是「唯一写点」）、补回误删的 `IsHidppInterface` 摘要，R2 例外条款按「混合型插件」重写，`logitech.md` 补 §1 标题。
-- 合并 #38（迈从 G3 V2 / `gmouse`）后的收口：`MchoseGmouseCodec` 类头与方法注释压回配额；改正「`0xA8A5`/`0xA8A4` 是 VID 不是 PID」、来源项目是 Rust 不是 Python、覆盖面只到 `3837:4245`；充电态改走 `ChargingStateMap`（100% 未充电判 `Full`，与 K7/V1/QHW 一致）；`safety.md` §3.1 登记第五类设备与 gmouse 的 2 帧/拍写入预算；`mchose.md` §4.5 补未验证边界；`mi_01&col05` 仍走 V2 兜底记 CR-94。

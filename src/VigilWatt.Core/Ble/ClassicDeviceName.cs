@@ -5,7 +5,6 @@ namespace VigilWatt.Core.Ble;
 /// <summary>
 /// 功 能： 经典蓝牙显示名的纯逻辑：识别"占位名"（WinRT 在友好名未解析时会拿 AEP 设备 ID 当名字，真机实测）。
 /// 2026/10/06 15:53:36 xliu
-/// 2026/10/23 20:58:09 nyamu
 /// 详见 docs/project/handoff.md「经典蓝牙设备显示名修成原始 ID」。
 /// </summary>
 internal static class ClassicDeviceName
@@ -34,9 +33,4 @@ internal static class ClassicDeviceName
     /// <summary>任何名字都拿不到时的兜底显示名（总比一长串 AEP ID 强）。</summary>
     public static string FallbackName(string? mac)
         => string.IsNullOrEmpty(mac) ? "经典蓝牙设备" : $"经典蓝牙设备 {MacText(mac)}";
-
-    public static string NormalizeBluetoothHeadsetName(string name)
-        => string.Equals(name.Trim(), "PRO X 2", StringComparison.OrdinalIgnoreCase)
-            ? "PRO X 2 LIGHTSPEED"
-            : name;
 }

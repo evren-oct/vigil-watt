@@ -39,6 +39,10 @@ public class HistoryStore : IDisposable
         Log.Info($"history.db 就绪: {_dbPath}");
     }
 
+    /// <summary>库里的 UTC 毫秒 → 本地时区。FromUnixTimeMilliseconds 给的是 +00:00 偏移，
+    /// UI 直接按偏移格式化就会显示成 UTC（本地时间少 8 小时），见 docs/dev/runtime-pitfalls.md。</summary>
+    private static DateTimeOffset LocalTime(long unixMs) => DateTimeOffset.FromUnixTimeMilliseconds(unixMs).ToLocalTime();
+
     private void EnsureSchema()
     {
         // WAL：读不再阻塞写（UI 查询与后台采样互不卡）。busy_timeout：偶发写冲突时等一会儿而不是直接报错。
@@ -121,7 +125,7 @@ public class HistoryStore : IDisposable
                     (DeviceKind)reader.GetInt32(3),
                     reader.GetInt32(4),
                     reader.GetInt32(5) == 1,
-                    DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(6))));
+                    LocalTime(reader.GetInt64(6))));
             }
         }
         return list;
@@ -153,7 +157,7 @@ public class HistoryStore : IDisposable
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
                 list.Add((reader.GetString(0), reader.GetString(1),
-                    DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(2))));
+                    LocalTime(reader.GetInt64(2))));
         }
         return list;
     }
@@ -179,8 +183,8 @@ public class HistoryStore : IDisposable
             }
             return new HistoryStats(
                 total, devices,
-                first is { } f ? DateTimeOffset.FromUnixTimeMilliseconds(f) : null,
-                last is { } l ? DateTimeOffset.FromUnixTimeMilliseconds(l) : null,
+                first is { } f ? LocalTime(f) : null,
+                last is { } l ? LocalTime(l) : null,
                 FileBytes());
         }
     }
@@ -211,8 +215,8 @@ public class HistoryStore : IDisposable
             while (reader.Read())
                 list.Add(new DeviceHistoryStat(
                     reader.GetString(0), reader.GetString(1), (DeviceKind)reader.GetInt32(2), reader.GetInt32(3),
-                    DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(4)),
-                    DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(5))));
+                    LocalTime(reader.GetInt64(4)),
+                    LocalTime(reader.GetInt64(5))));
         }
         return list;
     }
@@ -233,8 +237,8 @@ public class HistoryStore : IDisposable
             if (!reader.Read()) return new DeviceHistorySummary(0, null, null);
             return new DeviceHistorySummary(
                 reader.GetInt32(0),
-                reader.IsDBNull(1) ? null : DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(1)),
-                reader.IsDBNull(2) ? null : DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(2)));
+                reader.IsDBNull(1) ? null : LocalTime(reader.GetInt64(1)),
+                reader.IsDBNull(2) ? null : LocalTime(reader.GetInt64(2)));
         }
     }
 

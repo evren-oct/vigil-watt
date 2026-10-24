@@ -3,6 +3,10 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-10-24
+
+- **历史库时间戳按本地时区读回**：库里存的是 UTC 毫秒，`DateTimeOffset.FromUnixTimeMilliseconds` 给的偏移是 `+00:00`，设备列表的「更新于」直接格式化它就显示成 UTC（本地时间少 8 小时）。在线设备走 `DateTimeOffset.Now` 所以正常，离线设备走库才暴露。`HistoryStore` 加 `LocalTime()` 统一转本地时区，六个读路径全走它；单测 `H14` 盯住「直接格式化不会显示成 UTC」。见 `dev/runtime-pitfalls.md` §21。
+
 ## 2026-10-21
 
 - **MCHOSE K7 V2 Ultra+（`3837:1018`）**：接入 `mouse-k7` 协议——`0x0900` 查询设备信息、被动解析 `0x0600` 电源事件。这颗 dongle 的 feature 通道写通读不通（`GetFeature` 恒 `ERROR_GEN_FAILURE`），原有的 feature 读族与 E2 被动路径一个都不成立，这才是它原先完全读不到电量的根因。帧取自官方 M HUB 运行时 JS 的 `i1e()` / `_K()` / `LA()`，不是猜的。新增 `MchoseK7Codec`（纯函数 + 16 个真机帧向量用例），分类器加 `MouseK7` 并排在 `MouseV2` 之前。见 `hardware/protocols.md` §15。

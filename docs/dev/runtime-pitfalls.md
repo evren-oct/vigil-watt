@@ -906,3 +906,25 @@ icacls "<exe 路径>" | findstr Mandatory
   同时它自己也不再抛——既是诊断，也是"UI 事件不许逸出异常"的示范。
 - `ProcessIdentity.Describe()`：启动日志第二行打 `用户= 会话= 管理员= 完整性= 沙箱组=`。
   **`完整性` 不是 Medium 就不用往下查了**——先把 exe 提回 Medium 再说。
+
+## 21. 历史库时间戳带 +00:00 偏移，离线设备的「更新于」少 8 小时（2026-10-24 实修）
+
+**症状**：设备列表里**在线**设备的「更新于 HH:mm:ss」正常，**离线**设备少 8 小时——本机 GMT+8，
+X9 实际 09:47:04 却显示 01:47:04；离线的鼠标实际 10-24 01:13:16 却显示 17:13:16。
+
+**根因**：`HistoryStore` 用 `DateTimeOffset.FromUnixTimeMilliseconds(ms)` 读库，得到的 DateTimeOffset
+**偏移是 +00:00（UTC）**。`DateTimeOffset.ToString("HH:mm:ss")` 按**自身偏移**渲染，于是显示成 UTC。
+在线设备不受影响：它的时间来自 `DateTimeOffset.Now`（本地偏移 +08:00）。
+
+**为什么难发现**：同一批 UI 里两种写法混用——`HistoryDeviceRow` / `BatteryChartControl` / `StatsPage`
+都写了 `.LocalDateTime`（自动转本地，对），而 `DeviceRowModel` 与 `DevicesPage` 直接
+`{d.LastUpdated:HH:mm:ss}`（错）。而且 `DateTimeOffset` 的相等是**按瞬时**比，偏移不同也算相等，
+拿它跟 `DateTimeOffset.Now` 对比根本发现不了偏移变了。
+
+**修法**：在数据源头统一——`HistoryStore.LocalTime()` 把库里的 UTC 毫秒转成本地时区，
+六个读路径（`Query` / `DistinctDevices` / `GetStats` / `GetDeviceStats` / `GetDeviceSummary`）全走它。
+比较语义不变（相等仍按瞬时比），只是显示变回本地挂钟时间。
+
+**教训**：从库里读出来的时间戳，要么读的时候就把时区定死，要么显示的时候显式 `.ToLocalTime()`，
+**别把 DateTimeOffset 的原始偏移直接丢给格式化器**。写单测时也要断言 `.Offset`，
+只断言时间值会漏掉这类偏移错误。

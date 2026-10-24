@@ -238,4 +238,28 @@ public sealed class HistoryStoreTests : IDisposable
         Assert.Null(none.First);
         Assert.Null(none.Last);
     }
+
+    [Fact]
+    public void H14_读回的时间戳带本地时区_直接格式化不会显示成UTC()
+    {
+        using var store = NewStore();
+        store.Insert(Dev("kb", "键盘", 90, T0));
+        var local = T0.ToLocalTime();
+
+        var sample = store.Query("kb", T0.AddDays(-1), T0.AddDays(1)).Single();
+        var deviceStat = store.GetDeviceStats().Single();
+        var summary = store.GetDeviceSummary("kb");
+        var distinct = store.DistinctDevices(T0.AddDays(-1)).Single();
+
+        // 设备列表的「更新于」直接格式化 LastUpdated，偏移是 UTC 就会比本地时间少 8 小时
+        foreach (var actual in new[]
+                 {
+                     sample.Timestamp, deviceStat.First, deviceStat.Last,
+                     summary.First!.Value, summary.Last!.Value, distinct.LastSeen,
+                 })
+        {
+            Assert.Equal(local.Offset, actual.Offset);
+            Assert.Equal(local.ToString("HH:mm:ss"), actual.ToString("HH:mm:ss"));
+        }
+    }
 }

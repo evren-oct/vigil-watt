@@ -63,6 +63,7 @@
 | CR-75 | 拔出后 HID++ 通知空转：`BatteryPluginBase.StartPassiveListen` 与 `LogitechPlugin.EnsureListening` 按"连续 3 次读取在 100ms 内返回 null"判定句柄失效，退避 200ms。正常静音仍等满 500ms，节拍不受影响 |
 | CR-76 | 与 CR-75 同一修法落地。Inphic/Hecate/Delux 的读窗口 `continue` 有 deadline 兜住（不无限循环），未改 |
 | CR-77 | `MarkOffline` 注释改为"插件内软离线的唯一落地点"，并注明拔出走 `ReconcileRemovals`（不该盖 `LastUpdated`）。行为本来就对，是注释过满 |
+| CR-86 | 历史库时间戳按本地时区读回（`HistoryStore.LocalTime`）：离线设备的「更新于」原先显示成 UTC，比本地时间少 8 小时。见 runtime-pitfalls.md §21 |
 
 ## wontfix
 

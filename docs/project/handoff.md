@@ -18,7 +18,7 @@
 
 **开发版数据目录在 `bin\x64\Debug\...\win-x64\data\`**（`AppPaths` 用 `#if DEBUG` 分流，Release 才用 `%LOCALAPPDATA%\VigilWatt`），所以从 `bin` 双击即可运行、不碰用户目录；`VIGILWATT_DATA_DIR` 可覆盖。为什么必须这么改见 `dev/runtime-pitfalls.md` §20，用法见 `dev/build.md` §3.1。
 
-审查标准在 `docs/dev/review-standard.md`，未修项全集在 `docs/reviews/BACKLOG.md`（不要在本文再抄一份）。
+审查标准在 `docs/dev/review-standard.md`，未修项全集在 `docs/reviews/BACKLOG.md`。罗技充电重复设备修复已实现，物理身份与历史迁移边界见 `hardware/logitech.md` §1；CR-87 保持 doing，待真实充电插拔验收。
 
 设备接入已收五批（#36 CHERRY/派世、#25 黑爵/雷神、#33 迈从 K7、#23 寸渊影弑/盖世小鸡、#18 前行者），逐台状态见 §2 表；两个 `integrate/*` 本地分支已删。设备管理类改动（#14 双通道去重、#16 设备管理）、#15 的 BLE 大改、issue #12/#11 按 BACKLOG CR-68 ~ CR-72 排队。
 
@@ -63,6 +63,8 @@
 ## 4. 待办
 
 审查未修项以 `docs/reviews/BACKLOG.md` 为准。这里只留还要人去做的事。
+
+- **罗技充电切换（CR-87）**：修复版已启动，界面控制被 Esc 中止；仍需插拔充电线确认 USB/无线合为一台、充电状态与旧历史归并。验证边界见 `reviews/archive/logitech-charging-review-2026-10-24.md`。
 
 1. **迈从充电标志**：插上充电线，看日志里的状态字节，补全 `ParseKeyboardV1Charge`（已知 0x10 位 = 充电中）。
 2. **雷柏充满**：放电 0x01、充电 0x02 已校准。充满时 `[7]` 还没采到，采到再补映射。

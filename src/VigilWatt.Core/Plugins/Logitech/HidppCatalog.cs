@@ -22,6 +22,9 @@ internal static class HidppCatalog
     public static ReceiverInfo? FindReceiver(ushort productId)
         => Data.Value.Receivers.TryGetValue(productId, out var r) ? r : null;
 
+    public static bool IsReceiver(ushort productId)
+        => FindReceiver(productId) != null || productId is >= 0xC500 and <= 0xC5FF;
+
     /// <summary>未收录接收器的默认值：最多 6 槽（Unifying/Bolt 上限），报文偏好按"有长则跳短"旧规则。</summary>
     public static int MaxSlots(ushort productId)
         => FindReceiver(productId)?.MaxSlots ?? 6;

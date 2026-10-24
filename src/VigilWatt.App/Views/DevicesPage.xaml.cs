@@ -98,6 +98,7 @@ public sealed partial class DevicesPage : Page
     private async void CustomizeDevice_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuFlyoutItem item || item.Tag is not string id) return;
+        id = App.Services.Settings.CanonicalDeviceId(id);
         var device = App.Services.Manager.Find(id);
         if (device == null || device.Source == DeviceSource.System) return;
 
@@ -273,9 +274,11 @@ public sealed partial class DevicesPage : Page
         var result = await dialog.ShowAsync();
         if (result == ContentDialogResult.None) return;
 
+        id = settings.CanonicalDeviceId(id);
+
         if (result == ContentDialogResult.Secondary)
         {
-            settings.DeviceCustomizations.Remove(id);
+            settings.DeviceCustomizations.TryRemove(id, out _);
         }
         else
         {
@@ -283,7 +286,7 @@ public sealed partial class DevicesPage : Page
             var custom = new DeviceCustomization();
             custom.Name = name;
             custom.IconKind = selectedKind;
-            if (custom.Name == null && custom.IconKind == null) settings.DeviceCustomizations.Remove(id);
+            if (custom.Name == null && custom.IconKind == null) settings.DeviceCustomizations.TryRemove(id, out _);
             else settings.DeviceCustomizations[id] = custom;
         }
 

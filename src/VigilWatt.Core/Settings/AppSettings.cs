@@ -94,7 +94,11 @@ public class AppSettings
     /// 注意：纯 bool，老 settings.json 缺该字段时反序列化直接用属性默认值 false，不需要像 <see cref="PluginEnabled"/> 那样手动补键。</summary>
     public bool MonitorSystemBattery { get; set; } = false;
 
-    public Dictionary<string, DeviceCustomization> DeviceCustomizations { get; set; } = new();
+    public ConcurrentDictionary<string, DeviceCustomization> DeviceCustomizations { get; set; } = new();
+
+    public ConcurrentDictionary<string, string> DeviceAliases { get; set; } = new();
+
+    public string CanonicalDeviceId(string id) => DeviceAliases.TryGetValue(id, out var canonical) ? canonical : id;
 
     /// <summary>用户"永久移除"的设备（黑名单）：Id → 名称与时间。命中则不认领、不探测、不进列表，只能手动解除。
     /// 与 <see cref="DismissedDevices"/> 是两回事：那个是临时的，设备一上线就失效。
@@ -145,7 +149,8 @@ public class AppSettings
             }
 
             _cached = loaded ?? new AppSettings();
-            _cached.DeviceCustomizations ??= new Dictionary<string, DeviceCustomization>();
+            _cached.DeviceCustomizations ??= new ConcurrentDictionary<string, DeviceCustomization>();
+            _cached.DeviceAliases ??= new ConcurrentDictionary<string, string>();
             _cached.BlockedDevices ??= new ConcurrentDictionary<string, BlockedDevice>();
             _cached.DismissedDevices ??= new ConcurrentDictionary<string, long>();
 

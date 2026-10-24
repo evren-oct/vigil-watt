@@ -1,12 +1,27 @@
 # 罗技 Logitech (VID_046D) —— ✅ Bolt 真机验证（2026-10-08）；协议驱动 + 嵌入目录
 
-> 从 [protocols.md](protocols.md) 拆出（2026-10-21）。结论均来自真机验证或官方软件抓包；改协议代码前先读本文。
+> 从 [protocols.md](protocols.md) 拆出（2026-10-21）。既有电量结论来自真机验证或官方软件抓包；新增物理身份的资料依据与未验证部分见 §1。
+
+## 1. 充电直连与物理身份（2026-10-24）
+
+本机 PRO 2 MOUSE 的 USB 直连 PID 为 `C09A`，无线接收器为 `C543`。Windows 缓存节点、用户充电场景和历史库一致：旧版将直连误当未知六槽接收器，在同一接口下登记槽位 1～6；拔线后六条保留为离线，接收器另占一条。不是 BLE/2.4G 双读。
+
+- 已知目录项或 `C5xx` 按接收器发现；其他直连走地址 `0xFF`，不先扫 1～6。`C543` 补为单槽 Lightspeed；Bolt 仍为六槽。类型判断依据为本机 USB 节点和 [Solaar base_usb.py](https://github.com/pwr-Solaar/Solaar/blob/master/lib/logitech_receiver/base_usb.py) 的产品分区说明。
+- 首次发现 HID++ 2.0 设备时，用现有 Root.GetFeature 找 `0x0003 DEVICE_FW_VERSION`，再发其函数 0 读取 GetDeviceInfo；只读取一次，不进周期诊断或命令枚举。请求仍经 `HidppIO.WritesAllowed`。字段依据是 [Solaar Hidpp20.get_ids](https://github.com/pwr-Solaar/Solaar/blob/master/lib/logitech_receiver/hidpp20.py)：参数区 `[1..4]` 为 unit ID，`[7..12]` 为 model ID。本项目响应含两字节 feature/function 前缀，所以分别从 `[3]`、`[9]` 起取值。
+- 两字段均有效才生成跨通道物理 ID；全零、全 FF 或短响应不作为身份，保留通道 ID，不按名称猜测关联。协议字段参考后自行实现，未复制 Solaar 源码（来源代码 GPL-2.0-or-later）。本机实际跨通道身份一致性仍需插拔充电线验收。
+- 通道保持独立状态，优先在线且有读数的通道，其次选 USB 直连；离线通道不会覆盖在线通道。移除后释放通道快照，避免每次插拔积累状态。
+- 精确旧 ID 别名保存至设置，再由 SQLite 事务归并所属设备；保留每条采样的主键、电量、充电位、名称与时间，不删除采样。保存失败回滚设置；数据库失败由下次上报或启动重试。历史归并前已有设置映射是可重试依据，自定义名/图标及屏蔽标记随别名转移。
+- 直连接口旧的 1～6 槽和 `255` 都属于该接口的旧 ID；只有重新观察到该直连接口后才归并这些历史。首次运行修复版时，应插一次充电线让程序确认物理身份；未观察到的旧记录不凭同名清除。
+
+回归覆盖：PID 分类、独立物理身份、充电切换、离线来源覆盖、旧槽位映射、设置保存失败/别名冲突、真实 SQLite 归并及事务回滚。测试向量是协议布局合成样本，不宣称为本机原始抓包。
+
+## 2. 既有电量协议
 
 
 HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 `0x1004` Unified Battery → `0x1000` Battery Status → `0x1001` Battery Voltage → `0x1F20` ADC Measurement → 1.0 寄存器 `0x07`/`0x0D`。
 
-嵌入资源 [`logitech-hidpp.json`](../../src/VigilWatt.Core/Plugins/Logitech/logitech-hidpp.json) 提供接收器槽位/报文偏好与毫伏曲线；**目录是补充不是白名单**——未知 PID 仍打开 HID++ 接口（默认最多 6 槽、有长则跳短）。
+嵌入资源 [`logitech-hidpp.json`](../../src/VigilWatt.Core/Plugins/Logitech/logitech-hidpp.json) 提供接收器槽位/报文偏好与毫伏曲线；目录不作为型号白名单。未知接收器保留最多 6 槽的默认值，USB 直连按 §1 仅发现地址 `0xFF`；报文仍按有长则跳短的默认偏好。
 
 | 新设备类型 | 怎么扩展 |
 |---|---|

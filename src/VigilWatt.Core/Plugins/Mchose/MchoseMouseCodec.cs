@@ -93,14 +93,21 @@ internal static class MchoseMouseCodec
         };
     }
 
-    /// <summary>从会话 ACK（13 05 01 …）的 payload 首字节提"密码"。ACK 布局见 mchose.md §1.3。</summary>
+    /// <summary>
+    /// 从会话 ACK（13 05 01 …）的 payload 里提"密码"。
+    /// 接收器代际在密码前差一个填充字节（G87 世代在 [6]，G75 世代在 [5]），两处都试，命中即返回。
+    /// </summary>
     public static string? ModelFromSessionAck(byte[] input)
     {
         foreach (int off in new[] { 0, 1 })
         {
-            if (input.Length < off + 10) continue;
+            if (input.Length < off + 12) continue;
             if (input[off] != MchoseV1Codec.ReportId || input[off + 1] != MchoseV1Codec.SessionCmd) continue;
-            return ModelFromPassword(input.AsSpan(off + 6, 6));
+            foreach (int start in new[] { 6, 5 })
+            {
+                var model = ModelFromPassword(input.AsSpan(off + start, 6));
+                if (model != null) return model;
+            }
         }
         return null;
     }

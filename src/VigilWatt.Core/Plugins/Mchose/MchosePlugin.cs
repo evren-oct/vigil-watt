@@ -83,10 +83,13 @@ public sealed class MchosePlugin : BatteryPluginBase
         if (info.VendorId == Inphic.InphicPlugin.InphicVid) return false;
         // HECATE 的厂商集合同样是 64 字节进出，不能当成迈从接口
         if (info.VendorId == Hecate.HecatePlugin.HecateVid) return false;
-        // AULA F99 Pro 也是 20 字节 0x13 接口，会话帧只能由 AulaPlugin 在开关打开后发送
-        if (info.VendorId == Aula.AulaPlugin.AulaVid) return false;
+        // AULA F99 Pro 与迈从 G75 共用 3554:FA09 的 20 字节 0x13 接口，只能靠会话 ACK 的型号密码区分；
+        // 这里放行这条精确指纹，认领阶段由 TryKeyboardV1 按型号裁决（aula.md §1.1）
+        if (info.VendorId == Aula.AulaPlugin.AulaVid && !IsSharedWithAula(info)) return false;
         // 品牌排除之后，判据全在分类器里（耳机先分流、键鼠白名单、厂商用法、报告长度），有单测覆盖
-        return Classify(info) != MchoseInterfaceKind.None;
+        if (Classify(info) != MchoseInterfaceKind.None) return true;
+        // 与 AULA 共用的 3554:FA09：分类器按 VID 白名单必然判 None，这里单独放行，归属交给 Probe 按 ACK 型号定
+        return IsSharedWithAula(info);
     }
 
     /// <summary>把 <see cref="HidDeviceInfo"/> 摊成分类器要的字段，避免判据在两处各写一遍。</summary>
@@ -94,6 +97,13 @@ public sealed class MchosePlugin : BatteryPluginBase
         => MchoseInterfaceClassifier.Classify(info.VendorId, info.ProductId, info.DevicePath,
             info.UsagePage, info.Usage, info.InputReportLength, info.OutputReportLength,
             info.FeatureReportLength, info.OutputReportId);
+
+    /// <summary>G75 与 AULA F99 Pro 的接口指纹完全一致（3554:FA09 / 0xFF02:0x0002 / 20 字节），以会话 ACK 的型号密码定归属。</summary>
+    private static bool IsSharedWithAula(HidDeviceInfo info)
+        => info.VendorId == Aula.AulaPlugin.AulaVid && info.ProductId == Aula.AulaPlugin.F99ProPid
+           && info.UsagePage == 0xFF02 && info.Usage == 0x0002
+           && info.InputReportLength >= MchoseV1Codec.FrameLength
+           && info.OutputReportLength >= MchoseV1Codec.FrameLength;
 
     protected override DeviceKind ResolveKind(string protocol)
         => protocol switch
@@ -139,19 +149,30 @@ public sealed class MchosePlugin : BatteryPluginBase
     private const string LogKeyQhwSkip = "qhw-skip";          // "这条通道不是 QHW"
     private const string LogKeyQhwNoPermit = "qhw-no-permit"; // "没开写入许可，跳过主动查询"
     private const string LogKeyKbV1Silent = "kbv1-silent";    // "keyboard-v1 问了两次都不应答"
+    private const string LogKeyKbV1ModelUnknown = "kbv1-model-unknown"; // "共用指纹但型号不在迈从表，交给 AULA"
     private const string LogKeyMouseSilent = "mouse-silent";  // "鼠标探测没等到 E2 帧"
     private const string LogKeyMousePokeFail = "mouse-poke-fail"; // "触发帧写失败（接口无输出通道）"
     private const string LogKeyV9Silent = "v9-silent"; // "V9 Pro 查询没等到电量响应"
     private const string LogKeyK7NoPermit = "k7-no-permit"; // "没开写入许可，跳过 K7 主动查询"
     private const string LogKeyK7Asleep = "k7-asleep";      // "K7 只回 1 字节 0xFF，鼠标多半在睡"
 
-    /// <summary>协议探测：鼠标 V2（被动等 E2）→ 官方 QHW（新世代）→ 键盘 V1 会话协议（G87 / G87 V2）。</summary>
+    /// <summary>协议探测：共用指纹（AULA/G75）→ 鼠标 V2（被动等 E2）→ 官方 QHW（新世代）→ 键盘 V1 会话协议（G87 / G87 V2）。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
     {
         // consumer/system 等小接口没有可用的输出通道，直接排除（避免握手帧越界）
         if (handle.Info.OutputReportLength < 20 || handle.Info.InputReportLength < 20) return null;
 
         var path = handle.Info.DevicePath;
+
+        // 共用指纹：分类器不认识这个 VID，绝不能往下走 QHW（会往键盘接口写 0x4D），只能走 V1 会话
+        if (IsSharedWithAula(handle.Info))
+        {
+            var shared = TryKeyboardV1(handle, requireKnownModel: true);
+            if (shared == null) return null;
+            KnownProtocolByPath[path] = ProtocolKeyboardV1;
+            return (ProtocolKeyboardV1, shared.Value.Percent, shared.Value.Charging);
+        }
+
         var kind = MchoseInterfaceClassifier.Classify(handle.Info.VendorId, handle.Info.ProductId, path,
             handle.Info.UsagePage, handle.Info.Usage, handle.Info.InputReportLength,
             handle.Info.OutputReportLength, handle.Info.FeatureReportLength, handle.Info.OutputReportId);
@@ -198,7 +219,7 @@ public sealed class MchosePlugin : BatteryPluginBase
             return qhw;
         }
 
-        var kbV1 = TryKeyboardV1(handle);
+        var kbV1 = TryKeyboardV1(handle, IsSharedWithAula(handle.Info));
         if (kbV1.HasValue)
         {
             var (p, c) = kbV1.Value;
@@ -213,7 +234,9 @@ public sealed class MchosePlugin : BatteryPluginBase
         => known switch
         {
             "qhw" or "qhw-push" => TryQhw(handle),
-            ProtocolKeyboardV1 => TryKeyboardV1(handle) is { } kb ? (ProtocolKeyboardV1, kb.Percent, kb.Charging) : null,
+            ProtocolKeyboardV1 => TryKeyboardV1(handle, IsSharedWithAula(handle.Info)) is { } kb
+                ? (ProtocolKeyboardV1, kb.Percent, kb.Charging)
+                : null,
             ProtocolMouseV2 => TryMouseV2(handle),
             ProtocolMouseK7 => TryMouseK7(handle),
             ProtocolHeadsetV9 => TryHeadsetV9(handle),
@@ -750,11 +773,18 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// 刷满且无新信息。成功一次就 <see cref="Log.ResetOnce"/>。
     /// </summary>
     private static (int? Percent, ChargingState Charging)? TryKeyboardV1(HidDeviceHandle handle)
+        => TryKeyboardV1(handle, requireKnownModel: false);
+
+    /// <summary><paramref name="requireKnownModel"/> = true 用于与 AULA 共用的 3554:FA09 指纹：
+    /// 只有会话 ACK 的型号密码落在迈从表里才认领，否则把接口留给 AulaPlugin（aula.md §1.1）。</summary>
+    private static (int? Percent, ChargingState Charging)? TryKeyboardV1(HidDeviceHandle handle, bool requireKnownModel)
     {
         if (!IsWritesEnabled(SettingsKey)) return null;
 
         // 开会话（官方时序），失败不影响下一步——实测 dongle 记住会话状态
         SendKeyboardV1Frame(handle, MchoseV1Codec.SessionCmd, 0x01);
+        (int? Percent, ChargingState Charging)? sessionRead = null;
+        bool modelKnown = false;
         var deadline0 = DateTime.UtcNow + TimeSpan.FromSeconds(1.2);
         while (DateTime.UtcNow < deadline0)
         {
@@ -762,21 +792,33 @@ public sealed class MchosePlugin : BatteryPluginBase
             if (input == null) continue;
 
             var read = InterpretV1Input(input, out bool stop);
-            if (stop)
-            {
-                Log.Info($"迈从 会话期间即收到电量推送，直接采用");
-                Log.ResetOnce(LogKey(handle, LogKeyKbV1Silent));
-                return read;
-            }
+            if (stop) sessionRead ??= read;
+
             // 会话 ACK 的密码段就是接收器型号（官方 getPassWord 同源）：帧本来就要收，顺手记下零成本
             var model = MchoseMouseCodec.ModelFromSessionAck(input);
             if (model != null)
             {
                 KnownModelByPath[handle.Info.DevicePath] = model;
+                modelKnown = true;
                 Log.Info($"迈从 会话 ACK 识别型号: {model} 原始={Log.Hex(input)}");
             }
             if (Log.IsEnabled(LogLevel.Debug)) Log.Debug($"迈从 会话ACK: {Log.Hex(input)}");
+
+            if (sessionRead != null && (!requireKnownModel || modelKnown))
+            {
+                Log.Info($"迈从 会话期间即收到电量推送，直接采用");
+                Log.ResetOnce(LogKey(handle, LogKeyKbV1Silent));
+                return sessionRead;
+            }
         }
+
+        if (requireKnownModel && !modelKnown)
+        {
+            Log.Once(LogLevel.Debug, LogKey(handle, LogKeyKbV1ModelUnknown),
+                $"迈从 共用指纹的接收器型号不在迈从表里，接口留给 AULA 插件: {handle.Info.DevicePath}");
+            return null;
+        }
+        if (sessionRead != null) return sessionRead;
 
         // 电量查询，最多重试 2 次（键盘休眠时先醒来）
         for (int attempt = 1; attempt <= 2; attempt++)

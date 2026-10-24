@@ -43,6 +43,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseK7Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV9ProCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Lingbao\LingbaoCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Cherry\CherryCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Pulsar\PulsarCodec.cs" />

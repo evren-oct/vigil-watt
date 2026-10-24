@@ -8,7 +8,7 @@
 
 当前安装包 **1.2.3**（`dist/`，本机试装用；尚未上传正式 Release）。正式线上以 GitHub 最新 Release 为准，Gitee 是回退源；更新源 GitHub 优先、8 秒不通回退 Gitee。发新版时保留上一版 `*-full.nupkg` 作为 delta 基准；规则见 `dev/build.md` §8。
 
-本机已打通：迈从 G87（0x13）、雷柏 VT3（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。弱水时砂 2.4G 无电量通道，不再投入。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。
+本机已打通：迈从 G87（0x13）、雷柏 VT3（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。弱水时砂 2.4G 无电量通道，不再投入。**2026-10-24 新增**：迈从 G75 Pro（`3554:FA09`，会话 ACK 分流，36%）、凌豹 M5PRO Max（`3151:402D`，83%，电量字段待与官方界面对照，见 `hardware/lingbao.md` §1.4）。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。
 
 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），不是 WinUI 覆盖窗；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。**拖动走 16ms 轮询，不靠鼠标捕获**——捕获对非前台窗口无效（`dev/runtime-pitfalls.md` §16、§16.5.1；§17 只对小组件）。选屏由 `Services/TaskbarPillManager.cs` 每秒按 `monitorDevicePath` 匹配，配置的屏不在就降级贴主屏，设置页显示真实屏幕名——`\\.\DISPLAYn` 是配置序号不是身份，见 `dev/monitor-identity.md`。
 
@@ -50,6 +50,8 @@
 | CHERRY PIXIU75（dongle 046A:01E4 / 有线 046A:01E2） | 64 字节块通道 0xFF1C，读块 0x1A（电量 + 充电位） | 已打通，真机 48%↔官方软件一致；插线 55% + 充电中（cherry.md §1.5） |
 | 派世 Pulsar X2 V2（VID_3554&PID_F508） | 17 字节帧 `0x08`，STATUS `0x03` / POWER `0x04` | 已打通，真机 20% + 3566 mV（pulsar.md §1） |
 | 迈从 K7 V2 Ultra+（VID_3837&PID_1018） | `0x4D` 通道，`0x0900` 查询 + `0x0600` 被动事件 | 代码已接入（并入迈从插件），默认关。会写帧。贡献者真机连跑 6.5 小时（mchose.md §3） |
+| 迈从 G75 Pro（VID_3554&PID_FA09） | 与 AULA 同指纹，会话 ACK 密码分流到迈从 | 本机实测：ACK 型号 G75 Pro，`13 4A` = 36%；与 AULA 的认领冲突已按 ACK 解决（mchose.md §4） |
+| 凌豹 M5PRO Max（VID_3151&PID_402D） | feature 65 字节，`83` + `0xFF-sum` 校验 | 本机实测 83%，默认关；电量下标/状态字节待与官方界面对照（lingbao.md §1.4） |
 | 黑爵 AK870（VID_3151&PID_4011） | feature `F7` 状态查询，`[2]` 电量 + `[4]` 在线 | 代码已接入，默认关。贡献者实机确认（ak870-ml903.md） |
 | 雷神 ML903 NearLink Se（VID_369B&PID_0234） | `0xA0` 设备信息查询，TLV `0x0225` = 电量 | 代码已接入，默认关。贡献者实机确认（ak870-ml903.md） |
 | EDIFIER W820NB | HFP 网关 `DEVPKEY_Device_BatteryLevel` | 已打通，与设置页一致 |

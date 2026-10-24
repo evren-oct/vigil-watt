@@ -42,7 +42,9 @@ public sealed class AulaPlugin : BatteryPluginBase
     /// <summary>探测 = 开一次会话，等设备回 0A 电量推送。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
     {
-        var read = TryRead(handle);
+        var read = TryRead(handle, out bool isMchose);
+        // 3554:FA09 被迈从 G75 共用：ACK 里的型号密码落在迈从表里就不是本插件该认的设备（mchose.md §4）
+        if (isMchose) return null;
         return read is { } value ? ("aula-v1", value.Percent, value.Charging) : null;
     }
 
@@ -50,15 +52,16 @@ public sealed class AulaPlugin : BatteryPluginBase
     {
         if (!CanWrite(dev)) return null;
 
-        var read = TryRead(dev.Handle);
+        var read = TryRead(dev.Handle, out _);
         if (read.HasValue) ReportPollAnswered(dev);
         else ReportPollFailure(dev);
         return read;
     }
 
-    /// <summary>发开会话帧，等 0A 推送或 4A 响应；拿不到返回 null。</summary>
-    private static (int? Percent, ChargingState Charging)? TryRead(HidDeviceHandle handle)
+    /// <summary>发开会话帧，等 0A 推送或 4A 响应；拿不到返回 null。ACK 里的型号属于迈从时置 <paramref name="isMchose"/>。</summary>
+    private static (int? Percent, ChargingState Charging)? TryRead(HidDeviceHandle handle, out bool isMchose)
     {
+        isMchose = false;
         if (handle.Info.OutputReportLength < MchoseV1Codec.FrameLength) return null;
         if (!handle.WriteOutput(MchoseV1Codec.BuildFrame(MchoseV1Codec.SessionCmd, 0x01),
                 TimeSpan.FromMilliseconds(500)))
@@ -69,6 +72,14 @@ public sealed class AulaPlugin : BatteryPluginBase
         {
             var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
             if (input == null) continue;
+
+            if (MchoseMouseCodec.ModelFromSessionAck(input) != null)
+            {
+                isMchose = true;
+                Log.Once(LogLevel.Info, $"{handle.Info.DevicePath}|mchose-model",
+                    $"AULA 跳过：会话 ACK 是迈从型号，接口归迈从插件 原始={Log.Hex(input)}");
+                return null;
+            }
 
             var push = MchoseV1Codec.ParsePush(input);
             if (push.Kind == V1PushKind.Battery)

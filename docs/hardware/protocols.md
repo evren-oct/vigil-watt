@@ -12,6 +12,8 @@
 | 迈从 MCHOSE | QHW 新一代 dongle | `3837:3033` | [mchose.md](mchose.md) | 已实现，备用 |
 | 迈从 MCHOSE | K7 V2 Ultra+ 鼠标 | `3837:1018` | [mchose.md](mchose.md) | 贡献者真机 |
 | 迈从 MCHOSE | V9 Pro 耳机 | `291D:385D` | [mchose-v9-pro.md](mchose-v9-pro.md) | 贡献者真机 |
+| 迈从 MCHOSE | G75 Pro 键盘（与 AULA 共用 `3554:FA09`） | `3554:FA09` | [mchose.md](mchose.md) §4 | 本机实测 |
+| 凌豹 LINGBAO | M5PRO Max 鼠标 | `3151:402D` | [lingbao.md](lingbao.md) | 本机实测，电量字段待官方对照 |
 | 罗技 Logitech | Bolt C548 + MX Master 3S | `046D` | [logitech.md](logitech.md) | 本机验证 |
 | 雷柏 Rapoo | VT3 二代 | `24AE:1412` | [rapoo.md](rapoo.md) | 本机验证 |
 | 北通 BETOP | T9 / 鲲鹏20 | `20BC:5073` / `5191` | [betop.md](betop.md) | T9 本机验证；鲲鹏20 未验 |
@@ -33,7 +35,8 @@
 ## 2. 共用号段的陷阱（认领前必读）
 
 - **`3554` 是 Compx 共用号段**：AULA F99 Pro（`FA09`）、派世 X2 V2（`F508`）、VGN 蜻蜓 F2（`FB56`/`FB57`）都在这里。
-  按 VID 猜协议族一定错，判据必须带 usage + 报文长度；AULA 与凌豹 K98 更是同 VID/PID，只能靠会话 ACK 里的型号码分流。
+  按 VID 猜协议族一定错，判据必须带 usage + 报文长度；`3554:FA09` 上还叠了 AULA F99 Pro / 凌豹 K98 / 迈从 G75，
+  三者指纹完全一致，只能靠会话 ACK 里的型号码分流（[aula.md](aula.md) §1.1、[mchose.md](mchose.md) §4）。
 - **`05AC:024F` 是借用苹果号段**：GANSS GS3104T-Pro 与狼蛛 F108 Pro 的五条接口判据逐条一致，HID 层分不出品牌，
   唯一可用证据是产品名。
 - **`1D57:FA65` 被两个品牌共用**：英菲克 ZHEN 读被动 `0x03` 帧，DELUX M900 Pro 读 `0x000A`，靠长度与块结构区分。

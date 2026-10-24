@@ -81,6 +81,18 @@ public class MchoseMouseCodecTests
     }
 
     [Fact]
+    public void M17_G75世代ACK_密码前置一个填充字节()
+    {
+        // 本机 G75 Pro 接收器（3554:FA09）真机会话 ACK：密码 03 00 00 00 01 15 从 [5] 开始
+        byte[] ack = TestFrames.Hex("13 05 01 00 0A 03 00 00 00 01 15 01 00 00 00 00 00 00 00 3D");
+        Assert.Equal("G75 Pro", MchoseMouseCodec.ModelFromSessionAck(ack));
+
+        // AULA F99 Pro 同型 ACK：同一偏移但密码 03 00 00 00 01 58 不在迈从表里 → 不算迈从设备
+        byte[] aula = TestFrames.Hex("13 05 01 00 0A 03 00 00 00 01 58 01 00 00 00 00 00 00 00 80");
+        Assert.Null(MchoseMouseCodec.ModelFromSessionAck(aula));
+    }
+
+    [Fact]
     public void M16_触发帧_reportId原样_数据取反()
     {
         var frame = MchoseMouseCodec.BuildPokeFrame(65);

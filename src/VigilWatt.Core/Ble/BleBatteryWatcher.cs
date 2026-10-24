@@ -19,10 +19,6 @@ public sealed class BleBatteryWatcher : IDisposable
     private bool _started;
     private readonly ConcurrentDictionary<string, DeviceStatus> _devices = new();
     private readonly ConcurrentDictionary<string, DateTimeOffset> _lastGattAttempt = new();
-
-    /// <summary>已经问过 AEP Category 的设备（每台一次，结果覆盖名字猜测）。</summary>
-    private readonly ConcurrentDictionary<string, byte> _kindQueried = new();
-    private const string CategoryKey = "System.Devices.Aep.Category";
     private readonly SemaphoreSlim _gattGate = new(1, 1);
 
     public event Action<DeviceStatus>? DeviceUpdated;
@@ -114,14 +110,8 @@ public sealed class BleBatteryWatcher : IDisposable
             Protocol = "BLE GATT",
         });
         ApplyName(status, name, props);
-        // 先按名字给个即时结果，别让首帧停在全空白图标上
         if (status.Kind == DeviceKind.Unknown)
             status.Kind = DeviceKindGuesser.Guess(status.Name);
-
-        // 系统类别更权威（设备自己声明的 Input.Keyboard / Communication.Phone），查到就覆盖名字的猜测：
-        // 名字可能含误导词，也可能一个品类词都没有（真机 "MCHOSE G87 5.0"）。每台只查一次。
-        if (_kindQueried.TryAdd(id, 0))
-            _ = ResolveKindFromCategoryAsync(id, status);
 
         // 明确在线，或读到电量，或本来就在列表里且本次未说断开 → 保持/标为在线
         bool wasOffline = !status.IsOnline;
@@ -151,7 +141,6 @@ public sealed class BleBatteryWatcher : IDisposable
 
     private void HandleRemoved(string id)
     {
-        _kindQueried.TryRemove(id, out _);
         if (_devices.TryRemove(id, out var tracked) && tracked.IsOnline)
         {
             tracked.IsOnline = false;
@@ -176,38 +165,6 @@ public sealed class BleBatteryWatcher : IDisposable
         }
     }
 
-    /// <summary>读 AEP 的 <c>System.Devices.Aep.Category</c>（真机给 "Input.Keyboard" / "Communication.Phone"）并覆盖名字猜的类型。
-    /// 每台只查一次；设备已被移除则丢弃结果，否则会复活一条幽灵条目。</summary>
-    private async Task ResolveKindFromCategoryAsync(string aepId, DeviceStatus status)
-    {
-        try
-        {
-            var info = await DeviceInformation.CreateFromIdAsync(
-                aepId, new[] { CategoryKey }, DeviceInformationKind.AssociationEndpoint);
-
-            if (!info.Properties.TryGetValue(CategoryKey, out var raw)) return;
-            var categories = raw switch
-            {
-                string[] arr => arr,
-                string s => new[] { s },
-                _ => Array.Empty<string>(),
-            };
-
-            var kind = ClassicDeviceKindResolver.FromCategories(categories);
-            if (kind == DeviceKind.Unknown) return;
-            if (!_devices.TryGetValue(aepId, out var current) || !ReferenceEquals(current, status)) return;
-
-            status.Kind = kind;
-            status.LastUpdated = DateTimeOffset.Now;
-            Log.Info($"BLE 设备类型(AEP Category): {status.DisplayName} → {kind}");
-            DeviceUpdated?.Invoke(status);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn($"BLE 设备类别读取失败 {aepId}: {ex.Message}");
-        }
-    }
-
     private async Task ReadBatteryViaGattAsync(string aepId, DeviceStatus status)
     {
         await _gattGate.WaitAsync();
@@ -220,16 +177,6 @@ public sealed class BleBatteryWatcher : IDisposable
                 // FromIdAsync 成功且能读 GATT = 设备实际可达，纠正假离线
                 if (ble.ConnectionStatus != BluetoothConnectionStatus.Connected)
                     return;
-
-                // DeviceWatcher 的 Added 常带空 Name（系统还没查到属性），UI 只能显示 Id 或「BLE 设备」；
-                // 打开设备后 OS 已有缓存名，补上并通知一次。来源 PR #14（dotisland）。
-                if (string.IsNullOrEmpty(status.Name) && !string.IsNullOrEmpty(ble.Name))
-                {
-                    status.Name = ble.Name;
-                    status.LastUpdated = DateTimeOffset.Now;
-                    Log.Info($"BLE 设备名已补全（GATT 缓存）: {status.Name}");
-                    DeviceUpdated?.Invoke(status);
-                }
 
                 var svcResult = await ble
                     .GetGattServicesForUuidAsync(GattServiceUuids.Battery, BluetoothCacheMode.Uncached)

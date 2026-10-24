@@ -25,13 +25,6 @@ public static class DeviceKindGuesser
         // ⚠️ 不用裸 "head"（会命中 Ahead/Headway）；无关键字的真耳机靠服务 UUID 判定，见 ClassicDeviceKindResolver
         if (Contains(n, "耳机", "耳麦", "headset", "headphone", "earphone", "earbud", "airpods", "buds"))
             return DeviceKind.Headset;
-        // ⚠️ 手机/平板/手表必须排在耳机**之后**：裸 "phone" 会命中 headphone / microphone，得先让耳机吃掉
-        if (Contains(n, "手表", "手环", "smartwatch", "watch", "mi band", "smart band"))
-            return DeviceKind.Watch;
-        if (Contains(n, "平板", "tablet", "ipad"))
-            return DeviceKind.Tablet;
-        if (Contains(n, "手机", "iphone", "smartphone", "mobile phone"))
-            return DeviceKind.Phone;
 
         return DeviceKind.Unknown;
     }

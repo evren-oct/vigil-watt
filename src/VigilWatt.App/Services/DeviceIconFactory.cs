@@ -28,21 +28,6 @@ public static class DeviceIconFactory
             Children = { Glyph(kind, stroke) },
         };
 
-    /// <summary>定尺图标（设备列表页用）：名义框统一 14×13 再整体缩放，各类型视觉大小才一致。</summary>
-    public static FrameworkElement Scaled(DeviceKind kind, Color stroke, double size) =>
-        new Viewbox
-        {
-            Width = size,
-            Height = size,
-            Stretch = Stretch.Uniform,
-            Child = new Grid
-            {
-                Width = 14,
-                Height = 13,
-                Children = { Glyph(kind, stroke) },
-            },
-        };
-
     /// <summary>设备图形本身（无底），任务栏贴片直接用它。</summary>
     public static UIElement Glyph(DeviceKind kind, Color stroke)
     {
@@ -196,86 +181,6 @@ public static class DeviceIconFactory
                 return box;
             }
 
-            case DeviceKind.Phone:
-            {
-                // 窄长机身 + 顶部听筒条 + 底部 home 条：与音箱（两圆）靠"横线 vs 圆"区分
-                var box = new Grid { Width = 8, Height = 13 };
-                box.Children.Add(new Border
-                {
-                    BorderThickness = new Thickness(1.2),
-                    CornerRadius = new CornerRadius(2),
-                    BorderBrush = brush,
-                });
-                box.Children.Add(new Border
-                {
-                    Width = 3,
-                    Height = 1,
-                    Background = brush,
-                    CornerRadius = new CornerRadius(0.5),
-                    VerticalAlignment = VerticalAlignment.Top,
-                    Margin = new Thickness(0, 1.2, 0, 0),
-                });
-                box.Children.Add(new Border
-                {
-                    Width = 2,
-                    Height = 0.9,
-                    Background = brush,
-                    CornerRadius = new CornerRadius(0.45),
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Margin = new Thickness(0, 0, 0, 1.2),
-                });
-                return box;
-            }
-
-            case DeviceKind.Tablet:
-            {
-                // 比手机宽、圆角更小、底部只有 home 圆点
-                var box = new Grid { Width = 11, Height = 13 };
-                box.Children.Add(new Border
-                {
-                    BorderThickness = new Thickness(1.2),
-                    CornerRadius = new CornerRadius(1.8),
-                    BorderBrush = brush,
-                });
-                box.Children.Add(new Ellipse
-                {
-                    Width = 1.8,
-                    Height = 1.8,
-                    Fill = brush,
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Margin = new Thickness(0, 0, 0, 0.7),
-                });
-                return box;
-            }
-
-            case DeviceKind.Watch:
-            {
-                // 唯一带外突元素的造型：上下表带 + 表壳
-                var box = new Grid { Width = 9, Height = 13 };
-                foreach (var v in new[] { VerticalAlignment.Top, VerticalAlignment.Bottom })
-                {
-                    box.Children.Add(new Border
-                    {
-                        Width = 4,
-                        Height = 2.6,
-                        CornerRadius = new CornerRadius(0.8),
-                        Background = brush,
-                        VerticalAlignment = v,
-                    });
-                }
-                box.Children.Add(new Border
-                {
-                    Width = 8.4,
-                    Height = 8.4,
-                    CornerRadius = new CornerRadius(2.4),
-                    BorderThickness = new Thickness(1.2),
-                    BorderBrush = brush,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                });
-                return box;
-            }
-
             default:
                 return new Ellipse
                 {
@@ -357,35 +262,6 @@ public static class DeviceIconFactory
                 break;
             }
 
-            case DeviceKind.Phone:
-                using (var p = RoundedRect(rect, 2 * scale))
-                    g.DrawPath(pen, p);
-                g.FillRectangle(fill, x + (w - 3 * scale) / 2f, y + 1.2f * scale, 3 * scale, 1 * scale);
-                g.FillRectangle(fill, x + (w - 2 * scale) / 2f, y + h - 2.1f * scale, 2 * scale, 0.9f * scale);
-                break;
-
-            case DeviceKind.Tablet:
-                using (var p = RoundedRect(rect, 1.8f * scale))
-                    g.DrawPath(pen, p);
-                g.FillEllipse(fill, x + (w - 1.8f * scale) / 2f, y + h - 2.5f * scale, 1.8f * scale, 1.8f * scale);
-                break;
-
-            case DeviceKind.Watch:
-            {
-                foreach (var top in new[] { true, false })
-                {
-                    var bandY = top ? y : y + h - 2.6f * scale;
-                    using var band = RoundedRect(
-                        new Gdi.RectangleF(x + (w - 4 * scale) / 2f, bandY, 4 * scale, 2.6f * scale), 0.8f * scale);
-                    g.FillPath(fill, band);
-                }
-                using var face = RoundedRect(
-                    new Gdi.RectangleF(x + (w - 8.4f * scale) / 2f, y + (h - 8.4f * scale) / 2f, 8.4f * scale, 8.4f * scale),
-                    2.4f * scale);
-                g.DrawPath(pen, face);
-                break;
-            }
-
             default:
                 using (var p = new Gdi2.GraphicsPath())
                 {
@@ -429,9 +305,6 @@ public static class DeviceIconFactory
         DeviceKind.Speaker => (9.5f, 13f),
         DeviceKind.Gamepad => (14f, 9f),
         DeviceKind.Computer => (14f, 11f),
-        DeviceKind.Phone => (8f, 13f),
-        DeviceKind.Tablet => (11f, 13f),
-        DeviceKind.Watch => (9f, 13f),
         _ => (9f, 9f),
     };
 

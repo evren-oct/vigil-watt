@@ -10,7 +10,6 @@ namespace VigilWatt.Core.Ble;
 /// <summary>
 /// 功 能： 经典蓝牙（BR/EDR）监视器：单开一路 watcher（BLE watcher 覆盖不到音频设备），提供连接状态 + 电量 + 设备类型。
 /// 2026/10/06 15:53:36 xliu
-/// 2026/10/23 20:58:09 nyamu
 /// 详见 docs/project/code-flow.md §3、docs/dev/runtime-pitfalls.md §3.1。
 /// </summary>
 public sealed class BluetoothClassicWatcher : IDisposable
@@ -126,12 +125,11 @@ public sealed class BluetoothClassicWatcher : IDisposable
 
         ApplyName(status, id, name, props);
         bool kindChanged = ApplyKindAndProtocol(status, nodeInfo);
-        bool nameChanged = NormalizeKnownHeadsetName(status);
 
-        // 只在有意义的变化时通知：新上线 / 从离线恢复 / 电量数值变化 / 类型或名称刚解析出来
+        // 只在有意义的变化时通知：新上线 / 从离线恢复 / 电量数值变化 / 类型刚解析出来
         bool wasOffline = !status.IsOnline;
         bool batteryChanged = percent.HasValue && status.BatteryPercent != percent;
-        bool shouldNotify = isNew || wasOffline || batteryChanged || kindChanged || nameChanged;
+        bool shouldNotify = isNew || wasOffline || batteryChanged || kindChanged;
 
         status.IsOnline = true;
         status.LastUpdated = DateTimeOffset.Now;
@@ -240,15 +238,6 @@ public sealed class BluetoothClassicWatcher : IDisposable
         return true;
     }
 
-    private static bool NormalizeKnownHeadsetName(DeviceStatus status)
-    {
-        if (status.Kind != DeviceKind.Headset) return false;
-        string normalized = ClassicDeviceName.NormalizeBluetoothHeadsetName(status.Name);
-        if (normalized == status.Name) return false;
-        status.Name = normalized;
-        return true;
-    }
-
     /// <summary>周期刷新（轮询时调用）：watcher 只在属性变化时推事件，这里主动重读一次，有变化才通知。</summary>
     public void RefreshBattery()
     {
@@ -273,7 +262,6 @@ public sealed class BluetoothClassicWatcher : IDisposable
 
             var nodeInfo = TryGetDevNodeInfo(id);
             bool changed = ApplyKindAndProtocol(status, nodeInfo);
-            changed |= NormalizeKnownHeadsetName(status);
 
             if (nodeInfo?.BatteryPercent is { } percent && status.BatteryPercent != percent)
             {

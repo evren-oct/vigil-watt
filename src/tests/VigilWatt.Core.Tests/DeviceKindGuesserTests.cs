@@ -66,23 +66,4 @@ namespace VigilWatt.Core.Tests;
         Assert.Equal(DeviceKind.Headset, DeviceKindGuesser.Guess("Sony WH-1000XM5 Headphones"));
         Assert.Equal(DeviceKind.Headset, DeviceKindGuesser.Guess("Soundcore Earbuds"));
     }
-
-    [Fact]
-    public void K7_手机平板手表按品类词认出()
-    {
-        Assert.Equal(DeviceKind.Phone, DeviceKindGuesser.Guess("iPhone 15 Pro"));
-        Assert.Equal(DeviceKind.Phone, DeviceKindGuesser.Guess("某手机"));
-        Assert.Equal(DeviceKind.Tablet, DeviceKindGuesser.Guess("iPad Air"));
-        Assert.Equal(DeviceKind.Tablet, DeviceKindGuesser.Guess("某平板"));
-        Assert.Equal(DeviceKind.Watch, DeviceKindGuesser.Guess("Apple Watch Series 9"));
-        Assert.Equal(DeviceKind.Watch, DeviceKindGuesser.Guess("某手环"));
-    }
-
-    [Fact]
-    public void K8_headphone与microphone不会被认成手机()
-    {
-        // 裸 "phone" 会命中这两个词，所以手机关键字排在耳机之后、且不收裸 phone
-        Assert.Equal(DeviceKind.Headset, DeviceKindGuesser.Guess("Sony WH-1000XM5 Headphone"));
-        Assert.Equal(DeviceKind.Unknown, DeviceKindGuesser.Guess("USB Microphone"));
-    }
 }

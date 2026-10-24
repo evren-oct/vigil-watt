@@ -13,7 +13,6 @@
 | 迈从 MCHOSE | K7 V2 Ultra+ 鼠标 | `3837:1018` | [mchose.md](mchose.md) | 贡献者真机 |
 | 迈从 MCHOSE | V9 Pro 耳机 | `291D:385D` | [mchose-v9-pro.md](mchose-v9-pro.md) | 贡献者真机 |
 | 罗技 Logitech | Bolt C548 + MX Master 3S | `046D` | [logitech.md](logitech.md) | 本机验证 |
-| 罗技 Logitech | PRO X 2 LIGHTSPEED | `046D:0AF7` | [logitech.md](logitech.md) | 已实现，2.4G 与蓝牙真机验证通过 |
 | 雷柏 Rapoo | VT3 二代 | `24AE:1412` | [rapoo.md](rapoo.md) | 本机验证 |
 | 北通 BETOP | T9 / 鲲鹏20 | `20BC:5073` / `5191` | [betop.md](betop.md) | T9 本机验证；鲲鹏20 未验 |
 | 英菲克 ZHEN | 接收器 | `1D57:FA65` | [inphic.md](inphic.md) | 本机验证 |
@@ -26,6 +25,8 @@
 | 派世 PULSAR | X2 V2 | `3554:F508` | [pulsar.md](pulsar.md) | 贡献者真机 |
 | 寸渊影弑 DARKRIM | SHADOW | `3654:6901` | [darkrim.md](darkrim.md) | 贡献者真机 |
 | 盖世小鸡 GameSir | G7 Pro CE | `3537` | [gamesir.md](gamesir.md) | 贡献者真机 |
+| ATK / VXE | 无线鼠标（F1 Pro Max / F1 V3 ULTIMATE+） | `373B:101B` / `101A` / `1303` | [atk.md](atk.md) | 本机验证 |
+| HyperX | Cloud Flight 2 飓风炫彩版 | `03F0:0AC1` | [hyperx-cf2.md](hyperx-cf2.md) | 本机验证 |
 | 前行者 EWEADN | X87 键盘 / S9 鼠标 | `0C45:FEFE` / `372E:1026` | [eweadn.md](eweadn.md) | 贡献者真机 |
 | 黑爵 AJAZZ | AK870 | `3151:4011` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |
 | 雷神 THUNDEROBOT | ML903 NearLink Se | `369B:0234` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |

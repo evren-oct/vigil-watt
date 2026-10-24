@@ -46,10 +46,8 @@ public class DeviceStatus
 
     public bool IsOnline { get; set; } = true;
 
-    /// <summary>参与统计曲线时用于图例显示的短名；BLE 端点解析不出名字时给可读兜底，别把裸设备 ID 摆到界面上。</summary>
-    public string DisplayName => !string.IsNullOrEmpty(Name) ? Name
-        : Source == DeviceSource.Ble ? "BLE 设备"
-        : Id;
+    /// <summary>参与统计曲线时用于图例显示的短名。</summary>
+    public string DisplayName => string.IsNullOrEmpty(Name) ? Id : Name;
 
     /// <summary>深拷贝。数据源会复用并原地改写自己的实例，入库前必须快照，否则变化判定比较同一对象恒为假（见 docs/project/architecture.md §6）。</summary>
     public DeviceStatus Clone() => new()

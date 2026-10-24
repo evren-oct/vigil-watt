@@ -63,7 +63,6 @@
 | CR-75 | 拔出后 HID++ 通知空转：`BatteryPluginBase.StartPassiveListen` 与 `LogitechPlugin.EnsureListening` 按"连续 3 次读取在 100ms 内返回 null"判定句柄失效，退避 200ms。正常静音仍等满 500ms，节拍不受影响 |
 | CR-76 | 与 CR-75 同一修法落地。Inphic/Hecate/Delux 的读窗口 `continue` 有 deadline 兜住（不无限循环），未改 |
 | CR-77 | `MarkOffline` 注释改为"插件内软离线的唯一落地点"，并注明拔出走 `ReconcileRemovals`（不该盖 `LastUpdated`）。行为本来就对，是注释过满 |
-| CR-68 | 未采用 PR #14 的按显示名去重，改为按 MAC 判定自研实现：`Ble/DualChannelId` 归一 `btc:`/`ble:` 端点，`DeviceManager.AbsorbDualChannel` 收敛到经典那条。PR #14 的 `Devices` getter 副作用与 `NormalizeName` 大小写问题随之不适用 |
 
 ## wontfix
 

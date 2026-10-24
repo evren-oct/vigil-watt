@@ -41,7 +41,6 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV1Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseK7Codec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseGmouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV9ProCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooCodec.cs" />
@@ -57,10 +56,10 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\GameSir\GameSirCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnKeyboardCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnMouseCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\HyperX\Cf2Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\CenturionCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Ble\ClassicDeviceName.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Ble\DualChannelId.cs" />
     <Compile Include="..\..\VigilWatt.Core\Ble\WatcherProps.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceKind.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceKindGuesser.cs" />

@@ -4,7 +4,6 @@ using VigilWatt.Core.Devices;
 using VigilWatt.Core.Settings;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
-using Windows.UI;
 
 namespace VigilWatt.App.ViewModels;
 
@@ -15,10 +14,7 @@ namespace VigilWatt.App.ViewModels;
 public sealed class DeviceRowModel
 {
     public string Id { get; init; } = "";
-
-    /// <summary>行首设备图标：矢量造型，与小组件/任务栏贴片同一套（<see cref="DeviceIconFactory"/>），不再用字体图标。</summary>
-    public UIElement? Icon { get; init; }
-
+    public string IconGlyph { get; init; } = "\uE702";
     public string Name { get; init; } = "";
     public string PercentText { get; init; } = "--%";
     public double Progress { get; init; }
@@ -42,37 +38,16 @@ public sealed class DeviceRowModel
     /// 注意 x:Bind 绑 null 会压掉样式默认前景导致文字不可见，此属性必须非空。</summary>
     public Brush PercentBrush { get; init; } = UiPalette.Brush(UiPalette.Offline);
 
-    /// <summary>显示内容的指纹（不含 Icon 元素）：刷新时指纹相同就整行复用，避免每分钟轮询把列表重建一遍。</summary>
-    public string Signature { get; init; } = "";
-
-    public static DeviceRowModel From(
-        DeviceStatus source, AppSettings settings, RemainingTimeEstimateResult remainingTime,
-        DeviceRowModel? previous = null)
+    public static DeviceRowModel From(DeviceStatus source, AppSettings settings, RemainingTimeEstimateResult remainingTime)
     {
         var d = DevicePresentation.Apply(source, settings);
         var percent = d.BatteryPercent;
-        // 用户明确选过图标就不再按名字猜（选"通用"要保住那个圆点）
-        var kind = d.Kind == DeviceKind.Unknown && !DevicePresentation.HasIconOverride(d.Id, settings)
-            ? DeviceKindGuesser.Guess(d.DisplayName)
-            : d.Kind;
+        var icon = GlyphFor(d.Kind, d.DisplayName, DevicePresentation.HasIconOverride(d.Id, settings));
 
         bool charging = DeviceStatusFormatter.IsCharging(d.Charging);
         string state = DeviceStatusFormatter.ChargeSuffix(d.Charging);
         if (!d.IsOnline) state = " · 离线";
 
-        // 无读数用 "----"：与 "100%" 同宽，右对齐时不会和相邻行差半个字
-        string percentText = DeviceStatusFormatter.PercentText(percent, "----");
-        string sourceText = DeviceSourceInfo.ShortLabel(d.Source);
-        string subText = $"{d.Protocol}{state}{(remainingTime.IsAvailable ? $" · 约{RemainingTimeEstimator.Format(remainingTime.Remaining!.Value)}剩余" : $" · {remainingTime.Explain()}")} · 更新于 {d.LastUpdated:HH:mm:ss}";
-
-        // Source 也要进指纹：Ble 与 BluetoothClassic 的徽标文字都是"蓝牙"，但颜色不同
-        string signature = string.Join('|',
-            d.Id, d.DisplayName, (int)kind, percentText, subText, sourceText, (int)d.Source, charging, d.IsOnline);
-
-        if (previous != null && previous.Signature == signature) return previous;
-
-        var iconColor = (Application.Current.Resources["TextFillColorPrimaryBrush"] as SolidColorBrush)?.Color
-                        ?? Color.FromArgb(255, 80, 80, 80);
         var progressColor = d.IsOnline
             ? UiPalette.BatteryLevel(percent, charging)
             : UiPalette.Offline;
@@ -86,19 +61,39 @@ public sealed class DeviceRowModel
         return new DeviceRowModel
         {
             Id = d.Id,
-            Signature = signature,
-            Icon = DeviceIconFactory.Scaled(kind, iconColor, 22),
+            IconGlyph = icon,
             Name = d.DisplayName,
-            PercentText = percentText,
+            PercentText = DeviceStatusFormatter.PercentText(percent),
             Progress = percent ?? 0,
-            SourceText = sourceText,
+            SourceText = DeviceSourceInfo.ShortLabel(d.Source),
             SourceBrush = UiPalette.Brush(sourceColor),
             SourceBackgroundBrush = UiPalette.Brush(UiPalette.Tint(sourceColor)),
-            SubText = subText,
+            SubText = $"{d.Protocol}{state}{(remainingTime.IsAvailable ? $" · 约{RemainingTimeEstimator.Format(remainingTime.Remaining!.Value)}剩余" : $" · {remainingTime.Explain()}")} · 更新于 {d.LastUpdated:HH:mm:ss}",
             IsCharging = charging,
             IsOnline = d.IsOnline,
             ProgressBrush = UiPalette.Brush(progressColor),
             PercentBrush = percentBrush,
+        };
+    }
+
+    /// <summary>
+    /// 设备类型 → 图标字形（Segoe MDL2 Assets / Segoe Fluent Icons）。
+    /// **优先用插件声明的 <see cref="DeviceStatus.Kind"/>**，没声明时才按显示名猜——
+    /// 真机显示名里一个关键字都没有（"Rapoo Gaming Device"/"MCHOSE 2.4G Wireless"/"EDIFIER W820NB"），
+    /// 靠名字猜必然退化成通用蓝牙图标。见 docs/project/handoff.md「第三轮：改显式声明设备类型」。
+    /// </summary>
+    private static string GlyphFor(DeviceKind kind, string displayName, bool customized)
+    {
+        if (kind == DeviceKind.Unknown && !customized) kind = DeviceKindGuesser.Guess(displayName);
+        return kind switch
+        {
+            DeviceKind.Gamepad => "\uE7FC",   // Game
+            DeviceKind.Mouse => "\uE962",     // Mouse
+            DeviceKind.Keyboard => "\uE765",  // KeyboardClassic
+            DeviceKind.Headset => "\uE7F6",   // Headphone
+            DeviceKind.Speaker => "\uE7F5",   // Speakers
+            DeviceKind.Computer => "\uE7F8",  // Devices2（显示器造型，代表本机）
+            _ => "\uE702",                    // Bluetooth（兜底）
         };
     }
 }

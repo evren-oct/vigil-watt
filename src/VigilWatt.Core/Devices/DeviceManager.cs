@@ -631,9 +631,6 @@ public sealed class DeviceManager : IDisposable
 
     private void Upsert(DeviceStatus incoming)
     {
-        // 同一台设备的经典/LE 端点会各报一次（手机最明显），先收敛成一条再走后面的流程
-        if (AbsorbDualChannel(ref incoming)) return;
-
         // 删除过的设备每轮都会被插件重新上报（接口还在位），黑名单与删除标记在这里一刀切。
         if (DeviceRemoval.ShouldDrop(_settings.BlockedDevices, _settings.DismissedDevices, incoming.Id, incoming.IsOnline))
             return;
@@ -683,58 +680,6 @@ public sealed class DeviceManager : IDisposable
 
         CheckLowBattery(status, previousPercent);
         RefreshRemainingTimeEstimate(status, notify: true);
-    }
-
-    /// <summary>同一台设备的经典与 LE 端点会各报一次（手机最明显），按 MAC 收敛到经典那条；返回 true 表示本条已被吸收、不再入库。</summary>
-    private bool AbsorbDualChannel(ref DeviceStatus incoming)
-    {
-        var mac = DualChannelId.Mac(incoming.Id);
-        if (mac == null) return false;
-
-        if (DualChannelId.IsBle(incoming.Id))
-        {
-            var owner = FindPeer(mac, classic: true);
-            // 没有经典端点（BLE 鼠标/耳机），LE 就是唯一一条，正常入库
-            if (owner == null) return false;
-            // 经典条目已在列表里：LE 端点只贡献电量，不单独占一行
-            if (!incoming.BatteryPercent.HasValue) return true;
-
-            incoming = new DeviceStatus
-            {
-                Id = owner.Id,
-                Name = owner.Name,
-                Source = owner.Source,
-                Kind = owner.Kind,
-                Protocol = owner.Protocol,
-                BatteryPercent = incoming.BatteryPercent,
-                Charging = incoming.Charging,
-                IsOnline = true,
-                LastUpdated = incoming.LastUpdated,
-            };
-            return false;
-        }
-
-        // 经典端点优先：摘掉可能先一步入库的 LE 端点
-        var ble = FindPeer(mac, classic: false);
-        if (ble != null && _devices.TryRemove(ble.Id, out _))
-        {
-            _tombstoneIds.TryRemove(ble.Id, out _);
-            _remainingTimeEstimates.TryRemove(ble.Id, out _);
-            _lowBatteryNotified.TryRemove(ble.Id, out _);
-            Log.Info($"蓝牙双通道合并: {incoming.DisplayName}（丢弃 LE 端点）");
-            DevicesChanged?.Invoke();
-        }
-        return false;
-    }
-
-    private DeviceStatus? FindPeer(string mac, bool classic)
-    {
-        foreach (var d in _devices.Values)
-        {
-            if (DualChannelId.IsClassic(d.Id) != classic) continue;
-            if (DualChannelId.Mac(d.Id) == mac) return d;
-        }
-        return null;
     }
 
     private void RefreshRemainingTimeEstimate(DeviceStatus device, bool notify)

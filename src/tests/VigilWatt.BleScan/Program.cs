@@ -44,25 +44,3 @@ var connected = await DeviceInformation.FindAllAsync(
     props, DeviceInformationKind.AssociationEndpoint);
 Console.WriteLine($"\n已连接（GetDeviceSelectorFromConnectionStatus）共 {connected.Count} 个:");
 foreach (var d in connected) Console.WriteLine($"  {d.Id}  Name='{d.Name}'");
-
-// 4) BLE AEP 的类别类属性：判设备类型（键盘/鼠标/手机）时能不能不靠名字
-var kindProps = new[]
-{
-    "System.ItemNameDisplay",
-    "System.Devices.Aep.Category",
-    "System.Devices.Aep.Manufacturer",
-    "System.Devices.Aep.ModelName",
-    "System.Devices.Aep.DeviceAddress",
-    "System.Devices.Aep.IsConnected",
-    "System.Devices.Aep.ContainerId",
-};
-var bleAeps = await DeviceInformation.FindAllAsync(
-    BluetoothLEDevice.GetDeviceSelector(), kindProps, DeviceInformationKind.AssociationEndpoint);
-Console.WriteLine($"\nBLE AEP 共 {bleAeps.Count} 个（类别类属性）:");
-foreach (var d in bleAeps)
-{
-    Console.WriteLine($"  Name='{d.Name}'");
-    foreach (var key in kindProps)
-        if (d.Properties.TryGetValue(key, out var v))
-            Console.WriteLine($"    {key} = {(v is string[] arr ? string.Join(", ", arr) : v)}");
-}

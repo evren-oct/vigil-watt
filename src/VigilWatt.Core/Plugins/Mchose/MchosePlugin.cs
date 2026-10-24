@@ -33,6 +33,9 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>V9 Pro 耳机：64 字节固定查询帧（帧结构与判据见 <see cref="MchoseV9ProCodec"/>）。同品牌另一条链路，与键鼠判据完全独立。</summary>
     private const string ProtocolHeadsetV9 = "headset-v9";
 
+    /// <summary>X9 耳机：与 V9 Pro 同帧结构（判据见 <see cref="MchoseX9Codec"/>），VID 却与键鼠同号段。</summary>
+    private const string ProtocolHeadsetX9 = "headset-x9";
+
     private const byte QhwReportId = 0x4D;
     private const ushort CmdGetBattery = 0x0904;  // 2308
 
@@ -101,6 +104,7 @@ public sealed class MchosePlugin : BatteryPluginBase
             ProtocolMouseV2 => DeviceKind.Mouse,
             ProtocolMouseK7 => DeviceKind.Mouse,
             ProtocolHeadsetV9 => DeviceKind.Headset,
+            ProtocolHeadsetX9 => DeviceKind.Headset,
             _ => DeviceKind.Keyboard,
         };
 
@@ -108,9 +112,11 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// 加「迈从」前缀方便设备列表一眼认品牌。型号来源见 <see cref="KnownModelByPath"/>。</summary>
     protected override string BuildDisplayName(HidDeviceInfo info)
     {
-        // 耳机接收器是独立 VID/PID，只对应已验证的 V9 Pro；协议里没有型号回执，型号名只能写死
+        // 耳机接收器只对应已验证的型号；协议里没有型号回执，型号名只能写死
         if (info.VendorId == MchoseV9ProCodec.VendorId && info.ProductId == MchoseV9ProCodec.ProductId)
             return "迈从 V9 Pro";
+        if (info.VendorId == MchoseX9Codec.VendorId && info.ProductId == MchoseX9Codec.ProductId)
+            return "迈从 X9";
 
         var product = string.IsNullOrEmpty(info.Product) ? "" : info.Product.Replace("MCHOSE", "").Trim();
         var model = KnownModelByPath.TryGetValue(info.DevicePath, out var m) ? m : "";
@@ -144,6 +150,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     private const string LogKeyV9Silent = "v9-silent"; // "V9 Pro 查询没等到电量响应"
     private const string LogKeyK7NoPermit = "k7-no-permit"; // "没开写入许可，跳过 K7 主动查询"
     private const string LogKeyK7Asleep = "k7-asleep";      // "K7 只回 1 字节 0xFF，鼠标多半在睡"
+    private const string LogKeyX9Silent = "x9-silent"; // "X9 查询没等到电量响应"
 
     /// <summary>协议探测：鼠标 V2（被动等 E2）→ 官方 QHW（新世代）→ 键盘 V1 会话协议（G87 / G87 V2）。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
@@ -172,6 +179,13 @@ public sealed class MchosePlugin : BatteryPluginBase
             var k7 = TryMouseK7(handle);
             if (k7 != null) KnownProtocolByPath[path] = ProtocolMouseK7;
             return k7;
+        }
+
+        if (kind == MchoseInterfaceKind.HeadsetX9)
+        {
+            var x9 = TryHeadsetX9(handle);
+            if (x9 != null) KnownProtocolByPath[path] = ProtocolHeadsetX9;
+            return x9;
         }
 
         // ≥60 的接口只可能是鼠标接收器：它不是 0x13 会话通道，在这条通道上发键盘帧没有意义
@@ -217,6 +231,7 @@ public sealed class MchosePlugin : BatteryPluginBase
             ProtocolMouseV2 => TryMouseV2(handle),
             ProtocolMouseK7 => TryMouseK7(handle),
             ProtocolHeadsetV9 => TryHeadsetV9(handle),
+            ProtocolHeadsetX9 => TryHeadsetX9(handle),
             _ => null,
         };
 
@@ -237,6 +252,7 @@ public sealed class MchosePlugin : BatteryPluginBase
             "qhw" => PollQhw(dev),
             ProtocolKeyboardV1 => PollKeyboardV1(dev),
             ProtocolHeadsetV9 => PollHeadsetV9(dev),
+            ProtocolHeadsetX9 => PollHeadsetX9(dev),
             _ => null,
         };
 
@@ -737,6 +753,46 @@ public sealed class MchosePlugin : BatteryPluginBase
 
         Log.Once(LogLevel.Debug, LogKey(handle, LogKeyV9Silent),
             $"迈从 V9 Pro 查询无响应（耳机多半在关机/休眠；恢复应答后会再记一条）: {handle.Info.DevicePath}");
+        return null;
+    }
+
+    /// <summary>
+    /// X9 探测：发一条固定查询帧（见 <see cref="MchoseX9Codec"/>），750 毫秒内解析响应。
+    /// 与 V9 Pro 同帧结构但 VID 与键鼠同号段，判据在分类器里前置分流。
+    /// </summary>
+    private static (string Protocol, int? Percent, ChargingState Charging)? TryHeadsetX9(HidDeviceHandle handle)
+    {
+        if (!IsWritesEnabled(SettingsKey)) return null;
+        return QueryHeadsetX9(handle) is { } r ? (ProtocolHeadsetX9, r.Percent, r.Charging) : null;
+    }
+
+    /// <summary>X9 轮询：只发一条查询帧，失败记账由 <see cref="PollDevice"/> 统一处理。</summary>
+    private static (int? Percent, ChargingState Charging)? PollHeadsetX9(TrackedDevice dev)
+        => IsWritesEnabled(SettingsKey) ? QueryHeadsetX9(dev.Handle) : null;
+
+    /// <summary>写查询帧并等响应，无应答只在状态变化时记 Debug（耳机不在位时每 15 秒重探，逐次记录会刷屏）。</summary>
+    private static (int? Percent, ChargingState Charging)? QueryHeadsetX9(HidDeviceHandle handle)
+    {
+        if (!handle.WriteOutput(MchoseX9Codec.CreateQuery(), TimeSpan.FromMilliseconds(500)))
+            return null;
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromMilliseconds(750);
+        while (DateTime.UtcNow < deadline)
+        {
+            var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
+            if (input == null) continue;
+            if (!MchoseX9Codec.TryParse(input, out int percent, out var charging))
+            {
+                if (Log.IsEnabled(LogLevel.Debug)) Log.Debug($"迈从 X9 忽略非电量响应: {Log.Hex(input)}");
+                continue;
+            }
+            Log.ResetOnce(LogKey(handle, LogKeyX9Silent));
+            Log.Info($"迈从 X9 电量查询: 电量={percent} 标志=0x{input[3]:X2} 原始={Log.Hex(input)}");
+            return (percent, charging);
+        }
+
+        Log.Once(LogLevel.Debug, LogKey(handle, LogKeyX9Silent),
+            $"迈从 X9 查询无响应（耳机多半在关机/休眠；恢复应答后会再记一条）: {handle.Info.DevicePath}");
         return null;
     }
 

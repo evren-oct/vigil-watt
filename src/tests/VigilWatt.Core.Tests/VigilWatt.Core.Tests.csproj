@@ -42,6 +42,9 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseK7Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV9ProCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseX9Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkViaCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Cherry\CherryCodec.cs" />

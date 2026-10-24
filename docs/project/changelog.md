@@ -27,6 +27,10 @@
 - 设置页屏幕行加刷新按钮（页面缓存复用，插拔后不自动重扫）；配置的屏没插时仍列出 `<名字>（未连接）`，保存不会静默改回主屏。
 - **修复任务栏贴片拖动时灵时不灵**：根因是 `SetCapture` 对非前台窗口无效（贴片带 `WS_EX_NOACTIVATE`，光标离开 114×28 的贴片就没有 `WM_MOUSEMOVE`）。拖动改为 16ms 轮询驱动、松手靠 `GetAsyncKeyState` 判定，捕获降级成加速器；顺带修掉"在贴片外松手导致 `_dragging` 卡死、之后悬停就自己跳"的第二个 bug。见 `dev/runtime-pitfalls.md` §16.5.1、BACKLOG CR-73。
 - 单击不再触发设置写盘（偏移没变就不保存）。真机复看清单在 CR-73。
+- **ATK 鼠标 / 键盘（新插件）**：接入 `AtkPlugin`，一个品牌级开关管两条链路。鼠标走 16 字节 op 帧（`0x04` + `(0x4D - sum)` 校验和），键盘走 VIA `0x02/0x96/0x24`。键盘对 op 帧只回显、`data[0]` 恒 41%，故解析强制校验和。会写帧，默认关。见 `hardware/atk.md`。
+- **MCHOSE X9 耳机**：接入 64 字节查询帧，响应 `[2]` 电量、`[3]` 状态（放电/充电/满电/休眠）。与 V9 Pro 同帧结构但 VID 与键鼠同号段，分类器必须前置分流，否则会往耳机发 `0x11/0x06`。并入迈从插件，共用 `Mchose` 开关，默认关。见 `hardware/mchose-x9.md`。
+- **AI 参与编写**：本轮三台设备的代码由 AI（WorkBuddy 智能体）编写，贡献者完成抓包、真机验证与审阅；已在 `CONTRIBUTORS.md` 与 `contributions.md` 注明。
+- **文档与 BACKLOG**：新增两篇设备文档，README / sources / safety / handoff / docs 首页同步；未复测项登记 CR-84、CR-85。
 
 ## 2026-10-19
 

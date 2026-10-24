@@ -12,7 +12,7 @@
 | **CR-60** | 贴片右键菜单的 owner 是任务栏子窗口，弹出和关闭未真机看 | `TaskbarPillWindow.cs:OnRightClick` | `open` |
 | **CR-63** | 贴片与 explorer 输入队列串在一起，UI 线程长阻塞可能冻住任务栏。未实测 | `TaskbarPillWindow.cs` | `open` |
 | **CR-13** | 两个蓝牙 watcher 的发现循环和快照仍然重复。`ReadConnected` 已抽到 `WatcherProps` | `Ble/BleBatteryWatcher.cs`、`Ble/BluetoothClassicWatcher.cs` | `open` |
-| **CR-16** | 多个文件超过 400 行。拆分见下面的 D 项，不要先按行数硬拆。`MchosePlugin` 并入 V9 Pro 后已 766 行（四套协议），拆分建议等 D6 落地或有了第二台迈从设备再动——现在拆只能靠读代码验证 | `WidgetWindow.xaml.cs`、`LogitechPlugin.cs`、`BatteryPluginBase.cs`、`MchosePlugin.cs`、`DeviceManager.cs`、`BatteryChartControl.xaml.cs` | `open` |
+| **CR-16** | 多个文件超过 400 行。拆分见下面的 D 项，不要先按行数硬拆。`MchosePlugin` 并入 V9 Pro / X9 后已 810 行（五套协议），拆分建议等 D6 落地或有了第二台迈从设备再动——现在拆只能靠读代码验证 | `WidgetWindow.xaml.cs`、`LogitechPlugin.cs`、`BatteryPluginBase.cs`、`MchosePlugin.cs`、`DeviceManager.cs`、`BatteryChartControl.xaml.cs` | `open` |
 | **CR-35** | 罗技打开成功后清了 `Io`，没清 `OpenFailed`。当前无实际后果 | `LogitechPlugin.cs:AttachCore` | `open` |
 | **CR-36** | `TryEnqueue` 失败时 `_refreshQueued` 不会复位。窗口关掉后不再收请求，当前无实际后果 | `WidgetWindow.xaml.cs:RequestRefresh`、`DevicesPage.xaml.cs:RequestRefresh` | `open` |
 | **CR-39** | 贴片默认贴在托盘左边，左键被拖动吃掉，可能盖住任务栏按钮 | `TaskbarPillWindow.cs:OnLButtonDown`、`TaskbarLayout.cs:Place` | `open` |
@@ -35,6 +35,8 @@
 | **CR-81** | 查询型插件休眠即判离线：CHERRY 深度休眠块通道静音 → 3 轮 `ReportPollFailure` 转离线 + 熔断，唤醒后最长等 5 分钟退避才恢复。GANSS / 雷神 ML903 同病，需要一次跨插件的「休眠不等于失联」方案 | `Plugins/Cherry/CherryPlugin.cs:PollDevice`、`Plugins/Ganss/GanssPlugin.cs:PollDevice`（cherry.md §1.6） | `open` |
 | **CR-82** | CHERRY 2.4G 与有线是两台设备（`PIXIU75 Dongle` / `PIXIU 75`），显示名不同，历史库各占一行、互报离线；要合并得改设备 ID 口径 | `Plugins/Cherry/CherryPlugin.cs:BuildDisplayName`（cherry.md §1.6） | `open` |
 | **CR-83** | DARKRIM 一条状态帧的尾部 CRC 与算法不符：同批另三条向量都能通过，这条实算 `0x5737`、帧里写 `0x3AEF`。疑似抓包转录错误，也可能是另一种 CRC 口径。用例已拆成 `[Fact(Skip)]` 保留证据，**不得改帧里的 CRC 值来让它变绿**；待作者真机复核 | `Tests/DarkrimCodecTests.cs:RealFrames_CrcMismatch_PendingAuthorCheck`（darkrim.md §1.2） | `open` |
+| **CR-84** | ATK 两条链路只在贡献者一台机器验证：鼠标只测过 85% / 100% 两个点，低电量与休眠占位无样本；键盘充电标志只测过 0 / 1；VIA 通道长度本机 33 字节，其它型号是否同长度未知（判据已放宽到 `≥5`）。需第二台设备补样本，清单见 `hardware/atk.md` §5 | `Plugins/Atk/AtkCodec.cs:TryParse`、`Plugins/Atk/AtkViaCodec.cs:IsSupportedInterface` | `open` |
+| **CR-85** | X9 状态字节只实测过 `0x02`（放电）：`0x03` / `0x04` / `0x1A` 的语义来自官方前端代码，未逐一接线验证；`0x1A`（休眠）映射为放电是保守解释。官方 `batteryPrecision: 10`，读数只有整十档。清单见 `hardware/mchose-x9.md` §5 | `Plugins/Mchose/MchoseX9Codec.cs:MapCharging` | `open` |
 | **CR-91** | Centurion 无应答时最坏 4×1500ms 读 + 500ms 写 ≈ 6.5 秒堵在 `Poll` 里（正常 8–13ms），休眠/关机期间会拖长这一轮插件 pass；未实测对其它插件轮询节奏的影响 | `Plugins/Logitech/LogitechPlugin.cs:TryReadCenturionBattery`（logitech.md §2） | `open` |
 | **CR-92** | 型号归一规则（`PRO X 2` → `PRO X 2 LIGHTSPEED`）写在通用 BLE 层；且只有蓝牙被归一，2.4G 仍取 `info.Product`，两条通道显示名可能不一致 | `Ble/ClassicDeviceName.cs:NormalizeBluetoothHeadsetName`、`Plugins/Logitech/LogitechPlugin.cs:BuildDisplayName` | `open` |
 | **CR-93** | 基类 `AttachAsync` / `Poll` / `ReconcileRemovals` 是 public 非 virtual，`LogitechPlugin` 只能用 `new` 隐藏，靠类重新声明 `IBatteryPlugin` 做接口重实现才生效；以基类静态类型调用会静默跳过 HID++ 分支。建议基类这三个改 virtual + 子类 override | `Plugins/BatteryPluginBase.cs:AttachAsync`、`Plugins/Logitech/LogitechPlugin.cs`（review-standard.md §2 R2） | `open` |

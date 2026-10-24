@@ -17,6 +17,9 @@ public enum MchoseInterfaceKind
 
     /// <summary>V9 Pro 耳机（64 字节、reportId `0x55`）。</summary>
     HeadsetV9,
+
+    /// <summary>X9 耳机（同帧结构，VID/PID 为 `3837:6045`，与键鼠同号段）。</summary>
+    HeadsetX9,
 }
 
 /// <summary>
@@ -44,7 +47,7 @@ public static class MchoseInterfaceClassifier
         ushort usagePage, ushort usage, ushort inputLength, ushort outputLength,
         ushort featureLength, byte? outputReportId)
     {
-        // 耳机是独立 VID/PID，判据与键鼠完全独立；同 VID 的其它 PID 一律不认（不做型号推断）
+        // 耳机是独立判据，与键鼠完全独立；同 VID/PID 的其它集合一律不认（不做型号推断）
         if (vendorId == MchoseV9ProCodec.VendorId)
             return MchoseV9ProCodec.IsSupportedInterface(vendorId, productId, path, usagePage, usage,
                 inputLength, outputLength, featureLength, outputReportId)
@@ -52,6 +55,12 @@ public static class MchoseInterfaceClassifier
                 : MchoseInterfaceKind.None;
 
         if (vendorId != MchoseVid && vendorId != MchoseLegacyVid) return MchoseInterfaceKind.None;
+
+        // X9 的 VID 与键鼠同号段，必须排在鼠标分支之前：它也是 64 字节输出，
+        // 落到鼠标分支会往耳机发 0x11/0x06 触发帧
+        if (MchoseX9Codec.IsSupportedInterface(vendorId, productId, path, usagePage, usage,
+                inputLength, outputLength, featureLength, outputReportId))
+            return MchoseInterfaceKind.HeadsetX9;
 
         // consumer/system/标准键盘接口即使产品名含 MCHOSE 也不是配置通道，必须是厂商用法 + 可用 I/O
         if (usagePage < 0xFF00 && usage < 0xFF00) return MchoseInterfaceKind.None;

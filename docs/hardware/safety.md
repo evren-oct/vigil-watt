@@ -48,7 +48,8 @@
 
 | 插件 | 写入开关（= 插件开关） | 默认 | 说明 |
 |---|---|---|---|
-| 迈从 | `PluginEnabled["Mchose"]` | **false** | dongle 协议未破解，探测写入可能干扰设备，故默认关；开插件即授权写帧。**一个开关管键盘、鼠标、V9 Pro 耳机、K7 鼠标四类设备**（品牌级，`AGENTS.md` §9） |
+| 迈从 | `PluginEnabled["Mchose"]` | **false** | dongle 协议未破解，探测写入可能干扰设备，故默认关；开插件即授权写帧。**一个开关管键盘、鼠标、V9 Pro 与 X9 耳机、K7 鼠标五类设备**（品牌级，`AGENTS.md` §9） |
+| ATK / 艾泰克 | `PluginEnabled["Atk"]` | **false** | 鼠标发 op 帧、键盘发 VIA 查询帧，都会写；**一个开关管鼠标与键盘两条链路**（品牌级，`AGENTS.md` §9） |
 | 北通 | `PluginEnabled["Betop"]` | **true** | 查询是官方客户端同款只读命令（cmd=0x5），风险低，故默认开 |
 | 罗技 | `PluginEnabled["Logitech"]` | **false** | Centurion 新路径继承 `BatteryPluginBase`，复用公共写入闸门、读数过滤和熔断退避；HID++ 历史路径保留 `HidppIO.WritesAllowed` 与专用会话处理 |
 | 雷柏 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`，零写入 |

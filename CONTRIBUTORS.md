@@ -13,6 +13,7 @@ VigilWatt 的设备适配大多来自社区：有人提供抓包样本，有人�
 | **haihuang0506** | 迈从 K7 V2 Ultra+（`3837:1018`）支持：`0x0900` 查询 + `0x0600` 事件协议；从官方 M HUB 运行时 JS 取出帧构造与解析，真机验证 | [PR #33](https://github.com/evren-oct/vigil-watt/pull/33) |
 | **KNA7022** | 黑爵 AK870（`3151:4011`，feature `F7` 状态查询）与雷神 ML903 NearLink Se（`369B:0234`，`0xA0` 设备信息 TLV）两个插件 | [PR #25](https://github.com/evren-oct/vigil-watt/pull/25) |
 | **shengzhi233** | CHERRY PIXIU75（`046A:01E4`，64 字节块协议，块 `0x1A` 取电量 + 充电位）与派世 Pulsar X2 V2（`3554:F508`，17 字节 STATUS/POWER）两个插件 | [PR #36](https://github.com/evren-oct/vigil-watt/pull/36) |
+| **Gpan666** | 三台设备：ATK F1 Ultimate 2.0 鼠标（16 字节 op 帧）、ATK A98 Pro 键盘（VIA `0x02/0x96/0x24`）、MCHOSE X9 耳机（64 字节查询帧）。协议抓包与真机验证由本人完成；**代码由 AI（WorkBuddy 智能体）编写**，提交前经本人审阅 | [PR #28](https://github.com/evren-oct/vigil-watt/pull/28) |
 | **Mutsuki233** | 罗技 PRO X 2 LIGHTSPEED 耳机（`046D:0AF7`）：提供设备信息与 2.4G / 蓝牙真机验证，Centurion 只读电量与蓝牙显示名适配 | [PR #45](https://github.com/evren-oct/vigil-watt/pull/45) |
 
 ## 还能怎么帮

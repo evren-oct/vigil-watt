@@ -29,6 +29,8 @@
 | 前行者 EWEADN | X87 键盘 / S9 鼠标 | `0C45:FEFE` / `372E:1026` | [eweadn.md](eweadn.md) | 贡献者真机 |
 | 黑爵 AJAZZ | AK870 | `3151:4011` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |
 | 雷神 THUNDEROBOT | ML903 NearLink Se | `369B:0234` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |
+| ATK 艾泰克 | F1 Ultimate 2.0 鼠标（`11D9`/`11E4`）/ A98 Pro 键盘（`1152`） | `373B` | [atk.md](atk.md) | 贡献者真机 |
+| 迈从 MCHOSE | X9 耳机 | `3837:6045` | [mchose-x9.md](mchose-x9.md) | 贡献者真机 |
 | 弱水时砂 ROSE | FIRST ANGEL | `38FF:0001` | [rose.md](rose.md) | ❌ 2.4G 无电量通道，不再投入 |
 
 ## 2. 共用号段的陷阱（认领前必读）

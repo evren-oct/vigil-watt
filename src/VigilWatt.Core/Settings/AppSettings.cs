@@ -73,6 +73,7 @@ public class AppSettings
     {
         ["Logitech"] = false,   // 罗技 HID++ 的发现与读数全靠写帧（自建闸门见 CR-01）
         ["Mchose"] = false,   // 迈从 dongle 协议未破解，探测写入可能干扰设备
+        ["Atk"] = false,      // 艾泰克鼠标(op 帧)/键盘(VIA 查询帧)都会写帧，默认关闭
         ["Rapoo"] = true,     // 雷柏走纯被动心跳读取，零写入，默认开启
         ["Betop"] = true,     // 北通手柄：发官方同款只读状态查询（cmd=0x5），默认开启
         ["Ajazz"] = false,

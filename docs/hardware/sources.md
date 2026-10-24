@@ -27,6 +27,9 @@
 | GANSS GS3104T-Pro 33 字节查询帧 | 贡献者 luze258 对官方软件通信的 USB 抓包（PR #15），只有固定查询帧与响应样本。 | 只发这一条固定查询帧，响应 `[3]` 为电量，校验和按"除末字节求和取低字节"；会写帧故默认关。判据与风险见 §6。 | 未复用厂商代码，按抓包事实自行实现。本机无该设备，未复测。见 [ganss.md](ganss.md)。 |
 | MCHOSE V9 Pro 64 字节查询帧 | 贡献者 luze258 在官方 MCHOSE HUB 显示 100% 时的 USB 抓包（PR #15），单条请求与响应。 | 只发 `55 65 01 …`，响应 `[2]` 为电量；并入迈从插件共用品牌级开关。充电状态未知，恒为 Unknown。 | 未复用厂商代码，按抓包事实自行实现。本机无该设备，未复测。见 [mchose-v9-pro.md](mchose-v9-pro.md)。 |
 | MCHOSE K7 V2 Ultra+ `0x4D` / `0x0900` / `0x0600` | 官方 M HUB WEB 运行时加载的打包 JS（`purify.es-*.js`）中的帧构造器 `i1e()`、设备信息解析 `_K()`、事件解析 `LA()`；用 CDP hook WebHID 取得原始报文后按命令码定位。 | 按其字段表自行实现 `MchoseK7Codec`；只发 `0x0900` 查询，被动解析 `0x0600` 事件。本机 K7 V2 Ultra+ 真机验证（连续 6.5 小时零告警），充电/断连两态未留证。 | 官方前端是协议依据，不表示引用其代码；未复制任何厂商源码。接口地图、帧格式与失败应答见 [mchose.md](mchose.md) §3。 |
+| ATK 鼠标 16 字节 op 帧 | 贡献者 Gpan666 对 `373B:11D9` / `11E4` 的实机探测：op 帧结构、`(0x4D - sum)` 校验和与电量 OpCode `0x04` 均由本机样本确认。 | 只发一条电量查询 op 帧，响应必须校验和通过；键盘通道的回显帧靠校验和挡掉。默认关。本机无该设备，未复测。见 [atk.md](atk.md) §2。 |
+| ATK 键盘 VIA 读值 | 官方 ATK HUB 渲染进程代码（`solutionProvider` HFD 的电量命令类）与贡献者本机 `373B:1152` 实测：VIA `0x02` + `customId 0x96` + `battery 0x24`。 | 只发一条 VIA 查询帧；响应 `02 96 24 <电量> <充电标志>`。默认关。本机无该设备，未复测。见 [atk.md](atk.md) §3。 |
+| MCHOSE X9 64 字节查询帧 | 官方 M HUB 前端（公开 CDN 上未混淆的 Vue bundle）中 `hidDeviceOptions` 的电量读取函数，以及贡献者本机 `3837:6045` 的实测样本 `55 65 5A 02`。 | 只发 `55 65 01 …`，响应 `[2]` 为电量、`[3]` 为状态。与 V9 Pro 同帧结构，但 VID 与键鼠同号段，分类器前置分流。默认关。本机无该设备，未复测。见 [mchose-x9.md](mchose-x9.md)。 |
 | 弱水时砂炽天使 2.4G | 官方 RoseLink（Flutter + BLE 自定义协议）及官方升级助手逆向；同时检查 2.4G dongle 的 HID 通道。 | 用于确认 RoseLink 电量协议不含电量命令、正常 2.4G 模式无可用电量通道；本项目不接入该设备电量。 | 逆向结论用于能力边界判断，不包含外部代码复用。见 [protocols.md](protocols.md)。 |
 | Classic Bluetooth 耳机电量 | Windows HFP 网关设备节点的 `DEVPKEY_Device_BatteryLevel` 属性；与 Windows 设置显示同源。 | 通过 PnP 设备节点读取；本机 EDIFIER W820NB 已验证。 | Windows 系统属性读取方案；不是 BLE AEP 属性。实现背景见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |
 

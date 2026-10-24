@@ -3,6 +3,10 @@
 > 社区改动收进本仓库时记一笔：谁、哪个 PR、收了什么、没收什么。协议细节留在专题文档。
 > **面向用户的名单在根目录 [CONTRIBUTORS.md](../../CONTRIBUTORS.md)**（只写"谁做了什么"）；本文只记收了什么、没收到什么、是否本机复测，两处不重复。
 
+## 2026-10-23（待合入）
+
+- **endermiteDOTcn**（[#44](https://github.com/evren-oct/vigil-watt/pull/44)，目标 `dev`）：本 PR 拟纳入 AULA HERO 68 Air 2.4G 电量/充电支持与 AKG N9 Hybrid 接收器电量支持，以及协议文档、来源记录和必要回归测试。两者继承 `BatteryPluginBase`，共用各自品牌开关，默认关闭。贡献者真机验证 HERO 68 Air 10% 放电/充电及插件认领、轮询；N9 的 Python 与 C# 查询见 50%，随后真实 DeviceManager 首次认领加五轮自然查询均读到 100%，原始证据见 `hardware/akg.md` §3，上游维护者尚未真机复测。N9 充电时无法工作为用户观察，充电测试已取消，状态保持 Unknown。未纳入其它连接方式、其它型号，也不包含临时探针、独立验证工程、独立日志或厂商源码；必要日志片段保留在协议文档。待上游合并后再更新合入状态。
+
 ## 2026-10-19
 
 - **dotisland**（[#13](https://github.com/evren-oct/vigil-watt/pull/13)）：纳入 HECATE G5M Pro（`35BB:D00B`）只读电量插件，以及拔出设备后上报离线。认领收窄到 VID、PID 和 usage；迈从插件排除 `0x35BB`；探测窗口内没有任何报文则不认领。未纳入 [#14](https://github.com/evren-oct/vigil-watt/pull/14) 的按显示名去重。电量帧为本贡献者真机声明，本机未复测。

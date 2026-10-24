@@ -60,7 +60,8 @@
 | 英菲克 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；仅读 report `0x03` |
 | HECATE | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；仅读 `35BB:D00B` 的 report `0x04` |
 | DELUX | 无（纯被动） | **false** | 与英菲克同 VID/PID，只读 `0x000A`；本机未扫到接收器，故默认关 |
-| AULA | `PluginEnabled["Aula"]` | **false** | 只发 `13 05 01` 会话帧；不进 15 秒发现 |
+| AULA | `PluginEnabled["Aula"]` | **false** | F99 Pro 发 `13 05 01`；HERO 68 Air 发固定 UUID/电量查询及必要分片 ACK；每片检查开关，不进 15 秒发现。见 `aula.md` §2 |
+| AKG | `PluginEnabled["Akg"]` | **false** | N9 Hybrid 接收器只发固定 `0CD6` 电量查询，控制输入读取结果，不重发；见 `akg.md` |
 | GANSS | `PluginEnabled["Ganss"]` | **false** | 发固定查询帧才能读电量；不进 15 秒发现 |
 | DualSense | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读蓝牙 HID `054C:0CE6` |
 

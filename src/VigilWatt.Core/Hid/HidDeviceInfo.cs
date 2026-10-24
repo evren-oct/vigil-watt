@@ -85,6 +85,16 @@ public sealed class HidDeviceHandle : IDisposable
         return buffer;
     }
 
+    /// <summary>通过控制传输读取指定输入报告；部分设备不向中断输入端点推送状态。</summary>
+    public byte[]? GetInputReport(byte reportId)
+    {
+        ushort length = Info.InputReportLength;
+        if (length == 0) return null;
+        var buffer = new byte[length];
+        buffer[0] = reportId;
+        return NativeHid.HidD_GetInputReport(_stream.SafeFileHandle, buffer, length) ? buffer : null;
+    }
+
     /// <summary>
     /// 读该接口**输出报文**的 report ID（由 caps 的 ReportID 字段给出）。0 = 该接口不使用 report ID；读不到返回 null。
     /// **绝不能硬编码**（北通 T9 三个厂商集合 1/4/5、鲲鹏20 是 2）：写一个该接口没有的 report ID，驱动直接报 ERROR_INVALID_FUNCTION。

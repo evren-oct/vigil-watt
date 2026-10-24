@@ -6,6 +6,7 @@ VigilWatt 的设备适配大多来自社区：有人提供抓包样本，有人�
 
 | 贡献者 | 贡献内容 | 关联 |
 |---|---|---|
+| **endermiteDOTcn** | AULA HERO 68 Air 2.4G 电量与充电支持、AKG N9 Hybrid 接收器电量支持；协议研究、真机验证与回归测试 | [PR #44](https://github.com/evren-oct/vigil-watt/pull/44) |
 | **dotisland** | HECATE G5M Pro 只读电量插件（`35BB:D00B` 被动 report `0x04`）；拔出设备后把离线状态交回设备列表；BLE 端点补全缓存名、设备列表电量列右对齐 | [PR #13](https://github.com/evren-oct/vigil-watt/pull/13) · [PR #14](https://github.com/evren-oct/vigil-watt/pull/14) |
 | **Baron77777** | AULA F99 Pro（`3554:FA09`，`0x13` 会话/推送）与 DELUX M900 Pro（`1D57:FA65`，被动 5 字节状态帧）两个插件 | [PR #16](https://github.com/evren-oct/vigil-watt/pull/16) |
 | **luze258** | 三台设备：DualSense 蓝牙电量（report `0x31` + CRC）、GANSS GS3104T-Pro（33 字节查询帧）、MCHOSE V9 Pro 耳机（64 字节查询帧）；以及 GANSS 认领判据的风险分析 | [PR #15](https://github.com/evren-oct/vigil-watt/pull/15) |

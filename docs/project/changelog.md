@@ -5,6 +5,7 @@
 
 ## 2026-10-24
 
+- **PR #44 轮询审查**：AKG 确认输入空闲态后才写入，瞬时空读和其它报告在有界窗口内重试，并跳过本轮重复快照；新增相关回归及 Debug 证据日志。修正 HERO 68 Air 异步通知穿插的支持范围；AKG 充电测试按用户要求取消，状态仍为未知。
 - **设备图标补手机 / 平板 / 手表**：`DeviceKind` 追加 `Phone`/`Tablet`/`Watch`（只能追加在末尾——`IconKind` 以数字存进 settings.json，插中间会让老用户的自定义图标整体错位），`DeviceIconFactory` 的 XAML 与 GDI 两套造型同步加。
 - **修「手机显示成耳机」**：经典蓝牙手机同样暴露 HFP/HSP，旧逻辑「有音频服务 = 耳机」会把它画成耳机。`ClassicDeviceKindResolver.Resolve` 现在先按名字判掉手机/平板/手表，再走音频服务分支；`FromCategories` 的 `phone` 判定排在 `headphone/headset` 之后（类别串 `Audio.Headphone` 里也含 `phone`）。`DeviceKindGuesser` 的手机关键字不收裸 `phone`，避免命中 headphone / microphone。
 - **设备列表页图标改用矢量**：`DeviceRowModel.GlyphFor` 的 Segoe MDL2 码位映射删掉，改调 `DeviceIconFactory.Scaled`（名义框统一 14×13 再缩放，各类型视觉大小一致），与小组件、任务栏贴片共用一套造型，新增类型不必再赌字体字形。设备外观对话框的图标选择由硬编码 4×2 改为按选项数推行数。
@@ -14,6 +15,12 @@
 - **收进 PR #14 的两处**（dotisland）：BLE 端点在 GATT 直读时补全缓存名（Watcher 的 Added 常带空名，之前只能显示「BLE 设备」），设备列表电量列固定最小宽度并右对齐（`99%` 与 `--` 宽度不同会让相邻行错位）。未采纳其「按显示名合并双通道」，理由见 `contributions.md`。
 - **修迈从键盘型号识别（偏移差一位）**：`ModelFromSessionAck` 从 ACK 的 `[6]` 取密码，而真机帧是 `13 05 01 00 0A 03 00 00 00 02 1C 01`，密码在 `[5]`（`03 00 00 00 02 1C` = G87）。取错位置导致**整张 18 项型号表对所有键盘都匹配不到**，显示名一直退回产品名「MCHOSE 2.4G Wireless」。现在两种偏移都试（兼容当初那段多一字节的合成样本），真机复测显示名变「迈从 G87」。
 - **设备列表改增量更新**：每次刷新都整体替换 `ItemsSource`，ListView 会丢弃所有行容器重建，每分钟轮询都闪一下（图标换成 `UIElement` 后更明显）。改为构造时设一次 `ObservableCollection`，之后按 Id 对位同步——内容指纹（不含 Icon）相同就整行复用，连图标元素都不重建，只替换真正变化的行。
+
+## 2026-10-23
+
+- **PR #44 审查修复**：AKG 每轮等待成功 ACK 后才接收异步电量，成功日志保留命中消息的原始 HEX；补齐贡献者名单及待合入范围记录，并增加迟到响应与跨轮 ACK 的回归用例。
+- **AKG N9 Hybrid**：新增默认关闭的 AKG 品牌插件，经接收器固定 RACE 查询读取电量；使用控制输入读取，忽略片段后的旧缓存，充电状态保留未知。协议与真机单点验证边界见 `hardware/akg.md`。
+- **AULA HERO 68 Air**：在现有狼蛛插件内接入 2.4G Bytech 8K 分片查询，按官方 UUID 区分共享接收器，忽略完整包之间穿插的异步通知；响应分片中途穿插通知仍可能使本轮失败。沿用默认关闭的品牌开关、熔断与退避；协议来源和真机验证范围见 `hardware/aula.md` §2。
 
 ## 2026-10-21
 

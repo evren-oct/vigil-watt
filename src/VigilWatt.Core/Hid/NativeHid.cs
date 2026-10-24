@@ -172,6 +172,9 @@ internal static class NativeHid
     public static extern bool HidD_GetFeature(SafeFileHandle handle, byte[] reportBuffer, uint reportBufferLength);
 
     [DllImport("hid.dll", SetLastError = true)]
+    public static extern bool HidD_GetInputReport(SafeFileHandle handle, byte[] reportBuffer, uint reportBufferLength);
+
+    [DllImport("hid.dll", SetLastError = true)]
     public static extern bool HidD_SetOutputReport(SafeFileHandle handle, byte[] reportBuffer, uint reportBufferLength);
 
     [StructLayout(LayoutKind.Sequential)]

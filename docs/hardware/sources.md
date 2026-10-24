@@ -13,6 +13,7 @@
 
 | 设备 / 方案 | 来源与参考内容 | 本项目采用及验证 | 许可 / 边界 |
 |---|---|---|---|
+| AKG N9 Hybrid 接收器 | [HeadsetControl Airoha 协议](https://github.com/Sapd/HeadsetControl/blob/master/lib/devices/audeze_maxwell_device.hpp) 的 `06/07` 封装与 `0CD6` 查询；N9 真机控制输入和查询响应。 | 自行实现固定查询，限定 `0ECB:20D9` MI03 Col02；贡献者真机读取 50%，默认关闭。 | 未复制外部代码；只确认单点电量，充电状态未验证。见 [akg.md](akg.md)。 |
 | MCHOSE G87 旧代 dongle（report `0x13`） | 官方 M HUB 的会话与电量交互；通过官方软件抓包和 dongle 实机观测确认帧结构、校验、查询和推送。 | 按抓包与实机样本实现；本机 G87 已验证。 | 官方软件交互是协议依据，不表示引用其代码。具体帧与未定语义见 [protocols.md](protocols.md)。 |
 | MCHOSE QHW（新代 dongle） | [MCHOSE M HUB WEB](https://www.mchose.com.cn/#/home) 前端 JS 中的 `QhwCmdQueueItem`、命令表及 CZ 相关脚本。 | 按官方前端协议实现备用路径；适用于 `0x3837` 世代 dongle。当前用户设备 `41E4:2001` 不适用。 | 官方资料，非开源代码复用。入口与设备范围见 [protocols.md](protocols.md)。 |
 | Logitech HID++ 电量 | Logitech HID++ 1.0 / 2.0 的设备发现与电池特征；实时电量通知行为与 Logi Battery Dashboard 同源。 | 本项目自行实现 HID++ 报文与特征解析；Bolt + MX Master 3S 已真机验证。 | 现有协议手册未记录外部代码复用；Logi Battery Dashboard 只作为行为 / 协议线索。实现细节见 [protocols.md](protocols.md)。 |
@@ -23,6 +24,7 @@
 | HECATE G5M Pro `report 0x04` | 贡献者 dotisland 对官方 HECATE Connect 与接收器 `35BB:D00B` 的被动抓包（PR #13）。 | 只读解析 report `0x04`，不发送命令。帧与充放电对照是贡献者声明，本机未复测。 | 未复用官方软件代码。见 [hecate.md](hecate.md)。 |
 | DELUX M900 Pro `0x000A` 状态帧 | 贡献者 Baron77777 对官方驱动与接收器 `1D57:FA65` 的被动抓包（PR #16）。 | 只读解析 5 字节状态帧。与英菲克同 VID/PID，本机这次没有扫到该接收器，插件默认关。 | 未复用官方软件代码。见 [delux.md](delux.md)。 |
 | AULA F99 Pro `0x13` 会话/推送 | 贡献者 Baron77777 对 `3554:FA09` 实发会话帧并收到推送（PR #16）。 | 复用 `MchoseV1Codec`，只发 `13 05 01`；不发无应答的 `13 4A`，不进 15 秒发现。默认关。 | 未抓 AULA 官方驱动，未复用外部代码。见 [aula.md](aula.md)。 |
+| AULA HERO 68 Air · Bytech 8K | [官方 A HUB](https://hub.aulacn.com/checkDevice) 的 `index-GW9ckk1o.js` / `vendor-DTzSSMIf.js`：UUID、电量命令及 8K 分片/ACK。 | 仅 `372E:106C` 的 `FF60/0061`、20/20、report `09`；UUID `12000000000A` 才认领。贡献者真机验证 10% 放电/充电，默认关，与 F99 Pro 共用 `Aula`。 | 独立实现协议兼容，没有复制厂商源码或资源；具体来源、帧和验证范围见 [aula.md](aula.md) §2。 |
 | DualSense 蓝牙 `0x31` | Linux `hid-playstation` 的帧格式与 CRC；贡献者 luze258 的蓝牙样本（PR #15）。 | 只读 78 字节输入报告，不发送命令。电量是约 10% 档位。贡献者声明只实测过一个放电档，本机未复测。 | 未复制 Linux 驱动代码。见 [dualsense.md](dualsense.md)。 |
 | GANSS GS3104T-Pro 33 字节查询帧 | 贡献者 luze258 对官方软件通信的 USB 抓包（PR #15），只有固定查询帧与响应样本。 | 只发这一条固定查询帧，响应 `[3]` 为电量，校验和按"除末字节求和取低字节"；会写帧故默认关。判据与风险见 §6。 | 未复用厂商代码，按抓包事实自行实现。本机无该设备，未复测。见 [ganss.md](ganss.md)。 |
 | MCHOSE V9 Pro 64 字节查询帧 | 贡献者 luze258 在官方 MCHOSE HUB 显示 100% 时的 USB 抓包（PR #15），单条请求与响应。 | 只发 `55 65 01 …`，响应 `[2]` 为电量；并入迈从插件共用品牌级开关。充电状态未知，恒为 Unknown。 | 未复用厂商代码，按抓包事实自行实现。本机无该设备，未复测。见 [mchose-v9-pro.md](mchose-v9-pro.md)。 |

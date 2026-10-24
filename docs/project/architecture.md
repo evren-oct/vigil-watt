@@ -33,7 +33,8 @@ VigilWatt.sln
 │   │   ├── Inphic/                    # 英菲克 report 0x03 被动状态帧
 │   │   ├── Hecate/                    # HECATE report 0x04 被动状态帧
 │   │   ├── Delux/                     # DELUX 0x000A 被动状态帧
-│   │   ├── Aula/                      # AULA F99 Pro：复用 0x13 会话帧，默认关
+│   │   ├── Aula/                      # F99 Pro 0x13 会话 + HERO 68 Air Bytech 8K 分片，共用品牌开关，默认关
+│   │   ├── Akg/                       # N9 Hybrid RACE 固定查询 + 控制输入读取，默认关
 │   │   └── Sony/                      # DualSense 蓝牙 HID 只读电量
 │   ├── Models/DeviceStatus            # 统一设备状态快照（Id/电量/充电/在线）
 │   ├── Settings/AppSettings           # settings.json 读写

@@ -32,6 +32,11 @@
   -->
   <ItemGroup>
     <Compile Include="..\..\VigilWatt.Core\Plugins\Thunderobot\ThunderobotCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Akg\AkgN9Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Akg\AkgN9PacketAssembler.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Akg\AkgN9Transport.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaHero68Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaHero68PacketAssembler.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Ajazz\AjazzCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\BatteryReadingFilter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\PluginUtils.cs" />

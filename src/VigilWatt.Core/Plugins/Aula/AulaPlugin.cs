@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Plugins.Mchose;
@@ -6,9 +7,9 @@ using VigilWatt.Core.Utils;
 namespace VigilWatt.Core.Plugins.Aula;
 
 /// <summary>
-/// 功 能： AULA F99 Pro 2.4G 键盘插件，复用迈从 0x13 会话后读推送。
-/// 2026/10/19 15:10:00 xliu
-/// 只发已见到的会话帧，不发无应答的 4A，也不进 15 秒发现。见 docs/hardware/aula.md §1。
+/// 功 能： 狼蛛 F99 Pro 与 HERO 68 Air 2.4G 键盘电量插件。
+/// 2026/10/19 15:10:00 xliu；2026/10/23 20:05:00 30149 扩展 HERO 68 Air。
+/// 协议与验证范围见 docs/hardware/aula.md。
 /// </summary>
 public sealed class AulaPlugin : BatteryPluginBase
 {
@@ -16,6 +17,7 @@ public sealed class AulaPlugin : BatteryPluginBase
     public const ushort F99ProPid = 0xFA09;
 
     private const string SettingsKey = "Aula";
+    private readonly ConditionalWeakTable<HidDeviceHandle, AulaHero68Transport> _heroTransports = new();
 
     public override string Name => SettingsKey;
     public override string DisplayName => "狼蛛";
@@ -32,12 +34,25 @@ public sealed class AulaPlugin : BatteryPluginBase
         CountPollFailures = false,
     };
 
-    /// <summary>只认 3554:FA09 的 0x13 vendor 接口（0xFF02/0x0002，20/20）。</summary>
     protected override bool IsCandidate(HidDeviceInfo info)
-        => info.VendorId == AulaVid && info.ProductId == F99ProPid
+        => IsHeroInterface(info) || (info.VendorId == AulaVid && info.ProductId == F99ProPid
            && info.UsagePage == 0xFF02 && info.Usage == 0x0002
            && info.InputReportLength >= MchoseV1Codec.FrameLength
-           && info.OutputReportLength >= MchoseV1Codec.FrameLength;
+           && info.OutputReportLength >= MchoseV1Codec.FrameLength);
+
+    private static bool IsHeroInterface(HidDeviceInfo info)
+        => AulaHero68Codec.IsSupportedInterface(info.VendorId, info.ProductId, info.UsagePage, info.Usage,
+            info.InputReportLength, info.OutputReportLength, info.OutputReportId);
+
+    protected override async Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
+        HidDeviceHandle handle)
+    {
+        if (!IsHeroInterface(handle.Info)) return await base.ProbeAsync(handle).ConfigureAwait(false);
+        var transport = _heroTransports.GetValue(handle, h => new AulaHero68Transport(h, () => WritesEnabled));
+        if (!await transport.IdentifyAsync().ConfigureAwait(false)) return null;
+        var read = await transport.ReadBatteryAsync().ConfigureAwait(false);
+        return read is { } value ? ("aula-hero68-air", value.Percent, value.Charging) : null;
+    }
 
     /// <summary>探测 = 开一次会话，等设备回 0A 电量推送。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
@@ -50,7 +65,10 @@ public sealed class AulaPlugin : BatteryPluginBase
     {
         if (!CanWrite(dev)) return null;
 
-        var read = TryRead(dev.Handle);
+        var read = dev.Protocol == "aula-hero68-air"
+            ? _heroTransports.GetValue(dev.Handle, h => new AulaHero68Transport(h, () => WritesEnabled))
+                .ReadBatteryAsync().GetAwaiter().GetResult()
+            : TryRead(dev.Handle);
         if (read.HasValue) ReportPollAnswered(dev);
         else ReportPollFailure(dev);
         return read;
@@ -91,5 +109,6 @@ public sealed class AulaPlugin : BatteryPluginBase
     private static ChargingState ParseCharge(byte flag, int percent)
         => ChargingStateMap.FromChargingFlag((flag & 0x10) != 0, percent);
 
-    protected override string BuildDisplayName(HidDeviceInfo info) => "AULA F99 Pro";
+    protected override string BuildDisplayName(HidDeviceInfo info)
+        => IsHeroInterface(info) ? "AULA HERO 68 Air" : "AULA F99 Pro";
 }

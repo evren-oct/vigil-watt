@@ -27,6 +27,7 @@
 - [protocols.md](hardware/protocols.md)：设备协议帧、已验证行为和已证伪路径。
 - [dualsense.md](hardware/dualsense.md)：DualSense 蓝牙电量的帧、CRC 和未复测边界。
 - [ganss.md](hardware/ganss.md)：GANSS GS3104T-Pro 的查询帧、认领判据风险与验证清单。
+- [akg.md](hardware/akg.md)：AKG N9 Hybrid 接收器查询、控制输入读取和验证边界。
 - [mchose-v9-pro.md](hardware/mchose-v9-pro.md)：MCHOSE V9 Pro 耳机的查询帧与未复测边界。
 - [safety.md](hardware/safety.md)：硬件写入规则与事故复盘；任何写入改动前必读。
 - [debugging.md](hardware/debugging.md)：官方软件抓包、HID 观测和协议验证步骤。

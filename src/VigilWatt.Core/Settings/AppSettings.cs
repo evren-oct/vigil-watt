@@ -42,6 +42,9 @@ public class AppSettings
     /// <summary>是否把电量贴片钉在任务栏上。默认关闭——它会占住任务栏一小块地方，用户明确要时才开。</summary>
     public bool TaskbarBatteryEnabled { get; set; }
 
+    /// <summary>锁定贴片位置以防误拖；不影响屏幕或 DPI 变化时的自动定位。</summary>
+    public bool TaskbarBatteryPositionLocked { get; set; }
+
     /// <summary>任务栏贴片显示内容。取值见 <c>VigilWatt.App.Services.TaskbarBatteryMode</c>：All（全部在线设备）/ Lowest（仅最低电量一台）；未知取值按 All。</summary>
     public string TaskbarBatteryMode { get; set; } = "All";
 

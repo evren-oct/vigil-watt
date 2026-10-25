@@ -44,7 +44,11 @@ public sealed class TaskbarPillManager : IDisposable
     }
 
     /// <summary>设置保存后即时生效入口。</summary>
-    public void RefreshFromSettings() => Reconcile();
+    public void RefreshFromSettings()
+    {
+        Reconcile();
+        _pill?.RefreshFromSettings();
+    }
 
     /// <summary>把贴片恢复到默认位置。</summary>
     public void ResetPosition()

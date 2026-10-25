@@ -57,6 +57,7 @@ public sealed class TaskbarPillWindow : IDisposable
     private int _offsetDpi;
     private uint _windowDpi;
     private bool _dragging;
+    private bool _positionLocked;
     private int _dragStartCursor, _dragStartOffset;
     private int _dragIdleTicks, _pollX, _pollY;
     private bool _btnWasDown;   // 上轮询左键状态，用于检测按下边缘
@@ -109,6 +110,7 @@ public sealed class TaskbarPillWindow : IDisposable
         var s = App.Services.Settings;
         _offsetPx = s.TaskbarBatteryOffsetX;
         _offsetDpi = s.TaskbarBatteryOffsetDpi;
+        _positionLocked = s.TaskbarBatteryPositionLocked;
     }
 
     private void OnDeviceUpdated(DeviceStatus _) => RequestRefresh();
@@ -130,7 +132,9 @@ public sealed class TaskbarPillWindow : IDisposable
     /// <summary>设置保存后的即时生效入口（开关/显示内容/最多台数可能都变了）。</summary>
     public void RefreshFromSettings()
     {
+        EndDrag();
         LoadOffsetFromSettings();
+        _btnWasDown = (Native.GetAsyncKeyState(Native.VK_LBUTTON) & 0x8000) != 0;
         _needRender = true;
         Update();
     }
@@ -621,7 +625,7 @@ public sealed class TaskbarPillWindow : IDisposable
 
     private void OnLButtonDown()
     {
-        if (_dragging) return;   // 轮询可能已经先检测到并启动了
+        if (_positionLocked || _dragging) return;
 
         HideTip();
         _hoverId = null;
@@ -655,6 +659,12 @@ public sealed class TaskbarPillWindow : IDisposable
         if (_disposed) return;
 
         bool btnDown = (Native.GetAsyncKeyState(Native.VK_LBUTTON) & 0x8000) != 0;
+        if (_positionLocked)
+        {
+            EndDrag();
+            _btnWasDown = btnDown;
+            return;
+        }
         var p = Native.GetCursorPos();
 
         if (!_dragging)
@@ -727,7 +737,7 @@ public sealed class TaskbarPillWindow : IDisposable
 
     private void OnMouseMove(IntPtr lParam)
     {
-        if (_dragging)
+        if (_dragging && !_positionLocked)
         {
             var p = Native.GetCursorPos();
             // 只沿任务栏方向拖：横向任务栏走 X，竖向走 Y（斜着拖不会把贴片拽离任务栏）

@@ -267,12 +267,24 @@
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="任务栏电量贴片" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="在任务栏里（系统托盘左边）钉一条电量胶囊，按住可沿任务栏拖动；本机电量不参与（系统已有电池图标）"
+                                    <TextBlock Text="在任务栏里（系统托盘左边）钉一条电量胶囊，未锁定时按住可沿任务栏拖动；本机电量不参与（系统已有电池图标）"
                                                Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="TaskbarToggle"
                                               OnContent="开" OffContent="关"
                                               MinWidth="0" VerticalAlignment="Center" />
+                            </Grid>
+                            <Border Style="{StaticResource RowDividerStyle}" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="锁定贴片位置" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="防止按住贴片时误拖；关闭后可沿任务栏调整位置，保存后生效"
+                                               Style="{StaticResource RowDescStyle}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" x:Name="TaskbarLockToggle"
+                                              OnContent="开" OffContent="关"
+                                              MinWidth="0" VerticalAlignment="Center"
+                                              AutomationProperties.Name="锁定贴片位置" />
                             </Grid>
                             <Border Style="{StaticResource RowDividerStyle}" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">

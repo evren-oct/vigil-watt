@@ -95,6 +95,7 @@ public sealed partial class SettingsPage : Page
 
         // 任务栏贴片：与小组件同一套路（下拉框存偏好、副标题写行为），取值收敛也只有一处定义
         TaskbarToggle.IsOn = s.TaskbarBatteryEnabled;
+        TaskbarLockToggle.IsOn = s.TaskbarBatteryPositionLocked;
         var taskbarMode = TaskbarBatteryMode.Normalize(s.TaskbarBatteryMode);
         SelectByTag(TaskbarModeCombo, taskbarMode);
         TaskbarModeHintText.Text = TaskbarBatteryMode.Describe(taskbarMode);
@@ -490,6 +491,7 @@ public sealed partial class SettingsPage : Page
             ? WidgetMaxDevicesOptions.Clamp(maxValue)
             : WidgetMaxDevicesOptions.Default;
         s.TaskbarBatteryEnabled = TaskbarToggle.IsOn;
+        s.TaskbarBatteryPositionLocked = TaskbarLockToggle.IsOn;
         s.TaskbarBatteryMode = TaskbarBatteryMode.Normalize(
             (TaskbarModeCombo.SelectedItem as ComboBoxItem)?.Tag as string);
         s.TaskbarBatteryMaxDevices = TaskbarMaxCombo.SelectedItem is ComboBoxItem taskbarMaxItem

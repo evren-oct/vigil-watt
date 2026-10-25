@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Utils;
@@ -16,7 +17,22 @@ public sealed class RapooPlugin : BatteryPluginBase
     public override string Name => "Rapoo";
     public override string DisplayName => "雷柏";
     public override string DisplayNameEn => "RAPOO";
-    public override DeviceKind Kind => DeviceKind.Mouse;
+
+    /// <summary>
+    /// 声明 Unknown：雷柏的电量帧在键盘集合上，按名字猜会猜错；图标交给 UI 按显示名推断
+    /// （同迈从）。见 docs/hardware/rapoo.md §4.2。
+    /// </summary>
+    public override DeviceKind Kind => DeviceKind.Unknown;
+
+    /// <summary>含 "Mouse" 产品串的 VID:PID 集合（由 <see cref="OnDevicesScanned"/> 每轮刷新）。</summary>
+    private readonly ConcurrentDictionary<string, bool> _mousePids = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 按设备路径隔离的充电去抖状态（值类型，读写原子）。**必须按设备隔离**：插件实例
+    /// 同时持有多台雷柏设备，共用一份会让两台的帧互相串味（R3）。
+    /// </summary>
+    private readonly ConcurrentDictionary<string, (byte Flag, bool Stable)> _chargeState =
+        new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// 纯被动零写入，探测失败**不是错误**，只说明"鼠标睡着了"（休眠时 dongle 全静音，一动即恢复）。
@@ -97,12 +113,18 @@ public sealed class RapooPlugin : BatteryPluginBase
 
         // CR-28：心跳约 3 秒一条，逐帧 Info + Hex 会冲到约 2.8 万行/天、把 2MB 滚动历史冲掉。
         // 改成只在链路/充电/电量变化时记一条；原始帧不再进 Info（协议排错看 Debug 档的"收到报文"）。
+        // **key 里带 RF 字节**：否则断链帧（bit7 由 1 变 0）不会触发记录，
+        // 只在日志里看到"标记离线"却找不到断链那一帧，排查时抓瞎。
+        var linkNote = status.LinkMode == RapooLinkMode.Wired
+            ? "有线(无RF链路,bit7不适用)"
+            : $"bit7连接={!status.LinkDown}";
         Log.InfoOnChange($"rapoo-status:{dev.Status.Id}",
-            $"{status.Link}|{status.ChargeFlag}|{status.Percent}",
+            $"{status.Link}|{status.ChargeFlag}|{status.Percent}|{status.RfByte}",
             $"雷柏 状态帧: 连接={status.Link} 充电标志={status.ChargeFlag} 电量={status.Percent}% " +
-            $"RF=0x{status.RfByte:X2}(bit7连接={!status.LinkDown} RSSI={status.RfByte & 0x7F})");
+            $"RF=0x{status.RfByte:X2}({linkNote} RSSI={status.RfByte & 0x7F})");
 
         // 链路位与电量无关，先处理——电量越界的帧（休眠瞬态）同样要能标记/撤销候选。
+        // 有线模式 LinkDown 恒 false：没有 RF 链路，bit7=0 是正常语义（见 RapooStatus.LinkDown）。
         if (status.LinkDown) MarkOfflineCandidate(dev);
         else ClearOfflineCandidate(dev);
 
@@ -113,7 +135,25 @@ public sealed class RapooPlugin : BatteryPluginBase
             return null;
         }
 
-        return (status.Percent, status.Charging, Offline: false);
+        return (status.Percent, ResolveCharging(dev, status), Offline: false);
+    }
+
+    /// <summary>充电状态去抖，规则见 <see cref="RapooCodec.ResolveCharging"/>；状态按设备路径存于 <see cref="_chargeState"/>。</summary>
+    private ChargingState ResolveCharging(TrackedDevice dev, RapooStatus status)
+    {
+        var key = dev.Info.DevicePath;
+        var (flag, stable) = _chargeState.GetOrAdd(key, (0xFF, false));
+        var d = RapooCodec.ResolveCharging(status.ChargeFlag, flag, stable, status.Percent);
+        _chargeState[key] = (d.LastFlag, d.Stable);
+        return d.Charging;
+    }
+
+    /// <summary>设备移除时清掉它的去抖状态（否则随插拔累积，R3 累积型泄漏）。</summary>
+    private void PruneChargeState(IReadOnlyList<HidDeviceInfo> present)
+    {
+        var alive = present.Select(d => d.DevicePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in _chargeState.Keys.Where(k => !alive.Contains(k)).ToList())
+            _chargeState.TryRemove(key, out _);
     }
 
     /// <summary>在截止时间前收 input report，解析 0x07 状态帧。</summary>
@@ -136,6 +176,36 @@ public sealed class RapooPlugin : BatteryPluginBase
         return null;
     }
 
+    /// <summary>显示名：雷柏的电量帧挂在键盘集合上，靠"是不是鼠标"改名字。见 docs/hardware/rapoo.md §4.2。</summary>
     protected override string BuildDisplayName(HidDeviceInfo info)
-        => string.IsNullOrEmpty(info.Product) ? $"雷柏 ({info.VidPid})" : $"雷柏 {info.Product}";
+        => RapooCodec.DisplayName(info.Product, SiblingIsMouse(info), info.VidPid);
+
+    /// <summary>同 <c>VID:PID</c> 下是否存在标准鼠标集合（usage 0001:0002）的兄弟接口。</summary>
+    private bool SiblingIsMouse(HidDeviceInfo info)
+        => _mousePids.ContainsKey($"{info.VendorId:X4}:{info.ProductId:X4}");
+
+    /// <summary>
+    /// 认领前先重建"哪些 VID:PID 带鼠标集合"的索引。判据用 **usage 0001:0002**（不是产品串）：
+    /// 接收器模式的产品串是设备级的 "Rapoo Gaming Device"，不含 Mouse。
+    /// </summary>
+    public override async Task<IReadOnlyList<DeviceStatus>> AttachAsync(
+        IReadOnlyList<HidDeviceInfo> availableDevices, DeviceClaimRegistry claims)
+    {
+        _mousePids.Clear();
+        foreach (var d in availableDevices)
+        {
+            if (d.VendorId != RapooVid) continue;
+            if (d.UsagePage == 0x0001 && d.Usage == 0x0002)
+                _mousePids[$"{d.VendorId:X4}:{d.ProductId:X4}"] = true;
+        }
+        PruneChargeState(availableDevices);
+        return await base.AttachAsync(availableDevices, claims).ConfigureAwait(false);
+    }
+
+    /// <summary>插件被禁用/卸载时清空按设备保存的状态。</summary>
+    public override void Detach()
+    {
+        _chargeState.Clear();
+        base.Detach();
+    }
 }

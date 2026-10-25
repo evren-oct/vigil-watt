@@ -10,7 +10,7 @@
 
 当前安装包 **1.2.3**（`dist/`，本机试装用；尚未上传正式 Release）。正式线上以 GitHub 最新 Release 为准，Gitee 是回退源；更新源 GitHub 优先、8 秒不通回退 Gitee。发新版时保留上一版 `*-full.nupkg` 作为 delta 基准；规则见 `dev/build.md` §8。
 
-本机已打通：迈从 G87（0x13）、雷柏 VT3（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。
+本机已打通：迈从 G87（0x13）、雷柏 VT3 + VT2S Air Max（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。
 
 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），不是 WinUI 覆盖窗；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。**拖动走 16ms 轮询，不靠鼠标捕获**——捕获对非前台窗口无效（`dev/runtime-pitfalls.md` §16、§16.5.1；§17 只对小组件）。选屏由 `Services/TaskbarPillManager.cs` 每秒按 `monitorDevicePath` 匹配，配置的屏不在就降级贴主屏，设置页显示真实屏幕名——`\\.\DISPLAYn` 是配置序号不是身份，见 `dev/monitor-identity.md`。
 
@@ -79,7 +79,7 @@
 
 审查未修项以 `docs/reviews/BACKLOG.md` 为准。PR #44 待验证项见 CR-84，HERO 非阻塞传输层测试见 CR-97；充电测试已取消，不等待插拔充电操作。其它人工待办如下。
 
-1. **插线校准两处**：迈从 `ParseKeyboardV1Charge` 补全充电位（已知 0x10 = 充电中）；雷柏充满时 `[7]` 待采到再补映射。
+1. **插线校准两处**：迈从 `ParseKeyboardV1Charge` 补全充电位（已知 0x10 = 充电中）；雷柏满电时 `[7]` 在 0/1/2 间横跳（底座涓流），采不到稳定值 → 100% 一律判「充满」，不再等这个标志（rapoo.md §5.2）。
 2. **北通鲲鹏20 有线变体**（PID_5191/KP20EB）主动查询仍未真机验证（PID_5159 广播 / PID_5158 有线 COL01 查询已打通，见 betop.md §1.8）；手柄关机后广播帧是否有占位值无样本，待观察。T9 的 `byte23` 低位仍只认 `0x50` = 未连接；验证方法见 betop.md §1.4.1。
 3. **贴片人手复看**：连续拖 5 次、上下甩出贴片、拖到两端再回拖、松手后不自跳（CR-48）；自动隐藏、竖向/多屏（CR-41）、深色对比（CR-42）、是否压住任务栏按钮（CR-39）、右键菜单（CR-60）、悬停设备名（多台/底栏/深色任务栏）。分辨率往返已于 2026-10-13 通过。Win10 小组件投影（CR-57）等用户决定是否做。
 4. **页面缓存真机**：来回切换是否变快、离开再回来数据是否仍刷新、设置值是否与 `settings.json` 一致、搜索是否仍可用。坑见 `dev/runtime-pitfalls.md` §19。相关未修项 CR-61 / CR-63。
@@ -91,7 +91,7 @@
 
 1. **dongle 静音**：本应用、浏览器里的 M HUB、官方 HUB 谁持有会话谁工作。崩溃进程会把会话粘死。先看 safety.md §2，别急着改协议。
 2. **启动方式**：工具拉起的进程会被进程树清掉。用 `explorer.exe "VigilWatt.App.exe"`。强杀会按 safety.md §2 占死 dongle 会话。
-3. **雷柏**：停手 = dongle 静音，静音不是离线。离线主判据是 `[18].bit7`，走约 6 秒确认，不要改成立刻离线。见 rapoo.md。
+3. **雷柏**：`[18].bit7` 只在 **2.4G 模式**下作断链判据（有线时恒 0，属正常）；离线走约 6 秒断链确认或 90 秒静默兜底，不要改成立刻离线。见 rapoo.md §4.1、§5.1。
 4. **插件配置分三层**：协议事实和安全声明必须按品牌；离线策略集中在 `OfflinePolicy`。`CountPollFailures` 与 `SupportsPassiveListen` 是两件事，合成一个布尔会让迈从关机后永远不离线。
 
 ## 6. 关键文件速查

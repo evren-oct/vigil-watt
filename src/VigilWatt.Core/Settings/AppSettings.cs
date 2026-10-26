@@ -48,6 +48,13 @@ public class AppSettings
     /// <summary>任务栏贴片最多显示几台设备，超出显示 "+N"。合法范围见 <c>VigilWatt.App.Services.TaskbarBatteryOptions</c>（1~5，默认 3）。</summary>
     public int TaskbarBatteryMaxDevices { get; set; } = 3;
 
+    /// <summary>
+    /// 任务栏贴片只显示这些设备（按显示名匹配，大小写不敏感）。空 = 不过滤（显示全部在线设备）。
+    /// 存名字而不是设备 Id：Id 由 USB 路径哈希而来，同一只设备插线/换口就变（详见 DeviceManager 的去重说明），
+    /// 名字在两种连接方式下是稳定的。
+    /// </summary>
+    public List<string> TaskbarBatterySelectedDevices { get; set; } = new();
+
     /// <summary>任务栏贴片相对"托盘左侧默认位"的水平偏移（物理像素，正数向右）。用户拖动后写入，重启沿用。</summary>
     public int TaskbarBatteryOffsetX { get; set; }
 
@@ -96,7 +103,7 @@ public class AppSettings
         ["Atk"] = false,        // ATK 8K 接收器（FF02 口 17B）：发 08 04…49 只读查询，要写帧，默认关闭（atk.md）
         ["HyperX"] = true,      // HyperX CF2（03F0:0AC1 FF90 口）：零写入，纯被动监听（hyperx-cf2.md）
         ["Lingbao"] = false,    // 凌豹：M5PRO Max 的 feature 查询与 K98 的会话帧都要写，默认关闭（lingbao.md §1 §2）
-        ["Vgn"] = false,        // VGN 蜻蜓：kc2 配置帧 / y2 电量查询都要写帧，默认关闭（vgn.md）
+        ["Vgn"] = true,         // VGN 蜻蜓：kc2 配置帧 / y2 电量查询都是官方只读命令（本机已实测，默认开启）
         ["Haute42Gaming"] = false, // Haute42 Adapter 4DS：只读 feature，零写入，默认关闭（haute42.md）
     };
 

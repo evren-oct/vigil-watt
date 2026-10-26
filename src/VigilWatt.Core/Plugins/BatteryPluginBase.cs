@@ -77,6 +77,16 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     protected virtual TimeSpan ProbeCooldown => TimeSpan.FromSeconds(30);
 
     /// <summary>
+    /// 插件用它把"同一物理设备的另一条接口"从本轮里摘掉。
+    ///
+    /// 典型场景：同一只鼠标插线后会多出一条接口（无线接收器 + 插线两条同时在场），
+    /// 两条都认领就会在设备列表里变成两行互相矛盾的读数（一行充电中、一行还是旧电量）。
+    /// 返回本轮要跳过的接口路径；默认不跳过。
+    /// </summary>
+    protected virtual IReadOnlyCollection<string> SkipPathsForThisPass(
+        IReadOnlyList<HidDeviceInfo> availableDevices) => Array.Empty<string>();
+
+    /// <summary>
     /// 是否允许向设备写探测/查询帧。**唯一授权入口是插件开关**（<c>AppSettings.PluginEnabled[Name]</c>）——
     /// 开插件即授权它工作所需的写入，不再有第二个"写入许可"开关（safety.md §3 规则 2）。
     /// 这里读插件开关而非直接返回 true，是给写点留一道纵深防御（R1：写入必须能被一个开关挡住）。
@@ -132,6 +142,11 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         public bool BypassActive;
         /// <summary>每句柄一次性的动作标记（会话握手等），子类自行使用。</summary>
         public bool HandshakeSent;
+        /// <summary>
+        /// 句柄已失效（设备被拔插但接口路径没变时，Windows 会让旧句柄失效）。
+        /// 插件在**写帧失败**时置位；基类下一轮会丢掉这台设备并重新打开句柄。
+        /// </summary>
+        public bool HandleStale;
         /// <summary>本设备的读数异常过滤器（基准 + 异常持续计时都封在里面）。</summary>
         public required BatteryReadingFilter Filter;
         /// <summary>子类在 PollDevice 里判定"设备已主动告知休眠/关机"时置位，基类随即标离线。</summary>
@@ -181,13 +196,6 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// 又不会把真实的深度掉电永久锁死。
     /// </summary>
     protected virtual TimeSpan AnomalyPersistWindow => TimeSpan.FromMinutes(5);
-
-    /// <summary>
-    /// 把「同一物理设备的另一条接口」从本轮摘掉：插线后接收器与本体两条都在场，都认领会变成两行矛盾读数。
-    /// 返回要跳过的接口路径；默认不跳过。
-    /// </summary>
-    protected virtual IReadOnlyCollection<string> SkipPathsForThisPass(
-        IReadOnlyList<HidDeviceInfo> availableDevices) => Array.Empty<string>();
 
     // 大小写不敏感：Windows 的 HID 路径会以两种大小写形式出现（HID#A / hid#a），
     // 当成两条会重复建条目、还会漏释放句柄。
@@ -260,9 +268,21 @@ public abstract class BatteryPluginBase : IBatteryPlugin
 
             if (_devices.TryGetValue(info.DevicePath, out var known) && !known.NeedsReprobe)
             {
-                known.Info = info;   // 重扫后元数据可能更新
-                claimed.Add(known.Status);
-                continue;
+                if (known.HandleStale)
+                {
+                    // 句柄已失效（设备被拔插但路径没变）：丢掉旧句柄，本轮按新设备重新探测。
+                    // 不这么做的话，设备会在列表里永远离线，直到用户重启应用。
+                    _devices.Remove(info.DevicePath);
+                    known.Handle.Dispose();
+                    _claims.Release(info.DevicePath, Name);
+                    Log.Info($"{DisplayName} 句柄已失效，重新打开: {info.DevicePath}");
+                }
+                else
+                {
+                    known.Info = info;   // 重扫后元数据可能更新
+                    claimed.Add(known.Status);
+                    continue;
+                }
             }
 
             // 插件要求重探（物理身份变了）：先放掉旧句柄与认领，同一路径稍后重新探测。
@@ -782,6 +802,14 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>撤销"疑似离线"标记（收到恢复正常的证据时调用）。</summary>
     protected static void ClearOfflineCandidate(TrackedDevice dev)
         => dev.OfflineCandidateSince = default;
+
+    /// <summary>
+    /// 标记句柄已失效。插件在**写帧失败**（不是读超时）时调用：
+    /// 读超时只说明设备在睡、句柄是好的；写失败说明句柄本身废了——
+    /// 典型场景是设备被拔插但接口路径没变（同一物理端口、同一实例 ID），旧句柄不再可用。
+    /// 基类下一轮会把该设备丢掉并重新打开句柄（见 AttachAsync 的 HandleStale 分支）。
+    /// </summary>
+    protected void MarkHandleStale(TrackedDevice dev) => dev.HandleStale = true;
 
     /// <summary>
     /// 主动查询型插件在 <see cref="PollDevice"/> 里"**发过帧**但设备没应答"时调用：计入连续失败，

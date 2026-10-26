@@ -72,6 +72,7 @@
 | Haute42 | `PluginEnabled["Haute42Gaming"]` | **false** | 只发 `HidD_GetFeature`（`0xF8` 固件串 / `0xFA` 芯片 ID / `0xF9` 电量），零写入；与 DualSense 插件按「USB / 蓝牙」互斥，见 `haute42.md` §5 |
 | ATK | `PluginEnabled["Atk"]` | **false** | 鼠标发 17 字节 op 帧、键盘发 VIA `02 96 24`；两条链路共用一个开关，见 `atk.md` §5 §7 |
 | HyperX | 无（纯被动） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；dongle 固件只实现 interrupt OUT，写帧一律 `ERROR_INVALID_FUNCTION`，只读 `FF90` 推送帧 |
+| 墨将 | `PluginEnabled["Mojhon"]` | **false** | `E2B7:122C` 厂商页 `0xFFAB` 只发官方助手实录里的只读帧 `A5 04 04`（电量+充电标志）与认领时一次的 `A5 04 E2`（型号标识）；`SupportsDiscoveryProbe` + `ProbeCooldown` 10s，见 `mojhon.md` §7 |
 
 三条硬约束：
 

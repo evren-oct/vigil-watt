@@ -51,6 +51,7 @@
 | 黑爵 AJAZZ | AK870 | `3151:4011` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |
 | 雷神 THUNDEROBOT | ML903 NearLink Se | `369B:0234` | [ak870-ml903.md](ak870-ml903.md) | 贡献者真机 |
 | 弱水时砂 ROSE | FIRST ANGEL | `38FF:0001` | [rose.md](rose.md) | ❌ 2.4G 无电量通道，不再投入 |
+| 墨将 MOJHON | 烈风2 GALE2（2.4G 接收器 / 有线直连，两者同为 `122C`） | `E2B7:122C` | [mojhon.md](mojhon.md) | 贡献者真机：放电 96%/97%、充电 99%→100%，充放电标志 A/B 已验 |
 
 ## 2. 共用号段的陷阱（认领前必读）
 

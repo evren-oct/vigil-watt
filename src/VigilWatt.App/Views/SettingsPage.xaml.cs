@@ -23,6 +23,7 @@ namespace VigilWatt.App.Views;
 public sealed partial class SettingsPage : Page
 {
     private readonly Dictionary<string, ToggleSwitch> _pluginToggles = new();
+    private readonly List<CheckBox> _taskbarDeviceChecks = new();
 
     /// <summary>屏幕下拉框每项对应的友好名（身份 → 名字）：保存时要把名字一并记下，屏没插时才显示得出来。</summary>
     private readonly Dictionary<string, string> _screenLabels = new(StringComparer.OrdinalIgnoreCase);
@@ -99,6 +100,7 @@ public sealed partial class SettingsPage : Page
         SelectByTag(TaskbarModeCombo, taskbarMode);
         TaskbarModeHintText.Text = TaskbarBatteryMode.Describe(taskbarMode);
         SelectByTag(TaskbarMaxCombo, TaskbarBatteryOptions.Clamp(s.TaskbarBatteryMaxDevices));
+        RebuildTaskbarDevicePanel();
         // 屏幕随时可能插拔：每次进页面重新枚举，选中项按稳定身份还原
         SyncTaskbarScreenCombo(s.TaskbarBatteryScreen, s.TaskbarBatteryScreenLabel);
 
@@ -129,6 +131,46 @@ public sealed partial class SettingsPage : Page
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// 重建任务栏「选择显示设备」的勾选框。设备列表是动态的（插拔、在线/离线都在变），
+    /// 每次进入页面重读。名字按 OrdinalIgnoreCase 去重——同一只设备无线/有线两个 Id 会
+    /// 在展示层合成一行（见 DeviceManager.DedupeForDisplay），这里再按名字去一次重，避免重复勾选框。
+    /// 名字口径必须与贴片一致：贴片用的是 DevicePresentation.Apply 之后的展示名（用户可自定义），
+    /// 这里也走同一套，否则勾了却匹配不上。
+    /// </summary>
+    private void RebuildTaskbarDevicePanel()
+    {
+        TaskbarDevicePanel.Children.Clear();
+        _taskbarDeviceChecks.Clear();
+
+        var selected = new HashSet<string>(
+            App.Services.Settings.TaskbarBatterySelectedDevices ?? new List<string>(),
+            StringComparer.OrdinalIgnoreCase);
+
+        // 按名字去重（保留第一台），再按名字排序
+        var names = App.Services.Manager.Devices
+            .Select(d => DevicePresentation.Apply(d, App.Services.Settings).DisplayName)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var name in names)
+        {
+            var box = new CheckBox
+            {
+                Content = name,
+                IsChecked = selected.Contains(name),
+                MinWidth = 0,
+            };
+            _taskbarDeviceChecks.Add(box);
+            TaskbarDevicePanel.Children.Add(box);
+        }
+
+        bool empty = names.Count == 0;
+        TaskbarDeviceEmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void Backdrop_Changed(object sender, SelectionChangedEventArgs e)
@@ -496,6 +538,10 @@ public sealed partial class SettingsPage : Page
                                      && taskbarMaxItem.Tag is int taskbarMaxValue
             ? TaskbarBatteryOptions.Clamp(taskbarMaxValue)
             : TaskbarBatteryOptions.Default;
+        s.TaskbarBatterySelectedDevices = _taskbarDeviceChecks
+            .Where(b => b.IsChecked == true)
+            .Select(b => (string)b.Content)
+            .ToList();
         // 身份与名字一起存：屏没插时设置页还要显示它叫什么叫
         if (TaskbarScreenCombo.SelectedItem is ComboBoxItem screenItem && screenItem.Tag is string screenTag)
         {

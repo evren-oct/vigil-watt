@@ -40,7 +40,7 @@
 | 派世 PULSAR | X2 V2 | `3554:F508` | [pulsar.md](pulsar.md) | 贡献者真机 |
 | 寸渊影弑 DARKRIM | SHADOW | `3654:6901` | [darkrim.md](darkrim.md) | 贡献者真机 |
 | 盖世小鸡 GameSir | G7 Pro CE | `3537` | [gamesir.md](gamesir.md) | 贡献者真机 |
-| ATK / VXE | 无线鼠标（F1 Pro Max / F1 V3 ULTIMATE+ / F1 Ultimate 2.0） | `373B:101B` / `101A` / `1303` / `11D9` / `11E4` | [atk.md](atk.md) | 本机验证 |
+| ATK / VXE | 无线鼠标（F1 Pro Max / F1 V3 ULTIMATE+ / F1 Ultimate 2.0 / A9 Air 大师版+） | `373B:101B` / `101A` / `1303` / `1278`（GEM 8K）/ `1293`（A9 Air 本体）/ `11D9` / `11E4` | [atk.md](atk.md) | 本机验证 |
 | ATK | A98 Pro 键盘（VIA） | `373B:1152` | [atk.md](atk.md) §7 | 贡献者声明 |
 | HyperX | Cloud Flight 2 飓风炫彩版 | `03F0:0AC1` | [hyperx-cf2.md](hyperx-cf2.md) | 本机验证 |
 | 雷蛇 RAZER | 毒蝰 V4 Pro（接收器 / 本体） | `1532:00E6` / `00E5` | [razer.md](razer.md) | 贡献者真机 100%；充电态 Unknown |

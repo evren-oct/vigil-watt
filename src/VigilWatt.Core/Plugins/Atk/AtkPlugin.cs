@@ -9,7 +9,8 @@ namespace VigilWatt.Core.Plugins.Atk;
 /// <summary>
 /// 功 能： ATK/VXE 无线鼠标电量插件——主动查询 FF02 口的 17 字节命令-应答协议。
 /// 2026/10/20 22:14:00 Yang
-/// 帧结构与实测依据见 docs/hardware/atk.md；编解码在 AtkCodec。
+/// 2026/10/26 22:40:03 ranxue：接入 A9 Air 大师版+（接收器 0x1278 / 本体 0x1293），双连接改留本体
+/// 帧结构与实测依据见 docs/hardware/atk.md（§2.2 §3.3）；编解码在 AtkCodec，配对在 AtkDevicePairing。
 /// </summary>
 public sealed class AtkPlugin : BatteryPluginBase
 {
@@ -30,16 +31,15 @@ public sealed class AtkPlugin : BatteryPluginBase
     protected override OfflinePolicy Offline => new() { Silence = TimeSpan.Zero, CountPollFailures = false };
 
     private const ushort VendorId = 0x373B;               // ⚠ 实测修正：非 0x375B
-    private const ushort DonglePid = 0x101B;              // 8K dongle（产品名 "ATK Mouse 8K Dongle"）
-    private const ushort DonglePid1K = 0x101A;            // 1K dongle
-    private const ushort DonglePidV3 = 0x1303;            // 8K dongle（产品名 "Wireless mouse 8k dongle-M"）
 
     /// <summary>电量口的 usage page；必须精确匹配，否则会对 FF03/FF04/FF05/FF06 等厂商口各白发一帧查询。</summary>
     private const ushort UsagePageBattery = 0xFF02;
 
-    /// <summary>已知的接收器 PID：这三个都认同一条查询帧、响应结构一致。</summary>
-    private static bool IsReceiverPid(ushort pid) =>
-        pid is DonglePid or DonglePid1K or DonglePidV3;
+    /// <summary>
+    /// 已知的接收器 PID：0x101B（8K）、0x101A（1K）、0x1303（8K-M）、0x1278（GEM 8K-L），
+    /// 四者都认同一条查询帧、响应结构一致。配对表统一在 <see cref="AtkDevicePairing"/>。
+    /// </summary>
+    private static bool IsReceiverPid(ushort pid) => AtkDevicePairing.IsReceiver(pid);
 
     private static DateTimeOffset _receiverCheckedAt;
 
@@ -60,21 +60,22 @@ public sealed class AtkPlugin : BatteryPluginBase
             .ToHashSet();
     }
 
-    /// <summary>本机的**本体**（插充电线时枚举的鼠标本体）是否已被对应接收器顶替。</summary>
-    private static bool ReceiverOfSameGroupInPlace(ushort bodyPid)
-    {
-        if (!DeviceGroups.TryGetValue(bodyPid, out var group))
-            return _receiversInPlace.Count > 0;   // 未知分组：保守按"有接收器在位"处理
-
-        return DeviceGroups.Any(kv =>
-            kv.Value == group && IsReceiverPid(kv.Key) && _receiversInPlace.Contains(kv.Key));
-    }
+    /// <summary>
+    /// 整机是否已有任何 ATK 接收器在位。**只给"未登记分组"的本体兜底**用：
+    /// 那种型号我们不知道它跟哪个接收器是一台，比较不了组，只能保守起来。
+    /// 已登记分组一律交给 <see cref="AtkDevicePairing"/> 按组配对，不走这条。
+    /// </summary>
+    private static bool AnyReceiverInPlace() => _receiversInPlace.Count > 0;
 
     /// <summary>鼠标链路（op 帧）与键盘链路（VIA）各一套协议名。</summary>
     private const string ProtocolMouse = "atk-v1";
     private const string ProtocolVia = "atk-keyboard-via";
 
-    /// <summary>认领接收器或有线本体，二者只认领其一（接收器优先），以免两条记录读数来跳。</summary>
+    /// <summary>
+    /// 认领接收器或有线本体，二者同一时刻只留一条（避免两条记录读数互相打架）。
+    /// 双连接时优先**本体**（插线形态）：只有它带充电状态、且产品名就是机型，
+    /// 摘掉接收器的动作在 <see cref="SkipPathsForThisPass"/> 里做。
+    /// </summary>
     protected override bool IsCandidate(HidDeviceInfo info)
     {
         // 键盘链路（VIA，page 0xFF60）：与鼠标同 VID，靠 usage page 分流，必须先判。
@@ -86,39 +87,45 @@ public sealed class AtkPlugin : BatteryPluginBase
             return false;
 
         // 长度判据：必须能收发 17 字节电量帧，否则写不进/读不出完整帧。
-        // 接收器用严格判据（in=17 / out=17，本机实测 0x101B、0x101A、0x1303 三者一致）；
-        // 本体的接口长度未实测（插充电线时才枚举出来），只要求"容得下"这一能力。
+        // 接收器用严格判据（in=17 / out=17，本机实测 0x101B、0x101A、0x1303、0x1278 四者一致）；
+        // 本体只要求"容得下"——A9 Air+ 实测也是 17/17，但其余型号的本体尚未逐个实测。
         if (IsReceiverPid(info.ProductId))
             return AtkCodec.IsSupportedInterface(info.InputReportLength, info.OutputReportLength);
 
         if (info.InputReportLength < AtkCodec.ReportLength || info.OutputReportLength < AtkCodec.ReportLength)
             return false;
 
-        // 其余 PID 视为"有线本体"（插充电线时枚举出来的鼠标本体）。
-        // 本体 PID **因型号而异**（实测 F1 Pro Max = 0x1015、F1 V3 ULTIMATE+ = 0x12A9），
-        // 不能靠白名单穷举——改用"**本组对应的接收器**不在位"来判定，故新型号自动支持。
-        // ⚠ 必须按"本组"判，不能按"全局有没有接收器"：同机另一只鼠标的接收器在位时，
-        //   会把本鼠标的本体误判成"接收器还在"而不认领（2026-10-23 实机复现）。
+        // 其余 PID 视为"有线本体"（插充电线时枚举出来的鼠标本体）。本体 PID **因型号而异**
+        //（实测 F1 Pro Max = 0x1015、F1 V3 ULTIMATE+ = 0x12A9、A9 Air+ = 0x1293），不能靠白名单穷举。
+        //
+        // 已登记分组：本体**一律可认领**。双连接（接收器 + 插线同时在场）时由
+        // SkipPathsForThisPass 把接收器那条摘掉，只留带充电状态的本体。
+        // 旧写法"接收器在位就别认领本体"会在 A9 Air 双连接时**一条读数都不出**——
+        // 实测那只鼠标切到有线后接收器已沉默、只有本体应答（85%、充电中），见 atk.md §3.1。
+        if (AtkDevicePairing.GroupOf(info.ProductId) is not null)
+            return true;
+
+        // 未登记分组的新型号：不知道它跟哪个接收器是同一台，只能保守——
+        // 整机已有 ATK 接收器在位时先不认领，免得同一只鼠标在列表里出两行。
         RefreshReceiversInPlace();
-        return !ReceiverOfSameGroupInPlace(info.ProductId);
+        return !AnyReceiverInPlace();
     }
 
     /// <summary>
-    /// 设备归一组：同一台鼠标的接收器与有线本体归到同一组（同一台设备的两个形态）。
-    /// 实测配对（F1 Pro Max 与 F1 V3 ULTIMATE+ 各一套）：接收器 0x101B ↔ 本体 0x1015；
-    /// 接收器 0x1303 ↔ 本体 0x12A9。该鼠标的 HID 序列号为空、容器 ID 也不同，
-    /// **硬件层没有可自动配对的标识**，只能按实测配对表归一。
-    /// 未登记的 PID 交回基类默认（路径哈希），等于上游行为——宁可充电时多一条，
-    /// 也不能把两台不同的鼠标并成一条。
+    /// 同一只鼠标的接收器与本体同时在场时，只留**本体**（插线形态）：
+    /// 只有它带充电状态、且产品名就是机型。配对依据是型号归一组（实测配对表），
+    /// 序列号只在两边都有时作为否决条件（防止两只同型号鼠标被误并）。
+    /// 实测依据见 atk.md §3.1 / §4。
     /// </summary>
-    private static readonly Dictionary<ushort, string> DeviceGroups = new()
+    protected override IReadOnlyCollection<string> SkipPathsForThisPass(
+        IReadOnlyList<HidDeviceInfo> availableDevices)
     {
-        [0x101B] = "promax",   // F1 Pro Max 8K 接收器
-        [0x101A] = "promax",   // F1 Pro Max 1K 接收器（同一只鼠标的另一种无线模式）
-        [0x1015] = "promax",   // F1 Pro Max 本体（插充电线时枚举）
-        [0x1303] = "v3",       // F1 V3 ULTIMATE+ 8K-M 接收器
-        [0x12A9] = "v3",       // F1 V3 ULTIMATE+ 本体（插充电线时枚举）
-    };
+        var refs = availableDevices
+            .Where(d => d.VendorId == VendorId && d.UsagePage == UsagePageBattery)
+            .Select(d => new AtkInterfaceRef(d.DevicePath, d.ProductId, d.Product, d.SerialNumber))
+            .ToList();
+        return AtkDevicePairing.ReceiverPathsToSkip(refs);
+    }
 
     /// <summary>各组的型号名（本体上报的产品名，即机型）；按组存，两只鼠标互不覆盖。</summary>
     private static readonly ConcurrentDictionary<string, string> ModelNames = new();
@@ -134,7 +141,7 @@ public sealed class AtkPlugin : BatteryPluginBase
     protected override string IdFor(string devicePath)
     {
         var pid = PidFromPath(devicePath);
-        return DeviceGroups.TryGetValue(pid, out var group)
+        return AtkDevicePairing.GroupOf(pid) is { } group
             ? $"{Name.ToLowerInvariant()}:atk-{group}"
             : base.IdFor(devicePath);   // 未登记的 PID → 保持上游默认（路径哈希）
     }
@@ -153,9 +160,7 @@ public sealed class AtkPlugin : BatteryPluginBase
 
         // 型号名取"本体"（非接收器）上报的产品名，比接收器的通用名更准确；
         // 按归一组存，两只鼠标各记各的，不会互相覆盖。
-        var group = DeviceGroups.TryGetValue(info.ProductId, out var g)
-            ? g
-            : $"p{info.ProductId:X4}";
+        var group = AtkDevicePairing.GroupOf(info.ProductId) ?? $"p{info.ProductId:X4}";
 
         if (!IsReceiverPid(info.ProductId) && !string.IsNullOrWhiteSpace(info.Product))
             ModelNames[group] = info.Product;

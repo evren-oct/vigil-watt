@@ -21,6 +21,7 @@
 | `probe-classic-kind.py` | **经典蓝牙设备类型信号探针**（纯 ctypes + SetupAPI）：枚举 `BTHENUM\*` 节点，打印服务 UUID（实例 ID 前缀）、`DEVPKEY_DeviceDisplay_Category`（如 `Input.Mouse`）与 ClassGuid。用来回答"这台经典蓝牙设备到底是耳机还是鼠标"，`--all` dump 全属性 |
 | `test-rapou7.ps1` | 雷柏 dongle（VID_24AE）HID P/Invoke 直测。也是 build.md §7"PowerShell 5.1" 的范例：本机 Add-Type 不支持字符串插值/内联 out/可空注解，要用老式语法 |
 | `probe-hid-caps.py` | **HID 接口能力探针**（纯 ctypes，只读）：`HidP_GetCaps` + `HidP_GetButtonCaps` 打出 UsagePage、IN/OUT/FEATURE 报告长度与逐条 button caps。回答"这个接口到底有没有主机→设备通道"——`OUT=0 / FEATURE=0` 即物理上无法主动查询（弱水时砂 dongle 的判据）。用法 `python probe-hid-caps.py 38FF`（参数为设备路径里的大小写无关片段，可省） |
+| `probe-atk-battery.py` | **ATK / VXE（`373B`）电量通道体检**：按 PID 分组列出各接口的 usage page 与 IN/OUT/FEATURE 长度，再对 `0xFF02` 电量口只发 `docs/hardware/atk.md` §2 记载的那一条查询帧 `08 04 00×14 49`（`--caps` 一帧不发，`--listen` 纯被动收帧）。用于新增机型适配：确认 PID / 产品串 / 接口形状 / 应答结构是否与老机型一致。实测 A9 Air 大师版+ 的 GEM 接收器 `0x1278` 与本体 `0x1293` 均为 17/17 且应答一致，见 atk.md §2.2 |
 | `probe-bolt-battery.py` | **罗技 Bolt 电量探针**（`pip install hidapi`）：在 `046D:C548` 的 `0xFF00/0x02` 长接口上发 HID++ 请求，优先 `0x1004` Unified Battery、回退 `0x1000` Battery Status，打印百分比与充电状态。用来核对插件读数是否与官方 HUB 一致 |
 | `probe-bolt-ping.py` | **罗技 Bolt 连通性探针**：同一接口发 `Root.Ping`，只看有没有回应——用来区分"设备没连、被别的进程占了会话、还是协议读错" |
 | `test-rose-dongle-interactive.py` | ROSE dongle（38FF:0001）交互式被动监听 5 分钟，零写入——耳机按键操作会经 dongle 出现在这里，可当"耳机已连接"探针 |

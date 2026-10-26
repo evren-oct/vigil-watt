@@ -83,6 +83,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerKrakenCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Sony\InzoneCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Ganss\GanssCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Ganss\GanssDeviceIdentity.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Sony\DualSenseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopDeviceIdentity.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatusFormatter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ChargingStateMap.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceStatusMerger.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Devices\DeviceDisplayDeduplicator.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceChangeDetector.cs" />
     <!-- 删除设备后的"该不该收这条上报"判定：黑名单/删除标记四种组合，写错就是删了又复活 -->
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceRemoval.cs" />
@@ -126,6 +128,8 @@
     <!-- 任务栏贴片的定位数学与取值收敛同样是零依赖纯逻辑（只碰 int/Math），定位算错必须能在单测里复现 -->
     <Compile Include="..\..\VigilWatt.App\Services\TaskbarLayout.cs" />
     <Compile Include="..\..\VigilWatt.App\Services\TaskbarBatteryMode.cs" />
+    <!-- 贴片「选择显示设备」的过滤规则同样是零依赖纯逻辑，链接真源文件而非复制 -->
+    <Compile Include="..\..\VigilWatt.App\Services\TaskbarDeviceFilter.cs" />
     <!-- 选屏逻辑（身份匹配 / 型号兜底 / 目标缺失降级主屏）是纯函数，换显示模式后贴片该去哪必须能单测 -->
     <Compile Include="..\..\VigilWatt.App\Services\MonitorSelection.cs" />
     <!-- 更新日志解析是三处消费方共用的格式契约（打包截段、Release 正文、应用内渲染），

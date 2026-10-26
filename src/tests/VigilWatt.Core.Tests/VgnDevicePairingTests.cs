@@ -107,6 +107,6 @@ public sealed class VgnDevicePairingTests
         Assert.False(VgnDevicePairing.SameSerial(a, b));
         Assert.False(VgnDevicePairing.SameSerial(a, a));
         Assert.True(VgnDevicePairing.SameSerial(
-            a with { Serial = Sn }, b with { Serial = Sn }));
+            a with { SerialNumber = Sn }, b with { SerialNumber = Sn }));
     }
 }

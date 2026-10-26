@@ -148,6 +148,11 @@ public static class HidDeviceScanner
             OutputReportId = outReportId,
             Product = GetString(safe, NativeHid.HidD_GetProductString) ?? "",
             Manufacturer = GetString(safe, NativeHid.HidD_GetManufacturerString) ?? "",
+            // 序列号是"同一只设备的多条接口是不是同一台物理设备"的唯一可靠判据：
+            // 同一只 F2 的无线接收器（FB56）与插线接口（FB57）报同一个 SN。
+            // 不读它 → VgnDevicePairing 的配对永远不成立 → 同一只鼠标在列表里两行。
+            // 设备不提供序列号时返回空串（不是 null），调用方按"缺失"处理，不当读失败。
+            SerialNumber = GetString(safe, NativeHid.HidD_GetSerialNumberString) ?? "",
         };
     }
 

@@ -85,4 +85,17 @@ public sealed class GanssPlugin : BatteryPluginBase
 
     protected override string BuildDisplayName(HidDeviceInfo info)
         => GanssCodec.LooksLikeAulaF108(info.Product) ? "狼蛛 F108 Pro" : "GANSS GS3104T-Pro";
+
+    /// <summary>
+    /// 设备 Id 归一到**型号粒度**（不再用路径哈希）。
+    /// 这一族设备不报序列号（实测 6 条接口 SN 全空），所以"按 SN 配对"对它无效；
+    /// 不归一的话，换 USB 口/重插接收器就会多出一个新 Id——列表里同一个设备冒两行、
+    /// 历史断成两段、剩余时间估算重新从头算。取舍见 <see cref="GanssDeviceIdentity"/>。
+    ///
+    /// 判据用**路径里的接口编号**（<c>mi_03</c>），与 <see cref="IdFor"/> 完全同源——
+    /// 黑名单键（<c>IdFor</c>）与上报 Id（<c>BuildDeviceId</c>）必须一致，
+    /// 否则"永久移除这台设备"按一个键写、按另一个键判，删不掉。
+    /// </summary>
+    protected override string IdFor(string devicePath)
+        => GanssDeviceIdentity.IdForPath(devicePath, Name.ToLowerInvariant()) ?? base.IdFor(devicePath);
 }

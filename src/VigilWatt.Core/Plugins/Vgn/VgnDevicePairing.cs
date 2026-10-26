@@ -5,8 +5,8 @@ namespace VigilWatt.Core.Plugins.Vgn;
 /// <param name="Vid">厂商 ID。</param>
 /// <param name="Pid">产品 ID。</param>
 /// <param name="Product">产品名。</param>
-/// <param name="Serial">序列号；同一只设备的多个接口会报同一个值。</param>
-public readonly record struct VgnInterfaceRef(string Path, ushort Vid, ushort Pid, string Product, string Serial);
+/// <param name="SerialNumber">序列号；同一只设备的多个接口会报同一个值。</param>
+public readonly record struct VgnInterfaceRef(string Path, ushort Vid, ushort Pid, string Product, string SerialNumber);
 
 /// <summary>
 /// 功 能： 判定"同一只 VGN 鼠标的两种接法"，避免它在设备列表里变成两行互相矛盾的读数。
@@ -68,7 +68,7 @@ public static class VgnDevicePairing
 
     /// <summary>序列号相同且非空才算同一只设备。</summary>
     public static bool SameSerial(VgnInterfaceRef a, VgnInterfaceRef b)
-        => !string.IsNullOrWhiteSpace(a.Serial)
-           && !string.IsNullOrWhiteSpace(b.Serial)
-           && string.Equals(a.Serial, b.Serial, StringComparison.Ordinal);
+        => !string.IsNullOrWhiteSpace(a.SerialNumber)
+           && !string.IsNullOrWhiteSpace(b.SerialNumber)
+           && string.Equals(a.SerialNumber, b.SerialNumber, StringComparison.Ordinal);
 }

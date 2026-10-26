@@ -299,6 +299,19 @@
                                           VerticalAlignment="Center" />
                             </Grid>
                             <Border Style="{StaticResource RowDividerStyle}" />
+                            <StackPanel Padding="0,12">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="选择显示设备" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="只显示勾选的设备；一个都不勾 = 显示全部在线设备"
+                                               Style="{StaticResource RowDescStyle}" />
+                                </StackPanel>
+                                <!-- 设备勾选由代码按当前设备列表动态生成（含在线/离线墓碑条目） -->
+                                <StackPanel x:Name="TaskbarDevicePanel" Margin="0,12,0,0" Spacing="6" />
+                                <TextBlock x:Name="TaskbarDeviceEmptyText" Text="暂无已识别的设备"
+                                           Margin="0,8,0,0" Style="{StaticResource RowDescStyle}"
+                                           Visibility="Collapsed" />
+                            </StackPanel>
+                            <Border Style="{StaticResource RowDividerStyle}" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="显示屏幕" Style="{StaticResource RowTitleStyle}" />

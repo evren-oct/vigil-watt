@@ -490,6 +490,15 @@ public sealed class TaskbarPillWindow : IDisposable
             .ThenBy(d => d.DisplayName)
             .ToList();
 
+        // 自定义显示设备：设置里勾了哪些名字，贴片就只显示这些（大小写不敏感）。
+        // 一个都不勾 = 空列表 = 不过滤（沿用原来的"全部在线设备"行为）。规则见 TaskbarDeviceFilter。
+        var selected = App.Services.Settings.TaskbarBatterySelectedDevices;
+        if (selected is { Count: > 0 })
+        {
+            var allowed = TaskbarDeviceFilter.Apply(all.Select(d => d.DisplayName), selected).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            all = all.Where(d => allowed.Contains(d.DisplayName)).ToList();
+        }
+
         if (TaskbarBatteryMode.Normalize(App.Services.Settings.TaskbarBatteryMode) == TaskbarBatteryMode.Lowest)
             return all.Count > 0 ? [all[0]] : [];
 

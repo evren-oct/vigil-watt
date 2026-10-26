@@ -108,10 +108,17 @@ public sealed class DeviceManager : IDisposable
         return list;
     }
 
-    /// <summary>对外可见的设备。忽略的在这里滤掉——设备页、托盘、贴片、小组件、统计页都读这个属性，一处生效。</summary>
-    public IReadOnlyCollection<DeviceStatus> Devices => _devices.Values
-        .Where(d => !IsIgnored(d.Id))
-        .OrderByDescending(d => d.IsOnline).ThenBy(d => d.DisplayName).ToList();
+    /// <summary>
+    /// 对外可见的设备。忽略的在这里滤掉——设备页、托盘、贴片、小组件、统计页都读这个属性，一处生效。
+    /// 之后按显示名做**展示去重**（<see cref="DeviceDisplayDeduplicator"/>）：
+    /// 同一只设备的多个条目（换接法/换 USB 口 → Id 变）只显示一条。
+    /// </summary>
+    public IReadOnlyCollection<DeviceStatus> Devices => DeviceDisplayDeduplicator.Dedupe(
+        _devices.Values
+            .Where(d => !IsIgnored(d.Id))
+            .OrderByDescending(d => d.IsOnline)
+            .ThenBy(d => d.DisplayName)
+            .ToList());
 
     /// <summary>忽略只影响显示与历史写入，不影响入库：条目留在 <c>_devices</c> 里，恢复后立刻可见。</summary>
     private bool IsIgnored(string id) => _settings.IgnoredDevices.ContainsKey(id);

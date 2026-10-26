@@ -552,7 +552,40 @@ Windows 任务栏**自己就有一个电池图标**，贴片再重复一遍纯�
 3. **悬停用 `TrackMouseEvent(TME_HOVER)`**——在 `WndProc` 里启 `DispatcherQueueTimer` 不可靠；等 `WM_MOUSEHOVER` 期间不要再次 Track，否则计时被清零。
 4. 命中矩形与绘制同源；定位在 `TaskbarLayout.PlaceTooltip` / `HitTest`。
 
-### 16.11 贴片尺寸必须每拍按当前缩放重算（2026-10-20）
+### 16.11 别用「创建时 WS_CHILD」替换「WS_POPUP + SetParent + 改 GWL_STYLE」（2026-10-21 实测教训）
+
+**背景**：1.2.7 排查贴片消失时，把 `CreateWindowExW` 的样式从 `WS_POPUP` 改成 `WS_CHILD`
+并把父窗口直接传成 `Shell_TrayWnd`（理由是"更原生"）。结果**贴片照样几秒内消失**，
+而 1.2.6 装机版同一台机器实测正常（13:53 抓到「键盘 93% ｜ 鼠标 100%」）。
+→ 该改动已回滚，1.2.7 源码恢复成1.2.6 的 `WS_POPUP` + `SetParent` + 改 `GWL_STYLE`。
+
+**两条实测结论（Python ctypes 探针，非推测）**：
+
+| 创建方式 | 结果 |
+|---|---|
+| `WS_CHILD` + 父窗口 = `Shell_TrayWnd` | 创建成功，1 秒后仍存活 |
+| `WS_CHILD` + 父窗口 = NULL | **`CreateWindowExW` 直接返回 0**（1400+ 类通用错误） |
+| `WS_POPUP` + `SetParent` + 事后改 `GWL_STYLE` 切 `WS_CHILD` | 长期稳定（1.2.6 装机验证） |
+
+- **`WS_CHILD` 必须在创建时就给对父窗口**。`WS_CHILD` 语义上就是"父窗口的孩子"，
+  父为 NULL 时窗口根本建不出来。
+- **跨进程 reparent 之后再改 `GWL_STYLE` 切 `WS_CHILD` 是危险动作**：改样式会让 Windows
+  按"子窗口"重新走一遍创建流程，跨进程场景下旧窗口句柄会被销毁重建
+  （现象：`IsWindow` 由 true 转 false，本进程 `DestroyWindow` 无任何记录，日志里也查不到）。
+- 顺带一个坑：`RegisterClassW` 的返回值必须检查。首次注册失败（类名已存在会返回
+  `ERROR_CLASS_ALREADY_EXISTS` = 1406）而代码没检查、还把 `_classRegistered` 置了 true，
+  后面每秒重试创建窗口，日志被 1406 刷满，掩盖真正的失败原因。
+
+**排查贴片消失时的正确顺序**（下次直接照做，别再走弯路）：
+1. 先确认 **DPI awareness**——非 DPI-aware 进程里 `GetSystemMetrics(0/1)` 返回 1536×864
+   而真实主屏是 1920×1080，抓屏坐标全偏，会误判成"贴片空白 / 读数被裁掉"。
+2. 再看**是不是根本没有第二块屏**：`DisplayDevices()` 枚举显示器，别假设只有一块。
+3. `TaskbarPillWindow` 的窗口创建成功 ≠ 存活。必须在 `EnsureWindow` 里记 `hwnd`，
+   并在后续某一拍复查 `IsWindow`——跨进程子窗口被系统回收时不会有任何本地回调。
+4. Python ctypes 起一个同参数的独立窗口做对照，能区分"我们的代码有问题"还是"这个位置不能放窗口"。
+5. **没验证成功的改动不要进交付包**。宁可保留一个已知可用但不够优雅的实现。
+
+### 16.12 贴片尺寸必须每拍按当前缩放重算（2026-10-20）
 
 **症状**：换线（HDMI → USB-C / 走扩展坞）后贴片大小不对，而且一直不对，重启应用才恢复。
 
@@ -966,3 +999,35 @@ XAML 用 `Content="{x:Bind Icon}"` 塞进 `ContentPresenter`。而 `Refresh()` �
 **教训**：**DataTemplate 里不要绑共享的 UIElement**。行模型只放值，元素交给模板层按值现画；
 只要模型能活过容器重建，就不能在里面存 `FrameworkElement`。同理适用于任何 ItemsSource 增量更新
 （Replace / Move / Insert 都会重建容器）。
+
+## 23. 「组合识别」的判据写了却没生效：数据源没接上（2026-10-26 实修）
+
+**症状**：同一只设备在列表里出现多行，名字还不一样（放电的一行、充电的一行）。
+
+**根因**：1.3.0 引入了两套"同一台设备归一"的判据，**两套都没生效**：
+
+| 判据 | 靠什么 | 实际状况 |
+|---|---|---|
+| `VgnDevicePairing`（插件层） | 序列号 SN | 逻辑在，但 `HidDeviceScanner` **从不调 `HidD_GetSerialNumberString`** → SN 恒空 → 配对恒不成立 |
+| `DeviceGroupKey`（采集页） | 系统 ContainerId | 逻辑在，但**本机 HID 设备一条 ContainerId 都读不到** → 这条路在本机彻底不通 |
+
+真机实测（`scripts-reverse/probe_pair_identity.py`）：F2 的 7 条接口 SN 全是 `541505796617`，
+**判据本来是好的，只是数据源没接上**；F108 的 9 条接口 SN 全空（设备不报）。
+
+**规则（下次加新判据先照这个走）**：
+
+1. **判据的数据源必须真的被读**。写完 `SameSerial` 之类，先确认 `HidDeviceInfo.SerialNumber`
+   有人赋值——"属性定义了"不等于"有值"。加一条源码级断言把这条链路钉住。
+2. **先用探针量一遍，再决定用哪个判据**。别照着文档猜某个判据在你这台机器上能不能用：
+   ContainerId 读不到、SN 全空，都是实测才知道的。
+3. **判据分两处用（黑名单键 vs 上报 Id）时必须同源**。`IdFor(路径)` 决定黑名单判定，
+   `BuildDeviceId(信息)` 决定上报 Id；一个看路径一个看产品名，就可能出现
+   "永久移除这台设备"按 A 键写、按 B 键判，**删不掉**。
+4. **设备不报 SN 时退到型号粒度，并把取舍写进文档**（同 `betop.md §1.8.2` 鲲鹏20）：
+   同型号第二台会被并成一台，真有两台要靠设备自定义名区分。
+5. **显示名带状态后缀会放大"多台设备"的错觉**：设备列表页的名字会加 `" ⚡充电中"`，
+   同一只鼠标在无线与有线两条接口下就显示成两个不同的名字——用户报的"多个名称"往往就是这个。
+
+**排查手法**（比读代码快）：写个独立的小程序引用真源文件，
+直接调 `HidDeviceScanner.Scan()` 看 SN 到底读到了没有、`WirelessPathsToSkip` 到底跳过了什么。
+见 `pkg/scripts-reverse/verify_pairing_runtime/`。

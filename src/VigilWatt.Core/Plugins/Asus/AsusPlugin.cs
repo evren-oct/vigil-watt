@@ -5,8 +5,9 @@ using VigilWatt.Core.Utils;
 namespace VigilWatt.Core.Plugins.Asus;
 
 /// <summary>
-/// 功 能： 读取 Omni 接收器上已核实的 ROG Scope II 96 键盘电量。
+/// 功 能： 读取 ROG Omni 接收器上已核实的键盘电量，以及 0x1AFA 无线耳机的电量与充电位。
 /// 2026/10/25 15:31:00 Mzood
+/// 2026/10/27 21:33:00 20211（耳机充电位补成每轮两条帧）
 /// </summary>
 public sealed class AsusPlugin : BatteryPluginBase
 {
@@ -34,13 +35,14 @@ public sealed class AsusPlugin : BatteryPluginBase
     private (string Protocol, int? Percent, ChargingState Charging)? ProbeHeadset(HidDeviceHandle handle)
     {
         if (!WritesEnabled) return null;
-        var power = ReadHeadsetPower(handle);
-        if (power == null)
+        var percent = ReadHeadsetPower(handle);
+        if (percent == null)
         {
             Log.Once(LogLevel.Debug, handle.Info.DevicePath + "|asus-hs", "华硕耳机 POWER 无应答（未开机或未连上）");
             return null;
         }
-        return (AsusHeadsetCodec.Protocol, power.Value.Percent, power.Value.Charging);
+        // 认领只发电量帧：多一条会让"启动约 1 秒认领"退化成 1.7 秒，充电位下一轮补上即可。
+        return (AsusHeadsetCodec.Protocol, percent, ChargingState.Unknown);
     }
 
     protected override DeviceKind ResolveKind(string protocol) =>
@@ -68,26 +70,47 @@ public sealed class AsusPlugin : BatteryPluginBase
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
         if (!CanWrite(dev)) return null;
-        var reading = dev.Protocol == AsusHeadsetCodec.Protocol
-            ? ReadHeadsetPower(dev.Handle)
-            : QueryBattery(dev.Handle);
+        if (dev.Protocol == AsusHeadsetCodec.Protocol) return PollHeadset(dev);
+        var reading = QueryBattery(dev.Handle);
         if (reading.HasValue) ReportPollAnswered(dev);
         else ReportPollFailure(dev);
         return reading;
     }
 
-    /// <summary>
-    /// 只发 POWER 一条帧，充电位留 Unknown：safety.md §3 要求每轮最多 1 条查询帧。
-    /// 单独的 CHARGING 命令（0x08）能拿到充电位，但要每轮多发一帧，取舍见 PR 说明。
-    /// </summary>
-    private (int? Percent, ChargingState Charging)? ReadHeadsetPower(HidDeviceHandle handle)
+    /// <summary>电量帧必需、充电帧可选：充电拿不到只丢充电位，不能让它停更电量或累计熔断（safety.md §3）。</summary>
+    private (int? Percent, ChargingState Charging)? PollHeadset(TrackedDevice dev)
+    {
+        var percent = ReadHeadsetPower(dev.Handle);
+        if (percent == null)
+        {
+            ReportPollFailure(dev);
+            return null;
+        }
+        ReportPollAnswered(dev);
+        var charging = ReadHeadsetCharging(dev.Handle, percent.Value) ?? dev.Status.Charging;
+        return (percent, charging);
+    }
+
+    /// <summary>只发 0x07 一条帧取电量；充电位由 <see cref="ReadHeadsetCharging"/> 单独补。</summary>
+    private int? ReadHeadsetPower(HidDeviceHandle handle)
     {
         var command = AsusHeadsetCodec.CmdPower;
         var reply = Query(handle, AsusHeadsetCodec.BuildRead(command),
             r => AsusHeadsetCodec.TryParse(r, command, out _));
         if (reply == null || !AsusHeadsetCodec.TryParse(reply, command, out var data)) return null;
         if (!AsusHeadsetCodec.TryParsePower(data, out int percent, out _, out _)) return null;
-        return (percent, ChargingState.Unknown);
+        return percent;
+    }
+
+    /// <summary>0x08 无应答返回 null 交给调用方沿用旧值——它不计入熔断，充电位丢了不该把设备判离线。</summary>
+    private ChargingState? ReadHeadsetCharging(HidDeviceHandle handle, int percent)
+    {
+        var command = AsusHeadsetCodec.CmdCharging;
+        var reply = Query(handle, AsusHeadsetCodec.BuildRead(command),
+            r => AsusHeadsetCodec.TryParse(r, command, out _));
+        if (reply == null || !AsusHeadsetCodec.TryParse(reply, command, out var data)) return null;
+        if (!AsusHeadsetCodec.TryParseCharging(data, out bool charging)) return null;
+        return ChargingStateMap.FromChargingFlag(charging, percent);
     }
 
     private (int? Percent, ChargingState Charging)? QueryBattery(HidDeviceHandle handle)

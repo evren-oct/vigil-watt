@@ -20,13 +20,14 @@ VigilWatt 的设备适配大多来自社区：有人提供抓包样本，有人�
 | **k1ky0** | 寸渊影弑耳机与官方驱动抢占用修复（`OfficialAppGuard`：检测到 `DARKRIM.exe` 就不认领，官方退出后自动恢复），以及盖世小鸡解析失败诊断 | [PR #43](https://github.com/evren-oct/vigil-watt/pull/43) |
 | **Delitriuz** | HECATE G3M Pro 升级版（接收器 `35BB:D3FB`，17 字节 `0xFF02` 通道，STATUS `08 03` / POWER `08 04`）插件，并给出 Kysona 内核驱动出处与 10 分钟被动监听结论 | [PR #49](https://github.com/evren-oct/vigil-watt/pull/49) |
 | **Gpan666** | 历史库时间戳时区修正（`HistoryStore` 读库时把 UTC 毫秒转本地时区）；ATK A98 Pro 键盘的 VIA 电量通道、F1 Ultimate 2.0 型号识别，以及迈从 X9 耳机 | [PR #50](https://github.com/evren-oct/vigil-watt/pull/50) · [PR #28](https://github.com/evren-oct/vigil-watt/pull/28) |
-| **mofeng816** | ATK / VXE 无线鼠标（接收器 `373B:101B` / `101A` / `1303`，本体 `1015` / `12A9`，`FF02` 口 17 字节查询帧）与 HyperX Cloud Flight 2（`03F0:0AC1`，`FF90` 口被动推送帧）两个插件，含协议分析、编解码单测与真机验证 | [PR #48](https://github.com/evren-oct/vigil-watt/pull/48) |
+| **mofeng816** | ATK / VXE 无线鼠标（接收器 `373B:101B` / `101A` / `1303`，本体 `1015` / `12A9`，`FF02` 口 17 字节查询帧）与 HyperX Cloud Flight 2（`03F0:0AC1`，`FF90` 口被动推送帧）两个插件，含协议分析、编解码单测与真机验证；雷柏 VT2S Air Max 有线 / 2.4G / P5 Plus 底座多状态判定修复（有线模式误断链、复合设备认成键盘、切换瞬间图标连闪），8 个物理状态实测全过 | [PR #48](https://github.com/evren-oct/vigil-watt/pull/48) · [PR #61](https://github.com/evren-oct/vigil-watt/pull/61) |
 | **wx2995** | 狼蛛 G9 耳机（`38A6:0030`，被动状态帧）、L9 Ultra 鼠标（`38A6:28FD`，`0x81` 查询）与 VGN V98 Pro 键盘（`320F:5088`，`0x1A` 查询）三台适配 | [PR #31](https://github.com/evren-oct/vigil-watt/pull/31) |
 | **Cecilian-Elysian** | 北通鲲鹏20 三通道适配（2.4G 杂项页广播 / 有线 `02 15` 查询 / 双通道归一一个设备位），并逐路排查确认蓝牙通道无用户态可读数据 | [PR #60](https://github.com/evren-oct/vigil-watt/pull/60) |
 | **kaniu** | 迈从 A5 V2 Ultra（`3837:100C`，反码 Feature 查询）、雷蛇 Kraken V4 耳机（`1532:056C`，64 字节 `0x02` 报告）与 Haute42 Adapter 4DS（借 DualSense 号段的 USB 适配器）三台适配；另提供 11 项重连回归测试 | [PR #20](https://github.com/evren-oct/vigil-watt/pull/20) |
 | **KaelenVoss10** | 凌豹 M5PRO Max（`3151:402D`，官方驱动同款 `F7` 状态查询）与迈从 G75 Pro（`3554:FA09`）适配；给出「同 VID/PID 按会话 ACK 型号码分流」的认领机制 | [PR #53](https://github.com/evren-oct/vigil-watt/pull/53) |
 | **Bamlax** | 凌豹 K98（`3554:FA09`，`0x13` 会话/推送）适配；给出型号码 `0x0212` 与官方驱动 `KB.ini` 的对照 | [PR #29](https://github.com/evren-oct/vigil-watt/pull/29) |
 | **Mzood** | 华硕 ROG Strix Scope II 96 Wireless（Omni 接收器 `0B05:1ACE`）、雷蛇 BlackShark V2 Pro 2023（`1532:0555`）与 Viper V3 Pro SE（`1532:00DF`）三台适配；顺带给基类加了零权限 Feature 句柄与按接口取读数下界两个钩子 | [PR #58](https://github.com/evren-oct/vigil-watt/pull/58) |
+| **Leejangho** | 华硕 ROG 棱镜2 / Delta II 耳机（`0B05:1AFA`，`0xCC` 报告 + group `0x12`，`0x07` 读电量、`0x08` 读充电位）适配，并入现有 `AsusPlugin` 共用品牌开关；协议取自 MIT 许可的 pelta-control 并逐字节复核，真机验证 | [PR #75](https://github.com/evren-oct/vigil-watt/pull/75) |
 
 ## 还能怎么帮
 

@@ -1045,9 +1045,27 @@ XAML 用 `Content="{x:Bind Icon}"` 塞进 `ContentPresenter`。而 `Refresh()` �
 | 15 秒发现节拍调 `NudgeHalfOpen()` | `DeviceManager.DiscoverOnlyAsync` |
 | `SupportsDiscoveryProbe = true` + `BreakerProbeInterval = 30s` | `AtkPlugin` |
 
+**与 CR-53 那条通道的分工**（两条别混）：`RunPendingConfirm` / `MaybeHalfOpenBreaker` 跑在**被动监听线程**的空闲 tick 上，只有 `SupportsPassiveListen` 的插件才有那条线程；`NudgeHalfOpen` 由 **15 秒发现节拍**驱动，给没有被动流的纯查询型插件。两条共用 `LastBypassAt` 做节流——这是**故意的**：保证同一设备 30 秒内最多一帧，拆成两个时间戳会让两条通道各来一帧。
+
+**闸门是 `HasHalfOpenProbe`（= 覆写了 `BreakerProbeInterval`），不是发现节拍那两个 flag**：`SupportsDiscoveryProbe` 表达的是"要不要 15 秒重探"，有被动监听的插件也可能为 true，但它的唤醒感知已由 CR-53 负责。把两者绑在一起会让"只覆写间隔、没开 flag"的插件静默空转（CR-108）。
+
 **为什么默认是关闭**：这条通道只对"设备会频繁短睡、且没有被动监听"的插件有意义。
 有被动监听的插件（雷柏/迈从/北通…）本来就能靠 CR-53 的 bypass 秒级感知，多一条只会抬高写入频率。
 所以 `BreakerProbeInterval` 保持 `Zero` 默认，谁需要谁覆写一行——和 `OfflinePolicy` 一样的"每插件一行配置"。
+
+### 23.1 哪些品牌该开、间隔定多少（适配者按实际设备判断，没有标准答案）
+
+**各厂商对"睡着的设备被定期戳一帧"的容忍度不一样**，所以这里只给判断口径，不给批量结论。按四条过：
+
+1. **有被动监听流吗**（`SupportsPassiveListen`）？有就**不开**。CR-53 的 bypass 已经在那条 ~500ms 空闲 tick 上做同一件事，再加一条只抬高写入频率。雷柏 / 迈从 / 北通 / HECATE 有线 / HyperX / 英菲克 / 德鲁 / 寸渊 / AulaG9 / DualSense 都属这一类。
+2. **设备会频繁短睡吗**？常插着的键盘不会；2.4G 鼠标 / 耳机、BLE 省电外设会。不短睡的插件开了只是白花帧。
+3. **戳了会不会出事**——这条只能实测，别靠推理：
+   - 官方软件自己轮询吗？官方不轮询而我们轮询，风险更高；
+   - 有会话占用史的协议（北通 dongle）、对"同一时刻第二帧不应答"的 dongle（雷蛇）先按"不开"处理；
+   - 开了之后观察设备醒后有无异常：断连、重新枚举、驱动报错、官方软件掉线。
+4. **间隔定多少**：**建议 30 秒起步**——正好是"每轮 60 秒主轮询之间最多一帧"。要更密先算清每小时帧数（30 秒 ≈ 120 帧/小时，且只落在熔断期），并按 `safety.md` §3 规则 3 ③ 跟用户确认写入预算。下限别低于 `ProbeCooldown`，否则探测本身被 cooldown 挡住、白跑。
+
+**现状**：只有 ATK 开了（`SupportsDiscoveryProbe` + `ProbeCooldown` 10s + `BreakerProbeInterval` 30s）。其余**主动查询型、无被动监听**的插件（高斯 / 华硕 / 雷蛇 / 樱桃 / VGN / 凌豹 / 派世 / HECATE 无线 / 罗技 / 前行者）遇到同样的"睡醒卡住"仍只能干等退避到期，只是还没人报——要开就按上面四条逐个过，**别批量照抄 ATK 的 30 秒**。
 
 **验证**（`BreakerProbeTests`，5 个用例）：探活失败档位不动 / 探活成功清零档位并回在线 /
 按间隔节流 / 默认关闭时行为与旧版逐帧一致 / `NudgeHalfOpen` 不必等主轮询就能叫醒设备。

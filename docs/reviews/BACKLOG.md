@@ -51,6 +51,7 @@
 | **CR-105** | `PidFromPath` 在 `BetopDeviceIdentity` 与 `AtkPlugin` 各有一份（同正则同逻辑），可抽公共 util；不阻塞 | `Plugins/Betop/BetopDeviceIdentity.cs:PidFromPath`、`Plugins/Atk/AtkPlugin.cs:PidFromPath` | `open`（原 PR #60 编号与 dev 冲突，合入时顺延） |
 | **CR-106** | 北通新批次 dongle（`20DD:5128` KP20 DONGLE、`20DD:5130` 底座）只回 `02 CD 09 0A 08 08 …`，header 不在已知命令表里、`ParseStatus` 不认 → 探测失败、设备不进列表。疑似「dongle 在位、手柄未连接」占位帧但未证实（`20BC:5130` 同场景回的是 `02 15`）；须用设备诊断页采手柄开机/关机两份原始报文才能定 byte 含义 | `Plugins/Betop/BetopCodec.cs:ParseStatus`（betop.md §1.8.4） | `open` |
 | **CR-107** | 贴片窗口残留的**单点成因未定论**：已按四条缺口全堵（去抖、清扫残留、单实例约束、`Dispose` 走 finally），但没在复现时抓到到底是漏销毁还是实例被覆盖。下次出现"贴片多一个"先跑 `scripts/check-taskbar-pill.py` 数窗口，再看日志里的 `任务栏贴片：建窗` / `清掉残留窗口` 两行 | `Services/TaskbarPillWindow.cs:ReleaseWindow`、`Services/TaskbarPillManager.cs:Reconcile`（runtime-pitfalls.md §16.12） | `open` |
+| **CR-110** | 半开探活在 15 秒发现线程上**同步**调 `PollDevice`（ATK 等应答 ≤700ms/台），同机多台设备同时熔断会把一轮发现叠加拖慢 N×0.7s；目前最多 2 台（鼠标+键盘）可接受。铺开到多设备插件前应改成时间预算——**不要用"一轮只探一台"**，那会把轮转周期乘上设备数（30s 间隔 + 15s 节拍，两台就变 60s 一轮） | `Plugins/BatteryPluginBase.cs:RunHalfOpenProbe`、`Devices/DeviceManager.cs:DiscoverOnlyAsync`（runtime-pitfalls.md §23） | `open` |
 
 ## 重构候选（未做）
 

@@ -26,7 +26,7 @@ public interface IBatteryPlugin
 
     /// <summary>
     /// 探测要写帧、但仍希望参与 15 秒发现节拍的插件（如迈从键盘：否则唤醒/开机后最坏要等 60 秒才被认领）。
-    /// 与 <see cref="SupportsFastDiscovery"/> 的区别与**安全前提**：这条路径真的会发探测帧，**写入频率必须由插件自己的 <c>ProbeCooldown</c> 兜住**（设成明显小于 15 秒），最坏写入 ≈ 3 帧/次探测 × 4 次/分钟；认领成功后 Attach 对已知设备直接返回、零写入。
+    /// 与 <see cref="SupportsFastDiscovery"/> 的区别与**安全前提**：这条路径真的会发探测帧，**写入频率由插件自己的 <c>ProbeCooldown</c> 兜住**——小于 15 秒才吃得到每个节拍，大于 15 秒不会多写帧、只是部分节拍被 cooldown 挡住白跑（VGN 就是 20 秒）；最坏写入 ≈ 3 帧/次探测 × 4 次/分钟；认领成功后 Attach 对已知设备直接返回、零写入。
     /// 默认 false；不确定就别开。
     /// </summary>
     bool SupportsDiscoveryProbe { get; }
@@ -42,6 +42,11 @@ public interface IBatteryPlugin
     /// <summary>只做"消失检测"：把已不在扫描结果里的设备拆掉并标离线，**不探测、不写帧**。
     /// 拔出广播与 15 秒发现节拍都调它；插入不在这里认领（见 code-flow.md §2.3）。</summary>
     IReadOnlyList<DeviceStatus> ReconcileRemovals(IReadOnlyList<HidDeviceInfo> availableDevices);
+
+    /// <summary>是否参与熔断期半开探活（= 插件覆写了 `BreakerProbeInterval`）。DeviceManager 用它决定要不要调
+    /// <see cref="NudgeHalfOpen"/>——**别用 <see cref="SupportsDiscoveryProbe"/> 代替**：那是"发现节拍"的意愿，
+    /// 有被动监听的插件也可能为 true，但它的唤醒感知已由 CR-53 的 bypass 通道负责。</summary>
+    bool HasHalfOpenProbe { get; }
 
     /// <summary>
     /// 熔断期的"半开探活"：对已停写退避中的设备发**一帧**核实查询，拿到应答就立即解除熔断。

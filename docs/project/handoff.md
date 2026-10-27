@@ -22,7 +22,7 @@
 
 设备接入已收五批，逐台状态见 §2 表；设备管理类改动（#14 双通道去重、#16 设备管理）、#15 的 BLE 大改、issue #12/#11 按 BACKLOG CR-68 ~ CR-72 排队。**设备诊断页（2026-10-24 新增，主窗口第 5 项）**= 未适配设备的 USB/HID 只读采集，流程与边界见 `capture.md`；审查标准见 `dev/review-standard.md`，未修项见 `reviews/BACKLOG.md`。
 
-`#44` / `#48` / `#58` / `#47` / `#53` / `#29` / `#34` / `#31` / `#28` / `#20` / `#60` 已合入（2026-10-25），约 29 台设备均继承 `BatteryPluginBase`；后四个 PR 另带来狼蛛 G9 / L9、VGN V98 Pro、ATK A98 Pro、迈从 X9 与 A5 V2 Ultra、雷蛇 Kraken V4、Haute42 与鲲鹏20 三通道。会写帧的（HERO、N9、ATK、华硕、雷蛇）默认关且不进 15 秒常规发现，纯被动的 CF2 默认开。ATK 认领按「配对组」判、两只鼠标各自一条记录，响应须过运行时校验和；HyperX 充电态只认插拔事件帧；雷蛇 Viper V3 Pro SE 只开零权限 Feature 句柄。HECATE 自 #47 改主动查询、开关默认关。全部为贡献者真机、本机未复测。HERO 闲置静音见 CR-81，N9 未核对官方 App 见 CR-84，ATK 显示名与配对表见 CR-98 / CR-99，HECATE 查询阻塞见 CR-100；协议与验证边界见 `hardware/aula.md` §2、`akg.md`、`atk.md`、`hyperx-cf2.md`、`asus-rog.md`、`razer*.md`、`hecate.md` §3。
+`#44` / `#48` / `#58` / `#47` / `#53` / `#29` / `#34` / `#31` / `#28` / `#20` / `#60` 已合入（2026-10-25），约 29 台设备均继承 `BatteryPluginBase`；后四个 PR 另带来狼蛛 G9 / L9、VGN V98 Pro、ATK A98 Pro、迈从 X9 与 A5 V2 Ultra、雷蛇 Kraken V4、Haute42 与鲲鹏20 三通道。会写帧的（HERO、N9、ATK、华硕、雷蛇）默认关；15 秒发现节拍按插件各自声明（`SupportsDiscoveryProbe`）——ATK、樱桃、派世、VGN、雷蛇、凌豹、HECATE 无线、迈从、前行者、索尼 H9 开了，HERO、N9、高斯、北通没开。**ATK 是唯一另开"熔断期半开探活"的插件**（`BreakerProbeInterval` 30s，`safety.md` §3 规则 3 ③；别的品牌要开按 `runtime-pitfalls.md` §23.1 逐个评估）。纯被动的 CF2 默认开。ATK 认领按「配对组」判、两只鼠标各自一条记录，响应须过运行时校验和；HyperX 充电态只认插拔事件帧；雷蛇 Viper V3 Pro SE 只开零权限 Feature 句柄。HECATE 自 #47 改主动查询、开关默认关。全部为贡献者真机、本机未复测。HERO 闲置静音见 CR-81，N9 未核对官方 App 见 CR-84，ATK 显示名与配对表见 CR-98 / CR-99，HECATE 查询阻塞见 CR-100；协议与验证边界见 `hardware/aula.md` §2、`akg.md`、`atk.md`、`hyperx-cf2.md`、`asus-rog.md`、`razer*.md`、`hecate.md` §3。
 
 更新说明是用户向的 `docs/project/release-notes.md`，随包分发：关于页「更新日志」离线可看全部历史，更新确认框显示目标版本的内容（来自更新源 notes，缺失时只显示版本行）。规则见 `dev/build.md` §8。
 
@@ -66,7 +66,7 @@
 | 索尼 INZONE H9 II（054C:0FA8） | `0xFF04` 控制传输 SET_REPORT 查询 | 代码已接入，默认关、会写帧。贡献者真机 78→94%（充电中），关掉 INZONE Hub 仍可读；本机未复测（inzone-h9.md） |
 | AULA HERO 68 Air（`372E:106C`，UUID `12000000000A`） | Bytech 8K 分片查询 + ACK | 代码已接入，默认关、会写帧，与 F99 Pro 共用 Aula 开关。贡献者真机 10% 放电/充电，本机未复测（aula.md §2） |
 | AKG N9 Hybrid（接收器 `0ECB:20D9`） | 固定 RACE 电量查询，控制输入读取 | 代码已接入，默认关、会写帧。贡献者真机 50% / 100%，充电态 Unknown，本机未复测（akg.md） |
-| ATK：F1 Pro Max（`373B:101B`/`101A`，本体 `1015`）/ F1 Ultimate 2.0（`11D9`/`11E4`）/ A98 Pro 键盘（`1152`，VIA） | 鼠标 `FF02` 口 17 字节 `08 04 …49`；键盘 VIA `02 96 24` | 代码已接入，默认关、会写帧，一套开关管键鼠。F1 Pro Max 本机真机，其余贡献者声明（atk.md §2 §7） |
+| ATK：F1 Pro Max（`373B:101B`/`101A`，本体 `1015`）/ F1 Ultimate 2.0（`11D9`/`11E4`）/ A98 Pro 键盘（`1152`，VIA） | 鼠标 `FF02` 口 17 字节 `08 04 …49`；键盘 VIA `02 96 24` | 代码已接入，默认关、会写帧，一套开关管键鼠。F1 Ultimate 2.0 两个 PID 归一到 `atk:atk-f1ult`、本体可独立认领（插线时 dongle 读不到电量，atk.md §4.3）。本机真机的是 F1 Pro Max，F1 Ultimate 2.0 与 A98 Pro 为贡献者真机、**本机未复测**（atk.md §2 §7 §8） |
 | ATK F1 V3 ULTIMATE+（接收器 `373B:1303`，本体 `12A9`） | 同 F1 Pro Max 一条查询帧 | 代码已接入，默认关、会写帧。与 F1 Pro Max 同机各一条记录、互不串台；显示名要插一次线才拿到，本机未复测（atk.md §4） |
 | HyperX Cloud Flight 2（`03F0:0AC1`） | `FF90` 口被动推送帧 | 代码已接入，默认开、零写入。贡献者真机放电 40% / 充电 94→96%，与 NGENUITY 3.1.0 对照；充电态只认插拔事件帧，本机未复测（hyperx-cf2.md） |
 | 本机电池 | `GetSystemPowerStatus`，Id `sys:battery` | 已接入，默认关。托盘最低电量不统计本机 |

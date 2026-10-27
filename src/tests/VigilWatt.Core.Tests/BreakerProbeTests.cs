@@ -132,6 +132,28 @@ public class BreakerProbeTests : IDisposable
         Assert.True(plugin.Online);
     }
 
+    [Fact]
+    public async Task NudgeHalfOpenWorksWithoutDiscoveryFlags()
+    {
+        // 发现节拍的两个 flag 全是默认 false：探活闸门只看 BreakerProbeInterval，不看那两个 flag（CR-108）。
+        // 若闸门错绑在 flag 上，这台的探活会静默空转——没有日志、没有帧，现象与"没修"完全一样。
+        using var plugin = new NoDiscoveryFlagFakePlugin();
+        await plugin.AttachAsync([Info("dev")], new DeviceClaimRegistry());
+        Assert.True(plugin.HasHalfOpenProbe);
+
+        plugin.Reply = false;
+        plugin.Poll();          // 第 1 轮被 FreshlyClaimed 跳过
+        plugin.Poll();
+        plugin.Poll();
+        plugin.Poll();
+        Assert.True(plugin.BreakerTripped);
+
+        plugin.Reply = true;
+        plugin.NudgeHalfOpen();
+        Assert.False(plugin.BreakerTripped);
+        Assert.True(plugin.Online);
+    }
+
     /// <summary>照抄 ATK 的 PollDevice 结构：CanWrite 挡住 → 不发帧；发过帧没应答 → 自己报账。</summary>
     private class ProbeFakePlugin : BatteryPluginBase, IDisposable
     {
@@ -189,5 +211,11 @@ public class BreakerProbeTests : IDisposable
     private sealed class NoProbeFakePlugin : ProbeFakePlugin
     {
         protected override TimeSpan BreakerProbeInterval => TimeSpan.Zero;
+    }
+
+    /// <summary>发现节拍两个 flag 都关、只覆写探活间隔：闸门若错绑在 flag 上，这台的探活会静默空转（CR-108）。</summary>
+    private sealed class NoDiscoveryFlagFakePlugin : ProbeFakePlugin
+    {
+        public override bool SupportsDiscoveryProbe => false;
     }
 }

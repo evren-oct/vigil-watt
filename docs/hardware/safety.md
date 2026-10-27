@@ -29,8 +29,14 @@
 3. **自动熔断 + 递增退避**：连续 3 次查询失败 → 停止写入，只留被动监听；退避期**递增**（30 秒 → 1 分 → 2 分 → 4 分 → **封顶 5 分钟**，`Plugins/WriteBackoff.cs`），期满允许重试一轮，再失败则升档（`BatteryPluginBase.CanWrite` / `TripBreaker`）。
    退避是为对付键盘休眠（用户离开即睡，唤醒后若永久停写就再也读不到），不是给"失败后换命令"留口子——**重试的永远是同一条已知命令**。
    ⚠️ **固定 10 分钟是错的口径**（2026-10-11 改，CR-53）：设备休眠是常态，固定长退避会把"唤醒检测"一起挡死——实测唤醒后盲区达 **12 分 52 秒**。
-   配套两条：① **事件驱动放行**——设备自己推通知触发的那次"核实查询"不受熔断限制（仍受插件开关约束），放行频率 ≤1 帧/30 秒；
+   配套三条：① **事件驱动放行**——设备自己推通知触发的那次"核实查询"不受熔断限制（仍受插件开关约束），放行频率 ≤1 帧/30 秒；
    ② 退避期满由被动空闲 tick **立刻**发起半开重试，不再苦等 60 秒轮询拍。
+   ③ **半开探活是第三条通道，默认关闭、按品牌逐个评估**（`BreakerProbeInterval`，2026-10-27 起只有 ATK 开）。
+      它只在**熔断停写期间**发帧——设备本来就不应答，所以边际写入不落在正常使用时段；成功即解除熔断，
+      失败不记账、不升档。**各厂商对"睡着的设备被定期戳一帧"的容忍度不一样，能不能开、间隔多长，
+      必须按实际设备确认，不能照抄**（有会话占用史的协议、对同刻第二帧不应答的 dongle 尤其要小心）。
+      **建议 30 秒起步**（= 每轮 60 秒主轮询之间最多一帧）；要更密先算清每小时帧数。判断清单见
+      `dev/runtime-pitfalls.md` §23.1。
 4. **限频**：每个轮询周期最多 1 条查询帧 + 每句柄一次的会话帧。重试最多 2 次、带 500ms 间隔。
    - **例外（2026-10-08 用户批准）**：迈从键盘参与 **15 秒发现节拍**（`SupportsDiscoveryProbe`），
      把"键盘开机后多久被认出"从最坏 ~60 秒压到 ~15 秒（起因：用户复报"键盘启动了但程序要一段时间
@@ -44,6 +50,10 @@
      `12 07` 取电量、`12 08` 取充电位。POWER 帧剔除电量字节后两种充电状态完全相同，无法推断充电，必须单独问一次。
      两条是**先后等应答**而非同时发（`Query` 等上一帧回来才发下一帧），单轮最坏 2 帧、且不重试，低于迈从键盘的 3 帧。
      充电帧无应答时沿用上次值、**不计入熔断**，见 `asus-rog.md` §5。
+   - **例外（2026-10-27，#80 合入）**：ATK 鼠标/键盘参与 **15 秒发现节拍**，并在熔断停写期按
+     `BreakerProbeInterval` **30 秒**做半开探活（间隔取用户口径"建议 30 秒起步"）。写入由 `ProbeCooldown`
+     10 秒与探活间隔双重兜住：认领成功后 `Attach` 零写入、熔断期探活**失败不记账不升档**，
+     最坏 ≈1 帧/30 秒。见 `atk.md` §5、`dev/runtime-pitfalls.md` §23。
 5. **被动优先**：能靠监听（input report / feature GET）解决的不写入。迈从 dongle 的自发推送（`13 0A` 帧）就是免费数据源。
 6. **新设备接入流程**：先被动监听看日志 → 再查官方驱动是否支持（支持就抓官方的包）→ 拿到精确帧后才允许写入验证。全程用户知情。
 7. **任何"诊断/扫描"代码不得留在正常执行路径上**（哪怕有开关）。要实验就在独立脚本（test-*.ps1 / python）里做，用户点头后再跑。
@@ -70,11 +80,11 @@
 | AULA | `PluginEnabled["Aula"]` | **false** | F99 Pro 发 `13 05 01`、HERO 68 Air 发固定 UUID 查询与分片 ACK、L9 发 `0B 81`；G9 耳机是同一开关下的纯被动插件（零写入）。见 `aula.md` §2 §3 §4 |
 | AKG | `PluginEnabled["Akg"]` | **false** | N9 Hybrid 接收器只发固定 `0CD6` 电量查询，控制输入读取结果，不重发；见 `akg.md` |
 | VGN | `PluginEnabled["Vgn"]` | **false** | 蜻蜓 F1 发配置帧 `0x06`（report ID `0xB3`/`0xB5`）、F2 发 `BatteryLevel` 查询、V98 Pro 发 7 字节 `0x1A` 查询；y2 靠 `ProbeCooldown` 兜住发现节拍，见 `vgn.md` §5 |
-| 凌豹 | `PluginEnabled["Lingbao"]` | **false** | M5PRO Max 发官方驱动同款 `F7` feature 查询；K98 只发 `13 05 01` 会话帧，按型号码 `0x0212` 与 AULA 区分。都不进 15 秒发现，见 `lingbao.md` |
+| 凌豹 | `PluginEnabled["Lingbao"]` | **false** | M5PRO Max 发官方驱动同款 `F7` feature 查询；K98 只发 `13 05 01` 会话帧，按型号码 `0x0212` 与 AULA 区分。**参与 15 秒发现节拍**（`SupportsDiscoveryProbe` + `ProbeCooldown` 10s，插件级、两条链路都算），见 `lingbao.md` §2.2 |
 | GANSS / 狼蛛 F108 | `PluginEnabled["Ganss"]` | **false** | 发固定查询帧才能读电量；两个品牌同指纹共用这一行开关；不进 15 秒发现，见 `ganss.md` §7 |
 | DualSense | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读蓝牙 HID `054C:0CE6` |
 | Haute42 | `PluginEnabled["Haute42Gaming"]` | **false** | 只发 `HidD_GetFeature`（`0xF8` 固件串 / `0xFA` 芯片 ID / `0xF9` 电量），零写入；与 DualSense 插件按「USB / 蓝牙」互斥，见 `haute42.md` §5 |
-| ATK | `PluginEnabled["Atk"]` | **false** | 鼠标发 17 字节 op 帧、键盘发 VIA `02 96 24`；两条链路共用一个开关，见 `atk.md` §5 §7 |
+| ATK | `PluginEnabled["Atk"]` | **false** | 鼠标发 17 字节 op 帧、键盘发 VIA `02 96 24`；两条链路共用一个开关，见 `atk.md` §5 §7。**唯一开了半开探活的插件**：`SupportsDiscoveryProbe` + `ProbeCooldown` 10s + `BreakerProbeInterval` 30s（`safety.md` §3 规则 3 ③） |
 | HyperX | 无（纯被动） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；dongle 固件只实现 interrupt OUT，写帧一律 `ERROR_INVALID_FUNCTION`，只读 `FF90` 推送帧 |
 
 三条硬约束：

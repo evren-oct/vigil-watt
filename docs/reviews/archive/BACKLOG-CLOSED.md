@@ -73,6 +73,9 @@
 | CR-77 | `MarkOffline` 注释改为"插件内软离线的唯一落地点"，并注明拔出走 `ReconcileRemovals`（不该盖 `LastUpdated`）。行为本来就对，是注释过满 |
 | CR-68 | 未采用 PR #14 的按显示名去重，改为按 MAC 判定自研实现：`Ble/DualChannelId` 归一 `btc:`/`ble:` 端点，`DeviceManager.AbsorbDualChannel` 收敛到经典那条。PR #14 的 `Devices` getter 副作用与 `NormalizeName` 大小写问题随之不适用 |
 | CR-86 | 历史库时间戳按本地时区读回（`HistoryStore.LocalTime`）：离线设备的「更新于」原先显示成 UTC，比本地时间少 8 小时。见 runtime-pitfalls.md §21 |
+| CR-108 | 半开探活的闸门改成 opt-in 本身：`IBatteryPlugin` 新增 `HasHalfOpenProbe`（= 覆写了 `BreakerProbeInterval`），`DeviceManager.DiscoverOnlyAsync` 的探活循环不再按 `SupportsDiscoveryProbe`/`SupportsFastDiscovery` 过滤。原写法下"只覆写间隔、没开发现 flag"的插件会静默空转（无帧、无日志）。线上零变化：唯一开探活的 ATK 两个 flag 本来就都开着。新增用例 `NudgeHalfOpenWorksWithoutDiscoveryFlags` 钉住语义 |
+| CR-109 | `SupportsDiscoveryProbe` 的注释口径按实现改写：`ProbeCooldown` 小于 15 秒才吃得到每个节拍，大于 15 秒不会多写帧、只是部分节拍被挡住白跑（VGN 就是 20 秒）。VGN 的冷却值未动——它没有被动监听，有效节拍 30 秒已够用，降到 10 秒是写入预算变更 |
+| CR-111 | `NudgeHalfOpen` 的 XML 注释压回 `AGENTS.md` §2 配额（原约 10 行），并补上"只在 `_passGate` 内调用"的线程前提。压缩前先把「与 CR-53 通道的分工」「闸门不是那两个 flag」两句补进 `runtime-pitfalls.md` §23，避免信息丢失 |
 
 ## wontfix
 

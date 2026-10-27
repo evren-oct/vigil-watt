@@ -324,6 +324,9 @@ dongle 收不到无线包，`Probe` 无应答 → dongle 不被认领。如果�
   `HidD_SetOutputReport`（非独占、经 HID 类驱动路由，可与 ATK HUB 的 WebHID 驱动同开）
 - **会写帧 → 插件默认关闭**（`docs/hardware/safety.md` R1），用户在设置页自行开启
 - 连续 3 次查询失败 → 熔断停写 + 递增退避（基类机制），鼠标休眠时的常见表现
+- **熔断期开半开探活**（`BreakerProbeInterval` 30 秒，本仓库唯一开启的品牌）：鼠标一天睡几十次，
+  只靠递增退避会让用户唤醒后干等 4~5 分钟。间隔是按本机的实测行为定的，别的品牌要开需按
+  `dev/runtime-pitfalls.md` §23.1 逐个评估，别照抄这个数字
 
 ## 6. 蓝牙模式（备选，零逆向）
 

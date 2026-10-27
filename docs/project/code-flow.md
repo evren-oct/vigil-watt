@@ -38,8 +38,10 @@ PollOnceAsync
 ```
 DiscoverOnlyAsync
 ├── HidDeviceScanner.Scan()
-└── Task.WhenAll(SupportsFastDiscovery || SupportsDiscoveryProbe 的启用插件 AttachAsync)
-       → 只认领，不 Poll；Upsert 仍在闸门线程
+├── Task.WhenAll(SupportsFastDiscovery || SupportsDiscoveryProbe 的启用插件 AttachAsync)
+│      → 只认领，不 Poll；Upsert 仍在闸门线程
+└── HasHalfOpenProbe 的启用插件 NudgeHalfOpen()
+       → 对熔断停写中的设备按 BreakerProbeInterval 发一帧核实（runtime-pitfalls.md §23）
 ```
 
 **并行粒度（2026-10-16）**：不同品牌各持自己的 HID 句柄，慢探测可重叠；同一句柄（含罗技多槽）仍排队。发现路径用 `ReadInputAsync`（雷柏/英菲克）或把同步 `Probe` 丢到线程池（迈从/北通默认），禁止用 `Parallel.For` 包阻塞的 `GetResult()`。
@@ -59,8 +61,11 @@ DiscoverOnlyAsync
 `SupportsDiscoveryProbe` 是 2026-10-08 为"键盘开了半天才显示在线"开的第二条路：代价只出现在
 **设备不响应**期间（最坏 ≈12 帧/分钟），认领成功后归零。
 
-`ProbeCooldown` **必须小于 15 秒节拍**，否则又被相位吃掉（重试间隔翻倍）：雷柏 5 秒、迈从 10 秒
+`ProbeCooldown` **小于 15 秒节拍**才能每拍都重探，否则被相位吃掉（重试间隔翻倍）：雷柏 5 秒、迈从 10 秒
 ——迈从一次探测本身约 3.7 秒，`10 + 3.7 < 15` 才能每拍都重探。
+**大于 15 秒不会出错、也不会多写帧**，只是部分节拍被 cooldown 挡住白跑一轮（VGN 就是 20 秒，有效节拍 30 秒）。
+
+**认领之后还有一步半开探活**：`HasHalfOpenProbe`（= 插件覆写了 `BreakerProbeInterval`）的插件会被调 `NudgeHalfOpen()`，对熔断停写中的设备按间隔发一帧核实、**失败不记账不升档**。闸门是插件自己的 opt-in，**不是上面那两个标志**——它们表达的是"要不要 15 秒重探"，有被动监听的插件也可能为 true 却不需要探活（见 `dev/runtime-pitfalls.md` §23 / §23.1）。
 
 **首扫提速（2026-10-06）**：`Attach` 的返回值曾被丢弃 → 探测刚读到的电量被丢、紧接着 `Poll` 又完整重读一遍（雷柏白多花 5s）。现在：
 - `Attach` 返回值立即 `Upsert` → **新设备探测出来就进 UI**，不等整轮扫描结束；
@@ -271,6 +276,12 @@ BatteryPluginBase.Attach(hidDevices, claims)
 **熔断期内这条路径照跑**（放行频率 ≤1 帧/30 秒）——它是设备自发信号触发的、不是轮询重试，
 挡住它等于把唤醒信号丢掉（CR-53，实测盲区 12 分 52 秒）；核实的半开重试另由被动空闲 tick 的
 `MaybeHalfOpenBreaker` 在退避期满时立刻发起，不必等 60 秒轮询拍。
+
+**第三条通道：纯查询型插件的半开探活**（`NudgeHalfOpen`，2026-10-27）。上面两条都依赖**被动监听线程**
+才有节拍可跑；ATK 这类"只在你问它时才回包"的设备根本没有那条线程，退避期内一帧不发，唤醒后最长干等
+5 分钟。所以给它们一条独立的、由 15 秒发现节拍驱动的探活：熔断期按 `BreakerProbeInterval` 发一帧核实，
+**失败不记账、不升档**（设备在睡是预期结果），成功即由插件自己的 `ReportPollAnswered` 解除熔断。
+闸门是 `HasHalfOpenProbe`（插件覆写该间隔即参与），详见 `dev/runtime-pitfalls.md` §23 / §23.1。
 
 ### 4.3 读取通道（HidDeviceHandle）
 

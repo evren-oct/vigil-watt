@@ -76,18 +76,13 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// </summary>
     protected virtual TimeSpan ProbeCooldown => TimeSpan.FromSeconds(30);
 
-    /// <summary>
-    /// 熔断停写期间，两次"半开探活"的最小间隔（见 <see cref="NudgeHalfOpen"/>）。
-    ///
-    /// 为什么要这条独立通道：递增退避（30s→1m→2m→4m→5m）只该约束**正式轮询**的打扰频率，
-    /// 而"设备睡醒了没有"是另一件事。只有退避一条路径时，设备每睡一次就把档位顶高一档，
-    /// 用户真去用鼠标时正好撞在 4~5 分钟的退避里，看到的就是"电量卡死、得手动刷新"
-    /// （2026-10-27 实机日志：18:51:33 熔断第 4 次 240 秒 → 18:56:02 才恢复）。
-    ///
-    /// 默认 <see cref="TimeSpan.Zero"/> = 关闭半开探活，行为与旧版完全一致——这条通道只对
-    /// "纯查询型、且设备会频繁短睡"的插件有意义（目前是 ATK 鼠标/键盘），别默认给所有人开。
-    /// </summary>
+    /// <summary>熔断停写期间两次"半开探活"的最小间隔；默认 <see cref="TimeSpan.Zero"/> = 关闭，行为与旧版一致。
+    /// 只对"设备频繁短睡且无被动监听"的插件有意义，**建议 30 秒起步、按品牌实测容忍度**（`runtime-pitfalls.md` §23.1）。</summary>
     protected virtual TimeSpan BreakerProbeInterval => TimeSpan.Zero;
+
+    /// <summary>是否参与半开探活：= 覆写了 <see cref="BreakerProbeInterval"/>。DeviceManager 靠它决定调不调
+    /// <see cref="NudgeHalfOpen"/>——别拿发现节拍的两个 flag 代替（`runtime-pitfalls.md` §23.1）。</summary>
+    public virtual bool HasHalfOpenProbe => BreakerProbeInterval > TimeSpan.Zero;
 
     /// <summary>
     /// 是否允许向设备写探测/查询帧。**唯一授权入口是插件开关**（<c>AppSettings.PluginEnabled[Name]</c>）——
@@ -613,15 +608,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         RequestConfirm(dev);
     }
 
-    /// <summary>
-    /// 熔断期的"半开探活"：由 15 秒发现节拍驱动（<see cref="Devices.DeviceManager"/>），对每个停写退避中的
-    /// 设备按 <see cref="BreakerProbeInterval"/> 节流地发**一帧**核实查询。
-    ///
-    /// 与 <see cref="RunPendingConfirm"/> 的分工：那条是"设备自发报文触发的核实"，只有开了被动监听的插件
-    /// 才有节拍可跑；这条给**纯查询型插件**（ATK 鼠标、罗技等）用，它们没有被动监听线程，
-    /// 退避期满前完全感知不到设备已经睡醒。两条都走 <see cref="HalfOpenProbe"/> 语义：
-    /// **失败不记账、不升档**——设备在睡是预期结果。
-    /// </summary>
+    /// <summary>熔断期半开探活：对停写退避中的设备按 <see cref="BreakerProbeInterval"/> 节流发一帧核实；
+    /// 与 <see cref="RunPendingConfirm"/> 的分工、失败不记账的语义见 `runtime-pitfalls.md` §23。**只在 DeviceManager 的 `_passGate` 内调用**（遍历的是非并发字典）。</summary>
     public void NudgeHalfOpen()
     {
         if (BreakerProbeInterval <= TimeSpan.Zero) return;
@@ -641,7 +629,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         }
     }
 
-    /// <summary>半开探活的执行体：一帧核实，拿到应答就由插件自己的 <c>ReportPollAnswered</c> 解除熔断。</summary>
+    /// <summary>半开探活的执行体：一帧核实，拿到应答就由插件自己的 <c>ReportPollAnswered</c> 解除熔断。
+    /// 同步跑在发现线程上（单台 ≤700ms）：多设备插件接入前改成时间预算，**别改成"一轮只探一台"**（CR-110）。</summary>
     private void RunHalfOpenProbe(TrackedDevice dev)
     {
         dev.LastBypassAt = DateTimeOffset.Now;

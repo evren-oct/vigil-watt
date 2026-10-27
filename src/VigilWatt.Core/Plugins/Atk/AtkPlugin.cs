@@ -33,13 +33,23 @@ public sealed class AtkPlugin : BatteryPluginBase
     private const ushort DonglePid = 0x101B;              // 8K dongle（产品名 "ATK Mouse 8K Dongle"）
     private const ushort DonglePid1K = 0x101A;            // 1K dongle
     private const ushort DonglePidV3 = 0x1303;            // 8K dongle（产品名 "Wireless mouse 8k dongle-M"）
+    private const ushort DonglePidF1Ultimate = 0x11D9;    // F1 Ultimate 2.0 接收器（产品名 "Wireless mouse 8k dongle-L"）
+
+    /// <summary>F1 Ultimate 2.0 的**本体** PID：插充电线时枚举出来（产品名 "ATK F1 ULTIMATE 2.0"）。
+    /// 它**不是接收器**——2026-10-27 实测纠正：曾按"同型号另一只"登记进 <see cref="IsReceiverPid"/>，
+    /// 结果插着充电线时 dongle 与本体各认领一条、ID 又不同，设备页出现 `ATK F1 Ultimate 2.0` 与
+    /// `ATK F1 Ultimate 2.0 (#2)` 两个条目。归到同一个 <see cref="DeviceGroups"/> 组即可（atk.md §4.3）。</summary>
+    private const ushort BodyPidF1Ultimate = 0x11E4;
 
     /// <summary>电量口的 usage page；必须精确匹配，否则会对 FF03/FF04/FF05/FF06 等厂商口各白发一帧查询。</summary>
     private const ushort UsagePageBattery = 0xFF02;
 
-    /// <summary>已知的接收器 PID：这三个都认同一条查询帧、响应结构一致。</summary>
+    /// <summary>已知的接收器 PID：都认同一条查询帧、响应结构一致。11D9/11E4 漏登记过一次，
+    /// 结果它们走"本体"分支又把自己算成"接收器在位"，整只鼠标不认领（atk.md §8）。
+    /// 11E4 虽然是本体，也必须留在这里——插着充电线时 dongle 收不到无线包、读不到电量，
+    /// 若让本体"让位给在位的接收器"，会变成 dongle 认不上 + 本体不许认，整只鼠标消失（atk.md §4.3）。</summary>
     private static bool IsReceiverPid(ushort pid) =>
-        pid is DonglePid or DonglePid1K or DonglePidV3;
+        pid is DonglePid or DonglePid1K or DonglePidV3 or DonglePidF1Ultimate or BodyPidF1Ultimate;
 
     private static DateTimeOffset _receiverCheckedAt;
 
@@ -64,7 +74,7 @@ public sealed class AtkPlugin : BatteryPluginBase
     private static bool ReceiverOfSameGroupInPlace(ushort bodyPid)
     {
         if (!DeviceGroups.TryGetValue(bodyPid, out var group))
-            return _receiversInPlace.Count > 0;   // 未知分组：保守按"有接收器在位"处理
+            return _receiversInPlace.Any(pid => pid != bodyPid);   // 未知分组：排除自己，否则接收器会自我否决
 
         return DeviceGroups.Any(kv =>
             kv.Value == group && IsReceiverPid(kv.Key) && _receiversInPlace.Contains(kv.Key));
@@ -118,6 +128,8 @@ public sealed class AtkPlugin : BatteryPluginBase
         [0x1015] = "promax",   // F1 Pro Max 本体（插充电线时枚举）
         [0x1303] = "v3",       // F1 V3 ULTIMATE+ 8K-M 接收器
         [0x12A9] = "v3",       // F1 V3 ULTIMATE+ 本体（插充电线时枚举）
+        [DonglePidF1Ultimate] = "f1ult",   // F1 Ultimate 2.0 接收器（Wireless mouse 8k dongle-L）
+        [BodyPidF1Ultimate] = "f1ult",     // F1 Ultimate 2.0 本体（插充电线时枚举，ATK F1 ULTIMATE 2.0）
     };
 
     /// <summary>各组的型号名（本体上报的产品名，即机型）；按组存，两只鼠标互不覆盖。</summary>
@@ -143,8 +155,8 @@ public sealed class AtkPlugin : BatteryPluginBase
     private static readonly Dictionary<ushort, string> KnownModelByPid = new()
     {
         [0x1152] = "ATK A98 Pro",
-        [0x11D9] = "ATK F1 Ultimate 2.0",
-        [0x11E4] = "ATK F1 Ultimate 2.0",
+        [DonglePidF1Ultimate] = "ATK F1 Ultimate 2.0",   // 接收器形态
+        [BodyPidF1Ultimate] = "ATK F1 Ultimate 2.0",     // 本体形态（插充电线），同一台设备
     };
 
     protected override string BuildDisplayName(HidDeviceInfo info)

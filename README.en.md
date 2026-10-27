@@ -110,6 +110,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | AJAZZ AK870 · feature `F7` status query | Implemented, off by default; writes frames. Contributor hardware only |
 | Thunderobot ML903 NearLink Se · `0xA0` device-info TLV | Implemented, off by default; writes frames. Contributor hardware only |
 | ATK / VXE wireless mouse / A98 Pro keyboard · 17-byte query frame / VIA | Implemented, off by default; writes frames. Verified on F1 Pro Max and F1 V3 ULTIMATE+ |
+| VXE R1 Nearlink · receiver `373B:10C9` | Verified locally over wireless and wired charging (`10C7`); uses the ATK switch, off by default. See [atk.md §9](docs/hardware/atk.md) |
 | HyperX Cloud Flight 2 · passive 2.4 GHz push frames | Implemented, on by default; zero writes. Verified on a CF2 |
 | MOJHON GALE2 (2.4G dongle / wired, both `E2B7:122C`) · vendor-channel `A5` read frame | Implemented, off by default; writes frames. Verified on hardware in both dongle and wired modes; charging flag confirmed by an A/B plug test |
 | Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |

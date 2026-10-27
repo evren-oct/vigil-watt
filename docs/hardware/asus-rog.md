@@ -58,3 +58,33 @@ G-Helper 为 GPL-3.0 项目；rigstats 为 MIT 项目。本次仅据协议事实
 实际插件读取键盘 95% / Keyboard / Discharging；默认关闭不认领，
 启用后的型号核实、轮询、独立 SQLite 历史与 Detach 释放均通过。
 构建与回归检查见 [适配审查](../reviews/archive/2026-10-25-asus-razer-adaptation-review.md)。
+
+## 5. 耳机：ROG 棱镜2 / Delta II（`0B05:1AFA`）
+
+同一品牌、另一套协议，合并进同一个 `AsusPlugin`（品牌开关共用 `Asus`），用 `ResolveKind` 区分耳机图标。
+
+**接口**：`0B05:1AFA`，usage page/usage `0xFF00`/`0x0001`，in/out 均 64 字节，output report ID `0xCC`
+（键盘那条是 `0x1ACE` + report ID `2` + `&mi_02&col02#`，两者不会互相认领）。
+
+**帧**（64 字节，`[0]=0xCC` 是 report ID）：
+
+| 用途 | 命令 | 请求头 | 应答解析 |
+|---|---|---|---|
+| 读电源 | `0x07` | `CC 12 07 00 00` | `data = input[5..]`，`data[1]` = 电量，`data[0]` = 睡眠分钟，`data[2]` = 低电提醒值，`data[3]` = 语音开关 |
+| 读充电 | `0x08` | `CC 12 08 00 00` | `data[0] == 1` 表示充电中 |
+
+`0xFE` 是「电量未就绪」占位值，不是百分比；大于 100 一律判无效。应答必须回显 `[1]==0x12 && [2]==命令`，
+否则是上一条命令的迟到帧——不校验会出现「电量卡在旧值」。
+
+协议出处为 MIT 许可的 [OthrineTM/pelta-control](https://github.com/OthrineTM/pelta-control)（逆向自华硕
+`C_A501_Protocol`），本机逐字节复核一致。
+
+**本机实测**（2026-10-24 ~ 27，ROG 棱镜2 / Delta II 2.4G 接收器，产品串为 `ROG DELTA II (2.4GHz)`）：
+电量 89%–99%、`12 07` 稳定应答；154 帧采样覆盖充电/非充电两种状态。
+
+**只发一条帧**：`safety.md` §3 要求每轮最多 1 条查询帧，所以默认只发 POWER，充电位留 `Unknown`。
+充电位需要单独的 `12 08`，即每轮 2 帧；是否放宽这条限制留给维护者定。POWER 帧剔除电量字节后
+两种充电状态完全相同（`05 14 01 00 00 00`），因此**无法从 POWER 推断充电**。
+
+**未实测**：其它 ROG 耳机型号（`KnownProductIds` 只列了 `0x1AFA`，加型号必须有真机证据）、
+耳机低电量切换、有线/蓝牙模式、多只耳机同时连接、耳机断电后多久判离线。

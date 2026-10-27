@@ -34,6 +34,7 @@
     <Compile Include="..\..\VigilWatt.Core\Hid\NativeHid.cs" />
     <Compile Include="..\..\VigilWatt.Core\Hid\HidDeviceInfo.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Asus\AsusKeyboardCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Asus\AsusHeadsetCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerHeadsetCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerViperSeCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerDeviceProfile.cs" />

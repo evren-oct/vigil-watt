@@ -19,14 +19,32 @@ public sealed class AsusPlugin : BatteryPluginBase
 
     protected override bool IsCandidate(HidDeviceInfo info) =>
         AsusKeyboardCodec.IsKeyboardInterface(info.VendorId, info.ProductId, info.UsagePage,
-            info.Usage, info.InputReportLength, info.OutputReportLength, info.OutputReportId, info.DevicePath);
+            info.Usage, info.InputReportLength, info.OutputReportLength, info.OutputReportId, info.DevicePath)
+        || AsusHeadsetCodec.IsHeadsetInterface(info);
 
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
     {
+        if (AsusHeadsetCodec.IsHeadsetInterface(handle.Info)) return ProbeHeadset(handle);
         if (!WritesEnabled || !VerifyPairedModel(handle.Info)) return null;
         var reading = QueryBattery(handle);
         return reading.HasValue ? ("asus-omni-12-01", reading.Value.Percent, reading.Value.Charging) : null;
     }
+
+    /// <summary>耳机与键盘同一品牌开关；耳机是直连 dongle，没有配对列表可核对，靠 PID 白名单过滤。</summary>
+    private (string Protocol, int? Percent, ChargingState Charging)? ProbeHeadset(HidDeviceHandle handle)
+    {
+        if (!WritesEnabled) return null;
+        var power = ReadHeadsetPower(handle);
+        if (power == null)
+        {
+            Log.Once(LogLevel.Debug, handle.Info.DevicePath + "|asus-hs", "华硕耳机 POWER 无应答（未开机或未连上）");
+            return null;
+        }
+        return (AsusHeadsetCodec.Protocol, power.Value.Percent, power.Value.Charging);
+    }
+
+    protected override DeviceKind ResolveKind(string protocol) =>
+        protocol == AsusHeadsetCodec.Protocol ? DeviceKind.Headset : base.ResolveKind(protocol);
 
     private bool VerifyPairedModel(HidDeviceInfo keyboard)
     {
@@ -50,10 +68,26 @@ public sealed class AsusPlugin : BatteryPluginBase
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
         if (!CanWrite(dev)) return null;
-        var reading = QueryBattery(dev.Handle);
+        var reading = dev.Protocol == AsusHeadsetCodec.Protocol
+            ? ReadHeadsetPower(dev.Handle)
+            : QueryBattery(dev.Handle);
         if (reading.HasValue) ReportPollAnswered(dev);
         else ReportPollFailure(dev);
         return reading;
+    }
+
+    /// <summary>
+    /// 只发 POWER 一条帧，充电位留 Unknown：safety.md §3 要求每轮最多 1 条查询帧。
+    /// 单独的 CHARGING 命令（0x08）能拿到充电位，但要每轮多发一帧，取舍见 PR 说明。
+    /// </summary>
+    private (int? Percent, ChargingState Charging)? ReadHeadsetPower(HidDeviceHandle handle)
+    {
+        var command = AsusHeadsetCodec.CmdPower;
+        var reply = Query(handle, AsusHeadsetCodec.BuildRead(command),
+            r => AsusHeadsetCodec.TryParse(r, command, out _));
+        if (reply == null || !AsusHeadsetCodec.TryParse(reply, command, out var data)) return null;
+        if (!AsusHeadsetCodec.TryParsePower(data, out int percent, out _, out _)) return null;
+        return (percent, ChargingState.Unknown);
     }
 
     private (int? Percent, ChargingState Charging)? QueryBattery(HidDeviceHandle handle)
@@ -80,5 +114,8 @@ public sealed class AsusPlugin : BatteryPluginBase
         return null;
     }
 
-    protected override string BuildDisplayName(HidDeviceInfo info) => "ROG Strix Scope II 96 Wireless";
+    protected override string BuildDisplayName(HidDeviceInfo info) =>
+        AsusHeadsetCodec.IsHeadsetInterface(info)
+            ? string.IsNullOrEmpty(info.Product) ? "华硕 ROG 耳机" : $"华硕 {info.Product}"
+            : "ROG Strix Scope II 96 Wireless";
 }

@@ -43,6 +43,15 @@ public interface IBatteryPlugin
     /// 拔出广播与 15 秒发现节拍都调它；插入不在这里认领（见 code-flow.md §2.3）。</summary>
     IReadOnlyList<DeviceStatus> ReconcileRemovals(IReadOnlyList<HidDeviceInfo> availableDevices);
 
+    /// <summary>
+    /// 熔断期的"半开探活"：对已停写退避中的设备发**一帧**核实查询，拿到应答就立即解除熔断。
+    /// 由 15 秒发现节拍驱动，让"设备睡醒"最多 30 秒内被发现，而不是干等递增退避到期
+    /// （2026-10-27 用户复报：鼠标唤醒后电量卡住，最长 4 分半才刷新）。
+    /// <b>失败不计失败次数、不升退避档位</b>——设备在睡是预期结果，不该被惩罚。
+    /// 未覆写 = 空实现（不参与半开探活的插件行为完全不变）。
+    /// </summary>
+    void NudgeHalfOpen();
+
     /// <summary>插件在轮询之外主动推送的状态更新（如罗技 HID++ 电量/充电自发通知）；不推送可永不触发，DeviceManager 订阅后走与 Poll 相同的 Upsert。</summary>
     event Action<DeviceStatus>? StatusPushed;
 

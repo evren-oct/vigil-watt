@@ -22,9 +22,21 @@ public sealed class AtkPlugin : BatteryPluginBase
     protected override DeviceKind ResolveKind(string protocol)
         => protocol == ProtocolVia ? DeviceKind.Keyboard : DeviceKind.Mouse;
 
-    // 会写帧（发查询帧）→ 按社区适配指南"主动通信不进 15 秒常规发现节拍"，
-    // 与 Betop / Ganss / Aula 一致保持默认 false；发现延迟走常规扫描周期。
+    // 参与 15 秒发现节拍：基类的"熔断期半开探活"（NudgeHalfOpen）挂在这条节拍上，
+    // 鼠标睡醒后最多 15~30 秒被发现，而不是干等一整轮 60 秒主轮询。
+    // 前提（接口约定）：ProbeCooldown 必须明显小于 15 秒 —— 这里是 10 秒，满足；
+    // 已认领的设备 Attach 直接返回、零写入，所以这条节拍不会抬高实际写入频率。
+    // 注：原注释按社区指南"主动通信不进 15 秒节拍"保持 false，2026-10-27 因唤醒感知需求改为 true，
+    // 写入仍由 ProbeCooldown 兜住，实测探活最坏 ≈ 1 帧/30 秒。
+    public override bool SupportsDiscoveryProbe => true;
+
     protected override TimeSpan ProbeCooldown => TimeSpan.FromSeconds(10);
+
+    // 熔断期半开探活（基类 NudgeHalfOpen）：鼠标休眠是常态，每睡一次就顶高一档退避，
+    // 用户真去用时正好撞在 4~5 分钟的退避里，看到的就是"电量卡死、要手动刷新"
+    // （2026-10-27 实机日志：熔断第 4 次 240 秒 → 4 分半后才恢复）。30 秒 = 每轮主轮询都允许一帧探活，
+    // 失败不记账、不升档；设备一应答就由 ReportPollAnswered 清零档位。
+    protected override TimeSpan BreakerProbeInterval => TimeSpan.FromSeconds(30);
 
     // null 与"被熔断挡住"不可区分 → 基类不自动记账，由 PollDevice 自报账
     protected override OfflinePolicy Offline => new() { Silence = TimeSpan.Zero, CountPollFailures = false };

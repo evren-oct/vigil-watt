@@ -549,12 +549,14 @@ public sealed class DeviceManager : IDisposable
             ReconcileAllEnabled(hidDevices);
 
             var tasks = new List<Task<IReadOnlyList<DeviceStatus>>>();
+            var nudgeable = new List<IBatteryPlugin>();
             foreach (var plugin in _plugins)
             {
                 // 零写入插件（雷柏）与"写入由 ProbeCooldown 兜住"的插件（迈从）都参与；
                 // 其余会写帧的插件仍只吃 60 秒主轮询，避免成倍抬高写入频率。
                 if (!plugin.SupportsFastDiscovery && !plugin.SupportsDiscoveryProbe) continue;
                 if (!IsPluginEnabled(plugin)) continue;
+                nudgeable.Add(plugin);
                 tasks.Add(AttachSafeAsync(plugin, hidDevices, "快速发现"));
             }
 
@@ -563,6 +565,20 @@ public sealed class DeviceManager : IDisposable
             {
                 foreach (var d in claimed)
                     Upsert(d);
+            }
+
+            // 认领之后再半开探活：刚重连的设备由上面的 Upsert 处理，这里只捞"还在停写退避里"的。
+            // 没有被动监听的纯查询型插件（ATK 鼠标）靠它感知"设备睡醒了"，否则最长要干等 5 分钟退避。
+            foreach (var plugin in nudgeable)
+            {
+                try
+                {
+                    plugin.NudgeHalfOpen();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"插件 {plugin.Name} 半开探活失败", ex);
+                }
             }
         }
         catch (Exception ex)

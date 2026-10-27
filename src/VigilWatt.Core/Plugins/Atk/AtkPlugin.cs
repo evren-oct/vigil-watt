@@ -118,7 +118,7 @@ public sealed class AtkPlugin : BatteryPluginBase
             return false;
 
         // 长度判据：必须能收发 17 字节电量帧，否则写不进/读不出完整帧。
-        // 接收器用严格判据（in=17 / out=17，本机实测 0x101B、0x101A、0x1303 三者一致）；
+        // 接收器用严格判据（in=17 / out=17，0x101B/0x101A/0x1303/0x11D9 上游实测、0x1278 作者实测均一致）；
         // 本体的接口长度未实测（插充电线时才枚举出来），只要求"容得下"这一能力。
         if (IsReceiverPid(info.ProductId))
             return AtkCodec.IsSupportedInterface(info.InputReportLength, info.OutputReportLength);

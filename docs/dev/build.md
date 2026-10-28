@@ -183,6 +183,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 
 格式契约（`## 版本` / 可选 `YYYY-MM-DD` 行 / `- ` 条目）写在文件头，解析器是 `Services/ReleaseNotes.cs`，截段脚本是 `scripts/get-release-notes.ps1`。**改格式要三处一起改**。版本段缺失只警告不阻断打包，但应用内会显示「本版本没有更新说明」；`NotesMarkdown` 为空时确认框只显示版本行，不留空框。
 
+**发版前要补的用户向条目**（平时改代码随手记在这里，发版时一并写进新版本段；不要提前在 `release-notes.md` 里建还没发的版本段——版本号必须与 csproj `<Version>` 一致）：
+
+- ATK F1 Ultimate 2.0 的设备标识变了（`atk:96EC79…` / dongle 路径哈希 → `atk:atk-f1ult`，PR #65）：老设备的历史曲线会断档。写法照 1.2.2 的先例「设备识别方式有调整：升级后以前用过的设备可能多出一行『离线』，右键删除即可」。见 `project/contributions.md` 的 #65 条目。
+
 ### 已验证（2026-10-06）
 
 安装（静默）→ 目录/快捷方式/卸载条目正确、数据目录不冲突；自动更新（把 1.0.1 nupkg 丢进 `packages\` 后启动 1.0.0 → 自动升级重启到 1.0.1）；卸载 → 安装目录/快捷方式/卸载条目/HKCU Run 残留全部清掉，用户数据保留。

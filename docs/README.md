@@ -26,7 +26,7 @@
 
 - [sources.md](hardware/sources.md)：协议、功能方案的依据、外部参考和验证范围；追溯来源先看这里。
 - [protocols.md](hardware/protocols.md)：设备协议帧、已验证行为和已证伪路径。
-- [asus-rog.md](hardware/asus-rog.md)：Scope II 96 / Omni 配对身份与电量。
+- [asus-rog.md](hardware/asus-rog.md)：Scope II 96 / Omni 配对身份与电量；DELTA II 耳机的 `0xCC` 电量帧。
 - [razer-headset.md](hardware/razer-headset.md)：BlackShark V2 Pro 2023 的 PA 协议与会话释放。
 - [razer-kraken.md](hardware/razer-kraken.md)：Kraken V4 接收器的 64 字节 `0x02` 协议，电量与充电两条命令按轮交替。
 - [razer-viper-se.md](hardware/razer-viper-se.md)：Viper V3 Pro SE 无线电量、Windows Feature 接口与验证范围。

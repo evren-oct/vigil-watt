@@ -564,6 +564,23 @@ public sealed class DeviceManager : IDisposable
                 foreach (var d in claimed)
                     Upsert(d);
             }
+
+            // 认领之后再半开探活：刚重连的设备由上面的 Upsert 处理，这里只捞"还在停写退避里"的。
+            // 闸门用 HasHalfOpenProbe（= 插件自己覆写了 BreakerProbeInterval），**不用上面那两个发现 flag**：
+            // 那是"要不要 15 秒重探"的意愿，与"要不要在熔断期探活"是两件事——绑在一起会让只开一半的插件静默空转（CR-108）。
+            foreach (var plugin in _plugins)
+            {
+                if (!plugin.HasHalfOpenProbe) continue;
+                if (!IsPluginEnabled(plugin)) continue;
+                try
+                {
+                    plugin.NudgeHalfOpen();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"插件 {plugin.Name} 半开探活失败", ex);
+                }
+            }
         }
         catch (Exception ex)
         {

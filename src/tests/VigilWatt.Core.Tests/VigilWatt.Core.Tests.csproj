@@ -34,6 +34,7 @@
     <Compile Include="..\..\VigilWatt.Core\Hid\NativeHid.cs" />
     <Compile Include="..\..\VigilWatt.Core\Hid\HidDeviceInfo.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Asus\AsusKeyboardCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Asus\AsusHeadsetCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerHeadsetCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerViperSeCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerDeviceProfile.cs" />
@@ -94,7 +95,6 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnMouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkViaCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkDevicePairing.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\HyperX\Cf2Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\CenturionCodec.cs" />

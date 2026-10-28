@@ -10,7 +10,7 @@
 
 当前安装包 **1.3.0**（`dist/`，本机试装用；尚未上传正式 Release）。正式线上以 GitHub 最新 Release 为准，Gitee 是回退源；更新源 GitHub 优先、8 秒不通回退 Gitee。发新版时保留上一版 `*-full.nupkg` 作为 delta 基准；规则见 `dev/build.md` §8。
 
-本机已打通：迈从 G87（0x13）、雷柏 VT3（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。
+本机已打通：迈从 G87（0x13）、雷柏 VT3 + VT2S Air Max（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。
 
 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），不是 WinUI 覆盖窗；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。**拖动走 16ms 轮询，不靠鼠标捕获**——捕获对非前台窗口无效（`dev/runtime-pitfalls.md` §16、§16.5.1；§17 只对小组件）。选屏由 `Services/TaskbarPillManager.cs` 每秒按 `monitorDevicePath` 匹配，配置的屏不在就降级贴主屏，设置页显示真实屏幕名——`\\.\DISPLAYn` 是配置序号不是身份，见 `dev/monitor-identity.md`。
 
@@ -22,7 +22,7 @@
 
 设备接入已收五批，逐台状态见 §2 表；设备管理类改动（#14 双通道去重、#16 设备管理）、#15 的 BLE 大改、issue #12/#11 按 BACKLOG CR-68 ~ CR-72 排队。**设备诊断页（2026-10-24 新增，主窗口第 5 项）**= 未适配设备的 USB/HID 只读采集，流程与边界见 `capture.md`；审查标准见 `dev/review-standard.md`，未修项见 `reviews/BACKLOG.md`。
 
-`#44` / `#48` / `#58` / `#47` / `#53` / `#29` / `#34` / `#31` / `#28` / `#20` / `#60` 已合入（2026-10-25），约 29 台设备均继承 `BatteryPluginBase`；后四个 PR 另带来狼蛛 G9 / L9、VGN V98 Pro、ATK A98 Pro、迈从 X9 与 A5 V2 Ultra、雷蛇 Kraken V4、Haute42 与鲲鹏20 三通道。会写帧的（HERO、N9、ATK、华硕、雷蛇）默认关且不进 15 秒常规发现，纯被动的 CF2 默认开。ATK 认领按「配对组」判、两只鼠标各自一条记录，响应须过运行时校验和；HyperX 充电态只认插拔事件帧；雷蛇 Viper V3 Pro SE 只开零权限 Feature 句柄。HECATE 自 #47 改主动查询、开关默认关。全部为贡献者真机、本机未复测。HERO 闲置静音见 CR-81，N9 未核对官方 App 见 CR-84，ATK 显示名与配对表见 CR-98 / CR-99，HECATE 查询阻塞见 CR-100；协议与验证边界见 `hardware/aula.md` §2、`akg.md`、`atk.md`、`hyperx-cf2.md`、`asus-rog.md`、`razer*.md`、`hecate.md` §3。
+`#44` / `#48` / `#58` / `#47` / `#53` / `#29` / `#34` / `#31` / `#28` / `#20` / `#60` 已合入（2026-10-25），约 29 台设备均继承 `BatteryPluginBase`；后四个 PR 另带来狼蛛 G9 / L9、VGN V98 Pro、ATK A98 Pro、迈从 X9 与 A5 V2 Ultra、雷蛇 Kraken V4、Haute42 与鲲鹏20 三通道。会写帧的（HERO、N9、ATK、华硕、雷蛇）默认关；15 秒发现节拍按插件各自声明（`SupportsDiscoveryProbe`）——ATK、樱桃、派世、VGN、雷蛇、凌豹、HECATE 无线、迈从、前行者、索尼 H9 开了，HERO、N9、高斯、北通没开。**ATK 是唯一另开"熔断期半开探活"的插件**（`BreakerProbeInterval` 30s，`safety.md` §3 规则 3 ③；别的品牌要开按 `runtime-pitfalls.md` §23.1 逐个评估）。纯被动的 CF2 默认开。ATK 认领按「配对组」判、两只鼠标各自一条记录，响应须过运行时校验和；HyperX 充电态只认插拔事件帧；雷蛇 Viper V3 Pro SE 只开零权限 Feature 句柄。HECATE 自 #47 改主动查询、开关默认关。全部为贡献者真机、本机未复测。HERO 闲置静音见 CR-81，N9 未核对官方 App 见 CR-84，ATK 显示名与配对表见 CR-98 / CR-99，HECATE 查询阻塞见 CR-100；协议与验证边界见 `hardware/aula.md` §2、`akg.md`、`atk.md`、`hyperx-cf2.md`、`asus-rog.md`、`razer*.md`、`hecate.md` §3。
 
 更新说明是用户向的 `docs/project/release-notes.md`，随包分发：关于页「更新日志」离线可看全部历史，更新确认框显示目标版本的内容（来自更新源 notes，缺失时只显示版本行）。规则见 `dev/build.md` §8。
 
@@ -66,9 +66,9 @@
 | 索尼 INZONE H9 II（054C:0FA8） | `0xFF04` 控制传输 SET_REPORT 查询 | 代码已接入，默认关、会写帧。贡献者真机 78→94%（充电中），关掉 INZONE Hub 仍可读；本机未复测（inzone-h9.md） |
 | AULA HERO 68 Air（`372E:106C`，UUID `12000000000A`） | Bytech 8K 分片查询 + ACK | 代码已接入，默认关、会写帧，与 F99 Pro 共用 Aula 开关。贡献者真机 10% 放电/充电，本机未复测（aula.md §2） |
 | AKG N9 Hybrid（接收器 `0ECB:20D9`） | 固定 RACE 电量查询，控制输入读取 | 代码已接入，默认关、会写帧。贡献者真机 50% / 100%，充电态 Unknown，本机未复测（akg.md） |
-| ATK：F1 Pro Max（`373B:101B`/`101A`，本体 `1015`）/ F1 Ultimate 2.0（`11D9`/`11E4`）/ A98 Pro 键盘（`1152`，VIA） | 鼠标 `FF02` 口 17 字节 `08 04 …49`；键盘 VIA `02 96 24` | 代码已接入，默认关、会写帧，一套开关管键鼠。F1 Pro Max 本机真机，其余贡献者声明（atk.md §2 §7） |
+| ATK：F1 Pro Max（`373B:101B`/`101A`，本体 `1015`）/ F1 Ultimate 2.0（`11D9`/`11E4`）/ A98 Pro 键盘（`1152`，VIA） | 鼠标 `FF02` 口 17 字节 `08 04 …49`；键盘 VIA `02 96 24` | 代码已接入，默认关、会写帧，一套开关管键鼠。F1 Ultimate 2.0 两个 PID 归一到 `atk:atk-f1ult`、本体可独立认领（插线时 dongle 读不到电量，atk.md §4.3）。本机真机的是 F1 Pro Max，F1 Ultimate 2.0 与 A98 Pro 为贡献者真机、**本机未复测**（atk.md §2 §7 §8） |
 | ATK F1 V3 ULTIMATE+（接收器 `373B:1303`，本体 `12A9`） | 同 F1 Pro Max 一条查询帧 | 代码已接入，默认关、会写帧。与 F1 Pro Max 同机各一条记录、互不串台；显示名要插一次线才拿到，本机未复测（atk.md §4） |
-| ATK A9 Air 大师版+（GEM 8K 接收器 `373B:1278`，本体 `1293`） | 同一条查询帧（`FF02` / 17 字节） | 本机真机打通：无线 70%/80% 放电、插线 85%/95% 充电均全应答，两种形态归一条记录。双连接（接收器没拔就插线）改留本体——实测此时只有本体应答、接收器已沉默（atk.md §2.2 §3.3）。⚠ **充电读数虚高约 15 pp**（有线 95% ↔ 拔线 80%，电压仅差 63 mV），插拔瞬间会跳变，属固件电压法电量计行为、codec 不修正（CR-109） |
+| ATK A9 Air 大师版+（GEM 8K 接收器 `373B:1278`，本体 `1293`） | 同一条查询帧（`FF02` / 17 字节） | 本机真机打通：无线 70%/80% 放电、插线 85%/95% 充电均全应答，两种形态归一条记录。双连接（接收器没拔就插线）改留本体——实测此时只有本体应答、接收器已沉默（atk.md §2.2 §3.3）。⚠ **充电读数虚高约 15 pp**（有线 95% ↔ 拔线 80%，电压仅差 63 mV），插拔瞬间会跳变，属固件电压法电量计行为、codec 不修正（CR-113） |
 | HyperX Cloud Flight 2（`03F0:0AC1`） | `FF90` 口被动推送帧 | 代码已接入，默认开、零写入。贡献者真机放电 40% / 充电 94→96%，与 NGENUITY 3.1.0 对照；充电态只认插拔事件帧，本机未复测（hyperx-cf2.md） |
 | 本机电池 | `GetSystemPowerStatus`，Id `sys:battery` | 已接入，默认关。托盘最低电量不统计本机 |
 
@@ -80,7 +80,7 @@
 
 审查未修项以 `docs/reviews/BACKLOG.md` 为准。PR #44 待验证项见 CR-84，HERO 非阻塞传输层测试见 CR-97；充电测试已取消，不等待插拔充电操作。其它人工待办如下。
 
-1. **插线校准两处**：迈从 `ParseKeyboardV1Charge` 补全充电位（已知 0x10 = 充电中）；雷柏充满时 `[7]` 待采到再补映射。
+1. **插线校准两处**：迈从 `ParseKeyboardV1Charge` 补全充电位（已知 0x10 = 充电中）；雷柏满电时 `[7]` 在 0/1/2 间横跳（底座涓流），采不到稳定值 → 100% 一律判「充满」，不再等这个标志（rapoo.md §5.2）。
 2. **北通鲲鹏20 有线变体**（PID_5191/KP20EB）主动查询仍未真机验证（PID_5159 广播 / PID_5158 有线 COL01 查询已打通，见 betop.md §1.8）；手柄关机后广播帧是否有占位值无样本，待观察。T9 的 `byte23` 低位仍只认 `0x50` = 未连接；验证方法见 betop.md §1.4.1。
 3. **贴片人手复看**：连续拖 5 次、上下甩出贴片、拖到两端再回拖、松手后不自跳（CR-48）；自动隐藏、竖向/多屏（CR-41）、深色对比（CR-42）、是否压住任务栏按钮（CR-39）、右键菜单（CR-60）、悬停设备名（多台/底栏/深色任务栏）。分辨率往返已于 2026-10-13 通过。Win10 小组件投影（CR-57）等用户决定是否做。
 4. **页面缓存真机**：来回切换是否变快、离开再回来数据是否仍刷新、设置值是否与 `settings.json` 一致、搜索是否仍可用。坑见 `dev/runtime-pitfalls.md` §19。相关未修项 CR-61 / CR-63。
@@ -92,7 +92,7 @@
 
 1. **dongle 静音**：本应用、浏览器里的 M HUB、官方 HUB 谁持有会话谁工作。崩溃进程会把会话粘死。先看 safety.md §2，别急着改协议。
 2. **启动方式**：工具拉起的进程会被进程树清掉。用 `explorer.exe "VigilWatt.App.exe"`。强杀会按 safety.md §2 占死 dongle 会话。
-3. **雷柏**：停手 = dongle 静音，静音不是离线。离线主判据是 `[18].bit7`，走约 6 秒确认，不要改成立刻离线。见 rapoo.md。
+3. **雷柏**：`[18].bit7` 只在 **2.4G 模式**下作断链判据（有线时恒 0，属正常）；离线走约 6 秒断链确认或 90 秒静默兜底，不要改成立刻离线。见 rapoo.md §4.1、§5.1。
 4. **插件配置分三层**：协议事实和安全声明必须按品牌；离线策略集中在 `OfflinePolicy`。`CountPollFailures` 与 `SupportsPassiveListen` 是两件事，合成一个布尔会让迈从关机后永远不离线。
 
 ## 6. 关键文件速查

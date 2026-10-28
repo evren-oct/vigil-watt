@@ -76,6 +76,14 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// </summary>
     protected virtual TimeSpan ProbeCooldown => TimeSpan.FromSeconds(30);
 
+    /// <summary>熔断停写期间两次"半开探活"的最小间隔；默认 <see cref="TimeSpan.Zero"/> = 关闭，行为与旧版一致。
+    /// 只对"设备频繁短睡且无被动监听"的插件有意义，**建议 30 秒起步、按品牌实测容忍度**（`runtime-pitfalls.md` §23.1）。</summary>
+    protected virtual TimeSpan BreakerProbeInterval => TimeSpan.Zero;
+
+    /// <summary>是否参与半开探活：= 覆写了 <see cref="BreakerProbeInterval"/>。DeviceManager 靠它决定调不调
+    /// <see cref="NudgeHalfOpen"/>——别拿发现节拍的两个 flag 代替（`runtime-pitfalls.md` §23.1）。</summary>
+    public virtual bool HasHalfOpenProbe => BreakerProbeInterval > TimeSpan.Zero;
+
     /// <summary>
     /// 是否允许向设备写探测/查询帧。**唯一授权入口是插件开关**（<c>AppSettings.PluginEnabled[Name]</c>）——
     /// 开插件即授权它工作所需的写入，不再有第二个"写入许可"开关（safety.md §3 规则 2）。
@@ -130,6 +138,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         public DateTimeOffset LastBypassAt;
         /// <summary>本轮核实正在放行写入（绕过熔断位，但不改熔断状态）。</summary>
         public bool BypassActive;
+        /// <summary>本轮是"半开探活"（只为发现设备睡醒）：失败不记失败次数、不升退避档位。</summary>
+        public bool HalfOpenProbe;
         /// <summary>每句柄一次性的动作标记（会话握手等），子类自行使用。</summary>
         public bool HandshakeSent;
         /// <summary>本设备的读数异常过滤器（基准 + 异常持续计时都封在里面）。</summary>
@@ -598,6 +608,48 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         RequestConfirm(dev);
     }
 
+    /// <summary>熔断期半开探活：对停写退避中的设备按 <see cref="BreakerProbeInterval"/> 节流发一帧核实；
+    /// 与 <see cref="RunPendingConfirm"/> 的分工、失败不记账的语义见 `runtime-pitfalls.md` §23。**只在 DeviceManager 的 `_passGate` 内调用**（遍历的是非并发字典）。</summary>
+    public void NudgeHalfOpen()
+    {
+        if (BreakerProbeInterval <= TimeSpan.Zero) return;
+
+        foreach (var dev in _devices.Values)
+        {
+            if (!dev.WritesDisabled) continue;   // 没熔断就不用探活，正常轮询会覆盖
+            if (DateTimeOffset.Now - dev.LastBypassAt < BreakerProbeInterval) continue;
+
+            // 有被动监听线程的插件：置标志交给它 500ms 的空闲 tick，别在这里跟它抢 IoGate
+            if (dev.ListenTask != null)
+            {
+                dev.ConfirmRequested = true;
+                continue;
+            }
+            RunHalfOpenProbe(dev);
+        }
+    }
+
+    /// <summary>半开探活的执行体：一帧核实，拿到应答就由插件自己的 <c>ReportPollAnswered</c> 解除熔断。
+    /// 同步跑在发现线程上（单台 ≤700ms）：多设备插件接入前改成时间预算，**别改成"一轮只探一台"**（CR-110）。</summary>
+    private void RunHalfOpenProbe(TrackedDevice dev)
+    {
+        dev.LastBypassAt = DateTimeOffset.Now;
+
+        (int? Percent, ChargingState Charging)? read;
+        lock (dev.IoGate)
+        {
+            dev.HalfOpenProbe = true;
+            try { read = PollDevice(dev); }
+            finally { dev.HalfOpenProbe = false; }
+        }
+
+        if (!read.HasValue) return;   // 还没醒：保持离线与退避档位，等下一次探活
+
+        if (TryApplyReading(dev, read.Value.Percent, read.Value.Charging, push: true))
+            Log.Info($"{DisplayName} 半开探活成功: {dev.Status.DisplayName} 恢复在线");
+        ConsumeOfflineRequest(dev);
+    }
+
     /// <summary>
     /// 消费插件通过 <see cref="RequestOffline"/> 提交的"设备已休眠/关机"标记：立即标离线。
     /// 这是零歧义证据（如北通 T9 占位帧），**不计入通信失败**。
@@ -625,9 +677,21 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                     continue;
                 }
 
+                // 熔断停写中且探活间隔到了：本轮当"半开探活"发（失败不记账，档位不会被顶高）。
+                // 没有这一步，纯查询型插件（ATK 鼠标）在退避期内一帧都不发，
+                // 设备睡醒后最长要干等 5 分钟才被重新读到。
+                bool halfOpen = dev.WritesDisabled
+                                && BreakerProbeInterval > TimeSpan.Zero
+                                && DateTimeOffset.Now - dev.LastBypassAt >= BreakerProbeInterval;
+
                 (int? Percent, ChargingState Charging)? read;
                 lock (dev.IoGate)
-                    read = PollDevice(dev);
+                {
+                    if (halfOpen) dev.LastBypassAt = DateTimeOffset.Now;
+                    dev.HalfOpenProbe = halfOpen;
+                    try { read = PollDevice(dev); }
+                    finally { dev.HalfOpenProbe = false; }
+                }
 
                 // 设备主动告知休眠/关机（协议层明确帧）：立即标离线，不等 3 次查询失败（那要 3 分钟）。
                 if (ConsumeOfflineRequest(dev)) continue;
@@ -739,6 +803,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         if (!WritesEnabled) return false;
         // 设备自己发信号触发的核实不受熔断限制、也不改熔断状态——挡住它等于把唤醒信号丢掉（CR-53）。
         if (dev.BypassActive) return true;
+        // 半开探活同理：它的唯一目的就是发现"设备睡醒了"，被自己的熔断挡住就永远发现不了。
+        if (dev.HalfOpenProbe) return true;
         if (!dev.WritesDisabled) return true;
         if (WriteBackoff.IsExpired(dev.BreakerTrips, dev.WritesDisabledAt, DateTimeOffset.Now))
         {
@@ -794,6 +860,9 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// </summary>
     protected void ReportPollFailure(TrackedDevice dev)
     {
+        // 半开探活失败是**预期结果**（设备在睡），一记账就会每探活一次升一档，退避一路爬到 5 分钟，
+        // 设备真醒了还要干等——这正是 2026-10-27 用户复报的"唤醒后电量不刷新"。
+        if (dev.HalfOpenProbe) return;
         if (++dev.ConsecutiveFailures < Offline.MaxFailures) return;
         // 每次都重新起算退避并升档（含"熔断期内半开重试又失败"）：否则退避会永远停在首次的 30 秒，等于没有递增。
         TripBreaker(dev);

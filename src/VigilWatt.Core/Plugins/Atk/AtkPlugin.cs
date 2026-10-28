@@ -9,7 +9,8 @@ namespace VigilWatt.Core.Plugins.Atk;
 /// <summary>
 /// 功 能： ATK/VXE 无线鼠标电量插件——主动查询 FF02 口的 17 字节命令-应答协议。
 /// 2026/10/20 22:14:00 Yang
-/// 帧结构与实测依据见 docs/hardware/atk.md；编解码在 AtkCodec。
+/// 2026/10/26 22:40:03 ranxue：接入 A9 Air 大师版+（接收器 0x1278 / 本体 0x1293），双连接改留本体
+/// 帧结构与实测依据见 docs/hardware/atk.md（§2.2 §3.3 §4）；编解码在 AtkCodec。
 /// </summary>
 public sealed class AtkPlugin : BatteryPluginBase
 {
@@ -46,6 +47,11 @@ public sealed class AtkPlugin : BatteryPluginBase
     private const ushort DonglePid1K = 0x101A;            // 1K dongle
     private const ushort DonglePidV3 = 0x1303;            // 8K dongle（产品名 "Wireless mouse 8k dongle-M"）
     private const ushort DonglePidF1Ultimate = 0x11D9;    // F1 Ultimate 2.0 接收器（产品名 "Wireless mouse 8k dongle-L"）
+    private const ushort DonglePidA9Air = 0x1278;         // A9 Air 大师版+ GEM 8K 接收器（产品名同为 "...8k dongle-L"）
+
+    /// <summary>A9 Air 大师版+ 的**本体** PID：插数据线时枚举出来（产品名 "ATK A9 Air+"）。
+    /// 与 F1 Ultimate 的 0x11E4 同类——**不是接收器**，但插线时只有它应答（atk.md §3.3）。</summary>
+    private const ushort BodyPidA9Air = 0x1293;
 
     /// <summary>F1 Ultimate 2.0 的**本体** PID：插充电线时枚举出来（产品名 "ATK F1 ULTIMATE 2.0"）。
     /// 它**不是接收器**——2026-10-27 实测纠正：曾按"同型号另一只"登记进 <see cref="IsReceiverPid"/>，
@@ -59,9 +65,13 @@ public sealed class AtkPlugin : BatteryPluginBase
     /// <summary>已知的接收器 PID：都认同一条查询帧、响应结构一致。11D9/11E4 漏登记过一次，
     /// 结果它们走"本体"分支又把自己算成"接收器在位"，整只鼠标不认领（atk.md §8）。
     /// 11E4 虽然是本体，也必须留在这里——插着充电线时 dongle 收不到无线包、读不到电量，
-    /// 若让本体"让位给在位的接收器"，会变成 dongle 认不上 + 本体不许认，整只鼠标消失（atk.md §4.3）。</summary>
+    /// 若让本体"让位给在位的接收器"，会变成 dongle 认不上 + 本体不许认，整只鼠标消失（atk.md §4.3）。
+    /// A9 Air 的**本体 0x1293 是例外，故意不列**：它的产品名 `ATK A9 Air+` 是唯一准确的机型来源，
+    /// 留在外面才能被 <see cref="BuildDisplayName"/> 学到；它的"可独立认领"由 IsCandidate 的
+    /// 已登记分组分支保证（atk.md §4.1）。</summary>
     private static bool IsReceiverPid(ushort pid) =>
-        pid is DonglePid or DonglePid1K or DonglePidV3 or DonglePidF1Ultimate or BodyPidF1Ultimate;
+        pid is DonglePid or DonglePid1K or DonglePidV3 or DonglePidF1Ultimate or BodyPidF1Ultimate
+            or DonglePidA9Air;
 
     private static DateTimeOffset _receiverCheckedAt;
 
@@ -108,7 +118,7 @@ public sealed class AtkPlugin : BatteryPluginBase
             return false;
 
         // 长度判据：必须能收发 17 字节电量帧，否则写不进/读不出完整帧。
-        // 接收器用严格判据（in=17 / out=17，本机实测 0x101B、0x101A、0x1303 三者一致）；
+        // 接收器用严格判据（in=17 / out=17，0x101B/0x101A/0x1303/0x11D9 上游实测、0x1278 作者实测均一致）；
         // 本体的接口长度未实测（插充电线时才枚举出来），只要求"容得下"这一能力。
         if (IsReceiverPid(info.ProductId))
             return AtkCodec.IsSupportedInterface(info.InputReportLength, info.OutputReportLength);
@@ -119,6 +129,14 @@ public sealed class AtkPlugin : BatteryPluginBase
         // 其余 PID 视为"有线本体"（插充电线时枚举出来的鼠标本体）。
         // 本体 PID **因型号而异**（实测 F1 Pro Max = 0x1015、F1 V3 ULTIMATE+ = 0x12A9），
         // 不能靠白名单穷举——改用"**本组对应的接收器**不在位"来判定，故新型号自动支持。
+        // 已登记分组：本体**一律可认领**，不再查"本组接收器在不在位"。
+        // 实测 A9 Air 插着数据线时接收器已经沉默（连发 3 次 0 应答），只有本体回 85%/充电中；
+        // 按"接收器在位就否决本体"的老规则，整只鼠标一条读数都不出（atk.md §3.3）。
+        // 两条都能认领时由 SkipPathsForThisPass 先把接收器摘掉，本体独占同一个设备 ID——
+        // 不能指望基类去重兜底：它保留**先认领**的那条，而接收器永远比本体先出现（atk.md §4.4）。
+        if (DeviceGroups.ContainsKey(info.ProductId)) return true;
+
+        // 未登记的分组才回落到"本组接收器在不在位"——新型号不必逐个登记配对表。
         // ⚠ 必须按"本组"判，不能按"全局有没有接收器"：同机另一只鼠标的接收器在位时，
         //   会把本鼠标的本体误判成"接收器还在"而不认领（2026-10-23 实机复现）。
         RefreshReceiversInPlace();
@@ -127,9 +145,10 @@ public sealed class AtkPlugin : BatteryPluginBase
 
     /// <summary>
     /// 设备归一组：同一台鼠标的接收器与有线本体归到同一组（同一台设备的两个形态）。
-    /// 实测配对（F1 Pro Max 与 F1 V3 ULTIMATE+ 各一套）：接收器 0x101B ↔ 本体 0x1015；
-    /// 接收器 0x1303 ↔ 本体 0x12A9。该鼠标的 HID 序列号为空、容器 ID 也不同，
-    /// **硬件层没有可自动配对的标识**，只能按实测配对表归一。
+    /// 配对来源：上游两台真机（F1 Pro Max `0x101B`/`0x101A` ↔ 本体 `0x1015`、
+    /// F1 V3 ULTIMATE+ `0x1303` ↔ 本体 `0x12A9`）、F1 Ultimate 2.0（`0x11D9` ↔ `0x11E4`），
+    /// 以及本 PR 作者的单台 A9 Air 大师版+（`0x1278` ↔ 本体 `0x1293`）。
+    /// 该鼠标的 HID 序列号为空、容器 ID 也不同，**硬件层没有可自动配对的标识**，只能按实测配对表归一。
     /// 未登记的 PID 交回基类默认（路径哈希），等于上游行为——宁可充电时多一条，
     /// 也不能把两台不同的鼠标并成一条。
     /// </summary>
@@ -142,10 +161,59 @@ public sealed class AtkPlugin : BatteryPluginBase
         [0x12A9] = "v3",       // F1 V3 ULTIMATE+ 本体（插充电线时枚举）
         [DonglePidF1Ultimate] = "f1ult",   // F1 Ultimate 2.0 接收器（Wireless mouse 8k dongle-L）
         [BodyPidF1Ultimate] = "f1ult",     // F1 Ultimate 2.0 本体（插充电线时枚举，ATK F1 ULTIMATE 2.0）
+        [DonglePidA9Air] = "a9air",        // A9 Air 大师版+ GEM 8K 接收器
+        [BodyPidA9Air] = "a9air",          // A9 Air 大师版+ 本体（插数据线时枚举，ATK A9 Air+）
     };
 
     /// <summary>各组的型号名（本体上报的产品名，即机型）；按组存，两只鼠标互不覆盖。</summary>
     private static readonly ConcurrentDictionary<string, string> ModelNames = new();
+
+    /// <summary>本体的 PID 集合（插数据线时才枚举出来）。<see cref="DeviceGroups"/> 里其余 PID 都是接收器。</summary>
+    private static readonly HashSet<ushort> BodyPids = new()
+    {
+        0x1015,              // F1 Pro Max
+        0x12A9,              // F1 V3 ULTIMATE+
+        BodyPidF1Ultimate,   // F1 Ultimate 2.0
+        BodyPidA9Air,        // A9 Air 大师版+
+    };
+
+    /// <summary>
+    /// 同组本体在场时，把接收器的接口从本轮摘掉，让本体独占这个设备 ID。
+    /// <para>
+    /// 为什么必须在这里做：基类 <c>ExistingPathOfSameDevice</c> 的规则是**先认领者保留**，
+    /// 而接收器一直插在机上、本体要插线才出现，所以永远是本体被释放。
+    /// </para>
+    /// <para>
+    /// 2026-10-28 14:01:52 实测（A9 Air 大师版+，接收器未拔直接插线）：接收器 14:00:19 先认领
+    /// → 本体 14:00:36 认领后立刻被释放（日志"同一设备的另一条接口已认领，释放: PID_1293"）
+    /// → 接收器在插线后沉默、连续 3 次无应答 → 熔断并标记离线 → 设备页显示"离线"。
+    /// 本体明明能读，却被去重丢掉了。摘掉接收器后读数与充电位都来自有线链路（atk.md §3.3 §4.3）。
+    /// </para>
+    /// 无线态（本体不在场）不摘，接收器照常认领，行为不变。
+    /// </summary>
+    protected override IReadOnlyCollection<string> SkipPathsForThisPass(
+        IReadOnlyList<HidDeviceInfo> availableDevices)
+    {
+        var presentPids = availableDevices
+            .Where(d => d.VendorId == VendorId)
+            .Select(d => d.ProductId)
+            .ToHashSet();
+
+        var bodyGroupsInPlace = presentPids
+            .Where(p => BodyPids.Contains(p) && DeviceGroups.ContainsKey(p))
+            .Select(p => DeviceGroups[p])
+            .ToHashSet();
+
+        if (bodyGroupsInPlace.Count == 0) return Array.Empty<string>();
+
+        return availableDevices
+            .Where(d => d.VendorId == VendorId
+                        && !BodyPids.Contains(d.ProductId)
+                        && DeviceGroups.TryGetValue(d.ProductId, out var group)
+                        && bodyGroupsInPlace.Contains(group))
+            .Select(d => d.DevicePath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>从 HID 路径取 PID（形如 <c>vid_373b&amp;pid_101b&amp;mi_01&amp;col05</c>）。</summary>
     private static ushort PidFromPath(string devicePath)

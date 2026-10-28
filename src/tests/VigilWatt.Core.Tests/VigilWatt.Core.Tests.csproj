@@ -164,6 +164,7 @@
     <Compile Include="..\..\VigilWatt.Core\Capture\IssueSummaryBuilder.cs" />
     <Compile Include="..\..\VigilWatt.Core\Capture\HtmlReportGenerator.cs" />
     <Compile Include="..\..\VigilWatt.Core\Capture\CapturePackageWriter.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mojhon\MojhonCodec.cs" />
   </ItemGroup>
 
 </Project>

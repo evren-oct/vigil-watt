@@ -41,6 +41,7 @@
 | Classic Bluetooth 耳机电量 | Windows HFP 网关设备节点的 `DEVPKEY_Device_BatteryLevel` 属性；与 Windows 设置显示同源。 | 通过 PnP 设备节点读取；本机 EDIFIER W820NB 已验证。 | Windows 系统属性读取方案；不是 BLE AEP 属性。实现背景见 [runtime-pitfalls.md](../dev/runtime-pitfalls.md)。 |
 | ATK / VXE 无线鼠标 17 字节查询帧 | 公开逆向项目 [0x44oge-ATK](https://github.com/ReformedDoge/0x44oge-ATK)（含 `calculateAtkChecksum` 与 "Only one that works" 的写入方式说明），本项目另做真机复核。 | 自行实现帧编解码（`AtkCodec`）；本机 F1 Pro Max `373B:101B` 已验证 95% / 4092 mV，与 ATK HUB 共存无冲突。 | 参考公开的协议分析自行实现，未复制其代码。休眠占位帧与设备归一见 [atk.md](atk.md)。 |
 | HyperX CF2 2.4G 推送帧 | 本机对 `FF90` 口的被动抓包（脚本独立于本项目），充电/放电状态与官方 NGENUITY 3.1.0 显示逐次对照。 | 零写入被动解析（`Cf2Codec`）；本机 CF2 飓风炫彩版 `03F0:0AC1` 已验证（放电 40%、充电 94→96%）。 | 全部由本机抓包事实得出，未复用厂商代码。字段推断被实机证伪两次的过程见 [hyperx-cf2.md](hyperx-cf2.md) §4。 |
+| 墨将 GALE2 `A5` 读帧 | 官方「墨将精英助手」2.1.5.0 操作手柄时的 **USBPcap 内核抓包**（`captures/mojhon-vendor-frames.jsonl`，厂商通道 70 条记录，35/35 帧校验通过）；型号代号取自官方助手本体 `MojhonAssistant.exe` 内嵌的 devices 目录字符串。 | 只重放实录里出现过的读帧：`A5 04 04`（电量+充电标志）与认领时一次的 `A5 04 E2`（型号标识）；未做任何命令枚举。本机 `E2B7:122C` 2.4G 与有线两种形态均已验证（放电 96/97%、充电 99→100%）。 | 仅使用抓包得到的协议事实与设备自报字符，未复用厂商代码或资源。原始 pcap 3.1 MB 未入库，需要时可另附；字段口径与未定论项见 [mojhon.md](mojhon.md) §8。 |
 
 ## 应用功能与实现方案
 

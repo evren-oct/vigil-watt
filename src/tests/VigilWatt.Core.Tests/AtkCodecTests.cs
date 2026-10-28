@@ -27,6 +27,14 @@ public class AtkCodecTests
     private static readonly byte[] MouseMotionFrame =
         Hex("08 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10");
 
+    /// <summary>本机实测（2026-10-26）：A9 Air 大师版+ 走 GEM 8K 接收器（0x1278），65% 放电。</summary>
+    private static readonly byte[] A9AirWirelessFrame =
+        Hex("08 04 00 00 00 02 41 00 0F CD 00 00 00 00 00 00 2A");
+
+    /// <summary>本机实测（2026-10-26）：同一只鼠标插线（本体 0x1293），80% 充电。</summary>
+    private static readonly byte[] A9AirWiredFrame =
+        Hex("08 04 00 00 00 02 50 01 10 5E 00 00 00 00 00 00 88");
+
     /// <summary>按协议重算 17 字节帧的校验和（op 帧口径：0x4D − 前 15 字节和）。</summary>
     private static byte[] FixChecksum(byte[] frame)
     {
@@ -102,6 +110,28 @@ public class AtkCodecTests
         var prefixed = new byte[DischargingFrame.Length + 1];
         Array.Copy(DischargingFrame, 0, prefixed, 1, DischargingFrame.Length);
         Assert.Equal(95, AtkCodec.TryParseReply(prefixed)!.Value.Percent);
+    }
+
+    // ---------------------------------------------------------------- 新版机型样本
+
+    [Fact]
+    public void A9_A9Air无线实测帧解析为65放电()
+    {
+        var r = AtkCodec.TryParseReply(A9AirWirelessFrame);
+        Assert.NotNull(r);
+        Assert.Equal(65, r!.Value.Percent);
+        Assert.Equal(ChargingState.Discharging, r.Value.Charging);
+        Assert.Equal(4045, AtkCodec.ReadMillivolts(A9AirWirelessFrame));
+    }
+
+    [Fact]
+    public void A10_A9Air插线实测帧解析为80充电()
+    {
+        var r = AtkCodec.TryParseReply(A9AirWiredFrame);
+        Assert.NotNull(r);
+        Assert.Equal(80, r!.Value.Percent);
+        Assert.Equal(ChargingState.Charging, r.Value.Charging);
+        Assert.Equal(4190, AtkCodec.ReadMillivolts(A9AirWiredFrame));
     }
 
     // ---------------------------------------------------------------- 校验和

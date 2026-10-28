@@ -96,6 +96,9 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkPlugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Hid\HidDeviceScanner.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Devices\DeviceDisplayDeduplicator.cs" />
+    <!-- 贴片「选择显示设备」的过滤规则同样是零依赖纯逻辑，链接真源文件而非复制 -->
+    <Compile Include="..\..\VigilWatt.App\Services\TaskbarDeviceFilter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkViaCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\HyperX\Cf2Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCodec.cs" />

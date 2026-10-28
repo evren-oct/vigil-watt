@@ -170,7 +170,9 @@ public sealed partial class WidgetWindow : Window
         // 低电量优先：充电中/已满的排末尾，未知电量殿后，同级按名称保持稳定
         var devices = App.Services.Manager.Devices
             .Where(d => d.IsOnline)
-            .Select(d => DevicePresentation.Apply(d, App.Services.Settings))
+            // Kind 要在这里补好：小组件按 Kind 直绘图标，插件声明 Unknown 的（雷柏/迈从）否则会画成「未识别」
+            .Select(d => DevicePresentation.WithIconKind(
+                DevicePresentation.Apply(d, App.Services.Settings), App.Services.Settings))
             .OrderBy(d => DeviceStatusFormatter.IsChargingOrFull(d.Charging))
             .ThenBy(d => d.BatteryPercent ?? 999)
             .ThenBy(d => d.DisplayName)

@@ -52,12 +52,10 @@ public sealed class DeviceRowModel
         DeviceStatus source, AppSettings settings, RemainingTimeEstimateResult remainingTime,
         DeviceRowModel? previous = null)
     {
-        var d = DevicePresentation.Apply(source, settings);
+        // 插件没声明类型的按名字猜图标；贴片走同一个方法，两处图标不会再分叉
+        var d = DevicePresentation.WithIconKind(DevicePresentation.Apply(source, settings), settings);
         var percent = d.BatteryPercent;
-        // 用户明确选过图标就不再按名字猜（选"通用"要保住那个圆点）
-        var kind = d.Kind == DeviceKind.Unknown && !DevicePresentation.HasIconOverride(d.Id, settings)
-            ? DeviceKindGuesser.Guess(d.DisplayName)
-            : d.Kind;
+        var kind = d.Kind;
 
         bool charging = DeviceStatusFormatter.IsCharging(d.Charging);
         string state = DeviceStatusFormatter.ChargeSuffix(d.Charging);

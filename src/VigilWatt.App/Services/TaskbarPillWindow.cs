@@ -484,7 +484,9 @@ public sealed class TaskbarPillWindow : IDisposable
         overflowNames = Array.Empty<string>();
         var all = App.Services.Manager.Devices
             .Where(d => d.IsOnline && d.Source != DeviceSource.System)
-            .Select(d => DevicePresentation.Apply(d, App.Services.Settings))
+            // Kind 要在这里补好：贴片按 Kind 直绘图标，插件声明 Unknown 的（雷柏/迈从）否则会画成「未识别」
+            .Select(d => DevicePresentation.WithIconKind(
+                DevicePresentation.Apply(d, App.Services.Settings), App.Services.Settings))
             .OrderBy(d => DeviceStatusFormatter.IsChargingOrFull(d.Charging))
             .ThenBy(d => d.BatteryPercent ?? 999)
             .ThenBy(d => d.DisplayName)

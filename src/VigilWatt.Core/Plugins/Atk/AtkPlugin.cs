@@ -132,7 +132,8 @@ public sealed class AtkPlugin : BatteryPluginBase
         // 已登记分组：本体**一律可认领**，不再查"本组接收器在不在位"。
         // 实测 A9 Air 插着数据线时接收器已经沉默（连发 3 次 0 应答），只有本体回 85%/充电中；
         // 按"接收器在位就否决本体"的老规则，整只鼠标一条读数都不出（atk.md §3.3）。
-        // 两条都认领也不会多出一行：同组共用同一个设备 ID，基类 ExistingPathOfSameDevice 保留先认领的那条。
+        // 两条都能认领时由 SkipPathsForThisPass 先把接收器摘掉，本体独占同一个设备 ID——
+        // 不能指望基类去重兜底：它保留**先认领**的那条，而接收器永远比本体先出现（atk.md §4.4）。
         if (DeviceGroups.ContainsKey(info.ProductId)) return true;
 
         // 未登记的分组才回落到"本组接收器在不在位"——新型号不必逐个登记配对表。
@@ -166,6 +167,53 @@ public sealed class AtkPlugin : BatteryPluginBase
 
     /// <summary>各组的型号名（本体上报的产品名，即机型）；按组存，两只鼠标互不覆盖。</summary>
     private static readonly ConcurrentDictionary<string, string> ModelNames = new();
+
+    /// <summary>本体的 PID 集合（插数据线时才枚举出来）。<see cref="DeviceGroups"/> 里其余 PID 都是接收器。</summary>
+    private static readonly HashSet<ushort> BodyPids = new()
+    {
+        0x1015,              // F1 Pro Max
+        0x12A9,              // F1 V3 ULTIMATE+
+        BodyPidF1Ultimate,   // F1 Ultimate 2.0
+        BodyPidA9Air,        // A9 Air 大师版+
+    };
+
+    /// <summary>
+    /// 同组本体在场时，把接收器的接口从本轮摘掉，让本体独占这个设备 ID。
+    /// <para>
+    /// 为什么必须在这里做：基类 <c>ExistingPathOfSameDevice</c> 的规则是**先认领者保留**，
+    /// 而接收器一直插在机上、本体要插线才出现，所以永远是本体被释放。
+    /// </para>
+    /// <para>
+    /// 2026-10-28 14:01:52 实测（A9 Air 大师版+，接收器未拔直接插线）：接收器 14:00:19 先认领
+    /// → 本体 14:00:36 认领后立刻被释放（日志"同一设备的另一条接口已认领，释放: PID_1293"）
+    /// → 接收器在插线后沉默、连续 3 次无应答 → 熔断并标记离线 → 设备页显示"离线"。
+    /// 本体明明能读，却被去重丢掉了。摘掉接收器后读数与充电位都来自有线链路（atk.md §3.3 §4.3）。
+    /// </para>
+    /// 无线态（本体不在场）不摘，接收器照常认领，行为不变。
+    /// </summary>
+    protected override IReadOnlyCollection<string> SkipPathsForThisPass(
+        IReadOnlyList<HidDeviceInfo> availableDevices)
+    {
+        var presentPids = availableDevices
+            .Where(d => d.VendorId == VendorId)
+            .Select(d => d.ProductId)
+            .ToHashSet();
+
+        var bodyGroupsInPlace = presentPids
+            .Where(p => BodyPids.Contains(p) && DeviceGroups.ContainsKey(p))
+            .Select(p => DeviceGroups[p])
+            .ToHashSet();
+
+        if (bodyGroupsInPlace.Count == 0) return Array.Empty<string>();
+
+        return availableDevices
+            .Where(d => d.VendorId == VendorId
+                        && !BodyPids.Contains(d.ProductId)
+                        && DeviceGroups.TryGetValue(d.ProductId, out var group)
+                        && bodyGroupsInPlace.Contains(group))
+            .Select(d => d.DevicePath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>从 HID 路径取 PID（形如 <c>vid_373b&amp;pid_101b&amp;mi_01&amp;col05</c>）。</summary>
     private static ushort PidFromPath(string devicePath)

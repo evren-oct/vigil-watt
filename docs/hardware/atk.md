@@ -327,8 +327,8 @@ A9 Air 大师版+ 在**接收器仍插着**的情况下接上 USB-C 数据线，
 托盘提示已更新: VigilWatt · ATK A9 Air+ 85%
 ```
 
-- 两条链路同时在场时**只出一条记录**：两条接口同属 `a9air` 组、共用同一个设备 ID，
-  基类 `ExistingPathOfSameDevice` 保留先探测成功的那条、释放另一条（实测只有本体应答）。
+- 两条链路同时在场时**只出一条记录**：由 `SkipPathsForThisPass` 按组把接收器那一轮摘掉，
+  本体独占 `a9air` 组唯一的设备 ID（§4.4 说明了为什么不能交给 `ExistingPathOfSameDevice` 去重）。
 - 去掉数据线、只剩接收器时（22:01 同机）：`VID_373B&PID_1278` → 70% 放电，显示名回落为接收器通用名
   `Wireless mouse 8k dongle-L`——这是 §4.1 已记录的行为（机型名只有本体上报才有）。
 
@@ -423,7 +423,7 @@ dongle 收不到无线包，`Probe` 无应答 → dongle 不被认领。如果�
 |---|---|---|
 | 无线使用（没插线） | dongle | 一条，同组 ID |
 | 插线充电（dongle 读不到） | 本体 | 一条，同一个 ID |
-| 两者都能读（罕见） | 先探测成功的 | `ExistingPathOfSameDevice` 释放另一条，仍是一条 |
+| 两者都能读（罕见） | 本体（接收器被 §4.4 摘掉） | 仍是一条 |
 
 产品名可用来区分形态：dongle 是 `Wireless mouse 8k dongle-L`，本体是 `ATK F1 ULTIMATE 2.0` / `ATK A9 Air+`。
 
@@ -431,6 +431,52 @@ dongle 收不到无线包，`Probe` 无应答 → dongle 不被认领。如果�
 结果插着充电线时 dongle 与本体各认领一条、ID 又不同 → 设备页出现 `ATK F1 Ultimate 2.0`
 和 `ATK F1 Ultimate 2.0 (#2)` 两个条目。**PID 不同不等于设备不同**，判断形态要看产品名与
 "充电时 dongle 是否还能应答"。
+
+### 4.4 双连接必须**摘掉接收器**，不能靠去重顺序（2026-10-28 修）
+
+**现象**：接收器不拔、直接插数据线，设备页显示 **"离线"**——本体能读，但读数用不上。
+
+**日志**（14:00 启动，14:01 插线）：
+
+```
+14:00:19  认领ATK设备: Wireless mouse 8k dongle-L [PID_1278] 电量=100 充电=Full
+14:00:36  同一设备的另一条接口已认领，释放: …PID_1293…（同 …PID_1278…）   ← 本体被丢掉
+14:01:52  ATK Wireless mouse 8k dongle-L 连续 3 次查询失败，熔断停写（退避 30 秒）
+14:01:52  ATK Wireless mouse 8k dongle-L 收到设备休眠/关机通知，立即标记离线
+```
+
+**成因**：基类 `ExistingPathOfSameDevice` 的规则是**先认领者保留**。接收器从开机起就一直插着、
+14:00:19 就先认领了；本体要插线才枚举出来、14:00:36 才尝试认领，于是**永远是被释放的那条**。
+而插线后接收器 `0x1278` 已沉默（§3.3），3 次无应答即熔断并标记离线 → 界面上就是"离线"。
+**结论：能读的那条被丢掉，不能读的那条留着。**
+
+**修法**：覆写 `SkipPathsForThisPass`，**同组本体在场时把接收器从本轮摘掉**：
+
+```csharp
+// BodyPids = { 0x1015 promax, 0x12A9 v3, 0x11E4 f1ult, 0x1293 a9air }
+var bodyGroupsInPlace = presentPids
+    .Where(p => BodyPids.Contains(p) && DeviceGroups.ContainsKey(p))
+    .Select(p => DeviceGroups[p]).ToHashSet();
+
+// 同组有本体 → 摘掉该组所有接收器接口
+return availableDevices
+    .Where(d => d.VendorId == VendorId && !BodyPids.Contains(d.ProductId)
+             && DeviceGroups.TryGetValue(d.ProductId, out var g) && bodyGroupsInPlace.Contains(g))
+    .Select(d => d.DevicePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+```
+
+判定用**本体 PID 集合**而不是 `IsReceiverPid`：后者把 `0x11E4` 也算了进去（§4.3 的修法），
+拿它区分"谁是接收器"会误摘本体。
+
+| 场景 | 谁被摘 | 认领结果 |
+|---|---|---|
+| 只插接收器（无线） | 无（本体不在场） | 接收器，行为不变 |
+| 接收器 + 本体（插线） | 该组接收器 | 本体独占，带充电位与机型名 |
+| 拔线 | 无 | 接收器恢复认领 |
+
+⚠ **别把去重当兜底**：`ExistingPathOfSameDevice` 只解决"同 ID 两条不要出两行"，
+它按到达顺序决定留谁，而接收器永远比本体先到。凡"两条链路中有一条更早常驻"的插件
+（不只 ATK），都不能指望它选中正确的那条。
 
 ## 5. 写入边界
 

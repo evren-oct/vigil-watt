@@ -55,6 +55,7 @@
 | **CR-112** | `HidDeviceScanner` 构造 `HidDeviceInfo` 时**没填 `SerialNumber`**（只填 Product / Manufacturer），所以 `HidDeviceInfo.SerialNumber` 在插件侧恒为空串 → `VgnDevicePairing.SameSerial` 永远 false，**VGN 的 `SkipPathsForThisPass` 一次也没生效过**（插线 + 接收器同时在场时仍会出两行）。修法是一行：同一句柄上再调 `HidD_GetSerialNumberString`（`HidCaptureEnumerator` 已这么做）。改完 VGN 配对会**首次真正生效**，属行为变更，需先真机验证蜻蜓 F2 / F1 V5 插线场景再放开 | `Hid/HidDeviceScanner.cs:137`（vgn.md 配对、atk.md §4） | `open` |
 | **CR-113** | ATK 系列的**充电读数虚高约 15 pp**（A9 Air 大师版+ 实测：有线充电 95% / 4276 mV ↔ 拔线放电 80% / 4213 mV，电压只差 63 mV）。固件按电压估电量、充电端电压抬升导致虚高，**codec 不应修正**（会掩盖真实电压），但用户会在插拔瞬间看到 95% ↔ 80% 跳变，容易误判成插件读错。若要更平滑，应在展示层做"同一设备充电态读数上限夹到上次放电读数 + 一个迟滞"，属产品决策而非协议问题 | `Plugins/Atk/AtkCodec.cs`（atk.md §2 实测表） | `open` |
 | **CR-114** | 插件**学到的显示名只在进程内**（`AtkPlugin.ModelNames`）：无线态显示接收器通用串 `Wireless mouse 8k dongle-L`，重启后要再插一次线才恢复真实机型。**不为此新增持久化机制**——项目当前没有"插件自动学习并持久化显示名"的先例（`DeviceCustomizations` 是用户手动设置），且已有替代方案：因为两种形态归一到同一个设备 ID，用户在设置页手动改名一次对插不插线同时生效（atk.md §4.1）。若将来要做，`AppSettings` 需加一个 `LearnedDeviceNames`（按设备 ID），并注意 `Load()` 要补 null、老配置缺键不报错 | `Plugins/Atk/AtkPlugin.cs:BuildDisplayName`（atk.md §4.1） | `open` |
+| **CR-115** | `ExistingPathOfSameDevice` 去重**保留先认领的那条**，不是"更好"的那条。凡"两条链路里有一条更早常驻"的情形（接收器开机就插着、本体插线才枚举），去重必然选中错误的一条：ATK 实测表现为插线后设备页显示**离线**——能读的本体被释放、已沉默的接收器留着并熔断。修法是插件覆写 `SkipPathsForThisPass` 显式摘掉不该认领的那条，**不要指望去重顺序** | `Plugins/BatteryPluginBase.cs:ExistingPathOfSameDevice`（atk.md §4.4） | `open` |
 
 ## 重构候选（未做）
 

@@ -48,6 +48,7 @@ public sealed class AtkPlugin : BatteryPluginBase
     private const ushort DonglePidV3 = 0x1303;            // 8K dongle（产品名 "Wireless mouse 8k dongle-M"）
     private const ushort DonglePidF1Ultimate = 0x11D9;    // F1 Ultimate 2.0 接收器（产品名 "Wireless mouse 8k dongle-L"）
     private const ushort DonglePidA9Air = 0x1278;         // A9 Air 大师版+ GEM 8K 接收器（产品名同为 "...8k dongle-L"）
+    private const ushort DonglePidR1Nk = 0x10C9;          // VXE R1 Nearlink 接收器（产品名 "NK mouse NANO dongle"）
 
     /// <summary>A9 Air 大师版+ 的**本体** PID：插数据线时枚举出来（产品名 "ATK A9 Air+"）。
     /// 与 F1 Ultimate 的 0x11E4 同类——**不是接收器**，但插线时只有它应答（atk.md §3.3）。</summary>
@@ -58,6 +59,9 @@ public sealed class AtkPlugin : BatteryPluginBase
     /// 结果插着充电线时 dongle 与本体各认领一条、ID 又不同，设备页出现 `ATK F1 Ultimate 2.0` 与
     /// `ATK F1 Ultimate 2.0 (#2)` 两个条目。归到同一个 <see cref="DeviceGroups"/> 组即可（atk.md §4.3）。</summary>
     private const ushort BodyPidF1Ultimate = 0x11E4;
+
+    /// <summary>VXE R1 Nearlink 的**本体** PID：插线时枚举；FF02 上有 20B 干扰集合，故走严格判据（atk.md §9）。</summary>
+    private const ushort BodyPidR1Nk = 0x10C7;
 
     /// <summary>电量口的 usage page；必须精确匹配，否则会对 FF03/FF04/FF05/FF06 等厂商口各白发一帧查询。</summary>
     private const ushort UsagePageBattery = 0xFF02;
@@ -71,7 +75,7 @@ public sealed class AtkPlugin : BatteryPluginBase
     /// 已登记分组分支保证（atk.md §4.1）。</summary>
     private static bool IsReceiverPid(ushort pid) =>
         pid is DonglePid or DonglePid1K or DonglePidV3 or DonglePidF1Ultimate or BodyPidF1Ultimate
-            or DonglePidA9Air;
+            or DonglePidA9Air or DonglePidR1Nk;
 
     private static DateTimeOffset _receiverCheckedAt;
 
@@ -119,8 +123,8 @@ public sealed class AtkPlugin : BatteryPluginBase
 
         // 长度判据：必须能收发 17 字节电量帧，否则写不进/读不出完整帧。
         // 接收器用严格判据（in=17 / out=17，0x101B/0x101A/0x1303/0x11D9 上游实测、0x1278 作者实测均一致）；
-        // 本体的接口长度未实测（插充电线时才枚举出来），只要求"容得下"这一能力。
-        if (IsReceiverPid(info.ProductId))
+        // 本体大多只要求"容得下"，但 R1 Nearlink 的 FF02 有 20B 干扰集合，必须一起走严格判据。
+        if (IsReceiverPid(info.ProductId) || info.ProductId == BodyPidR1Nk)
             return AtkCodec.IsSupportedInterface(info.InputReportLength, info.OutputReportLength);
 
         if (info.InputReportLength < AtkCodec.ReportLength || info.OutputReportLength < AtkCodec.ReportLength)
@@ -163,6 +167,8 @@ public sealed class AtkPlugin : BatteryPluginBase
         [BodyPidF1Ultimate] = "f1ult",     // F1 Ultimate 2.0 本体（插充电线时枚举，ATK F1 ULTIMATE 2.0）
         [DonglePidA9Air] = "a9air",        // A9 Air 大师版+ GEM 8K 接收器
         [BodyPidA9Air] = "a9air",          // A9 Air 大师版+ 本体（插数据线时枚举，ATK A9 Air+）
+        [DonglePidR1Nk] = "r1nk",          // VXE R1 Nearlink 接收器（NK mouse NANO dongle）
+        [BodyPidR1Nk] = "r1nk",            // VXE R1 Nearlink 本体（插数据线时枚举）
     };
 
     /// <summary>各组的型号名（本体上报的产品名，即机型）；按组存，两只鼠标互不覆盖。</summary>
@@ -175,6 +181,7 @@ public sealed class AtkPlugin : BatteryPluginBase
         0x12A9,              // F1 V3 ULTIMATE+
         BodyPidF1Ultimate,   // F1 Ultimate 2.0
         BodyPidA9Air,        // A9 Air 大师版+
+        BodyPidR1Nk,         // VXE R1 Nearlink
     };
 
     /// <summary>
@@ -194,14 +201,14 @@ public sealed class AtkPlugin : BatteryPluginBase
     protected override IReadOnlyCollection<string> SkipPathsForThisPass(
         IReadOnlyList<HidDeviceInfo> availableDevices)
     {
-        var presentPids = availableDevices
-            .Where(d => d.VendorId == VendorId)
-            .Select(d => d.ProductId)
-            .ToHashSet();
-
-        var bodyGroupsInPlace = presentPids
-            .Where(p => BodyPids.Contains(p) && DeviceGroups.ContainsKey(p))
-            .Select(p => DeviceGroups[p])
+        // 只算"**可认领**的本体"：本体 PID 在场但只露出干扰接口时（R1 Nearlink 的 FF02 有 20B 集合）
+        // 它自己认领不了，此时若照样摘掉接收器，整只鼠标会一条读数都不出——与 CR-115 同一类。
+        var bodyGroupsInPlace = availableDevices
+            .Where(d => d.VendorId == VendorId
+                        && BodyPids.Contains(d.ProductId)
+                        && DeviceGroups.ContainsKey(d.ProductId)
+                        && IsCandidate(d))
+            .Select(d => DeviceGroups[d.ProductId])
             .ToHashSet();
 
         if (bodyGroupsInPlace.Count == 0) return Array.Empty<string>();
@@ -231,12 +238,14 @@ public sealed class AtkPlugin : BatteryPluginBase
             : base.IdFor(devicePath);   // 未登记的 PID → 保持上游默认（路径哈希）
     }
 
-    /// <summary>已验证型号表（键盘 A98 Pro 与 F1 ULTIMATE 2.0 两个 PID）。</summary>
+    /// <summary>已验证型号表（键盘 A98 Pro、F1 ULTIMATE 2.0 与 VXE R1 Nearlink）。</summary>
     private static readonly Dictionary<ushort, string> KnownModelByPid = new()
     {
         [0x1152] = "ATK A98 Pro",
         [DonglePidF1Ultimate] = "ATK F1 Ultimate 2.0",   // 接收器形态
         [BodyPidF1Ultimate] = "ATK F1 Ultimate 2.0",     // 本体形态（插充电线），同一台设备
+        [DonglePidR1Nk] = "VXE R1 Nearlink",             // 接收器形态（NK mouse NANO dongle）
+        [BodyPidR1Nk] = "VXE R1 Nearlink",               // 本体形态（插数据线），同一台设备
     };
 
     protected override string BuildDisplayName(HidDeviceInfo info)

@@ -104,6 +104,41 @@ public class AtkCodecTests
     }
 
     [Fact]
+    public void R1Nk_实测无线帧读取60和3826毫伏()
+    {
+        var frame = Hex("08 04 00 00 00 02 3C 00 0E F2 00 00 00 00 00 00 0B");
+        var reading = AtkCodec.TryParseReply(frame);
+        Assert.NotNull(reading);
+        Assert.Equal(60, reading.Value.Percent);
+        Assert.Equal(ChargingState.Discharging, reading.Value.Charging);
+        Assert.Equal(3826, AtkCodec.ReadMillivolts(frame));
+    }
+
+    [Fact]
+    public void R1Nk_实测有线帧读取80和充电状态()
+    {
+        var frame = Hex("08 04 00 00 00 02 50 01 0F 82 00 00 00 00 00 00 65");
+        var reading = AtkCodec.TryParseReply(frame);
+        Assert.NotNull(reading);
+        Assert.Equal(80, reading.Value.Percent);
+        Assert.Equal(ChargingState.Charging, reading.Value.Charging);
+        Assert.Equal(3970, AtkCodec.ReadMillivolts(frame));
+    }
+
+    [Theory]
+    [InlineData("08 04 00 00 00 02 64 01 10 37 00 00 00 00 00 00 9B", ChargingState.Charging, 4151)]
+    [InlineData("08 04 00 00 00 02 64 00 10 34 00 00 00 00 00 00 9F", ChargingState.Full, 4148)]
+    public void R1Nearlink_实测满电帧按充电标志区分状态(string hex, ChargingState expected, int millivolts)
+    {
+        var frame = Hex(hex);
+        var reading = AtkCodec.TryParseReply(frame);
+        Assert.NotNull(reading);
+        Assert.Equal(100, reading.Value.Percent);
+        Assert.Equal(expected, reading.Value.Charging);
+        Assert.Equal(millivolts, AtkCodec.ReadMillivolts(frame));
+    }
+
+    [Fact]
     public void A8_容忍前置占位字节的读路径()
     {
         // 某些读路径会在 report ID 前多带一个 0

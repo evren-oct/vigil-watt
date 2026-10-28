@@ -48,6 +48,13 @@ public class AppSettings
     /// <summary>任务栏贴片最多显示几台设备，超出显示 "+N"。合法范围见 <c>VigilWatt.App.Services.TaskbarBatteryOptions</c>（1~5，默认 3）。</summary>
     public int TaskbarBatteryMaxDevices { get; set; } = 3;
 
+    /// <summary>
+    /// 任务栏贴片只显示这些设备（按显示名匹配，大小写不敏感）。空 = 不过滤（显示全部在线设备）。
+    /// 存名字而不是设备 Id：Id 由 USB 路径哈希而来，同一只设备插线/换口就变（详见 DeviceManager 的去重说明），
+    /// 名字在两种连接方式下是稳定的。
+    /// </summary>
+    public List<string> TaskbarBatterySelectedDevices { get; set; } = new();
+
     /// <summary>任务栏贴片相对"托盘左侧默认位"的水平偏移（物理像素，正数向右）。用户拖动后写入，重启沿用。</summary>
     public int TaskbarBatteryOffsetX { get; set; }
 

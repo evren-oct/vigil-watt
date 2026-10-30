@@ -32,6 +32,26 @@ public class InphicIn9CodecTests
     }
 
     [Fact]
+    public void ChargingFrameReportsPluggedWhileDischargeFlagStays()
+    {
+        // 2026-10-31 充电抓包：插线后 [18]=0x64(100%)、[19]=0x01，而 [21] 仍报放电 0x01。
+        var frame = Convert.FromHexString("0C012000030110004D3930393401002546FF6401FF01000032963238FFC767096D");
+
+        Assert.True(InphicIn9Codec.TryParse(frame, out int percent, out byte flag));
+        Assert.Equal(100, percent);
+        Assert.Equal(InphicIn9Codec.FlagDischarging, flag);
+        Assert.True(InphicIn9Codec.IsCharging(frame));
+    }
+
+    [Fact]
+    public void DischargingFrameAndShortFrameAreNotCharging()
+    {
+        Assert.False(InphicIn9Codec.IsCharging(Sample()));
+        Assert.False(InphicIn9Codec.IsCharging(null));
+        Assert.False(InphicIn9Codec.IsCharging(Sample()[..InphicIn9Codec.ChargingOffset]));
+    }
+
+    [Fact]
     public void AllZeroFrameIsRejected()
     {
         // 有线本体（5B2E）与"发错刷新帧清空了寄存器"都返回全 0：采信就会显示 0%。

@@ -25,6 +25,12 @@ internal static class InphicIn9Codec
     public const int PercentOffset = 18;
     public const int ChargeFlagOffset = 21;
 
+    /// <summary>充电位在帧里的偏移（inphic.md §2.2）：0x01 = 插着充电器。</summary>
+    public const int ChargingOffset = 19;
+
+    /// <summary>充电位取值。</summary>
+    public const byte ChargingPlugged = 0x01;
+
     /// <summary>序号在帧里的偏移（inphic.md §2.2）。</summary>
     public const int CommandOffset = 4;
 
@@ -71,6 +77,10 @@ internal static class InphicIn9Codec
         chargeFlag = frame[ChargeFlagOffset];
         return true;
     }
+
+    /// <summary>充电判据区（inphic.md §2.3）：[19]=0x01 表示插着充电器，此时电量不可信。</summary>
+    public static bool IsCharging(byte[]? frame)
+        => frame != null && frame.Length > ChargingOffset && frame[ChargingOffset] == ChargingPlugged;
 
     /// <summary>取型号串（真机为 <c>M9094</c>），只用于日志与显示名排错；解析不出不算失败。</summary>
     public static bool TryParseModel(byte[] frame, out string model)

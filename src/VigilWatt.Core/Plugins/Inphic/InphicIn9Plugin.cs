@@ -100,7 +100,7 @@ public sealed class InphicIn9Plugin : BatteryPluginBase
             return (InphicIn9Codec.Protocol, null, ChargingState.Unknown);
         }
 
-        var probeCharging = ResolveCharging(flag, WiredBodyInPlace());
+        var probeCharging = ResolveCharging(InphicIn9Codec.IsCharging(frame), flag, WiredBodyInPlace());
         return (InphicIn9Codec.Protocol,
             probeCharging == ChargingState.Charging ? null : percent,
             probeCharging);
@@ -130,14 +130,16 @@ public sealed class InphicIn9Plugin : BatteryPluginBase
 
         ReportPollAnswered(dev);
 
+        bool pluggedIn = InphicIn9Codec.IsCharging(frame);
         bool wired = WiredBodyInPlace();
-        var charging = ResolveCharging(flag, wired);
+        var charging = ResolveCharging(pluggedIn, flag, wired);
 
-        Log.InfoOnChange($"inphic-in9:{dev.Status.Id}", $"{percent}|{flag}|{charging}|{wired}",
+        Log.InfoOnChange($"inphic-in9:{dev.Status.Id}", $"{percent}|{flag}|{pluggedIn}|{charging}|{wired}",
             charging == ChargingState.Charging
-                ? $"英菲克 IN9 充电中，电量不上报 标志=0x{flag:X2} " +
-                  $"有线本体={(wired ? "在位" : "不在位")} 原始={Log.Hex(frame)}"
-                : $"英菲克 IN9 电量={percent}% 标志=0x{flag:X2} 原始={Log.Hex(frame)}");
+                ? $"英菲克 IN9 充电中，电量不上报 充电位={(pluggedIn ? "插线" : "未插")} " +
+                  $"链路标志=0x{flag:X2} 有线本体={(wired ? "在位" : "不在位")} 原始={Log.Hex(frame)}"
+                : $"英菲克 IN9 电量={percent}% 充电位={(pluggedIn ? "插线" : "未插")} " +
+                  $"链路标志=0x{flag:X2} 原始={Log.Hex(frame)}");
 
         // 充电时的百分比不可信（2.4G 侧是缓存/换算值）：只报充电状态，不报数值。
         return charging == ChargingState.Charging
@@ -145,13 +147,11 @@ public sealed class InphicIn9Plugin : BatteryPluginBase
             : (percent, charging);
     }
 
-    /// <summary>
-    /// 充电判据以报文 `[21]` 为主：真机插线后 `5B2F` 仍在位、PID 不变，靠 PID 变化判不出来。
-    /// 有线本体（`5B2E`）只在标志位读不出来时兜底，属于不同批次的差异。
-    /// </summary>
-    private static ChargingState ResolveCharging(byte flag, bool wiredBodyInPlace)
+    /// <summary>充电判据区（inphic.md §2.3）：[19] 是插线位，优先于 [21]（充电时 [21] 仍报放电）。</summary>
+    private static ChargingState ResolveCharging(bool pluggedIn, byte linkFlag, bool wiredBodyInPlace)
     {
-        var byFlag = InphicIn9Codec.ToChargingState(flag);
+        if (pluggedIn) return ChargingState.Charging;
+        var byFlag = InphicIn9Codec.ToChargingState(linkFlag);
         if (byFlag != ChargingState.Unknown) return byFlag;
         return wiredBodyInPlace ? ChargingState.Charging : ChargingState.Unknown;
     }

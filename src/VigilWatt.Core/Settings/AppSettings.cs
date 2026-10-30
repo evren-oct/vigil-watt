@@ -85,7 +85,7 @@ public class AppSettings
         ["Betop"] = true,     // 北通手柄：发官方同款只读状态查询（cmd=0x5），默认开启
         ["Ajazz"] = false,
         ["Thunderobot"] = false,
-        ["Inphic"] = true,    // 英菲克 report 0x03 被动监听，不发送任何帧
+        ["Inphic"] = false,   // 英菲克：ZHEN 只被动读 report 0x03（零写入），但 IN9 需要发刷新帧，共用这一行开关故按"会写帧"处理（inphic.md §2）
         ["Darkrim"] = false,  // 寸渊影弑：发官方同款 GetBasicInfo(0x09) 才拿得到电量，会写帧（darkrim.md §1.6）
         ["GameSir"] = false,  // 盖世小鸡：要发心跳帧才能读到电量，属主动通信（gamesir.md §1.4）
         ["Hecate"] = false,   // HECATE/漫步者电竞：主动查询会向设备写帧，默认关闭需手动开启（hecate.md §3）

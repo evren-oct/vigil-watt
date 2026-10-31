@@ -114,6 +114,8 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | VXE R1 Nearlink · receiver `373B:10C9` | Verified locally over wireless and wired charging (`10C7`); uses the ATK switch, off by default. See [atk.md §9](docs/hardware/atk.md) |
 | HyperX Cloud Flight 2 · passive 2.4 GHz push frames | Implemented, on by default; zero writes. Verified on a CF2 |
 | MOJHON GALE2 (2.4G dongle / wired, both `E2B7:122C`) · vendor-channel `A5` read frame | Implemented, off by default; writes frames. Verified on hardware in both dongle and wired modes; charging flag confirmed by an A/B plug test |
+| LANGTU T98 keyboard · 2.4G passive status frame (`1A2C:8FFF`) | Implemented, on by default; zero writes. Contributor hardware, not re-tested by maintainer, see [langtu.md](docs/hardware/langtu.md) |
+| ATK A9 Ultra Max 2.0 · dongle `373B:11FE` | PID registration only, protocol identical to the existing ATK path. Frames from a contributor, not re-tested by maintainer |
 | Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |
 | System battery · `GetSystemPowerStatus` | Implemented; can be enabled optionally |
 

@@ -87,6 +87,7 @@
 | ATK | `PluginEnabled["Atk"]` | **false** | 鼠标发 17 字节 op 帧、键盘发 VIA `02 96 24`；两条链路共用一个开关，见 `atk.md` §5 §7。**唯一开了半开探活的插件**：`SupportsDiscoveryProbe` + `ProbeCooldown` 10s + `BreakerProbeInterval` 30s（`safety.md` §3 规则 3 ③） |
 | HyperX | 无（纯被动） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；dongle 固件只实现 interrupt OUT，写帧一律 `ERROR_INVALID_FUNCTION`，只读 `FF90` 推送帧 |
 | 墨将 | `PluginEnabled["Mojhon"]` | **false** | `E2B7:122C` 厂商页 `0xFFAB` 只发官方助手实录里的只读帧 `A5 04 04`（电量+充电标志）与认领时一次的 `A5 04 E2`（型号标识）；`SupportsDiscoveryProbe` + `ProbeCooldown` 10s，见 `mojhon.md` §7 |
+| 狼途 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读 `1A2C:8FFF` 的 `0xFF02` 状态推送帧，`0xFF` 哨兵必丢，见 [langtu.md](langtu.md) §1 |
 
 三条硬约束：
 

@@ -25,13 +25,6 @@ public class InphicIn9CodecTests
     }
 
     [Fact]
-    public void ReadsModelStringForDiagnostics()
-    {
-        Assert.True(InphicIn9Codec.TryParseModel(Sample(), out string model));
-        Assert.Equal("M9094", model);
-    }
-
-    [Fact]
     public void ChargingFrameReportsPluggedWhileDischargeFlagStays()
     {
         // 2026-10-31 充电抓包：插线后 [18]=0x64(100%)、[19]=0x01，而 [21] 仍报放电 0x01。

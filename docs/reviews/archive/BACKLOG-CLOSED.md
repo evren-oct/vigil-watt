@@ -76,6 +76,12 @@
 | CR-108 | 半开探活的闸门改成 opt-in 本身：`IBatteryPlugin` 新增 `HasHalfOpenProbe`（= 覆写了 `BreakerProbeInterval`），`DeviceManager.DiscoverOnlyAsync` 的探活循环不再按 `SupportsDiscoveryProbe`/`SupportsFastDiscovery` 过滤。原写法下"只覆写间隔、没开发现 flag"的插件会静默空转（无帧、无日志）。线上零变化：唯一开探活的 ATK 两个 flag 本来就都开着。新增用例 `NudgeHalfOpenWorksWithoutDiscoveryFlags` 钉住语义 |
 | CR-109 | `SupportsDiscoveryProbe` 的注释口径按实现改写：`ProbeCooldown` 小于 15 秒才吃得到每个节拍，大于 15 秒不会多写帧、只是部分节拍被挡住白跑（VGN 就是 20 秒）。VGN 的冷却值未动——它没有被动监听，有效节拍 30 秒已够用，降到 10 秒是写入预算变更 |
 | CR-111 | `NudgeHalfOpen` 的 XML 注释压回 `AGENTS.md` §2 配额（原约 10 行），并补上"只在 `_passGate` 内调用"的线程前提。压缩前先把「与 CR-53 通道的分工」「闸门不是那两个 flag」两句补进 `runtime-pitfalls.md` §23，避免信息丢失 |
+| CR-125 | 2026-10-31 决定不入库：`hardware/inphic.md` §2 的来源行补「三份 pcapng 为维护者本机留存、未入库，关键帧已摘录在下方」，序号递增 / 重启从 `01` 起 / 充电位 `[19]` 三条结论仍可按文内摘录复核 |
+| CR-129 | changelog 2026-10-31 的北通三条压回「改了什么 + 为什么」两句 + 指针，时间线与样本表留在 `hardware/betop.md` §1.4.2 / §1.4.3 |
+| CR-130 | `hardware/betop.md` §1.4.2 样本数改为「246 条里 byte[1] 从未出现 `0x00`：`0x02` 168 条、`0x03` 73 条，另有 `0x04` / `0x0C`」，消除「只出现」与「还有」的同句冲突 |
+| CR-131 | `code-flow.md` §4.2 的 `LastUpdated` 措辞改为「最近一次读数；`MarkOffline` 幂等、只在真正翻转在线状态时写一次」，与 `BatteryPluginBase.cs:557` 一致；过期判定逻辑未动 |
+| CR-127 | 删掉 `InphicIn9Codec.TryParseModel` 及 `ModelOffset` / `ModelLength` / `using System.Text`，同步删掉 `ReadsModelStringForDiagnostics` 用例。型号串对排错没有增量价值——原始帧本来就由 `Log.Hex` 完整打进日志。IN9 用例 19 → 18 |
+| CR-128 | `BetopSettleTests.cs` 文件头用户名 `workbuddy` 改为 `20211`（Windows 用户名），符合 `comment-style.md` §7 |
 
 ## wontfix
 

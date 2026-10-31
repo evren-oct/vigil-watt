@@ -22,6 +22,9 @@ public sealed class InphicIn9Plugin : BatteryPluginBase
     /// <summary>0 已由 codec 当占位值挡掉；这里放宽到 0 是为了别把 1% 这种真实低电量也滤掉。</summary>
     protected override int MinValidPercent(HidDeviceInfo info) => 0;
 
+    /// <summary>充电中只报状态、没有百分比，设备仍在线；不覆写会从列表里消失（同 HecatePlugin）。</summary>
+    protected override bool NullPercentMeansOffline => false;
+
     /// <summary>
     /// 关机后接收器仍拿缓存值应答，轮询空读分不清"鼠标关了"与"应答正常"，
     /// 故不自动记账——只在 GetFeature 真的失败时自己报，离线主要靠接口消失。
@@ -92,7 +95,7 @@ public sealed class InphicIn9Plugin : BatteryPluginBase
 
         if (!InphicIn9Codec.TryParse(frame, out int percent, out byte flag))
         {
-            // 读不到也照样认领（电量 null → 先显示离线）：接管了接口却让设备凭空消失，
+            // 读不到也照样认领（电量 null → 在线、无读数）：接管了接口却让设备凭空消失，
             // 用户看到的就是"搜不到"；认领后还能每轮重试并把原始帧记进日志。
             Log.InfoOnChange("inphic-in9-probe-empty", refreshed ? "w" : "r",
                 $"英菲克 IN9 认领了但没读到电量（刷新帧{(refreshed ? "已发" : "未发")}，读了 {reads} 次）：" +

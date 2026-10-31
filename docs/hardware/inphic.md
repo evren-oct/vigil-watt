@@ -23,7 +23,7 @@ report ID `0x03` 的输入数据为 4 字节：
 
 ## 2. 英菲克 IN9（接收器 VID_248A&PID_5B2F）—— feature `0x0C` 快照 + 刷新请求
 
-> 来源：[issue #40](https://github.com/evren-oct/vigil-watt/issues/40)（@YyingnLL）的 USBPcap 抓包与真机验证；2026-10-31 维护者真机补抓 `in9.pcapng` 与 `in9多次重启软件保持报文正常.pcapng`，复测刷新序列。
+> 来源：[issue #40](https://github.com/evren-oct/vigil-watt/issues/40)（@YyingnLL）的 USBPcap 抓包与真机验证；2026-10-31 维护者真机补抓 `in9.pcapng` 与 `in9多次重启软件保持报文正常.pcapng`，复测刷新序列。**三份 pcapng 为维护者本机留存、未入库**，关键帧已摘录在下方。
 
 ### 2.1 设备与接口
 
@@ -72,4 +72,6 @@ report ID `0x03` 的输入数据为 4 字节：
 ### 2.4 实现
 
 `InphicIn9Plugin` 与 ZHEN 共用 `PluginEnabled["Inphic"]` 一行开关（`Name` 相同，设置页按 `Name` 去重），但必须独立成类：IN9 会写帧，ZHEN 零写入且要进 15 秒发现节拍。认领 `248A:5B2F` + `0xFF00/0x0001` + `FeatureReportLength == 33`；每轮 `CanWrite` 为真时发刷新帧（序号 1..255、首值 1，全 0 就换号重写一次）再 `GetFeature`，取 `[18]`/`[19]`/`[21]`，全 0 / 越界 / 截断一律丢弃；`[19]=0x01` 时只报充电中、不上报百分比；不参与 15 秒节拍，熔断走基类。开关**默认关闭**（共用行里有会写帧的设备，见 [safety.md](safety.md) §3.1 硬约束 2）。
+
+**充电中首次认领要保持在线**：`Probe` 在充电分支返回 `percent = null`，而认领路径按 `percent.HasValue || !NullPercentMeansOffline` 判在线——不覆写这个钩子，插着充电线启动软件时设备会被认领成「离线」（列表显示"离线"、托盘/贴片/小组件直接不显示，连充电图标都被"离线"覆盖），直到下一轮轮询才由 `TryApplyReading` 翻回在线。插件覆写为 `false`，充电中保持在线、只报状态。⚠️ **这条是代码路径推断，未真机复现**——触发要「插件开关已开 + 插着充电线时首次发现设备」，手头没有该形态的抓包。
 

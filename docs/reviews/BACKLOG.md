@@ -67,6 +67,8 @@
 
 | **CR-124** | **离线期间读数过滤器基准不重置**：`MarkOffline` 只翻 `IsOnline`，`TrackedDevice.Filter` 的 `LastAcceptedPercent` 留着离线前的值 → 设备重新上线后若电量已大幅变化（充电、换电池、误采信的占位值），会被"变化超 `MaxPlausibleStepPercent` 需持续 `AnomalyPersistWindow`（5 分钟）"挡住，界面卡在旧值最多 5 分钟，且被动流每秒一帧时刷满 `读数异常已过滤`（2026-10-30 19:38 北通 T9 13%→73% 实测连刷 30 余条）。修法：`MarkOffline` 或 `TryApplyReading` 的"离线→在线"那一拍重新 `Seed`。**属基类行为、影响全部插件**，改前要按插件逐个过一遍"占位帧频繁闪断"的品牌（迈从、北通、雷柏）。北通 T9 已用 500 ms 稳定判定绕过这一条（`hardware/betop.md` §1.4.3），本条针对其余插件 | `Plugins/BatteryPluginBase.cs:MarkOffline` / `TryApplyReading`、`Plugins/BatteryReadingFilter.cs:Seed`（`hardware/betop.md` §1.4.2） | `open` |
 
+| **CR-126** | **英菲克 IN9 的熔断不覆盖「帧无效」这一类失败**：`PollDevice` 在 `TryParse` 失败（读到帧但全 0 / 截断）时既不 `ReportPollFailure` 也不 `ReportPollAnswered`，而 `Offline.CountPollFailures = false` 又关掉了基类兜底（`BatteryPluginBase.cs:736`）→ `TripBreaker` 的两条触发路径（742 自动记账、903 `ReportPollFailure`）都不走，`CanWrite` 只看 `WritesDisabled`，于是永远为真。**触发条件很窄**：只有 `SetFeature` 持续成功、`GetFeature` 却持续回全 0 才会每轮照写 1~2 条（正常"序号重复→清寄存器"已被递增序号规避）；更常见的"写失败 + 读全 0"只是每轮 1 次只读。限频没破、写的是官方同款帧，故定 **P2**，不是安全违规。修法：解析失败也 `ReportPollFailure`，或单列"写成功但读无效"档位。**2026-10-31 用户决定保持现状**：每轮重试优先于熔断，改与不改都不影响读数正确性 | `Plugins/Inphic/InphicIn9Plugin.cs:PollDevice`、`BatteryPluginBase.cs:ReportPollFailure` / `CanWrite`（`hardware/inphic.md` §2.4） | `open` |
+
 ## 重构候选（未做）
 
 纯结构调整，没有对应的界面自动化。顺序：D1 剩下的基类 → D3 → D4 / D5 → 再处理 CR-16。

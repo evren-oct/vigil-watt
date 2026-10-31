@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Tests;
 
 /// <summary>
 /// 功 能： BetopPlugin 的 T9 读数稳定判定（滤掉手柄开机瞬态）。
-/// 2026/10/31 11:34:00 workbuddy
+/// 2026/10/31 11:34:00 20211
 /// 为什么需要它见 docs/hardware/betop.md §1.4.3。
 /// </summary>
 public class BetopSettleTests

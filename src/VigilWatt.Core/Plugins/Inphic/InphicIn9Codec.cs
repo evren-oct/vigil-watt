@@ -1,4 +1,3 @@
-using System.Text;
 using VigilWatt.Core.Models;
 
 namespace VigilWatt.Core.Plugins.Inphic;
@@ -20,8 +19,6 @@ internal static class InphicIn9Codec
 
     public const byte ReportId = 0x0C;
     public const int ReportLength = 33;
-    public const int ModelOffset = 8;
-    public const int ModelLength = 5;
     public const int PercentOffset = 18;
     public const int ChargeFlagOffset = 21;
 
@@ -81,21 +78,6 @@ internal static class InphicIn9Codec
     /// <summary>充电判据区（inphic.md §2.3）：[19]=0x01 表示插着充电器，此时电量不可信。</summary>
     public static bool IsCharging(byte[]? frame)
         => frame != null && frame.Length > ChargingOffset && frame[ChargingOffset] == ChargingPlugged;
-
-    /// <summary>取型号串（真机为 <c>M9094</c>），只用于日志与显示名排错；解析不出不算失败。</summary>
-    public static bool TryParseModel(byte[] frame, out string model)
-    {
-        model = string.Empty;
-        if (frame.Length < ModelOffset + ModelLength) return false;
-
-        var bytes = new byte[ModelLength];
-        Array.Copy(frame, ModelOffset, bytes, 0, ModelLength);
-        foreach (var b in bytes)
-            if (b < 0x20 || b > 0x7E) return false;
-
-        model = Encoding.ASCII.GetString(bytes).Trim();
-        return model.Length > 0;
-    }
 
     public static bool IsAllZero(byte[] frame)
     {

@@ -255,7 +255,7 @@ BatteryPluginBase.Attach(hidDevices, claims)
 （`MarkOffline` 幂等，既不报错也不记日志），标记就一直挂着；等设备开机、被动帧已经把在线写回来之后，
 下一拍轮询才消费它 → 刚上线的设备立刻被打回离线（北通 T9 实测：20% 上线 10 秒后变离线）。
 现在 `RequestOffline` 记发出时刻 `OfflineRequestedAt`，`ConsumeOfflineRequest` 发现
-`Status.LastUpdated`（最近一次真实读数）**晚于**它就直接丢弃。
+`Status.LastUpdated`（最近一次读数；`MarkOffline` 幂等，只在真正翻转在线状态时写一次）**晚于**它就直接丢弃。
 
 **第③层参数集中在 `OfflinePolicy`（`Plugins/OfflinePolicy.cs`，2026-10-08 收敛）**：
 `Silence` / `Confirm` / `MaxFailures` / `CountPollFailures` 四个参数装在一个 `record` 里，

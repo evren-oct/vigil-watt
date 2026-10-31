@@ -245,11 +245,17 @@ BatteryPluginBase.Attach(hidDevices, claims)
 
 | 路径 | 触发方式 | 延迟 | 谁在用 |
 |---|---|---|---|
-| `RequestOffline` | 子类发现**零歧义**离线证据 | **立即** | 北通 T9 占位帧（`byte23=0x50`） |
+| `RequestOffline` | 子类发现**零歧义**离线证据 | **立即** | 北通 T9 占位帧（`byte23=0x50`）与全 0 空帧（`byte23=0x10`） |
 | `MarkOfflineCandidate` + `OfflinePolicy.Confirm` | 被动帧里的**有歧义**证据 | 确认窗口（雷柏 **6s**） | 雷柏 `[18].bit7=0`（RF 断链位） |
 | `OfflinePolicy.Silence` | 接口**彻底不说话** | 阈值 + 最多约 500ms（被动监听空闲 tick；轮询仍保留兜底） | 雷柏 / 英菲克 |
 | `OfflinePolicy.MaxFailures` 次查询失败 → 熔断 | 主动查询类插件（发过帧却没应答） | ~3 分钟 | 迈从 / 北通主动路径 |
 | `RequestConfirm` → 空闲 tick 立刻核实 | 被动帧里的**触发器**（**不是证据**） | **秒级** | 迈从 `0A` 状态通知 `payload=0x00` |
+
+**`RequestOffline` 的过期作废（2026-10-31 修）**：设备已经离线时，被动帧仍会**反复**提交这个标记
+（`MarkOffline` 幂等，既不报错也不记日志），标记就一直挂着；等设备开机、被动帧已经把在线写回来之后，
+下一拍轮询才消费它 → 刚上线的设备立刻被打回离线（北通 T9 实测：20% 上线 10 秒后变离线）。
+现在 `RequestOffline` 记发出时刻 `OfflineRequestedAt`，`ConsumeOfflineRequest` 发现
+`Status.LastUpdated`（最近一次真实读数）**晚于**它就直接丢弃。
 
 **第③层参数集中在 `OfflinePolicy`（`Plugins/OfflinePolicy.cs`，2026-10-08 收敛）**：
 `Silence` / `Confirm` / `MaxFailures` / `CountPollFailures` 四个参数装在一个 `record` 里，

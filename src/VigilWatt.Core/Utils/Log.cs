@@ -72,7 +72,7 @@ public static class Log
     // 见 docs/dev/logging.md §4。
 
     private static readonly ConcurrentDictionary<string, string> InfoStateByKey = new();
-    private static readonly ConcurrentDictionary<string, long> InfoLastTicksByKey = new();
+    private static readonly ConcurrentDictionary<string, long> ThrottleTicksByKey = new();
 
     /// <summary><see cref="Once"/> 在状态表里占位用的前缀，与 <see cref="InfoOnChange"/> 的状态值隔离。</summary>
     private const string OnceKeyPrefix = "once|";
@@ -119,12 +119,21 @@ public static class Log
 
     /// <summary>同一 <paramref name="key"/> 在 <paramref name="interval"/> 内最多打一条 Info。</summary>
     public static void InfoThrottled(string key, string message, TimeSpan interval)
+        => Throttled(LogLevel.Info, key, message, interval);
+
+    /// <summary>同一 <paramref name="key"/> 在 <paramref name="interval"/> 内最多打一条 Warn（推流型设备的重复告警用）。</summary>
+    public static void WarnThrottled(string key, string message, TimeSpan interval)
+        => Throttled(LogLevel.Warn, key, message, interval);
+
+    private static void Throttled(LogLevel level, string key, string message, TimeSpan interval)
     {
-        if (!IsEnabled(LogLevel.Info)) return;
+        if (!IsEnabled(level)) return;
         var now = DateTime.UtcNow.Ticks;
-        if (InfoLastTicksByKey.TryGetValue(key, out var last) && now - last < interval.Ticks) return;
-        InfoLastTicksByKey[key] = now;
-        Info(message);
+        // 级别进 key：同一 key 的 Info 与 Warn 互不压制。
+        string slot = $"{(int)level}|{key}";
+        if (ThrottleTicksByKey.TryGetValue(slot, out var last) && now - last < interval.Ticks) return;
+        ThrottleTicksByKey[slot] = now;
+        Write(level, TagOf(level), message);
     }
 
     /// <summary>错误日志。带异常时把堆栈拆成多行、每行加缩进前缀，保证"一行一条"不被破坏。</summary>
@@ -168,7 +177,7 @@ public static class Log
             _disabled = false;
             _logDir = logDir;
             InfoStateByKey.Clear();
-            InfoLastTicksByKey.Clear();
+            ThrottleTicksByKey.Clear();
         }
     }
 

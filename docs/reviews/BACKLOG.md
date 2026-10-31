@@ -65,6 +65,8 @@
 | **CR-122** | **多显示器不同缩放比例下小组件缩放不对**。贴片是原生子窗口（`SetParent` 进 `Shell_TrayWnd`）、小组件走 `TransparentWindowSurface`，两者对 DPI 的处理本来就不同。issue 没给截图和显示器配置，需先复现：跨屏拖动、各屏缩放不同、拖完再改缩放 | issue #70（`Services/WidgetWindow.xaml.cs`、`runtime-pitfalls.md` §17） | `open` |
 | **CR-123** | issue #41 **混了三个互不相关的问题**，都缺复现信息：① 貔貅75 键盘不识别；② 安装版装完打开即闪退但进程残留（完全卸载重装才恢复）；③ 英菲克 2.4G 鼠标搜不到。②最像真 bug（配置损坏或单实例残留），需先要日志与 `settings.json` | issue #41 | `open` |
 
+| **CR-124** | **离线期间读数过滤器基准不重置**：`MarkOffline` 只翻 `IsOnline`，`TrackedDevice.Filter` 的 `LastAcceptedPercent` 留着离线前的值 → 设备重新上线后若电量已大幅变化（充电、换电池、误采信的占位值），会被"变化超 `MaxPlausibleStepPercent` 需持续 `AnomalyPersistWindow`（5 分钟）"挡住，界面卡在旧值最多 5 分钟，且被动流每秒一帧时刷满 `读数异常已过滤`（2026-10-30 19:38 北通 T9 13%→73% 实测连刷 30 余条）。修法：`MarkOffline` 或 `TryApplyReading` 的"离线→在线"那一拍重新 `Seed`。**属基类行为、影响全部插件**，改前要按插件逐个过一遍"占位帧频繁闪断"的品牌（迈从、北通、雷柏）。北通 T9 已用 500 ms 稳定判定绕过这一条（`hardware/betop.md` §1.4.3），本条针对其余插件 | `Plugins/BatteryPluginBase.cs:MarkOffline` / `TryApplyReading`、`Plugins/BatteryReadingFilter.cs:Seed`（`hardware/betop.md` §1.4.2） | `open` |
+
 ## 重构候选（未做）
 
 纯结构调整，没有对应的界面自动化。顺序：D1 剩下的基类 → D3 → D4 / D5 → 再处理 CR-16。

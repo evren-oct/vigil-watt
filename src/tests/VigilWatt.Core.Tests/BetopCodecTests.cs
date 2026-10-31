@@ -141,6 +141,13 @@ public class BetopCodecTests
     private static readonly byte[] T9StreamNotLinkedTag04 =
         Hex("04 04 80 80 80 80 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 50");
 
+    /// <summary>
+    /// **用户报"我北通的手柄并没有连接，为什么会显示低电量"那一刻的真机帧**（2026-10-30 19:37、
+    /// 2026-10-31 10:51，两次都是开机时手柄没开）：整帧全 0，只有 byte23 = 0x10 = 16 → 13%。
+    /// </summary>
+    private static readonly byte[] T9StreamBlank =
+        Hex("04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 10");
+
     [Fact]
     public void T1_解析T9状态流_唤醒_73()
     {
@@ -194,9 +201,39 @@ public class BetopCodecTests
     }
 
     [Fact]
-    public void T10_占位判据只认0x50_不误伤其它读数()
+    public void T11_关机空帧_整帧全0且byte23为0x10_不算13()
     {
-        // 只要不是 0x50 就必须当成有效读数（宁可漏判、不可误判）：
+        // ⚠ 回归（2026-10-31 用户复报）：dongle 插着、手柄根本没开机时推的是**全 0 空帧**，
+        // byte23 = 0x10 按"等级×8"读正好是 13% → 列表里"北通 T9 13% 在线"并弹低电量。
+        var parsed = BetopCodec.ParseT9Status(T9StreamBlank);
+        Assert.NotNull(parsed);
+        Assert.False(parsed!.Value.Linked);
+    }
+
+    [Fact]
+    public void T12_空帧判据不能误伤真实13_byte1非0时照旧采信()
+    {
+        // 真实低电量（等级 2 = 13%）与空帧只差 byte[1]：开机帧是 0x02/0x03，空帧是 0x00。
+        byte[] real13 = (byte[])T9StreamBlank.Clone();
+        real13[1] = 0x02;
+        var parsed = BetopCodec.ParseT9Status(real13);
+        Assert.NotNull(parsed);
+        Assert.True(parsed!.Value.Linked);
+        Assert.Equal(13, parsed.Value.Percent);
+    }
+
+    [Fact]
+    public void T13_无reportId前缀布局下空帧也能认()
+    {
+        byte[] shifted = new byte[T9StreamBlank.Length + 1];
+        Array.Copy(T9StreamBlank, 0, shifted, 1, T9StreamBlank.Length);
+        Assert.False(BetopCodec.ParseT9Status(shifted)!.Value.Linked);
+    }
+
+    [Fact]
+    public void T10_占位判据不按低位猜_不误伤其它读数()
+    {
+        // 除 0x50 与"0x10 + byte[1]=0x00 空帧"外，一律当有效读数（宁可漏判、不可误判）：
         // 若按"低位=链路标志"去猜，这些偶数等级全会被误判离线 —— 那才是真事故。
         foreach (byte raw in new byte[] { 0x08, 0x18, 0x28, 0x38, 0x48, 0x58, 0x68, 0x78 })
         {

@@ -136,13 +136,15 @@ public sealed class BetopPlugin : BatteryPluginBase
 
     /// <summary>被动解析 T9 状态流 / 偶发 0x15 状态报告；未连接占位帧 → Offline=true。</summary>
     protected override (int? Percent, ChargingState Charging, bool Offline)? TryParsePassiveInput(
-        TrackedDevice _, byte[] input)
+        TrackedDevice dev, byte[] input)
     {
         var t9 = BetopCodec.ParseT9Status(input);
         if (t9.HasValue)
         {
             if (!t9.Value.Linked)
                 return (null, ChargingState.Unknown, Offline: true);
+            // 开机瞬态（0x18 = 20%，只存在 29~218 ms）不采信，否则低电量提醒和异常过滤器都会拿它当基准。
+            if (!IsSettled(dev.Info.DevicePath, t9.Value.Percent)) return null;
             return (t9.Value.Percent, MapCharging(t9.Value.Percent, t9.Value.Charging), Offline: false);
         }
 
@@ -185,6 +187,36 @@ public sealed class BetopPlugin : BatteryPluginBase
         return Listen(handle, window, dev);
     }
 
+    /// <summary>T9 流 250Hz：开机瞬态低值只存在 29~218 ms，同一读数须稳定这么久才采信（betop.md §1.4.3）。</summary>
+    private static readonly TimeSpan T9SettleWindow = TimeSpan.FromMilliseconds(500);
+
+    private sealed class SettleState
+    {
+        public int Percent;
+        public DateTimeOffset Since = DateTimeOffset.MinValue;
+    }
+
+    private static readonly ConcurrentDictionary<string, SettleState> SettleByPath = new();
+
+    /// <summary>该读数是否已稳定（换值重新计时）。只用于被动推流；探测/轮询每次只有一帧，判不了。</summary>
+    internal static bool IsSettled(string path, int percent) => IsSettled(path, percent, DateTimeOffset.UtcNow);
+
+    /// <summary><paramref name="now"/> 可注入：单测不必 sleep 真实时间。</summary>
+    internal static bool IsSettled(string path, int percent, DateTimeOffset now)
+    {
+        var state = SettleByPath.GetOrAdd(path, _ => new SettleState());
+        lock (state)
+        {
+            if (state.Since == DateTimeOffset.MinValue || state.Percent != percent)
+            {
+                state.Percent = percent;
+                state.Since = now;
+                return false;
+            }
+            return now - state.Since >= T9SettleWindow;
+        }
+    }
+
     /// <summary>
     /// 纯读窗口：不发任何帧，窗口内持续收 dongle 自推的帧直到解析成功
     /// （广播通道全程只走这里；查询路径在写完后也走这里等响应）。返回 null = 窗口内没读到可识别帧。
@@ -225,8 +257,8 @@ public sealed class BetopPlugin : BatteryPluginBase
                 {
                     // 占位帧：手柄并不在线。只在"第一次发现"或"从在线掉到离线"时记一行，避免刷屏。
                     if (dev == null || dev.Status.IsOnline)
-                        Log.Info($"北通 T9 手柄未连接（dongle 占位帧 byte23=0x{BetopCodec.T9NotLinkedRaw:X2}，" +
-                                 $"手柄已关机/休眠；dongle 仍在）: {Log.Hex(input)}");
+                        Log.Info("北通 T9 手柄未连接（dongle 占位帧/空帧，手柄已关机或未配对；dongle 仍在）: " +
+                                 Log.Hex(input));
                     return new QueryResult(0, Charging: false, Linked: false);
                 }
 
@@ -273,6 +305,13 @@ public sealed class BetopPlugin : BatteryPluginBase
     /// <summary>充电标志只有"是否充电"一档：收尾规则（未充电且 100% ⇒ 已充满）见 <see cref="ChargingStateMap"/>。</summary>
     private static ChargingState MapCharging(int percent, bool charging)
         => ChargingStateMap.FromChargingFlag(charging, percent);
+
+    /// <summary>插件被禁用时顺手复位稳定判定表（Detach 幂等，禁用期间每轮都会被调，见 CR-22）。</summary>
+    public override void Detach()
+    {
+        base.Detach();
+        SettleByPath.Clear();
+    }
 
     /// <summary>鲲鹏20 组定死组名（两通道产品串不同会互相顶名）；组外按产品串收拾成「北通 &lt;型号&gt;」。</summary>
     protected override string BuildDisplayName(HidDeviceInfo info)

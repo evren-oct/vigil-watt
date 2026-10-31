@@ -50,6 +50,15 @@ internal static class BetopCodec
     /// </summary>
     public const byte T9NotLinkedRaw = 0x50;
 
+    /// <summary>
+    /// 占位帧 ②：dongle 在位、手柄**根本没开机**时推的整帧全 0 空帧——byte[1]=0x00、摇杆位全 0、
+    /// byte23=0x10。0x10 按"等级×8"读是 13%，会被当低电量误报。见 betop.md §1.4.2。
+    /// </summary>
+    public const byte T9BlankStateByte = 0x00;
+
+    /// <summary>空帧的 byte23（= 等级 2 × 8）。**单独出现不是判据**，须与 <see cref="T9BlankStateByte"/> 同时成立。</summary>
+    public const byte T9BlankRaw = 0x10;
+
     /// <summary>把 T9 原始电量字节（0~120）换算成百分比（0~100，四舍五入）。</summary>
     public static int T9ToPercent(byte raw) => (raw * 100 + T9BatteryFull / 2) / T9BatteryFull;
 
@@ -106,6 +115,11 @@ internal static class BetopCodec
 
             // 占位帧：手柄没连上，不是电量。
             if (raw == T9NotLinkedRaw) return new T9Status(0, false, Linked: false);
+
+            // 占位帧 ②（关机空帧）：byte[1] 是组件状态位，0x00 = 一个都没有。真机 241 帧里
+            // byte[1] ∈ {0x02, 0x03}，从未出现 0x00；两个条件同时成立才判，避免误伤真实的 13%。
+            if (raw == T9BlankRaw && input[off + 1] == T9BlankStateByte)
+                return new T9Status(0, false, Linked: false);
 
             return new T9Status(T9ToPercent(raw), false, Linked: true);
         }

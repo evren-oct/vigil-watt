@@ -161,6 +161,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         public required BatteryReadingFilter Filter;
         /// <summary>子类在 PollDevice 里判定"设备已主动告知休眠/关机"时置位，基类随即标离线。</summary>
         public bool OfflineRequested;
+        /// <summary>上面那个请求的发出时刻：早于最近一次真实读数的请求视为过期（见 <see cref="ConsumeOfflineRequest"/>）。</summary>
+        public DateTimeOffset OfflineRequestedAt;
         /// <summary>本轮刚由探测建立（探测返回值就是最新读数）：本轮 Poll 跳过、下一轮起正常轮询。</summary>
         public bool FreshlyClaimed;
         /// <summary>插件要求下一轮重新探测本接口（物理身份变了等）：先释放旧句柄与认领，再重探。</summary>
@@ -670,14 +672,12 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         ConsumeOfflineRequest(dev);
     }
 
-    /// <summary>
-    /// 消费插件通过 <see cref="RequestOffline"/> 提交的"设备已休眠/关机"标记：立即标离线。
-    /// 这是零歧义证据（如北通 T9 占位帧），**不计入通信失败**。
-    /// </summary>
+    /// <summary>消费"设备已休眠/关机"标记并标离线；早于最近一次真实读数的过期请求作废（见 code-flow.md §4.2）。</summary>
     private bool ConsumeOfflineRequest(TrackedDevice dev)
     {
         if (!dev.OfflineRequested) return false;
         dev.OfflineRequested = false;
+        if (dev.Status.LastUpdated > dev.OfflineRequestedAt) return false;   // 过期：当它没发生，别动失败计数
         dev.ConsecutiveFailures = 0;
         MarkOffline(dev, "收到设备休眠/关机通知，立即标记离线");
         return true;
@@ -766,12 +766,14 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             var verdict = dev.Filter.Evaluate(percent.Value, DateTimeOffset.Now);
             if (verdict is ReadingVerdict.RejectAnomaly or ReadingVerdict.InvalidValue)
             {
-                Log.Warn($"{DisplayName} {dev.Status.DisplayName} 读数异常已过滤：" +
-                         $"{baseline}%→{percent}%，本轮不采用" +
-                         (verdict == ReadingVerdict.InvalidValue
-                             ? $"（数值无效，低于 {dev.Filter.MinValidPercent}%）"
-                             : $"（变化超过 {dev.Filter.MaxStepPercent} 点，需持续 " +
-                               $"{dev.Filter.PersistWindow.TotalMinutes:0} 分钟才采信）"));
+                Log.WarnThrottled($"anomaly:{dev.Info.DevicePath}",
+                    $"{DisplayName} {dev.Status.DisplayName} 读数异常已过滤：" +
+                    $"{baseline}%→{percent}%，本轮不采用" +
+                    (verdict == ReadingVerdict.InvalidValue
+                        ? $"（数值无效，低于 {dev.Filter.MinValidPercent}%）"
+                        : $"（变化超过 {dev.Filter.MaxStepPercent} 点，需持续 " +
+                          $"{dev.Filter.PersistWindow.TotalMinutes:0} 分钟才采信）"),
+                    TimeSpan.FromSeconds(30));
                 return false;
             }
             if (verdict == ReadingVerdict.AcceptConfirmed)
@@ -840,7 +842,12 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// 不等 <see cref="OfflinePolicy.MaxFailures"/> 次查询失败（那要几分钟）。
     /// 只认协议层**零歧义**的离线证据（宁可漏判不可误判）：迈从 0x02 状态通知帧就因语义存疑被降级为仅记录。
     /// </summary>
-    protected static void RequestOffline(TrackedDevice dev) => dev.OfflineRequested = true;
+    protected static void RequestOffline(TrackedDevice dev)
+    {
+        // 先写时刻再写标志：Poll 线程看到标志已置时，时刻一定已写好，否则会被误判过期而丢弃。
+        dev.OfflineRequestedAt = DateTimeOffset.Now;
+        dev.OfflineRequested = true;
+    }
 
     /// <summary>
     /// 插件在被动帧里发现"值得立刻核实"的信号时调用。它是**触发器不是证据**：基类不会因此标离线，

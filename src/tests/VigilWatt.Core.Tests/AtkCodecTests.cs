@@ -169,6 +169,58 @@ public class AtkCodecTests
         Assert.Equal(4190, AtkCodec.ReadMillivolts(A9AirWiredFrame));
     }
 
+    // ---------------------------------------------------------------- A9 Ultra Max 2.0（issue #71）
+
+    /// <summary>issue #71 提供：无线放电 50%、电压 3995mV。</summary>
+    private static readonly byte[] A9UltraMaxWirelessFrame =
+        Hex("08 04 00 00 00 02 32 00 0F 9B 00 00 00 00 00 00 6B");
+
+    /// <summary>issue #71 提供：插线充电 50%、电压 3990mV。</summary>
+    private static readonly byte[] A9UltraMaxWiredFrame =
+        Hex("08 04 00 00 00 02 32 01 0F 96 00 00 00 00 00 00 6F");
+
+    /// <summary>issue #71 提供：充满不拔线 100%、电压 4394mV，`[7]` 仍为 0x01。</summary>
+    private static readonly byte[] A9UltraMaxFullFrame =
+        Hex("08 04 00 00 00 02 64 01 11 2A 00 00 00 00 00 00 A7");
+
+    /// <summary>issue #71 提供：拔线回落 65%、电压 4008mV。</summary>
+    private static readonly byte[] A9UltraMaxUnpluggedFrame =
+        Hex("08 04 00 00 00 02 41 00 0F A8 00 00 00 00 00 00 4F");
+
+    [Theory]
+    [InlineData("08 04 00 00 00 02 32 00 0F 9B 00 00 00 00 00 00 6B", 50, ChargingState.Discharging, 3995)]
+    [InlineData("08 04 00 00 00 02 32 01 0F 96 00 00 00 00 00 00 6F", 50, ChargingState.Charging, 3990)]
+    [InlineData("08 04 00 00 00 02 64 01 11 2A 00 00 00 00 00 00 A7", 100, ChargingState.Charging, 4394)]
+    [InlineData("08 04 00 00 00 02 41 00 0F A8 00 00 00 00 00 00 4F", 65, ChargingState.Discharging, 4008)]
+    public void A11_A9UltraMax四态实测帧(string hex, int percent, ChargingState charging, int millivolts)
+    {
+        // 四条的校验和都按协议算过，能解析本身就是"帧口径与既有 ATK 同构"的证据
+        var frame = Hex(hex);
+        var r = AtkCodec.TryParseReply(frame);
+        Assert.NotNull(r);
+        Assert.Equal(percent, r!.Value.Percent);
+        Assert.Equal(charging, r.Value.Charging);
+        Assert.Equal(millivolts, AtkCodec.ReadMillivolts(frame));
+    }
+
+    [Fact]
+    public void A12_A9UltraMax充满后拔线回落不复用充电标志()
+    {
+        // 满电帧 [7]=0x01 走"充电中"，拔线帧 [7]=0x00 且 65% 走"放电"——
+        // 固件在充满后不把 [7] 归零，所以充电态只能由 [7] 判，不能靠百分比猜
+        Assert.Equal(ChargingState.Charging, AtkCodec.TryParseReply(A9UltraMaxFullFrame)!.Value.Charging);
+        Assert.Equal(ChargingState.Discharging, AtkCodec.TryParseReply(A9UltraMaxUnpluggedFrame)!.Value.Charging);
+        Assert.Equal(ChargingState.Discharging, AtkCodec.TryParseReply(A9UltraMaxWirelessFrame)!.Value.Charging);
+    }
+
+    [Fact]
+    public void A13_A9UltraMax主动推送帧不被当成电量应答()
+    {
+        // issue #71 提到二代 dongle 会主动推 `08 0A 00 00 00 0A 40 00 …`；
+        // cmd 不是 0x04，必须拒绝，否则会把推送里的 0x40(64) 读成 64%
+        Assert.Null(AtkCodec.TryParseReply(Hex("08 0A 00 00 00 0A 40 00 00 00 00 00 00 00 00 00 F9")));
+    }
+
     // ---------------------------------------------------------------- 校验和
 
     [Fact]

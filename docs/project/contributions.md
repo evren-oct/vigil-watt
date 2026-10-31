@@ -3,6 +3,11 @@
 > 社区改动收进本仓库时记一笔：谁、哪个 PR、收了什么、没收什么。协议细节留在专题文档。
 > **面向用户的名单在根目录 [CONTRIBUTORS.md](../../CONTRIBUTORS.md)**（只写"谁做了什么"）；本文只记收了什么、没收到什么、是否本机复测，两处不重复。
 
+## 2026-10-31
+
+- **YyingnLL / haloneko**（[issue #40](https://github.com/evren-oct/vigil-watt/issues/40)，接 2026-10-29 那次「只取 IN9」的欠账）：**补收狼途 T98**。新增 `LangtuT98Plugin` / `LangtuT98Codec`（`1A2C:8FFF`，`0xFF02/0x02` 65 字节被动状态帧，`AA 55` + `0x0E` 双条件认帧，`0xFF` 插拔哨兵丢弃），零写入、默认开、7 项 codec 单测。**未纳入**：`MI_03 Col05` 的 3 字节通知帧（实测全程静音、含义未知）；充电状态一律 `Unknown`——issue 已证伪 `[7]` 是充电位。**本机无此键盘，未真机复测**；`Offline.Silence = 300 秒` 是按 issue 的「休眠静音 4 分钟」推的，没有第二份休眠样本（CR-133）。
+- **ATK A9 Ultra Max 2.0**（[issue #71](https://github.com/evren-oct/vigil-watt/issues/71)，实测帧由社区用户 `3605` 提供）：只登记接收器 PID `0x11FE` 与配对组，**编解码零改动**——帧与 `11D9`/`1303` 同构，四条实测帧校验和全部通过，另加一条负向钉住二代 dongle 的主动推送帧（cmd `0x0A`）不被当成电量。**未纳入**：本体 PID（社区只给了接收器），故插数据线时仍会多一条记录（CR-132 / CR-99 同类）。**本机无此鼠标，未真机复测**。
+
 ## 2026-10-29
 
 - **YyingnLL / haloneko**（协议 [#40](https://github.com/evren-oct/vigil-watt/issues/40)、实现 [PR #86](https://github.com/evren-oct/vigil-watt/pull/86)）：**只取英菲克 IN9**。收 `InphicIn9Plugin` / `InphicIn9Codec`（`0x0C` 取 `[18]` 电量、`[21]` 标志，全 0 / 截断 / 越界判无效）+ 官方驱动打开瞬间抓到的刷新帧 + 充电判据（`[19]=0x01` 为插线，`5B2E` 仅兜底），附 11 条 codec 用例（后续补到 19 条）。**未纳入**狼途 T98；也**没有**按 issue 建议并入现有 `InphicPlugin`——ZHEN 零写入、IN9 要写帧，同一个类无法同时声明 `WritesEnabled => false` 与 `SupportsFastDiscovery`，故拆成同 `Name` 的两个类（同雷蛇 / 狼蛛）。**行为变更**：`PluginEnabled["Inphic"]` 改默认关（`safety.md` §3.1 硬约束 2，老 `settings.json` 已存的值不受影响）。**2026-10-31 维护者本机补抓并复测序号刷新**；构建 0 警告 0 错误，新增 11 项（现 19 项）与基类回归 11 项单测通过。

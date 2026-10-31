@@ -63,6 +63,10 @@ public sealed class AtkPlugin : BatteryPluginBase
     /// <summary>VXE R1 Nearlink 的**本体** PID：插线时枚举；FF02 上有 20B 干扰集合，故走严格判据（atk.md §9）。</summary>
     private const ushort BodyPidR1Nk = 0x10C7;
 
+    /// <summary>A9 Ultra Max 2.0 接收器（"Wireless mouse 8k NANO dongle-L"，manufacturer=Compx）。
+    /// 帧与 11D9/1303 同构，issue #71 六条实测帧校验全通过，只是新号段（atk.md §10）。</summary>
+    private const ushort DonglePidA9UltraMax = 0x11FE;
+
     /// <summary>电量口的 usage page；必须精确匹配，否则会对 FF03/FF04/FF05/FF06 等厂商口各白发一帧查询。</summary>
     private const ushort UsagePageBattery = 0xFF02;
 
@@ -75,7 +79,7 @@ public sealed class AtkPlugin : BatteryPluginBase
     /// 已登记分组分支保证（atk.md §4.1）。</summary>
     private static bool IsReceiverPid(ushort pid) =>
         pid is DonglePid or DonglePid1K or DonglePidV3 or DonglePidF1Ultimate or BodyPidF1Ultimate
-            or DonglePidA9Air or DonglePidR1Nk;
+            or DonglePidA9Air or DonglePidR1Nk or DonglePidA9UltraMax;
 
     private static DateTimeOffset _receiverCheckedAt;
 
@@ -169,6 +173,7 @@ public sealed class AtkPlugin : BatteryPluginBase
         [BodyPidA9Air] = "a9air",          // A9 Air 大师版+ 本体（插数据线时枚举，ATK A9 Air+）
         [DonglePidR1Nk] = "r1nk",          // VXE R1 Nearlink 接收器（NK mouse NANO dongle）
         [BodyPidR1Nk] = "r1nk",            // VXE R1 Nearlink 本体（插数据线时枚举）
+        [DonglePidA9UltraMax] = "a9ultra", // A9 Ultra Max 2.0 接收器（本体 PID 未知，插线会多一条记录）
     };
 
     /// <summary>各组的型号名（本体上报的产品名，即机型）；按组存，两只鼠标互不覆盖。</summary>
@@ -246,6 +251,7 @@ public sealed class AtkPlugin : BatteryPluginBase
         [BodyPidF1Ultimate] = "ATK F1 Ultimate 2.0",     // 本体形态（插充电线），同一台设备
         [DonglePidR1Nk] = "VXE R1 Nearlink",             // 接收器形态（NK mouse NANO dongle）
         [BodyPidR1Nk] = "VXE R1 Nearlink",               // 本体形态（插数据线），同一台设备
+        [DonglePidA9UltraMax] = "ATK A9 Ultra Max 2.0",  // 接收器形态；本体 PID 未采到，只能靠这一条给名字
     };
 
     protected override string BuildDisplayName(HidDeviceInfo info)

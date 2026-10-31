@@ -72,6 +72,19 @@
 
 | **CR-126** | **英菲克 IN9 的熔断不覆盖「帧无效」这一类失败**：`PollDevice` 在 `TryParse` 失败（读到帧但全 0 / 截断）时既不 `ReportPollFailure` 也不 `ReportPollAnswered`，而 `Offline.CountPollFailures = false` 又关掉了基类兜底（`BatteryPluginBase.cs:736`）→ `TripBreaker` 的两条触发路径（742 自动记账、903 `ReportPollFailure`）都不走，`CanWrite` 只看 `WritesDisabled`，于是永远为真。**触发条件很窄**：只有 `SetFeature` 持续成功、`GetFeature` 却持续回全 0 才会每轮照写 1~2 条（正常"序号重复→清寄存器"已被递增序号规避）；更常见的"写失败 + 读全 0"只是每轮 1 次只读。限频没破、写的是官方同款帧，故定 **P2**，不是安全违规。修法：解析失败也 `ReportPollFailure`，或单列"写成功但读无效"档位。**2026-10-31 用户决定保持现状**：每轮重试优先于熔断，改与不改都不影响读数正确性 | `Plugins/Inphic/InphicIn9Plugin.cs:PollDevice`、`BatteryPluginBase.cs:ReportPollFailure` / `CanWrite`（`hardware/inphic.md` §2.4） | `open` |
 
+| **CR-132** | **ATK A9 Ultra Max 2.0（`0x11FE`）只需登记 PID**：VID `0x373B` / FF02 口 / 17 字节 `report 0x08` / 校验基数 0x4D，与 11D9、1303 完全同构，issue #71 的六条实测帧校验全通过。**本体 PID 未知**（用户只给了接收器），插数据线时会多出一条记录，与 CR-99 同源 | issue #71、`Plugins/Atk/AtkPlugin.cs:DeviceGroups`（atk.md §10） | `doing` |
+| **CR-133** | **狼途 T98 零写入被动帧已落地**：`1A2C:8FFF` + `0xFF02/0x02` + 65 字节，帧 `00 AA 55 CC 33 0E <pct> 01`，`0xFF` 是插拔瞬间哨兵必须丢。**未验证项**：`Silence = 300 秒` 是按 issue #40 的「休眠静音 4 分钟」定的，没有第二份休眠样本；`[7]` 已证伪不是充电位，故充电状态恒 `Unknown` | issue #40、`Plugins/Langtu/LangtuT98Plugin.cs`（langtu.md §1） | `doing` |
+| **CR-134** | **IQUNIX Q101（`369B:0184`）只有单点样本**：参考 36%，`byte[8]=0x24` 精确命中但 `byte[7]=0x25` 也接近，两个字节无法区分；充电窗口该字节变 `0xBC`(188)，语义未定。要有第二个电量点（70~80%）才能定稿 | issue #87、采集包 `20261031-184729-DBE2` | `open` |
+| **CR-135** | **西伯利亚 X7 Ultra Max（`36F9:AA20`）只有单点样本**：参考 20%，`byte[6]=0x14` 命中，但另有一帧 `0x15`；`byte[5]` 在 01/00 间变化，作用未定。同样要第二个电量点 | issue #83、采集包 `vigilwatt-capture` | `open` |
+| **CR-136** | **飞智冰原狼3 采集采错接口**：`04B4:2412` 的 `MI_02` 上 7123 帧全是同一条 `04 FE 66 …`，0 变化，是配置通道。且 VID 与已完成的 APEX5（`37D7:2501`）不同、帧头也不同（`04 FE 66` vs `5A A5`），**不能复用 `FlydigiCodec`**，需重采 + 独立判据 | issue #82、`Plugins/Flydigi/`（flydigi.md） | `open` |
+| **CR-137** | **七个适配请求正文零证据**（#78 雷蛇 DeathAdder V2 X / #73 迈从 G75V2 / #69 前行者 X23+小鸡超新星 / #68 ilovbee b98 / #39 迈从K980+毒刺+冰原狼2 / #5 iKF / #4 扩展坞）：全部只有一句话或空正文，无 VID/PID、无采集包。先要数据，不做协议猜测 | issue #78 #73 #69 #68 #39 #5 #4 | `open` |
+
+| **CR-138** | **罗技 G502 LIGHTSPEED 插数据线时扫出 6 台设备**（拔掉接收器也一样）。用户附了完整日志与两份分析报告，未复核。与 CR-112 / CR-115 同源：插线后接收器与本体两条路径同时在场，去重口径按「先认领者保留」而非「能读的那条」。**顺带能真机验证 CR-112 那个待验点**（VGN 配对首次生效后插线是否出两行） | issue #84、`Plugins/BatteryPluginBase.cs:ExistingPathOfSameDevice`、`Plugins/Logitech/LogitechPlugin.cs` | `open` |
+| **CR-139** | **任务栏贴片只能居中，没有左/中/右对齐设置**：贴片内设备全居中，调好位置后再新增设备就会往两边撑、和任务栏内容重合。需求明确、实现轻（`TaskbarLayout.Place` 加一个对齐枚举 + 设置项），但属 UI 改动，按 `AGENTS.md` §3 要先出方案 | issue #85、`Services/TaskbarLayout.cs:Place`、`Services/TaskbarPillRenderer.cs` | `open` |
+| **CR-140** | **桌面小组件不能轮播**：设备多时要么全显示占地方，要么只显示一台看不到其它。需求是「只显示一台 + 定时轮播」并带间隔设置。要先定轮播期间历史/图表怎么处理，属产品决策 | issue #66、`Services/WidgetWindow.xaml.cs` | `open` |
+| **CR-141** | **插件按需下载（issue #63）作者已部分否决**：Windows 能枚举 USB/HID 但不保证认出具体型号，同 VID/PID 可对应多个型号、一个接收器可能暴露多个接口，认错会匹配到不兼容插件甚至影响设备使用。现有方案是「插件去认领设备」。**保留的唯一价值**是设备数量增多后的包体积/启动开销，是否做取决于用户 | issue #63、`Devices/DeviceManager.cs:DiscoverPlugins` | `open` |
+| **CR-142** | **可复用 OpenLogi 收集的外设 HID 特征库**：对方已积累大量 2.4G / 蓝牙设备的 VID/PID 与接口指纹。价值在「认领判据的交叉校验」与「新设备快速定位接口」，**不是**直接抄协议。要先确认对方仓库许可与数据格式，再决定是人工比对还是写导入脚本 | issue #74、`docs/hardware/protocols.md`、`docs/hardware/sources.md` | `open` |
+
 ## 重构候选（未做）
 
 纯结构调整，没有对应的界面自动化。顺序：D1 剩下的基类 → D3 → D4 / D5 → 再处理 CR-16。

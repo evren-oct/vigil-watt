@@ -85,6 +85,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Sony\InzoneCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Ganss\GanssCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Flydigi\FlydigiCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Langtu\LangtuT98Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Sony\DualSenseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopCodec.cs" />
     <!-- T9 开机瞬态的稳定判定（IsSettled）是纯计时逻辑，值得单测；BetopPlugin 只依赖已链接的 Hid/Log/Models -->

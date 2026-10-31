@@ -3,6 +3,10 @@
 > 社区改动收进本仓库时记一笔：谁、哪个 PR、收了什么、没收什么。协议细节留在专题文档。
 > **面向用户的名单在根目录 [CONTRIBUTORS.md](../../CONTRIBUTORS.md)**（只写"谁做了什么"）；本文只记收了什么、没收到什么、是否本机复测，两处不重复。
 
+## 2026-10-29
+
+- **YyingnLL / haloneko**（协议 [#40](https://github.com/evren-oct/vigil-watt/issues/40)、实现 [PR #86](https://github.com/evren-oct/vigil-watt/pull/86)）：**只取英菲克 IN9**。收 `InphicIn9Plugin` / `InphicIn9Codec`（`0x0C` 取 `[18]` 电量、`[21]` 标志，全 0 / 截断 / 越界判无效）+ 官方驱动打开瞬间抓到的刷新帧 + 充电判据（`[19]=0x01` 为插线，`5B2E` 仅兜底），附 11 条 codec 用例（后续补到 19 条）。**未纳入**狼途 T98；也**没有**按 issue 建议并入现有 `InphicPlugin`——ZHEN 零写入、IN9 要写帧，同一个类无法同时声明 `WritesEnabled => false` 与 `SupportsFastDiscovery`，故拆成同 `Name` 的两个类（同雷蛇 / 狼蛛）。**行为变更**：`PluginEnabled["Inphic"]` 改默认关（`safety.md` §3.1 硬约束 2，老 `settings.json` 已存的值不受影响）。**2026-10-31 维护者本机补抓并复测序号刷新**；构建 0 警告 0 错误，新增 11 项（现 19 项）与基类回归 11 项单测通过。
+
 ## 2026-10-28
 
 - **rain1113y**（[#72](https://github.com/evren-oct/vigil-watt/pull/72)，目标 `dev`，5 个提交，28 文件 +2558/−36）：纳入**两台**设备与一处认领修复。① 墨将烈风2 GALE2（`E2B7:122C`，2.4G 接收器与有线直连同为该 PID）：新增 `MojhonPlugin` / `MojhonCodec`，走厂商页 `0xFFAB` 的 `A5 04 <reg> <cks>` 帧读寄存器 `0x04`，`payload[0]`=电量、`payload[1]`=充电标志（`0x00` 放电 / `0x01` 充电），A/B 两态已由作者物理对照；会写帧，`AppSettings` 默认关。② ATK A9 Air 大师版+（GEM 8K 接收器 `0x1278` / 有线本体 `0x1293`）：协议与老机型一字不差，只补接收器 PID 与 `a9air` 配对组，编解码零改动，两条真实帧补成单测。③ 修 ATK 双连接（接收器没拔就插线）整只鼠标显示离线：实测此时无线电已停、接收器 0/3 应答、只有本体回充电位，旧逻辑「接收器在位就不认领本体」于是一条读数都不出；改为 `DeviceGroups` 内联字典按型号组配对 + `SkipPathsForThisPass` 按组摘掉接收器，本体独占同一设备 ID。另带 `captures/mojhon-vendor-frames.jsonl`（70 帧原始抓包）、`docs/hardware/mojhon.md`（新建）与 7 个探针/解码脚本。**未纳入**：`docs/hardware/protocols.md` 的两处索引行（该文件是纯索引，按项目规则整文件回滚）。**本机两台设备都没有，未真机复测**——墨将侧只到"作者单台真机 + 本机代码可编译可跑单测"；ATK A9 Air 侧的充电虚高 15 pp（CR-113）与显示名学习（CR-114）均由作者实测记录，本机未复核。

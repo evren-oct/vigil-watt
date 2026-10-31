@@ -172,6 +172,8 @@
     <Compile Include="..\..\VigilWatt.Core\Capture\HtmlReportGenerator.cs" />
     <Compile Include="..\..\VigilWatt.Core\Capture\CapturePackageWriter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mojhon\MojhonCodec.cs" />
+    <!-- 英菲克 IN9 的 feature 0x0C 帧：偏移固定、全 0 与截断边界只能靠真机帧字面量锁住 -->
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Inphic\InphicIn9Codec.cs" />
   </ItemGroup>
 
 </Project>

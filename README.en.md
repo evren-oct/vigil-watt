@@ -91,6 +91,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | Sony INZONE H9 II (receiver) · `0xFF04` control-transfer query | Verified on the developer's device; off by default, writes reports |
 | Rapoo VT3 Gen 2 · passive `status-report7` | Verified on the developer's device |
 | Inphic ZHEN · passive report `0x03` | Verified on hardware |
+| Inphic IN9 · feature `0x0C` snapshot + refresh sequence | Implemented, off by default; writes frames. Re-captured on hardware 2026-10-31 |
 | HECATE G5M Pro · passive report `0x04` + active query `04 00 00 1A` | Implemented, off by default; writes frames. Contributor hardware only |
 | AULA F99 Pro · `0x13` session/push | Implemented, off by default; contributor hardware only |
 | AULA G9 headset / L9 Ultra mouse · passive status frame / `0x81` query | Implemented; shares the AULA switch (one settings row). Contributor claim only, not retested here |

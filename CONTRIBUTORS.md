@@ -29,6 +29,8 @@ VigilWatt 的设备适配大多来自社区：有人提供抓包样本，有人�
 | **Mzood** | 华硕 ROG Strix Scope II 96 Wireless（Omni 接收器 `0B05:1ACE`）、雷蛇 BlackShark V2 Pro 2023（`1532:0555`）与 Viper V3 Pro SE（`1532:00DF`）三台适配；顺带给基类加了零权限 Feature 句柄与按接口取读数下界两个钩子 | [PR #58](https://github.com/evren-oct/vigil-watt/pull/58) |
 | **Leejangh** | 华硕 ROG 棱镜2 / Delta II 耳机（`0B05:1AFA`，`0xCC` 报告 + group `0x12`，`0x07` 读电量、`0x08` 读充电位）适配，并入现有 `AsusPlugin` 共用品牌开关；协议取自 MIT 许可的 pelta-control 并逐字节复核，真机验证 | [PR #75](https://github.com/evren-oct/vigil-watt/pull/75) |
 | **rain1113y** | 墨将烈风2 GALE2 手柄（`E2B7:122C`，`0xA5` 帧读寄存器 `0x04`，含 USBPcap 抓包与帧解码脚本）与 ATK A9 Air 大师版+（GEM 8K 接收器 `373B:1278` / 本体 `1293`）两台适配；另修 ATK 双连接（接收器没拔就插线）整只鼠标显示离线——改为按型号组配对、由 `SkipPathsForThisPass` 摘掉接收器 | [PR #72](https://github.com/evren-oct/vigil-watt/pull/72) |
+| **YyingnLL** | 英菲克 IN9 的 USBPcap 抓包与 `0x0C` 快照 + 刷新请求帧协议（含递增序号与充电位判据）；同一 issue 还给狼途 T98 的被动状态帧协议 | [issue #40](https://github.com/evren-oct/vigil-watt/issues/40) |
+| **haloneko** | 英菲克 IN9 适配实现（`248A:5B2F`，feature `0x0C` 快照 + 每轮递增序号刷新帧，充电按 `[19]=0x01` 判、充电中不报电量），含 19 项 codec 单测 | [PR #86](https://github.com/evren-oct/vigil-watt/pull/86) |
 | **Skwater** | VXE R1 Nearlink（接收器 `373B:10C9` / 本体 `10C7`）：ATK 同款 17 字节查询帧，两端 `FF02` 都带 20B 干扰集合故都走严格判据；插线由本体接管、两种形态同一设备 ID 与名称。附接口枚举表、原始帧证据与运行期验收记录 | [PR #79](https://github.com/evren-oct/vigil-watt/pull/79) |
 
 ## 还能怎么帮

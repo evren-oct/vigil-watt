@@ -21,6 +21,7 @@
 | 雷柏 Rapoo | VT3 二代 | `24AE:1412` | [rapoo.md](rapoo.md) | 本机验证 |
 | 北通 BETOP | T9 / 鲲鹏20（2.4G `5159`、有线 `5158`、有线变体 `5191`） | `20BC:5073` / `5159` / `5158` / `5191` | [betop.md](betop.md) §1.8 | T9 本机验证；鲲鹏20 2.4G 与有线贡献者真机，`5191` 未验 |
 | 英菲克 ZHEN | 接收器 | `1D57:FA65` | [inphic.md](inphic.md) | 本机验证 |
+| 英菲克 IN9 | 接收器 | `248A:5B2F` | [inphic.md](inphic.md) §2 | 2026-10-31 维护者真机抓包 |
 | HECATE | G5M Pro | `35BB:D00B` | [hecate.md](hecate.md) | 贡献者真机 |
 | DELUX | M900 Pro | `1D57:FA65` | [delux.md](delux.md) | 贡献者真机 |
 | AULA | F99 Pro | `3554:FA09` | [aula.md](aula.md) | 贡献者真机 |

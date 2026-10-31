@@ -35,7 +35,7 @@
 | 罗技 Bolt（C548 + MX Master 3S） | HID++ | 已真机验证 |
 | 罗技 PRO X 2 LIGHTSPEED 耳机（046D:0AF7） | LIGHTSPEED 2.4G / Centurion | 2.4G 真机验证放电、充电、休眠唤醒与关闭开关后停查；蓝牙走 Windows HFP 节点，USB 有线模式未验证（logitech.md §2）。046D:C54D 的 PRO X 2 是另一台鼠标 |
 | 雷柏 VT3 二代（VID_24AE&PID_1412） | status-report7 被动心跳 | 已打通，零写入。雷柏不是 HID++，勿让 Logitech 插件认领 |
-| 英菲克 ZHEN（VID_1D57&PID_FA65） | report 0x03 被动状态帧 | 已打通，零写入；放电 `0x01` / 充电 `0x03` 已校准（inphic.md §1） |
+| 英菲克 ZHEN（`1D57:FA65`）/ IN9（`248A:5B2F`） | ZHEN 被动 report `0x03`；IN9 走 feature `0x0C` 快照 + 每轮一条刷新帧（撞重复值换号重试一次，单轮最多 2 条）；充电判据 `[19]=0x01`，充电时不报电量 | ZHEN 已打通、零写入（放电 `0x01` / 充电 `0x03` 已校准）；IN9 2026-10-31 维护者真机抓包复测，会写帧，两型共用一行开关故默认关（inphic.md §1 §2） |
 | HECATE G5M Pro（VID_35BB&PID_D00B） | 被动 report 0x04 状态帧 + 主动查询 `04 00 00 1A` | 代码已接入，**默认关**（会写帧）。主动查询后电量不再依赖 HECATE Connect，离线按连续 3 次无应答判。贡献者真机、本机未复测（hecate.md §3） |
 | HECATE G3M Pro 升级版（接收器 VID_35BB&PID_D3FB） | 17 字节 `0xFF02` 通道，STATUS `08 03` / POWER `08 04` | 本机实测 50% / 3848 mV，默认关、会写两条只读帧。充电位未验证（hecate.md §2） |
 | 狼蛛 AULA：F99 Pro（`3554:FA09`）/ G9 耳机（`38A6:0030`）/ L9 Ultra（`38A6:28FD`） | `0x13` 会话推送 / 被动 `AB 47 4D 86` / `0x81` 查询 | 三个协议类共用一个「狼蛛」开关（设置页一行）。F99/L9 默认关、会写帧；G9 纯被动。贡献者声明，本机未复测（aula.md §1 §3 §4） |

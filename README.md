@@ -114,6 +114,7 @@
 | VXE R1 Nearlink · 接收器 `373B:10C9` | 本机无线与有线本体 `10C7` 充电均已验证；共用 ATK 开关，默认关闭，见 [atk.md §9](docs/hardware/atk.md) |
 | HyperX Cloud Flight 2 · 2.4G 被动推送帧 | 已实现，默认开启；零写入。CF2 飓风炫彩版真机验证 |
 | 墨将 烈风2 GALE2（2.4G 接收器 / 有线，同为 `E2B7:122C`）· 厂商通道 `A5` 读帧 | 已实现，默认关闭；会写帧。2.4G 与有线两种形态均已真机验证，充放电标志经插拔 A/B 对照 |
+| 飞智 APEX5 · NewXInput 心跳（档位 20%） | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
 | 经典蓝牙 · HFP 网关节点属性 | EDIFIER W820NB 已验证 |
 | 本机电池 · `GetSystemPowerStatus` | 已接入，可选开启 |
 

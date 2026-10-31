@@ -43,6 +43,8 @@
 | ATK / VXE 无线鼠标 17 字节查询帧 | 公开逆向项目 [0x44oge-ATK](https://github.com/ReformedDoge/0x44oge-ATK)（含 `calculateAtkChecksum` 与 "Only one that works" 的写入方式说明），本项目另做真机复核。 | 自行实现帧编解码（`AtkCodec`）；本机 F1 Pro Max `373B:101B` 已验证 95% / 4092 mV，与 ATK HUB 共存无冲突。 | 参考公开的协议分析自行实现，未复制其代码。休眠占位帧与设备归一见 [atk.md](atk.md)。VXE R1 Nearlink `10C9` / `10C7` 另以本机 HID caps、固定查询应答及官方 ATK Hub 显示复核；本机 Hub 前端仅用于核对设备目录和协议事实，未复制厂商代码，验证边界见该文 §9。 |
 | HyperX CF2 2.4G 推送帧 | 本机对 `FF90` 口的被动抓包（脚本独立于本项目），充电/放电状态与官方 NGENUITY 3.1.0 显示逐次对照。 | 零写入被动解析（`Cf2Codec`）；本机 CF2 飓风炫彩版 `03F0:0AC1` 已验证（放电 40%、充电 94→96%）。 | 全部由本机抓包事实得出，未复用厂商代码。字段推断被实机证伪两次的过程见 [hyperx-cf2.md](hyperx-cf2.md) §4。 |
 | 墨将 GALE2 `A5` 读帧 | 官方「墨将精英助手」2.1.5.0 操作手柄时的 **USBPcap 内核抓包**（`captures/mojhon-vendor-frames.jsonl`，厂商通道 70 条记录，35/35 帧校验通过）；型号代号取自官方助手本体 `MojhonAssistant.exe` 内嵌的 devices 目录字符串。 | 只重放实录里出现过的读帧：`A5 04 04`（电量+充电标志）与认领时一次的 `A5 04 E2`（型号标识）；未做任何命令枚举。本机 `E2B7:122C` 2.4G 与有线两种形态均已验证（放电 96/97%、充电 99→100%）。 | 仅使用抓包得到的协议事实与设备自报字符，未复用厂商代码或资源。原始 pcap 3.1 MB 未入库，需要时可另附；字段口径与未定论项见 [mojhon.md](mojhon.md) §8。 |
+| 飞智 APEX5 NewXInput 心跳 | 官方 Space Station 的 `service_log` 原文（帧一字未改）与一周心跳应答记录；贡献者 2026-10-19 的真机采集（插线前后 47 次采样、XInput 交叉验证）。 | 按官方帧自行实现 `FlydigiCodec`；只发这一条心跳，不做命令枚举。充电位 `0x11` 已三方印证，直接映射。本机无该设备，未复测。 | 官方软件日志是协议依据，不表示引用其代码。见 [flydigi.md](flydigi.md)。 |
+| ATK N9 耳机串口帧 | 贡献者 2026-10-19 的 CDC-ACM 采集（ATK HUB `app.asar` 里的串口参数与命令字节）。 | **只记录协议，未实现**：通道不是 HID，基类不支持；品牌开关也与 ATK 鼠标冲突。见 §5。 | 未复用官方代码；本机无该设备。见 [atk-n9.md](atk-n9.md)。 |
 
 ## 应用功能与实现方案
 

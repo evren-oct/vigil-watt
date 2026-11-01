@@ -121,4 +121,38 @@ public class BatteryReadingFilterTests
         Assert.Equal(ReadingVerdict.Accept, filter.Evaluate(percent, T0));
         Assert.Equal(percent, filter.LastAcceptedPercent);
     }
+
+    /// <summary>CR-124：北通 T9 实测离线前 13%、重新上线 73%，用旧基准比对会被挡 5 分钟。</summary>
+    [Fact]
+    public void R1_重新上线时用旧基准会误判异常()
+    {
+        var f = NewFilter();
+        f.Seed(13);
+        // 没有 Reseed 的老行为：13%→73% 判异常，界面卡在 13%
+        Assert.Equal(ReadingVerdict.RejectAnomaly, f.Evaluate(73, T0));
+        Assert.Equal(13, f.LastAcceptedPercent);
+    }
+
+    [Fact]
+    public void R2_重新上线时Reseed直接采信新读数()
+    {
+        var f = NewFilter();
+        f.Seed(13);
+        Assert.Equal(ReadingVerdict.Accept, f.Reseed(73));
+        Assert.Equal(73, f.LastAcceptedPercent);
+        // 之后回到正常判定：小步变化继续采信
+        Assert.Equal(ReadingVerdict.Accept, f.Evaluate(72, T0.AddMinutes(1)));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(101)]
+    public void R3_Reseed不吃无效值也不改基准(int percent)
+    {
+        var f = NewFilter();
+        f.Seed(13);
+        Assert.Equal(ReadingVerdict.InvalidValue, f.Reseed(percent));
+        Assert.Equal(13, f.LastAcceptedPercent);   // 基准没被占位帧污染
+    }
 }

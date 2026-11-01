@@ -183,6 +183,24 @@ internal static class HidppCodec
         _ => DeviceKind.Unknown,
     };
 
+    /// <summary>
+    /// `0x0005` Device Name 的 func 2（getDeviceType）返回的**营销类型** → UI 用的 <see cref="DeviceKind"/>。
+    /// 比配对寄存器权威（后者会把触控板/演示器报成键盘鼠标），所以优先用它；无对应 Kind 的类型回 Unknown 交给名字兜底。
+    /// </summary>
+    public static DeviceKind MapDeviceTypeKind(byte deviceType) => deviceType switch
+    {
+        0 => DeviceKind.Keyboard,   // keyboard
+        2 => DeviceKind.Keyboard,   // numpad
+        3 => DeviceKind.Mouse,
+        5 => DeviceKind.Mouse,      // trackball
+        8 => DeviceKind.Headset,
+        10 => DeviceKind.Gamepad,   // steering wheel
+        11 => DeviceKind.Gamepad,   // joystick
+        12 => DeviceKind.Gamepad,
+        14 => DeviceKind.Speaker,
+        _ => DeviceKind.Unknown,
+    };
+
     /// <summary>Unifying 风格配对信息（RECEIVER_INFO 0x2N）：参数区 [3..4]=WPID，[7]=kind（相对 feature 缓冲即 resp[5..6]、resp[9]）。</summary>
     public static bool TryParseUnifyingPairing(
         ReadOnlySpan<byte> resp, out ushort wirelessPid, out DeviceKind kind)

@@ -763,7 +763,11 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         if (percent.HasValue)
         {
             int baseline = dev.Filter.LastAcceptedPercent;
-            var verdict = dev.Filter.Evaluate(percent.Value, DateTimeOffset.Now);
+            // 离线→在线这一拍重新建基准：离线期间电量可能已经大变（充电/换电池/占位帧），
+            // 拿旧基准比对会被"变化超阈值需持续 5 分钟"挡住，界面卡在旧值（CR-124）。
+            var verdict = dev.Status.IsOnline
+                ? dev.Filter.Evaluate(percent.Value, DateTimeOffset.Now)
+                : dev.Filter.Reseed(percent.Value);
             if (verdict is ReadingVerdict.RejectAnomaly or ReadingVerdict.InvalidValue)
             {
                 Log.WarnThrottled($"anomaly:{dev.Info.DevicePath}",

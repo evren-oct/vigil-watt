@@ -201,4 +201,23 @@ public class HidppCodecTests
         Assert.Equal(0x4080, wpid);
         Assert.Equal(DeviceKind.Mouse, kind);
     }
+
+    /// <summary>0x0005 func 2 的营销类型枚举（键盘 0 / 小键盘 2 / 鼠标 3 / 触控板 4 / 轨迹球 5 / 耳机 8 / 手柄 12 / 音箱 14）。</summary>
+    [Fact]
+    public void K3_设备营销类型映射()
+    {
+        Assert.Equal(DeviceKind.Keyboard, HidppCodec.MapDeviceTypeKind(0));
+        Assert.Equal(DeviceKind.Keyboard, HidppCodec.MapDeviceTypeKind(2));   // numpad
+        Assert.Equal(DeviceKind.Mouse, HidppCodec.MapDeviceTypeKind(3));
+        Assert.Equal(DeviceKind.Mouse, HidppCodec.MapDeviceTypeKind(5));      // trackball
+        Assert.Equal(DeviceKind.Headset, HidppCodec.MapDeviceTypeKind(8));
+        Assert.Equal(DeviceKind.Gamepad, HidppCodec.MapDeviceTypeKind(12));
+        Assert.Equal(DeviceKind.Speaker, HidppCodec.MapDeviceTypeKind(14));
+
+        // 没有对应 Kind 的类型回 Unknown，交给配对寄存器 / 名字兜底
+        Assert.Equal(DeviceKind.Unknown, HidppCodec.MapDeviceTypeKind(4));    // trackpad
+        Assert.Equal(DeviceKind.Unknown, HidppCodec.MapDeviceTypeKind(7));    // receiver
+        Assert.Equal(DeviceKind.Unknown, HidppCodec.MapDeviceTypeKind(9));    // webcam
+        Assert.Equal(DeviceKind.Unknown, HidppCodec.MapDeviceTypeKind(0xFF));
+    }
 }

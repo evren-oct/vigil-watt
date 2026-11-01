@@ -421,16 +421,18 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         if (DeviceBlocklist.IsBlocked(SlotId(session, idx))) return;
 
         var io = session.Io!;
-        string name = ReadDeviceName(io, idx) ?? $"罗技设备 {idx}";
-        var kind = DeviceKind.Unknown;
+        // 0x0005 的下标因固件而异，两个调用（名字 / 类型）共用一次 GetFeature
+        byte nameIdx = ResolveFeature(io, idx, 0x0005);
+        string name = ReadDeviceName(io, idx, nameIdx) ?? $"罗技设备 {idx}";
         ushort? wpid = null;
-        if (!session.DirectDevice &&
-            TryReadPairingInfo(io, session.Info.ProductId, idx, out wpid, out var pairedKind))
-        {
-            kind = pairedKind;
-        }
-        if (kind == DeviceKind.Unknown)
-            kind = DeviceKindGuesser.Guess(name);
+        DeviceKind pairedKind = DeviceKind.Unknown;
+        if (!session.DirectDevice)
+            TryReadPairingInfo(io, session.Info.ProductId, idx, out wpid, out pairedKind);
+
+        // 类型优先级：0x0005 营销类型（权威）> 配对寄存器 > 按名字猜
+        var kind = ReadDeviceKind(io, idx, nameIdx);
+        if (kind == DeviceKind.Unknown) kind = pairedKind;
+        if (kind == DeviceKind.Unknown) kind = DeviceKindGuesser.Guess(name);
 
         var status = new DeviceStatus
         {
@@ -835,10 +837,9 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         return false;
     }
 
-    private static string? ReadDeviceName(HidppIO io, byte devIdx)
+    /// <summary>Feature ID 0x0005 = DEVICE NAME/TYPE；<paramref name="nameIdx"/> 由调用方 ResolveFeature 得到（不要写死 0x05）。</summary>
+    private static string? ReadDeviceName(HidppIO io, byte devIdx, byte nameIdx)
     {
-        // Feature ID 0x0005 = DEVICE NAME；下标因固件而异，必须先 GetFeature，不能写死 0x05
-        byte nameIdx = ResolveFeature(io, devIdx, 0x0005);
         if (nameIdx == 0) return null;
 
         var resp = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 0), ReadOnlySpan<byte>.Empty); // GetCount
@@ -853,6 +854,14 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         }
         var name = new string(chars).Trim();
         return name.Length == 0 ? null : name;
+    }
+
+    /// <summary>0x0005 func 2 = getDeviceType，营销类型比配对寄存器准；读不到返回 Unknown 交给下一级兜底。</summary>
+    private static DeviceKind ReadDeviceKind(HidppIO io, byte devIdx, byte nameIdx)
+    {
+        if (nameIdx == 0) return DeviceKind.Unknown;
+        var resp = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 2), ReadOnlySpan<byte>.Empty);
+        return resp == null || resp.Length < 3 ? DeviceKind.Unknown : HidppCodec.MapDeviceTypeKind(resp[2]);
     }
 
     private static (int Percent, ChargingState State) MapTierBattery(byte tier, byte chargeStatus)

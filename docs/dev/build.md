@@ -26,7 +26,8 @@ Debug 构建的数据目录就在该目录下的 `data\`，直接双击即可运
 
 **Debug 构建的数据目录是 `bin\x64\Debug\...\win-x64\data\`**，不是 `%LOCALAPPDATA%`。
 `AppPaths.ResolveRootDir()` 用 `#if DEBUG` 分流：Debug 取 `AppContext.BaseDirectory\data`，
-Release 才取 `%LOCALAPPDATA%\VigilWatt`。这是 .NET 开发的常规做法，好处是：
+Release 再分两档——**便携版取解压根目录的 `data\`**（Velopack 便携包根目录带 `.portable` 标记，
+exe 在 `<root>\current\` 下），安装版才取 `%LOCALAPPDATA%\VigilWatt`（issue #81）。这是 .NET 开发的常规做法，好处是：
 
 - 开发版与正式版各用一份 `settings.json` / `history.db` / `logs`，互不覆盖、历史不互相污染；
 - 不往用户目录写东西，卸载/清理只要删 `bin`；
@@ -54,6 +55,8 @@ powershell -File scripts\run-app.ps1 -Copy    # 兜底：复制到 C:\VigilWattR
 ```
 
 `-Copy` 只在"从工作区启动仍被环境限制"时才需要，原因见 `runtime-pitfalls.md` §20。
+
+**便携版是干净的一份**：数据只认解压根目录的 `data\`，不复制、不迁移 `%LOCALAPPDATA%` 里的旧数据。1.3.1 及以前便携版误写到了用户目录（issue #81），那些旧数据留在原处不会自动搬——需要的话自己拷到 `<解压根目录>\data`。解压到只读位置（如 Program Files）时自动退回 `%LOCALAPPDATA%`，不会因为写不进去而启动失败。
 
 **注意**：单实例互斥量 `VigilWatt_SingleInstance` 是全局同名的，正式版在跑时开发版会直接退出。
 这是有意的——两边同时抓 HID 会互相抢设备。

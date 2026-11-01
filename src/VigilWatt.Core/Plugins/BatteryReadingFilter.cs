@@ -78,5 +78,18 @@ public sealed class BatteryReadingFilter
         return ReadingVerdict.AcceptConfirmed;
     }
 
+    /// <summary>
+    /// 离线后重新上线的那一拍：丢掉旧基准与异常计时，直接以新读数重建。
+    /// 离线期间电量可以大幅变化（充电、换电池、占位帧），拿旧基准比对会被"持续 5 分钟"挡住（CR-124）。
+    /// 无效值仍判 <see cref="ReadingVerdict.InvalidValue"/>，0/1 这类休眠占位帧不会被当基准。
+    /// </summary>
+    public ReadingVerdict Reseed(int percent)
+    {
+        if (!IsValid(percent)) return ReadingVerdict.InvalidValue;
+        LastAcceptedPercent = percent;
+        _anomalySince = null;
+        return ReadingVerdict.Accept;
+    }
+
     private bool IsValid(int percent) => percent >= MinValidPercent && percent <= 100;
 }

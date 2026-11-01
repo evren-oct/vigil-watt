@@ -73,3 +73,21 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 **蓝牙补充验证（2026-10-23）**：用户将 PRO X 2 切换并连接到 Windows 蓝牙音频。VigilWatt 日志 19:50:08.330 将经典蓝牙设备 `PRO X 2` 识别为耳机，19:50:15.017 记录 `经典蓝牙电量(HFP 节点): PRO X 2 60%`；同一时刻用户截图中 Windows 蓝牙设置与 VigilWatt 蓝牙行均为 60%。这是 Windows HFP 设备节点电量属性的端到端验证，不是 BLE GATT，也没有使用 Centurion / Logitech HID++ 查询。VigilWatt 同时显示另一条 2.4G 耳机接口离线（55%），符合切换离开 LIGHTSPEED 模式后的表现；鼠标仍独立显示 77%。用户 G HUB 截图将 77% 鼠标标为 PRO X SUPERLIGHT 2、55% 耳机标为 PRO X 2 LIGHTSPEED，因此经典蓝牙类型确认是耳机且原始名称为 `PRO X 2` 时，将列表名规范为 `PRO X 2 LIGHTSPEED`；其他名称不作型号推断。列表提示“采集不足”是剩余时间估算还未满足多个时间点，不影响当前 60% 电量读数。
 
 详细来源见 [sources.md](sources.md)；外部协议参考：[HeadsetControl PRO X 2 实现](https://github.com/Sapd/HeadsetControl/blob/master/lib/devices/logitech_gpro_x2_lightspeed.hpp)、[LogitechBatteryMonitor 协议与实机记录](https://github.com/Recopec/LogitechBatteryMonitor)。两项目均注明 GPL-2.0；本项目只参考公开协议事实，未复制其实现代码。
+
+## 3. 通知派发与递归事故（issue #55）
+
+**事故**：G102 Lightsync 上有线 HID++ 通道的 `WriteOutput` 恒报 `ERROR_INVALID_PARAMETER`，对端永不回包；等包窗口里到达的每条通知都被同步 `Invoke` 给订阅方，订阅方（`OnHidppNotification → TryDiscoverSlot`）又发新请求 → 同线程重入 `lock (_ioGate)`（Monitor 可重入，锁拦不住）→ 栈耗尽 `0xc00000fd`。贡献者转储实测 **1335 层完全同构的调用环**。
+
+**修法（三层，均在 2026-11-01 落地）**：
+
+| 层 | 位置 | 做法 |
+|---|---|---|
+| 通知不再内联回调 | `HidppNotificationQueue` | 读报文的一方只入队；`Drain` 在 `_ioGate` **之外**执行，`Interlocked` 守卫保证派发期间重入只入队（由外层循环接手），递归变平循环 |
+| 通知不再就地发现 | `LogitechPlugin.OnHidppNotification` | 未认过的槽位只记进 `PendingDiscover`，由监听线程在 `PumpNotifications` 返回后补发现，一拍只探一个 |
+| 写不通就停手 | `HidppIO.Request` | `WriteOutput` 失败即停写 **30 秒**，冷却期内不写不读不派发 |
+
+配套两条：队列上限 256 条（超出丢最旧并计数）、单次泵出预算 200ms（**按时间不按条数**，否则 N 条 × 请求超时会把线程占满几分钟）。
+
+**空槽冷却**：`TryDiscoverSlot` 过去先 `EmptySlotUntil.Remove` 再 `Ping`，等于通知路径完全绕过 5 分钟负缓存——每来一条通知就重探一次，是递归的放大器。现在对所有调用方一律先查冷却。
+
+**未修**：G102 那条接口本身写不进去是另一个问题（疑似该走 `SetOutputReport` 而非 `WriteOutput`），并入 `reviews/BACKLOG.md` 的 CR-88 一起查，要设备才能验。

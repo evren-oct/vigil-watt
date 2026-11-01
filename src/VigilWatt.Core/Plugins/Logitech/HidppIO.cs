@@ -6,16 +6,25 @@ namespace VigilWatt.Core.Plugins.Logitech;
 /// <summary>
 /// 功 能： HID++ 底层 I/O：通过 vendor 接口写 output report 发请求、读 input report 匹配响应（报文格式对照 Solaar base.py）。
 /// 2026/10/06 15:53:36 xliu
-/// 详见 docs/hardware/logitech.md。
+/// 通知只入队、出锁后才派发——在等包循环里同步回调会让"处理器再发请求"变成深递归（issue #55）。详见 docs/hardware/logitech.md。
 /// </summary>
 internal sealed class HidppIO : IDisposable
 {
     public const byte SwId = 0x0B; // Solaar 约定，避开 G HUB(0x0D)/OpenRGB(0x07)/LGSTray(0x0A)
 
+    /// <summary>单次泵出的时间预算：按时间不按条数，否则 N 条 × 请求超时会把这一个线程占满几分钟。</summary>
+    private static readonly TimeSpan DrainBudget = TimeSpan.FromMilliseconds(200);
+
+    /// <summary>写被系统拒绝后停写这么久。写失败说明接口本身不通（不是设备睡着），继续戳只会刷屏。</summary>
+    private static readonly TimeSpan WriteBrokenCooldown = TimeSpan.FromSeconds(30);
+
     private readonly HidDeviceHandle _handle;
     private readonly byte _reportId;
     private readonly bool _longMessage;
     private readonly object _ioGate = new();
+    private readonly HidppNotificationQueue _notifications = new();
+
+    private DateTimeOffset _writeBrokenUntil;
 
     /// <summary>底层句柄（供探测工具使用）。</summary>
     public HidDeviceHandle Handle => _handle;
@@ -24,7 +33,7 @@ internal sealed class HidppIO : IDisposable
     public byte ReportId => _reportId;
 
     /// <summary>设备自发通知：参数为 (devIdx, data)，data 从 feature 字节起（与 <see cref="Request"/> 返回值同布局）。
-    /// 在请求等待与空闲 Pump 时都会触发；订阅方必须快速返回、不重入 Request。</summary>
+    /// 在请求等待与空闲 Pump 时都会触发；派发已在 I/O 锁外进行，处理器仍应尽快返回，别做长耗时 I/O。</summary>
     public Action<byte, byte[]>? NotificationReceived;
 
     /// <summary>
@@ -64,23 +73,35 @@ internal sealed class HidppIO : IDisposable
 
         var wait = timeout ?? TimeSpan.FromSeconds(3);
 
+        byte[]? reply = null;
         lock (_ioGate)
         {
             // 写入闸门（安全规则 R1）：这是本插件唯一的写点，许可关闭时连一次 WriteOutput 都不发。
             if (WritesAllowed != null && !WritesAllowed())
             {
                 Log.Debug($"HID++ 写入被开关挡住 dev={devIndex} req=0x{requestId:X4}");
-                return null;
             }
-
-            if (!_handle.WriteOutput(packet, TimeSpan.FromMilliseconds(500)))
+            else if (DateTimeOffset.UtcNow >= _writeBrokenUntil)
             {
-                Log.Warn($"HID++ 写失败 dev={devIndex} req=0x{requestId:X4} report=0x{_reportId:X2}");
-                return null;
+                if (!_handle.WriteOutput(packet, TimeSpan.FromMilliseconds(500)))
+                {
+                    // 写不进去说明这条接口本身不通（G102 的有线 HID++ 通道实测如此）：
+                    // 不停一会儿的话，每条通知都会再触发一轮"写→等→超时"。
+                    _writeBrokenUntil = DateTimeOffset.UtcNow + WriteBrokenCooldown;
+                    Log.Warn($"HID++ 写失败 dev={devIndex} req=0x{requestId:X4} report=0x{_reportId:X2}，" +
+                             $"停写 {WriteBrokenCooldown.TotalSeconds:0} 秒");
+                }
+                else
+                {
+                    _writeBrokenUntil = default;
+                    reply = ReadMatching(devIndex, data, wait);
+                }
             }
-
-            return ReadMatching(devIndex, data, wait);
+            // 冷却期内静默跳过：进入冷却时已经 Warn 过一次，这里再记就是刷屏。
         }
+
+        DrainNotifications();
+        return reply;
     }
 
     /// <summary>空闲泵：只读不写，把超时窗口内到达的通知交给 <see cref="NotificationReceived"/>；与 <see cref="Request"/> 互斥（同一把锁），零写入，供后台线程持续监听插拔电等事件。</summary>
@@ -97,12 +118,14 @@ internal sealed class HidppIO : IDisposable
                     ? remaining
                     : TimeSpan.FromMilliseconds(50));
                 if (input == null) break;
-                TryDispatchNotification(input);
+                _notifications.TryEnqueue(input);
             }
         }
+
+        DrainNotifications();
     }
 
-    /// <summary>读输入流直到出现前两字节与请求匹配的响应；通知报文分发给订阅方后继续等。</summary>
+    /// <summary>读输入流直到出现前两字节与请求匹配的响应；通知报文入队后继续等。</summary>
     private byte[]? ReadMatching(byte devIndex, byte[] requestData, TimeSpan timeout)
     {
         var deadline = DateTime.UtcNow + timeout;
@@ -117,8 +140,8 @@ internal sealed class HidppIO : IDisposable
             byte reportId = input[0];
             if (reportId != HidppCodec.ShortReportId && reportId != HidppCodec.LongReportId) continue;
 
-            // 设备自发通知（sw=0）：交给订阅方后继续等本请求的应答
-            if (TryDispatchNotification(input))
+            // 设备自发通知（sw=0）：只入队，出锁后再派发（issue #55 的递归环就出在这句同步回调上）
+            if (_notifications.TryEnqueue(input))
                 continue;
 
             byte replyDev = input[1];
@@ -141,28 +164,11 @@ internal sealed class HidppIO : IDisposable
         return null;
     }
 
-    /// <summary>若是设备自发通知则分发并返回 true。HID++ 2.0 通知的 software id（低 4 位）为 0；请求应答带 SwId=0x0B。</summary>
-    private bool TryDispatchNotification(byte[] input)
+    /// <summary>把队列里的通知派发出去（必须在 <see cref="_ioGate"/> 之外调用）。</summary>
+    private void DrainNotifications()
     {
-        if (input.Length < 4) return false;
-        byte reportId = input[0];
-        if (reportId != HidppCodec.ShortReportId && reportId != HidppCodec.LongReportId) return false;
-        byte funcSw = input[3];
-        if ((funcSw & 0x0F) != 0) return false; // 带 SwId 的是应答，不是通知
-
-        byte devIdx = input[1];
-        int dataLen = input.Length - 2;
-        var data = new byte[dataLen];
-        Array.Copy(input, 2, data, 0, dataLen);
-        try
-        {
-            NotificationReceived?.Invoke(devIdx, data);
-        }
-        catch (Exception ex)
-        {
-            Log.Warn($"HID++ 通知处理异常: {ex.Message}");
-        }
-        return true;
+        if (NotificationReceived is not { } handler) return;
+        _notifications.Drain(handler, DrainBudget);
     }
 
     public void Dispose() => _handle.Dispose();

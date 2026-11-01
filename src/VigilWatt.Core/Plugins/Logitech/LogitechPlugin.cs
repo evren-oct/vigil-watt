@@ -116,6 +116,11 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         public int NotReadyScans;                       // 连续"整轮一个都没应答"的次数（接收器刚插上时会这样）
         public readonly Dictionary<byte, DevEntry> Devices = new();
         public readonly Dictionary<byte, DateTimeOffset> EmptySlotUntil = new();
+
+        /// <summary>通知里出现但还没认过的槽位。**只能登记、不能就地发现**——发现要发请求，
+        /// 而通知回调就在等包循环里，就地发会把调用栈递归打穿（issue #55）。由监听线程下一拍处理。</summary>
+        public readonly ConcurrentDictionary<byte, byte> PendingDiscover = new();
+
         public Action<byte, byte[]>? NotifyHandler;
         public CancellationTokenSource? ListenCts;
         public Task? ListenTask;
@@ -373,11 +378,38 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         int maxSlots = HidppCatalog.MaxSlots(session.Info.ProductId);
         if (idx > maxSlots) return;
         if (DeviceBlocklist.IsBlocked(SlotId(session, idx))) return;
-        session.EmptySlotUntil.Remove(idx);
+        // 空槽冷却对**所有**调用方都生效：曾经在这里先 Remove 再 Ping，等于通知路径完全绕过冷却，
+        // 每来一条通知就重探一次（issue #55 的放大器之一）。
+        if (session.EmptySlotUntil.TryGetValue(idx, out var until) && DateTimeOffset.Now < until) return;
+
         if (Ping(session.Io, idx, out var major, FastSlotTimeout))
+        {
+            session.EmptySlotUntil.Remove(idx);
             AddDevice(session, idx, major);
+        }
         else
+        {
             session.EmptySlotUntil[idx] = DateTimeOffset.Now + EmptySlotCooldown;
+        }
+    }
+
+    /// <summary>处理通知登记下来的待发现槽位：一拍只探一个，避免把监听线程长时间占住。</summary>
+    private void DrainPendingDiscover(ReceiverSession session)
+    {
+        if (session.PendingDiscover.IsEmpty) return;
+        foreach (var idx in session.PendingDiscover.Keys)
+        {
+            if (!session.PendingDiscover.TryRemove(idx, out _)) continue;
+            try
+            {
+                TryDiscoverSlot(session, idx);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"罗技补发现槽位异常 devIdx={idx}: {ex.Message}");
+            }
+            return;
+        }
     }
 
     /// <summary>设备 ID：接收器**端口无关**路径哈希 + 槽位（换 USB 口不产生新设备）。认领、黑名单、上报三处必须同一套规则。</summary>
@@ -453,6 +485,8 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
                 try
                 {
                     io.PumpNotifications(TimeSpan.FromMilliseconds(500));
+                    // 通知回调只登记待发现槽位，真正的补发现在这里做（此时不在任何等包循环里）。
+                    DrainPendingDiscover(session);
                 }
                 catch (Exception ex)
                 {
@@ -486,8 +520,9 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
         if (!session.Devices.TryGetValue(devIdx, out var dev))
         {
-            TryDiscoverSlot(session, devIdx);
-            if (!session.Devices.TryGetValue(devIdx, out dev)) return;
+            // 未认过的槽位：只登记，绝不在这里发请求（见 ReceiverSession.PendingDiscover）。
+            session.PendingDiscover.TryAdd(devIdx, 0);
+            return;
         }
 
         byte feature = data[0];
@@ -539,7 +574,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         {
             if (session.Io == null) continue;
 
-            // 发现只在 Attach / 通知补槽里做；此处再扫会把空接收器的超时翻倍
+            // 发现只在 Attach 与监听线程的补发现里做；此处再扫会把空接收器的超时翻倍
             foreach (var (idx, dev) in session.Devices)
             {
                 try

@@ -67,6 +67,9 @@ public sealed class AtkPlugin : BatteryPluginBase
     /// 帧与 11D9/1303 同构，issue #71 六条实测帧校验全通过，只是新号段（atk.md §10）。</summary>
     private const ushort DonglePidA9UltraMax = 0x11FE;
 
+    /// <summary>新固件 FF05 接收器：电量口搬到 0xFF05 的 64 字节寄存器读，与老型号不共用帧格式。</summary>
+    private const ushort DonglePidNkFf05 = AtkFf05Codec.ProductId;
+
     /// <summary>电量口的 usage page；必须精确匹配，否则会对 FF03/FF04/FF05/FF06 等厂商口各白发一帧查询。</summary>
     private const ushort UsagePageBattery = 0xFF02;
 
@@ -79,7 +82,7 @@ public sealed class AtkPlugin : BatteryPluginBase
     /// 已登记分组分支保证（atk.md §4.1）。</summary>
     private static bool IsReceiverPid(ushort pid) =>
         pid is DonglePid or DonglePid1K or DonglePidV3 or DonglePidF1Ultimate or BodyPidF1Ultimate
-            or DonglePidA9Air or DonglePidR1Nk or DonglePidA9UltraMax;
+            or DonglePidA9Air or DonglePidR1Nk or DonglePidA9UltraMax or DonglePidNkFf05;
 
     private static DateTimeOffset _receiverCheckedAt;
 
@@ -110,9 +113,10 @@ public sealed class AtkPlugin : BatteryPluginBase
             kv.Value == group && IsReceiverPid(kv.Key) && _receiversInPlace.Contains(kv.Key));
     }
 
-    /// <summary>鼠标链路（op 帧）与键盘链路（VIA）各一套协议名。</summary>
+    /// <summary>鼠标（老 FF02 op 帧）、键盘（VIA）、新固件鼠标（FF05 寄存器）各一套协议名。</summary>
     private const string ProtocolMouse = "atk-v1";
     private const string ProtocolVia = "atk-keyboard-via";
+    private const string ProtocolFf05 = "atk-ff05";
 
     /// <summary>认领接收器或有线本体，二者只认领其一（接收器优先），以免两条记录读数来跳。</summary>
     protected override bool IsCandidate(HidDeviceInfo info)
@@ -120,6 +124,13 @@ public sealed class AtkPlugin : BatteryPluginBase
         // 键盘链路（VIA，page 0xFF60）：与鼠标同 VID，靠 usage page 分流，必须先判。
         if (AtkViaCodec.IsSupportedInterface(info.VendorId, info.UsagePage,
                 info.InputReportLength, info.OutputReportLength, info.OutputReportId))
+            return true;
+
+        // 新固件族走 FF05 的 64 字节寄存器读，与下面的 FF02 op 帧毫无交集，必须先分流。
+        // ⚠ 不能下移：0xFF05 过不了下一行那道 `UsagePage == 0xFF02` 的闸，会直接 return false。
+        if (info.VendorId == VendorId
+            && AtkFf05Codec.IsSupportedInterface(info.UsagePage, info.ProductId,
+                info.InputReportLength, info.OutputReportLength))
             return true;
 
         if (info.VendorId != VendorId || info.UsagePage != UsagePageBattery)
@@ -174,6 +185,7 @@ public sealed class AtkPlugin : BatteryPluginBase
         [DonglePidR1Nk] = "r1nk",          // VXE R1 Nearlink 接收器（NK mouse NANO dongle）
         [BodyPidR1Nk] = "r1nk",            // VXE R1 Nearlink 本体（插数据线时枚举）
         [DonglePidA9UltraMax] = "a9ultra", // A9 Ultra Max 2.0 接收器（本体 PID 未知，插线会多一条记录）
+        [DonglePidNkFf05] = "nkff05",      // 新固件 FF05 接收器（同样叫 NK mouse NANO dongle，走 64 字节寄存器读）
     };
 
     /// <summary>各组的型号名（本体上报的产品名，即机型）；按组存，两只鼠标互不覆盖。</summary>
@@ -312,6 +324,14 @@ public sealed class AtkPlugin : BatteryPluginBase
                 : null;
         }
 
+        if (handle.Info.VendorId == VendorId
+            && AtkFf05Codec.IsSupportedInterface(handle.Info.UsagePage, handle.Info.ProductId,
+                handle.Info.InputReportLength, handle.Info.OutputReportLength))
+        {
+            var ff05 = QueryFf05(handle, out _);
+            return ff05 is { } v ? (ProtocolFf05, v.Percent, v.Charging) : null;
+        }
+
         if (handle.Info.OutputReportLength < AtkCodec.ReportLength) return null;
 
         if (!WriteQuery(handle, AtkCodec.BuildQuery())) return null;
@@ -333,6 +353,15 @@ public sealed class AtkPlugin : BatteryPluginBase
             return via.HasValue
                 ? (via.Value.Percent, via.Value.Charging ? ChargingState.Charging : ChargingState.Discharging)
                 : null;
+        }
+
+        if (dev.Protocol == ProtocolFf05)
+        {
+            var ff05 = QueryFf05(dev.Handle, out bool frameSent);
+            if (ff05.HasValue) ReportPollAnswered(dev);
+            // 发出去没回 = 设备在睡，该记账；帧没发出去 = 句柄失效，不计失败（与下面的 FF02 分支同理）。
+            else if (frameSent) ReportPollFailure(dev);
+            return ff05 is { } v ? (v.Percent, v.Charging) : null;
         }
 
         if (!WriteQuery(dev.Handle, AtkCodec.BuildQuery()))
@@ -377,6 +406,35 @@ public sealed class AtkPlugin : BatteryPluginBase
         {
             CloseHandle(handle);
         }
+    }
+
+    /// <summary>新固件链路：发一条 FF05 寄存器读，在 1 秒内等电量响应。</summary>
+    private static (int Percent, ChargingState Charging)? QueryFf05(HidDeviceHandle handle, out bool frameSent)
+    {
+        frameSent = false;
+        if (!IsWritesEnabled("Atk")) return null;
+
+        // 复用 WriteQuery：WriteOutput 不通时它回落到 HidD_SetOutputReport（重开 R/W 句柄），
+        // 设备被独占打开时只有这条路写得进。
+        if (!WriteQuery(handle, AtkFf05Codec.BuildQuery())) return null;
+        frameSent = true;
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(1);
+        while (DateTime.UtcNow < deadline)
+        {
+            var input = handle.ReadInput(TimeSpan.FromMilliseconds(50));
+            if (input == null) continue;
+            if (AtkFf05Codec.TryParse(input) is not { } r)
+            {
+                if (Log.IsEnabled(LogLevel.Debug)) Log.Debug($"ATK FF05 忽略非电量响应: {Log.Hex(input)}");
+                continue;
+            }
+            Log.Info($"ATK FF05 电量查询: {r.Percent}% 电压={r.Millivolts}mV 原始={Log.Hex(input)}");
+            return (r.Percent, r.Charging);
+        }
+        Log.Once(LogLevel.Debug, $"atk-ff05-silent:{handle.Info.DevicePath}",
+            $"ATK FF05 查询无响应（多半在睡，恢复应答后会再记一条）: {handle.Info.DevicePath}");
+        return null;
     }
 
     /// <summary>键盘链路：发一条 VIA 查询，在 1 秒内等电量响应。</summary>

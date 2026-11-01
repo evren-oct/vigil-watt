@@ -98,6 +98,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnKeyboardCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnMouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkFf05Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkPlugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Hid\HidDeviceScanner.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceDisplayDeduplicator.cs" />

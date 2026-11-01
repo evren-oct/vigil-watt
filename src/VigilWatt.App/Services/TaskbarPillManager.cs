@@ -62,6 +62,17 @@ public sealed class TaskbarPillManager : IDisposable
         _pill?.ResetPosition();
     }
 
+    /// <summary>锁定/解锁贴片位置（右键菜单与设置页共用，只有这里落盘）。</summary>
+    public void SetLockPosition(bool locked)
+    {
+        var s = App.Services.Settings;
+        if (s.TaskbarBatteryLockPosition == locked) return;
+        s.TaskbarBatteryLockPosition = locked;
+        s.Save();
+        _pill?.SetLockPosition(locked);
+        Log.Debug($"任务栏贴片：位置{(locked ? "已锁定" : "已解锁")}");
+    }
+
     /// <summary>稳态幂等；<paramref name="immediate"/> 跳过去抖（启动与设置保存要当场生效）。</summary>
     private void Reconcile(bool immediate = false)
     {

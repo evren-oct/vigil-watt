@@ -18,6 +18,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Plugins\Logitech\logitech-hidpp.json" />
     <EmbeddedResource Include="Plugins\Mchose\mchose-catalog.json" />
+    <EmbeddedResource Include="Plugins\Rapoo\rapoo-catalog.json" />
   </ItemGroup>
 
 </Project>

@@ -60,12 +60,18 @@ internal static class RapooCodec
     /// 解析一帧。<see cref="RapooStatus.Kind"/> 为 <see cref="RapooFrameKind.NotStatus"/> 时说明
     /// 这不是 0x07 状态帧（其余字段无意义）。
     /// </summary>
-    public static RapooStatus Parse(byte[] input)
+    public static RapooStatus Parse(byte[] input) => Parse(input, StatusReportId, 0);
+
+    /// <summary>
+    /// 同一个鼠标 user-data 布局被三个官方 driver 共用（`VT_nrf54L`/`LM20RT` 用 report `0x07`、
+    /// `VT_CH584` 用 `0x08`，字段偏移逐字节相同），所以一次要认两个 ID。见 docs/hardware/rapoo-catalog.md §2。
+    /// </summary>
+    public static RapooStatus Parse(byte[] input, byte reportIdA, byte reportIdB)
     {
         foreach (int off in new[] { 0, 1 })
         {
             if (input.Length < off + StatusReportLength) continue;
-            if (input[off] != StatusReportId) continue;
+            if (input[off] != reportIdA && (reportIdB == 0 || input[off] != reportIdB)) continue;
 
             int linkRaw = input[off + 1] & 0x0F;
             byte chargeFlag = input[off + 7];

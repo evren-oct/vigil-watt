@@ -5,6 +5,12 @@
 
 ## 2026-11-01
 
+- **雷柏补齐 5 个协议族，覆盖 98/109 台（全部零写入）**：官方主包里每套族都有 `handleReport`，电量全来自被动上报——**不需要为键盘写查询帧**。新增 `telink-8273`（MT 系列，`0xBB`）、`gcome-ap`（`FA FB 07`）、`telink-keyboard`（含 V700diy 变体）、`ch585m` 四个族，并把 `LM20RT`/`VT_CH584` 并进 `status-report7`（三者帧布局逐字节相同，只差 report ID 7/7/8）。认领改成**目录优先 + 形态兜底**：收录过的设备只试它那一个族，底座在第一步就被挡掉。**除 VT3 外的族全部只有合成帧单测，无真机**，边界写在 `hardware/rapoo-catalog.md` §8。
+- **雷柏插件改为「目录 + 协议族注册表」**：`rapoo-catalog.json` 接进内嵌资源，新增 `RapooDeviceCatalog` 与 `RapooFamily`/`RapooFamilies`，`RapooPlugin` 从 211 行降到只管认领与派发。显示名改由目录给官方型号（"雷柏 VT3"，不再是"雷柏 Rapoo Mouse"），图标按协议族给（`ResolveKind` 从 `Unknown` 变成 `Mouse`）。**行为零变化**：认领判据、探测窗口、充电去抖、离线两条腿全部原样搬进 `StatusReport7Family`，单测 64 项全过。以后加机型只改 JSON、加协议族只加一个类。见 `hardware/rapoo-catalog.md` §2.1。
+
+- **雷柏心跳字段全部校准（纯文档 + 真机验证）**：官方 AHUB 2.0 的 `mC()` 解析器给出了 19 字节 `0x07` 的完整字段名，在 VT3（`24AE:1412`）上逐字节核对通过——DPI 档位与数值随 DPI 键变化（3200/6400/26000，顶档 = 官方声明上限）、`[13..14]` 报的是**本体** PID `0x4612`、`[11]` 是 Hz 值不是索引。此前只用了电量与充电位两个字节，现在 `[9]`~`[17]` 也都有出处了。见 `hardware/rapoo.md` §1、§1.1。
+- **雷柏设备目录（纯数据，插件一行未改）**：逆向官方 Web 驱动主包，拿到 **109 台设备 / 195 个 VID:PID / 12 套协议族**（`VT_nrf54L` 一家占 77 台），补上了此前"不在官方表内"的 `1412`=VT3、`1B13/4B13`=VT2S Air MAX V2。落成 `Plugins/Rapoo/rapoo-catalog.json`，与迈从目录同构（多 `brand`/`kind`/`caps`/`pairedPid`），**未加进 csproj、没有加载器**。`caps` 只填真机验证过的三条，其余留空。见 `hardware/rapoo-catalog.md`。
+
 - **狼蛛 F99（非 Pro，型号码 `0x00A4`）**：采集包显示它与 F99 Pro 共用 `3554:FA09` 和同一套 `0x13` 帧，只有会话 ACK 型号不同；`AulaPlugin` 的型号判断从单值改成集合、多认一个 `0x00A4`，编解码零改动。显示名仍是「AULA F99 Pro」——基类不动就拿不到型号码。见 `hardware/aula.md` §1.2。
 - **新品牌 ilovbee（b98 键盘，`258A:01BB`）**：零写入被动插件，只听接收器推的 20 字节 `0x13` 帧；校验和（前 19 字节 8 位和）15 帧全中，关机帧判离线而不是 0%。充电位是插入瞬间的事件位、拔线无对应帧，故充电态一律 `Unknown`。默认开启。见 `hardware/ilovbee.md`、issue #68。
 - **修罗技栈溢出（issue #55，唯一进程级崩溃）**：HID++ 通知不再在等包循环里同步回调——改为入队、出锁后派发，重入只入队（`HidppNotificationQueue`，200ms 时间预算 + 256 条上限）；通知里的未知槽位只登记 `PendingDiscover`，交监听线程补发现；写失败停写 30 秒。顺带修掉 `TryDiscoverSlot` 抹空槽冷却导致通知路径绕过 5 分钟负缓存。见 `hardware/logitech.md` §3。

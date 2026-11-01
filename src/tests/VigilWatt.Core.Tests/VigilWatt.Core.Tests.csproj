@@ -76,6 +76,10 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaL9Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Haute\HauteCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooDeviceCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooTelink8273Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooKeyboardCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooGcomeApCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Cherry\CherryCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Pulsar\PulsarCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Hecate\HecateCodec.cs" />
@@ -186,6 +190,9 @@
   <ItemGroup>
     <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Mchose\mchose-catalog.json">
       <LogicalName>VigilWatt.Core.Plugins.Mchose.mchose-catalog.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Rapoo\rapoo-catalog.json">
+      <LogicalName>VigilWatt.Core.Plugins.Rapoo.rapoo-catalog.json</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

@@ -113,6 +113,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | VXE R1 Nearlink · receiver `373B:10C9` | Verified locally over wireless and wired charging (`10C7`); uses the ATK switch, off by default. See [atk.md §9](docs/hardware/atk.md) |
 | HyperX Cloud Flight 2 · passive 2.4 GHz push frames | Implemented, on by default; zero writes. Verified on a CF2 |
 | MOJHON GALE2 (2.4G dongle / wired, both `E2B7:122C`) · vendor-channel `A5` read frame | Implemented, off by default; writes frames. Verified on hardware in both dongle and wired modes; charging flag confirmed by an A/B plug test |
+| AUSDOM G04 (receiver `363C:FF9D`) · passive report `0x0A` status frame | Implemented, off by default; zero writes. Short-frame B4 / long-frame B6 carry level, short-frame B6 is the charging bit (`0x01`=charging). Verified on hardware at 90%→91%. See [ausdom.md](docs/hardware/ausdom.md) |
 | Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |
 | System battery · `GetSystemPowerStatus` | Implemented; can be enabled optionally |
 

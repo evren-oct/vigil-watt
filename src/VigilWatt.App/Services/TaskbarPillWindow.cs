@@ -29,8 +29,8 @@ public sealed class TaskbarPillWindow : IDisposable
     private const double EdgeGapDip = 6;
     private const double TipGapDip = 4;
 
-    /// <summary>拖动阈值（DIP）：光标位移不到这么多只当单击，否则点一下（双击开窗口 / 看提示）就会把位置改掉并落盘。</summary>
-    private const double DragThresholdDip = 4;
+    /// <summary>系统拖动阈值读不到时的兜底（DIP）：4 与 Windows 默认 SM_CXDRAG 一致。</summary>
+    private const double DragThresholdFallbackDip = 4;
 
     /// <summary>交给非托管代码的回调必须静态压住，否则被 GC 回收后窗口再来消息就是访问已释放内存。</summary>
     private static readonly Native.WndProcDele StaticProc = WndProc;
@@ -89,7 +89,7 @@ public sealed class TaskbarPillWindow : IDisposable
         _onInvalidate = onInvalidate;
         LoadOffsetFromSettings();
 
-        // 拖动轮询表常驻运行（20Hz）：Win11 任务栏 XAML 输入管理器会吃掉子窗口的鼠标消息，
+        // 拖动轮询表（20Hz，锁定时不启动）：Win11 任务栏 XAML 输入管理器会吃掉子窗口的鼠标消息，
         // 不能靠 WM_LBUTTONDOWN 启动拖动，只能轮询检测（runtime-pitfalls.md §16.5.1）。
         _dragTimer = _dispatcher.CreateTimer();
         _dragTimer.Interval = TimeSpan.FromMilliseconds(DragIdleTickMs);
@@ -797,8 +797,16 @@ public sealed class TaskbarPillWindow : IDisposable
         _btnWasDown = btnDown;
     }
 
-    /// <summary>拖动阈值换算成当前任务栏缩放的物理像素（向下取整，至少 1px）。</summary>
-    private int DragThresholdPx => Math.Max(1, (int)Math.Round(DragThresholdDip * Scale));
+    /// <summary>拖动阈值（物理像素）：取系统 SM_CXDRAG/SM_CYDRAG，读不到才按 DIP 兜底。
+    /// 低于它只当单击——否则点一下（双击开窗口 / 看提示）就会把位置改掉并落盘。</summary>
+    private int DragThresholdPx
+    {
+        get
+        {
+            int sys = Native.GetSystemMetrics(_taskbarHorizontal ? Native.SM_CXDRAG : Native.SM_CYDRAG);
+            return sys > 0 ? sys : Math.Max(1, (int)Math.Round(DragThresholdFallbackDip * Scale));
+        }
+    }
 
     /// <summary>光标当前是否落在贴片矩形内（屏幕坐标）。</summary>
     private bool IsCursorInPill(Native.POINT p)

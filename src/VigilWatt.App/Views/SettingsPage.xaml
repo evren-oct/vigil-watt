@@ -265,7 +265,7 @@
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="任务栏电量贴片" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="在任务栏里（系统托盘左边）钉一条电量胶囊，解锁后可沿任务栏拖动（默认锁定）；本机电量不参与（系统已有电池图标）"
+                                    <TextBlock Text="在任务栏里（系统托盘左边）钉一条电量胶囊，按住可沿任务栏拖动（可在下方锁定）；本机电量不参与（系统已有电池图标）"
                                                Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="TaskbarToggle"
@@ -328,7 +328,7 @@
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="0,12">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="锁定贴片位置" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="锁定后按住贴片不会移动，单击/双击也不会把它碰歪；右键贴片上也能切换"
+                                    <TextBlock Text="锁定后按住贴片不会移动；右键贴片上也能切换"
                                                Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="TaskbarLockToggle"

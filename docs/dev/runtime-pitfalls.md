@@ -495,17 +495,19 @@ light-dismiss，**用它右键菜单就关不掉**。所以贴片的右键菜单
 - 偏移没变就不写设置，单击不产生磁盘写；
 - 设置页新增「重置贴片位置」按钮，offset 归零 + 按当前 DPI 绑定。
 
-#### 16.5.2 位置锁定与拖动阈值（2026-10-27 加）
+#### 16.5.2 位置锁定与拖动阈值（2026-11-01 加）
 
 轮询 fallback 把"按下"的判据放宽到了"光标在矩形内 + 左键按下"，于是**单击也算拖动起点**：
 想双击开窗口、想看悬浮提示，手抖 1px 位置就被改掉并落盘，用户看到的是"贴片随时会跑、锁不住"。
 两道闸：
 
-- **阈值**：位移不到 `DragThresholdDip`（4 DIP，按任务栏缩放换算成物理像素，至少 1px）不写 `_offsetPx`。
-  轮询路径与 `WM_MOUSEMOVE` 路径共用同一个 `DragThresholdPx`，否则消息到达时会被绕过。
-- **锁定**：`AppSettings.TaskbarBatteryLockPosition` 默认 `true`。锁定时 `OnLButtonDown` 直接返回，
-  并且**把轮询表停掉**（`SyncDragTimer`）——常驻 20Hz 读全局按键只为支持拖动，锁住就没必要跑。
-  解锁时重新起表，间隔回到 `DragIdleTickMs`。
+- **阈值（默认生效）**：位移不到 `DragThresholdPx` 不写 `_offsetPx`。这个值读系统
+  `SM_CXDRAG`/`SM_CYDRAG`（横向任务栏取 CX、竖向取 CY，Windows 默认 4px），读不到才用 4 DIP
+  按缩放兜底——写死 DIP 在高缩放屏上会和系统其它拖动判定不一致。轮询路径与 `WM_MOUSEMOVE`
+  路径共用同一个属性，否则消息到达时会被绕过。
+- **锁定（默认关闭）**：`AppSettings.TaskbarBatteryLockPosition` 默认 `false`，与升级前行为一致，
+  要彻底固定再自己打开。锁定时 `OnLButtonDown` 直接返回，并且**把轮询表停掉**（`SyncDragTimer`）
+  ——常驻 20Hz 读全局按键只为支持拖动，锁住就没必要跑。解锁时重新起表，间隔回到 `DragIdleTickMs`。
 
 两个入口都走 `TaskbarPillManager.SetLockPosition`（唯一落盘点）：贴片右键菜单的可勾选项
 （`AppPopupMenu.Show` 的可选参数，小组件不传、菜单不变）与设置页开关（`Toggled` 即时生效，
@@ -513,8 +515,8 @@ light-dismiss，**用它右键菜单就关不掉**。所以贴片的右键菜单
 所以 `Save_Click` 里还补写一次，免得开关显示与实际相反。
 
 **真机 A/B**（合成 `mouse_event` 拖动，贴片矩形由 `FindWindowExW(Shell_TrayWnd, …)` 取）：
-锁定拖 60px → offset 不变、日志无"拖动结束"；解锁拖 60px → 正好 -60；解锁拖 2px/3px → 不变；
-解锁拖 5px → -5。右键菜单与设置页开关点击后 `settings.json` 立即翻转。
+锁定拖 60/120/150/180px → offset 一律不变、日志无"拖动结束"；解锁拖 160px → 正好位移 160px；
+解锁拖 2px/3px → 不变；解锁拖 5px/8px → 位移 5px/8px。右键菜单与设置页开关点击后 `settings.json` 立即翻转。
 
 ### 16.6 本机电量恒定排除
 

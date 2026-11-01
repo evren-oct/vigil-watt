@@ -67,8 +67,8 @@ public class AppSettings
     /// <summary>上次选中屏幕的友好名（如 "DELL S2719DC"）。只用于那块屏没插时仍能显示它的名字，不参与匹配。</summary>
     public string TaskbarBatteryScreenLabel { get; set; } = "";
 
-    /// <summary>贴片位置是否锁定。**默认 true**：拖动入口是 20Hz 轮询全局左键，不锁的话点一下（想双击开窗口 / 看悬浮提示）手抖就把位置改了并落盘。</summary>
-    public bool TaskbarBatteryLockPosition { get; set; } = true;
+    /// <summary>贴片位置是否锁定。**默认 false**：与升级前行为一致；误拖由拖动阈值挡住，想彻底固定再自己打开。</summary>
+    public bool TaskbarBatteryLockPosition { get; set; } = false;
 
     /// <summary>启动后是否只留在托盘（不显示主窗口）。**默认 false**：启动就显示主界面，
     /// 否则双击后看不到窗口，很容易被误判成"没启动起来"。</summary>

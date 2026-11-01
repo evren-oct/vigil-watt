@@ -3,6 +3,10 @@
 > 社区改动收进本仓库时记一笔：谁、哪个 PR、收了什么、没收什么。协议细节留在专题文档。
 > **面向用户的名单在根目录 [CONTRIBUTORS.md](../../CONTRIBUTORS.md)**（只写"谁做了什么"）；本文只记收了什么、没收到什么、是否本机复测，两处不重复。
 
+## 2026-11-01
+
+- **Gpan666**（[#89](https://github.com/evren-oct/vigil-watt/pull/89)，目标 `dev`）：纳入任务栏贴片的位置锁定与拖动阈值。收：`AppSettings.TaskbarBatteryLockPosition`；`TaskbarPillManager.SetLockPosition` 当唯一落盘点；`TaskbarPillWindow.SetLockPosition` / `SyncDragTimer`——锁定时**停掉** 20Hz 拖动轮询而不是每 tick 判一次就返回；`AppPopupMenu.Show` 加两个可选参数（`bool? lockPosition` / `Action<bool>? onLockToggled`，小组件不传、菜单不变）；设置页「锁定贴片位置」开关（`Toggled` 即时生效，`Save_Click` 补写一次兜住「贴片关着时 Manager 为 `null`」）；拖动阈值在轮询与 `WM_MOUSEMOVE` 两条路径共用；`runtime-pitfalls.md` §16.5.2。**维护者收口**：① 默认值 `true` → **`false`**——老 `settings.json` 缺这个键时反序列化出来就是 `true`，升级后用户按住贴片拖不动且界面上没有任何提示，属行为变更，改为保持原行为、误拖交给阈值解决；② 阈值从写死 `4 DIP × 缩放` 改为读系统 `SM_CXDRAG`/`SM_CYDRAG`（新增 `Native.GetSystemMetrics`，横向任务栏取 CX、竖向取 CY，读不到才用 4 DIP 兜底）——写死值在高缩放屏上和系统其它拖动判定不一致；③ §16.5.2 标题日期 `2026-10-27` → `2026-11-01`，且文档里的 A/B 数字（60px）与 PR 正文的表（180/150/120/160px）对不上，合并成一组；④ 构造函数注释「轮询表**常驻**运行」改为「锁定时不启动」，设置页两处文案随默认值调整。**本机已真机复测**（本机 150% 缩放）：未锁定时单击不位移、拖 3px 不动 / 5px 起生效；锁定后拖 180px 纹丝不动、双击仍能开主窗口、右键勾选当场翻转 `settings.json`。构建 0 警告 0 错误。**遗留**：阈值改成系统值后在本机是 4 物理像素（PR 原方案 `4 DIP × 1.5 = 6px`），误拖保护比原方案弱 1/3，已在 §16.5.2 写明。
+
 ## 2026-10-31
 
 - **YyingnLL / haloneko**（[issue #40](https://github.com/evren-oct/vigil-watt/issues/40)，接 2026-10-29 那次「只取 IN9」的欠账）：**补收狼途 T98**。新增 `LangtuT98Plugin` / `LangtuT98Codec`（`1A2C:8FFF`，`0xFF02/0x02` 65 字节被动状态帧，`AA 55` + `0x0E` 双条件认帧，`0xFF` 插拔哨兵丢弃），零写入、默认开、7 项 codec 单测。**未纳入**：`MI_03 Col05` 的 3 字节通知帧（实测全程静音、含义未知）；充电状态一律 `Unknown`——issue 已证伪 `[7]` 是充电位。**本机无此键盘，未真机复测**；`Offline.Silence = 300 秒` 是按 issue 的「休眠静音 4 分钟」推的，没有第二份休眠样本（CR-133）。

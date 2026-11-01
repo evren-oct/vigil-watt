@@ -382,6 +382,13 @@ internal static class Native
     [DllImport("user32.dll")]
     public static extern bool SystemParametersInfoW(uint action, uint uiParam, ref uint pvParam, uint fWinIni);
 
+    /// <summary>系统拖动阈值（以按下点为中心的矩形），横向取 CX、竖向取 CY；默认都是 4px。</summary>
+    public const int SM_CXDRAG = 68;
+    public const int SM_CYDRAG = 69;
+
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
+
     [DllImport("user32.dll")]
     public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
 

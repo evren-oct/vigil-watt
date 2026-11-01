@@ -84,6 +84,7 @@
 | **CR-140** | **桌面小组件不能轮播**：设备多时要么全显示占地方，要么只显示一台看不到其它。需求是「只显示一台 + 定时轮播」并带间隔设置。要先定轮播期间历史/图表怎么处理，属产品决策 | issue #66、`Services/WidgetWindow.xaml.cs` | `open` |
 | **CR-141** | **插件按需下载（issue #63）作者已部分否决**：Windows 能枚举 USB/HID 但不保证认出具体型号，同 VID/PID 可对应多个型号、一个接收器可能暴露多个接口，认错会匹配到不兼容插件甚至影响设备使用。现有方案是「插件去认领设备」。**保留的唯一价值**是设备数量增多后的包体积/启动开销，是否做取决于用户 | issue #63、`Devices/DeviceManager.cs:DiscoverPlugins` | `open` |
 | **CR-142** | **可复用 OpenLogi 收集的外设 HID 特征库**：对方已积累大量 2.4G / 蓝牙设备的 VID/PID 与接口指纹。价值在「认领判据的交叉校验」与「新设备快速定位接口」，**不是**直接抄协议。要先确认对方仓库许可与数据格式，再决定是人工比对还是写导入脚本 | issue #74、`docs/hardware/protocols.md`、`docs/hardware/sources.md` | `open` |
+| **CR-143** | 迈从 QHW 通道（共用 dongle `0x3033`、CZ 族鼠标）认领后 `ResolveKind` 一律落到 `DeviceKind.Keyboard`：该方法只拿得到 protocol 字符串、分不出键盘还是鼠标，鼠标会显示成键盘图标。要修得让认领阶段把 `DeviceKind` 一起缓存 | `Plugins/Mchose/MchosePlugin.cs:ResolveKind`、`hardware/mchose-catalog.md` §1 | `open` |
 
 ## 重构候选（未做）
 

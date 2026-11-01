@@ -65,6 +65,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseA5Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseProtocol.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceCatalog.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Lingbao\LingbaoCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Compx\CompxSessionAck.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Vgn\VgnCodec.cs" />
@@ -179,6 +180,13 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mojhon\MojhonCodec.cs" />
     <!-- 英菲克 IN9 的 feature 0x0C 帧：偏移固定、全 0 与截断边界只能靠真机帧字面量锁住 -->
     <Compile Include="..\..\VigilWatt.Core\Plugins\Inphic\InphicIn9Codec.cs" />
+  </ItemGroup>
+
+  <!-- 分类器要查设备目录，资源名必须与 Core 项目一致（MchoseDeviceCatalog 按名字取流） -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Mchose\mchose-catalog.json">
+      <LogicalName>VigilWatt.Core.Plugins.Mchose.mchose-catalog.json</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

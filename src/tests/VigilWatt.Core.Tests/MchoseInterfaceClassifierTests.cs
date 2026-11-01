@@ -60,4 +60,19 @@ public sealed class MchoseInterfaceClassifierTests
     public void HeadsetRequiresFeatureLengthZeroAndReportId55(ushort feature, byte id)
         => Assert.Equal(MchoseInterfaceKind.None, MchoseInterfaceClassifier.Classify(
             0x291D, 0x385D, HeadsetPath, 0xFF90, 0x0001, 64, 64, feature, id));
+
+    /// <summary>
+    /// 设备目录命中时按目录给的协议族分流（2026-11-01 新增，mchose-catalog.md §1）。
+    /// **目录挡不住标准键盘页**——那是系统键盘用法，不是命令通道；未收录的 PID 仍走形态判定。
+    /// </summary>
+    [Theory]
+    [InlineData(0x3837, 0x2019, 0xFF00, 0x0001, 64, 64, MchoseInterfaceKind.Qhw)]      // G87 V2 本体
+    [InlineData(0x3837, 0x200F, 0xFF00, 0x0001, 64, 64, MchoseInterfaceKind.Qhw)]      // K87S
+    [InlineData(0x3837, 0x4028, 0xFF01, 0x0001, 64, 64, MchoseInterfaceKind.MouseK7)]  // K7 V2 Ultra+ 本体
+    [InlineData(0x3837, 0x2019, 0x0001, 0x0006, 20, 20, MchoseInterfaceKind.None)]     // 目录型号的标准键盘页
+    [InlineData(0x3837, 0x4099, 0xFF00, 0x0002, 64, 64, MchoseInterfaceKind.MouseV2)]  // 未收录 → 形态兜底
+    public void CatalogHitRoutesToItsProtocol(ushort vid, ushort pid,
+        ushort page, ushort usage, ushort input, ushort output, MchoseInterfaceKind expected)
+        => Assert.Equal(expected, MchoseInterfaceClassifier.Classify(vid, pid,
+            @"\\?\hid#vid_test&pid_test#test", page, usage, input, output, 0, 0x4D));
 }

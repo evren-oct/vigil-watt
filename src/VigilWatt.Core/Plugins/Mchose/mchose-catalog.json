@@ -1,0 +1,378 @@
+{
+ "version": "2026-11-01",
+ "source": "M HUB WEB cardList.json + Vb + zye (MCHOSE HUB 1.2.05)",
+ "devices": [
+  {
+   "vid": "0x19f5",
+   "pid": "0xff0f",
+   "model": "Ace 60 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x19f5",
+   "pid": "0xff1b",
+   "model": "Ace 60",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x291d",
+   "pid": "0x385d",
+   "model": "V9 Pro",
+   "protocol": "headset-v9"
+  },
+  {
+   "vid": "0x3554",
+   "pid": "0xfa09",
+   "model": "G75 Pro",
+   "protocol": "keyboard-v1"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x200f",
+   "model": "K87S",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2019",
+   "model": "G87 V2",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x201f",
+   "model": "K99 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2022",
+   "model": "G75 V2",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2023",
+   "model": "K87 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2024",
+   "model": "K87 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2025",
+   "model": "G98 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2026",
+   "model": "G98 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3009",
+   "model": "Ace 68 GT",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x300b",
+   "model": "Ace 68 Air 2",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x301a",
+   "model": "God 60",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3022",
+   "model": "Ace 60 Pro Nordic",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3025",
+   "model": "Ace 68 V2 III",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3027",
+   "model": "Ace 68 Turbo 16K",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3029",
+   "model": "Ace 68 Turbo 8K",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x302a",
+   "model": "Ace 68 III",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x302c",
+   "model": "Mix 87 III",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x302f",
+   "model": "GT 75",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x303d",
+   "model": "Ace 75 8K",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3041",
+   "model": "Ace 60 Pro ISO FR",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4026",
+   "model": "A5 V3 Ultra+",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4027",
+   "model": "K7 V2 Pro+",
+   "protocol": "mouse-k7"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4028",
+   "model": "K7 V2 Ultra+",
+   "protocol": "mouse-k7"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4029",
+   "model": "G3 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x402a",
+   "model": "V7",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4030",
+   "model": "A7 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4031",
+   "model": "A7 V3 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4032",
+   "model": "A7 V3 Pro+",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4033",
+   "model": "A7 V3 Ultra+",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4034",
+   "model": "A5 V3 Ultra+(3955)",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4035",
+   "model": "A5 V3 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4036",
+   "model": "R7 Ultra",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4037",
+   "model": "K5 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4038",
+   "model": "K5 Ultra",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403a",
+   "model": "A7 V3-X",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403b",
+   "model": "K7 V2 Pro",
+   "protocol": "mouse-k7"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403c",
+   "model": "K7 V2 Ultra",
+   "protocol": "mouse-k7"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403d",
+   "model": "A7 V3 Ultra",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403e",
+   "model": "V7 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403f",
+   "model": "A7 V3 Magnetic",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4040",
+   "model": "K5 V2",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4041",
+   "model": "G3 S",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4042",
+   "model": "A5 V3 Ultra",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4245",
+   "model": "G3 V2",
+   "protocol": "gmouse"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x6045",
+   "model": "X9",
+   "protocol": "headset-x9"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2001",
+   "model": "G87",
+   "protocol": "keyboard-v1"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2102",
+   "model": "Ace 60",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2104",
+   "model": "Ace 60 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2113",
+   "model": "Ace 60X II",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2115",
+   "model": "Ace 68 I",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2117",
+   "model": "Ace 68 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2119",
+   "model": "Jet 75 I",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x211b",
+   "model": "Jet 75 II",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x211d",
+   "model": "Zero75X",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2121",
+   "model": "Ace 68 Air II",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2123",
+   "model": "Mix 87 I",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2127",
+   "model": "Ace 60X I",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2133",
+   "model": "Ace 68 Air III",
+   "protocol": "qhw"
+  }
+ ]
+}

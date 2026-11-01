@@ -12,6 +12,9 @@ public enum MchoseInterfaceKind
     /// <summary>鼠标 V2 世代厂商接口（≥60 字节，含 report ID）。</summary>
     MouseV2,
 
+    /// <summary>QHW 通道（report `0x4D`）：CZ 族键盘与多数鼠标，含共用 dongle。</summary>
+    Qhw,
+
     /// <summary>鼠标 K7 V2 Ultra+ 的命令通道（64 字节 output `0x4D`，3837:1018）。</summary>
     MouseK7,
 
@@ -42,6 +45,9 @@ public static class MchoseInterfaceClassifier
     /// <summary>键盘 V1 会话通道的报告长度（进出各 20 字节）。</summary>
     private const int KeyboardReportLength = 20;
 
+    /// <summary>厂商页报告长度下限：QHW 帧按接口长度补零，只保证不是消费类小接口。</summary>
+    private const int MinVendorReportLength = 20;
+
     /// <summary>
     /// 判定接口去向。<b>耳机必须排在最前</b>：它也是 64 字节输出，落到鼠标分支会收到 `0x11/0x06` 触发帧。
     /// 品牌排除（罗技/雷柏/北通/英菲克/HECATE/AULA 的 VID）留在插件里做纵深防御，这里只管迈从自己的指纹。
@@ -68,6 +74,15 @@ public static class MchoseInterfaceClassifier
         // consumer/system/标准键盘接口即使产品名含 MCHOSE 也不是配置通道，必须是厂商用法 + 可用 I/O
         if (usagePage < 0xFF00 && usage < 0xFF00) return MchoseInterfaceKind.None;
 
+        // 目录优先：VID/PID 精确命中时直接给协议族，不必靠形态猜（新设备靠这张表免适配）。
+        // 耳机由上面的精确判据负责，这里跳过，避免同一条接口被重复认领。
+        if (MchoseDeviceCatalog.TryGet(vendorId, productId, out var entry)
+            && KindFromProtocol(entry.Protocol) is var catalogKind
+            && catalogKind is not (MchoseInterfaceKind.None
+                or MchoseInterfaceKind.HeadsetV9 or MchoseInterfaceKind.HeadsetX9)
+            && MatchesShape(catalogKind, usagePage, usage, inputLength, outputLength))
+            return catalogKind;
+
         if (outputLength == KeyboardReportLength && inputLength == KeyboardReportLength)
             return MchoseInterfaceKind.KeyboardV1;
 
@@ -87,4 +102,36 @@ public static class MchoseInterfaceClassifier
 
         return MchoseInterfaceKind.None;
     }
+
+    /// <summary>目录里的协议族名 → 枚举；未知协议返回 None，由调用方回落形态判定。</summary>
+    private static MchoseInterfaceKind KindFromProtocol(string protocol) => protocol switch
+    {
+        "keyboard-v1" => MchoseInterfaceKind.KeyboardV1,
+        "qhw" => MchoseInterfaceKind.Qhw,
+        "mouse-k7" => MchoseInterfaceKind.MouseK7,
+        "gmouse" => MchoseInterfaceKind.Gmouse,
+        "headset-v9" => MchoseInterfaceKind.HeadsetV9,
+        "headset-x9" => MchoseInterfaceKind.HeadsetX9,
+        _ => MchoseInterfaceKind.None,
+    };
+
+    /// <summary>
+    /// 目录给的协议族是否与接口形态相容。**必须校验**：同型号还有旁路接口（如 K7 的 `0xFF0B` 61 字节），
+    /// 不校验会把它们也认成命令通道、重复认领。
+    /// </summary>
+    private static bool MatchesShape(MchoseInterfaceKind kind,
+        ushort usagePage, ushort usage, ushort inputLength, ushort outputLength) => kind switch
+    {
+        MchoseInterfaceKind.KeyboardV1
+            => outputLength == KeyboardReportLength && inputLength == KeyboardReportLength,
+        MchoseInterfaceKind.Qhw
+            => outputLength >= MinVendorReportLength && inputLength >= MinVendorReportLength,
+        MchoseInterfaceKind.MouseK7
+            => usagePage == MchoseK7Codec.UsagePage && usage == MchoseK7Codec.Usage
+               && inputLength >= MchoseK7Codec.FrameLength && outputLength >= MchoseK7Codec.FrameLength,
+        MchoseInterfaceKind.Gmouse
+            => usagePage == MchoseGmouseCodec.UsagePage && usage == MchoseGmouseCodec.Usage
+               && inputLength >= MchoseGmouseCodec.FrameLength && outputLength >= MchoseGmouseCodec.FrameLength,
+        _ => false,
+    };
 }

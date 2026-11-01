@@ -1,6 +1,7 @@
 # 迈从 MCHOSE（G87 键盘 / QHW 新一代 dongle / K7 V2 Ultra+ / Gmouse G3 V2）
 
 > 从 [protocols.md](protocols.md) 拆出（2026-10-21）。结论均来自真机验证或官方软件抓包；改协议代码前先读本文。
+> **设备清单、协议族判定、QHW 鼠标的 DPI/回报率取数口径**见 [mchose-catalog.md](mchose-catalog.md)（2026-11-01 逆向，静态分析）。
 
 ## 1. 迈从键盘 G87（dongle VID_41E4&PID_2001）—— ✅ 已打通，应用在用
 

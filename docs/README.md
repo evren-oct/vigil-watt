@@ -36,6 +36,7 @@
 - [akg.md](hardware/akg.md)：AKG N9 Hybrid 接收器查询、控制输入读取和验证边界。
 - [mchose-v9-pro.md](hardware/mchose-v9-pro.md)：MCHOSE V9 Pro 耳机的查询帧与未复测边界。
 - [mchose-x9.md](hardware/mchose-x9.md)：X9 耳机（`3837:6045`）的 64 字节查询帧，与键鼠同号段的分流要点。
+- [mchose-catalog.md](hardware/mchose-catalog.md)：迈从设备全景（键盘 BY/CZ 两族、鼠标、耳机共 97 条记录）、QHW 鼠标命令表与 DPI/回报率取数口径。
 - [vgn.md](hardware/vgn.md)：VGN 蜻蜓 F1 V5（kc2 配置帧）与 F2 大师+（y2 查询），含插线双接口按序列号去重。
 - [lingbao.md](hardware/lingbao.md)：凌豹 M5PRO Max 的官方驱动同款 `F7` 查询，与 K98 的 Compx `0x13` 会话及型号码分流。
 - [mojhon.md](hardware/mojhon.md)：墨将烈风2 手柄（`E2B7:122C`）的 `A5` 读帧、电量与充电标志，2.4G 接收器与有线直连同 PID。

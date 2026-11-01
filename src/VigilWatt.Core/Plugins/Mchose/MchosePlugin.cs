@@ -133,6 +133,9 @@ public sealed class MchosePlugin : BatteryPluginBase
 
         var product = string.IsNullOrEmpty(info.Product) ? "" : info.Product.Replace("MCHOSE", "").Trim();
         var model = KnownModelByPath.TryGetValue(info.DevicePath, out var m) ? m : "";
+        // CZ 族没有会话密码，型号名只能来自设备目录；目录也没有就退回产品名
+        if (model.Length == 0 && MchoseDeviceCatalog.TryGet(info.VendorId, info.ProductId, out var catalogEntry))
+            model = catalogEntry.Model;
         var name = model.Length > 0 && product.Contains("2.4G") ? model
                  : product.Length > 0 ? product
                  : model;
@@ -224,9 +227,22 @@ public sealed class MchosePlugin : BatteryPluginBase
             return gm;
         }
 
-        // ≥60 的接口只可能是鼠标接收器：它不是 0x13 会话通道，在这条通道上发键盘帧没有意义
+        // 目录命中 QHW 的设备（CZ 族键盘、共用 dongle）：直接走 0x4D，不必先等 E2 帧。
+        if (kind == MchoseInterfaceKind.Qhw)
+        {
+            var catalogQhw = TryQhw(handle);
+            if (catalogQhw != null) KnownProtocolByPath[path] = catalogQhw.Value.Protocol;
+            return catalogQhw;
+        }
+
+        // ≥60 的接口只可能是鼠标接收器：它不是 0x13 会话通道，在这条通道上发键盘帧没有意义。
+        // **必须先试 QHW**：QHW 与 V2 同为 ≥60 字节、接口形态区分不了，而 QHW 握手失败会立即返回、
+        // 不会拖慢 E2 路径；反过来先等 E2 会把 QHW 设备永久卡在这条分支（2026-11-01 修）。
         if (kind == MchoseInterfaceKind.MouseV2)
         {
+            var qhwFirst = TryQhw(handle);
+            if (qhwFirst != null) { KnownProtocolByPath[path] = qhwFirst.Value.Protocol; return qhwFirst; }
+
             var mouse = TryMouseV2(handle);
             if (mouse != null) KnownProtocolByPath[path] = ProtocolMouseV2;
             return mouse;

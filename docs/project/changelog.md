@@ -5,6 +5,13 @@
 
 ## 2026-11-01
 
+- **协议数据化：新增解释器，雷柏 12 套协议全部搬进 JSON**。`Plugins/Protocol/` 提供规格加载（`extends` 继承 + 设备级 `override` 深合并 + 加载期校验）、帧读取与查询执行；`RapooPlugin` 只留认领与转交，删掉 `RapooCodec`/`RapooFamily`/`RapooFamilies` 等 7 个文件（约 500 行）。**判断与状态仍留代码**：充电去抖、链路位→离线候选、握手与会话都在解释器或插件里。以后加机型改 1 行 JSON、加形态固定的协议改约 20 行 JSON。真机帧用例（R1–R26，含 VT3 断链帧与有线帧）全部改走解释器并通过。
+- **新增 `docs/dev/protocol-json.md` 与 `AGENTS.md` §10 红线**：帧偏移、VID/PID、充电码映射、协议名只允许出现在规格与 JSON 里；只有"新的判断/状态逻辑"才写 `codeFamily`。
+- **删掉迈从 `IsCandidate` 的 7 行品牌排除**（罗技/雷柏/北通/英菲克/HECATE/AULA）：分类器本身是正向 VID 白名单，这些行与白名单等价、纯冗余，删后行为零变化，同时解开对本插件对 6 个别家命名空间的依赖。
+- **修 CR-145：同名双插件让认领互斥失效**。`DeviceClaimRegistry` 原来用插件名当 owner，`MchosePlugin` 与 `MchoseA5Plugin` 都叫 `"Mchose"` → 一个认领后另一个的 `IsClaimedBy` 也返回 true、`Release` 会互删。owner 改成 `ClaimOwner(Id, PluginName)`：Id 做互斥、PluginName 查设置开关；A5 覆写 `ClaimId = "Mchose#A5"`。A5 接收器 `3837:100C` 同时进目录，主插件按**身份**让路（新增 `MchoseInterfaceKind.MouseA5`），不再靠接口形态猜。
+- **迈从 Gmouse / V9 / X9 也迁进解释器**：帧模板、应答窗口、重试次数进 `specs/mchose.protocols.json`，删掉 `QueryGmouse`/`QueryHeadsetV9`/`QueryHeadsetX9` 与对应 Try/Poll 共 9 个方法；三个 codec 改成**薄壳**（只留 `IsSupportedInterface` + 转发解释器），因此既有 35 条 codec 断言一条没删，现在钉的是 JSON 偏移。
+- **修迈从的进程级静态状态**：`KnownProtocolByPath` / `KnownModelByPath` / `_seq` 从 `static` 改实例，`AttachAsync` 每轮清理已不在的路径（空扫描当枚举失败、不动缓存），`Detach` 全部清空。`"qhw-push"` 不再进设备协议名——协议名统一记 `qhw`，"只拿到被动推送"另记在 `_pushOnly`，UI 副标题不会再显示内部标记。
+
 - **雷柏补齐 5 个协议族，覆盖 98/109 台（全部零写入）**：官方主包里每套族都有 `handleReport`，电量全来自被动上报——**不需要为键盘写查询帧**。新增 `telink-8273`（MT 系列，`0xBB`）、`gcome-ap`（`FA FB 07`）、`telink-keyboard`（含 V700diy 变体）、`ch585m` 四个族，并把 `LM20RT`/`VT_CH584` 并进 `status-report7`（三者帧布局逐字节相同，只差 report ID 7/7/8）。认领改成**目录优先 + 形态兜底**：收录过的设备只试它那一个族，底座在第一步就被挡掉。**除 VT3 外的族全部只有合成帧单测，无真机**，边界写在 `hardware/rapoo-catalog.md` §8。
 - **雷柏插件改为「目录 + 协议族注册表」**：`rapoo-catalog.json` 接进内嵌资源，新增 `RapooDeviceCatalog` 与 `RapooFamily`/`RapooFamilies`，`RapooPlugin` 从 211 行降到只管认领与派发。显示名改由目录给官方型号（"雷柏 VT3"，不再是"雷柏 Rapoo Mouse"），图标按协议族给（`ResolveKind` 从 `Unknown` 变成 `Mouse`）。**行为零变化**：认领判据、探测窗口、充电去抖、离线两条腿全部原样搬进 `StatusReport7Family`，单测 64 项全过。以后加机型只改 JSON、加协议族只加一个类。见 `hardware/rapoo-catalog.md` §2.1。
 

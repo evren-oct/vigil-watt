@@ -1,0 +1,136 @@
+{
+  "version": "2026-11-01",
+  "vendors": ["0x24AE"],
+  "protocols": {
+
+    "status-report7": {
+      "kind": "mouse",
+      "pollable": false,
+      "chargeDebounce": true,
+      "probeWindowMs": 5000,
+      "interface": {
+        "inputLength": { "eq": 19 },
+        "anyOf": [ { "usagePage": 65280 }, { "usage": 65280 } ]
+      },
+      "passive": {
+        "tryOffsets": [0, 1],
+        "reportId": [7, 8],
+        "length": { "min": 19 },
+        "fullAt": 100,
+        "validPercent": { "min": 1, "max": 100 },
+        "fields": {
+          "percent":  { "offset": 8,  "type": "u8" },
+          "charge":   { "offset": 7,  "type": "u8", "map": { "1": "discharging", "2": "charging" }, "onMiss": "discharging" },
+          "link":     { "offset": 18, "type": "bit", "bit": 7, "connectedWhen": 1, "onlyWhenMode": "wireless2g" },
+          "linkMode": { "offset": 1,  "type": "bit4", "map": { "0": "wireless2g", "2": "wired" } }
+        }
+      }
+    },
+
+    "lm20rt": { "extends": "status-report7" },
+
+    "vt-ch584": { "extends": "status-report7" },
+
+    "telink-8273": {
+      "kind": "mouse",
+      "pollable": false,
+      "probeWindowMs": 5000,
+      "interface": {
+        "inputLength": { "min": 7 },
+        "anyOf": [
+          { "usagePage": 65280, "usage": 14 },
+          { "usage": 65280, "usagePage": 14 }
+        ]
+      },
+      "passive": {
+        "tryOffsets": [0, 1],
+        "reportId": [187],
+        "fullAt": 100,
+        "validPercent": { "min": 1, "max": 100 },
+        "prefix": [ { "offset": 1, "value": 176 }, { "offset": 5, "value": 1 } ],
+        "fields": {
+          "percent": { "offset": 6, "type": "u8" }
+        }
+      }
+    },
+
+    "gcome-ap": {
+      "kind": "keyboard",
+      "pollable": false,
+      "probeWindowMs": 5000,
+      "interface": {
+        "usagePage": 1,
+        "usage": 0,
+        "inputLength": { "min": 6 }
+      },
+      "passive": {
+        "tryOffsets": [0, 1],
+        "fullAt": 100,
+        "validPercent": { "min": 1, "max": 100 },
+        "prefix": [
+          { "offset": 0, "value": 250 },
+          { "offset": 1, "value": 251 },
+          { "offset": 2, "value": 7 }
+        ],
+        "fields": {
+          "percent": { "offset": 5, "type": "u8" },
+          "charge":  { "offset": 4, "type": "u8", "on": "nonzero" }
+        }
+      }
+    },
+
+    "telink-keyboard": {
+      "kind": "keyboard",
+      "pollable": false,
+      "probeWindowMs": 5000,
+      "interface": {
+        "inputLength": { "min": 10 },
+        "anyOf": [
+          { "usagePage": 65280, "usage": 14 },
+          { "usage": 65280, "usagePage": 14 }
+        ]
+      },
+      "passive": {
+        "tryOffsets": [0, 1],
+        "fullAt": 100,
+        "validPercent": { "min": 1, "max": 100 },
+        "prefix": [ { "offset": 0, "value": 1 } ],
+        "fields": {
+          "percent": { "offset": 8, "type": "u8" }
+        }
+      }
+    },
+
+    "ch585m": {
+      "kind": "keyboard",
+      "pollable": false,
+      "probeWindowMs": 5000,
+      "interface": {
+        "inputLength": { "min": 10, "not": [19] },
+        "anyOf": [
+          { "usagePage": 65280, "usage": 2 },
+          { "usage": 65280, "usagePage": 2 }
+        ]
+      },
+      "passive": {
+        "tryOffsets": [0, 1],
+        "fullAt": 100,
+        "validPercent": { "min": 1, "max": 100 },
+        "prefix": [ { "offset": 0, "value": 1 } ],
+        "fields": {
+          "percent": { "offset": 9, "type": "u8" }
+        }
+      }
+    },
+
+    "status-report7-base": { "kind": "mouse", "implementation": "none", "interface": { "usagePage": 65280, "usage": 14 } },
+
+    "telink-base": { "kind": "mouse", "implementation": "none", "interface": { "usagePage": 65280, "usage": 14 } },
+
+    "telink-3228c": { "kind": "mouse", "implementation": "none", "interface": { "usagePage": 65308, "usage": 146 } },
+
+    "ohid": { "kind": "keyboard", "implementation": "none", "interface": { "usagePage": 65440, "usage": 1 } },
+
+    "ch315": { "kind": "keyboard", "implementation": "none", "interface": { "usagePage": 65280 } }
+  }
+}

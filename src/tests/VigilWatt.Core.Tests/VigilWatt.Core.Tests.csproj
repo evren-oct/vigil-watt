@@ -66,6 +66,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseProtocol.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseSpecs.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Lingbao\LingbaoCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Compx\CompxSessionAck.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Vgn\VgnCodec.cs" />
@@ -75,11 +76,12 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaG9Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaL9Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Haute\HauteCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooDeviceCatalog.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooTelink8273Codec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooKeyboardCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooGcomeApCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\ProtocolSpec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\ProtocolSpecLoader.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\FrameReader.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\QueryRunner.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\ProtocolEngine.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooDisplayName.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Cherry\CherryCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Pulsar\PulsarCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Hecate\HecateCodec.cs" />
@@ -193,6 +195,13 @@
     </EmbeddedResource>
     <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Rapoo\rapoo-catalog.json">
       <LogicalName>VigilWatt.Core.Plugins.Rapoo.rapoo-catalog.json</LogicalName>
+    </EmbeddedResource>
+    <!-- 协议规格：解释器按逻辑名取流，资源名必须与 Core 项目完全一致 -->
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Rapoo\specs\rapoo.protocols.json">
+      <LogicalName>VigilWatt.Core.Plugins.Rapoo.specs.rapoo.protocols.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Mchose\specs\mchose.protocols.json">
+      <LogicalName>VigilWatt.Core.Plugins.Mchose.specs.mchose.protocols.json</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

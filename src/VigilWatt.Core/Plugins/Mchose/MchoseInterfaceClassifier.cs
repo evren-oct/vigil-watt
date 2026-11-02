@@ -26,6 +26,9 @@ public enum MchoseInterfaceKind
 
     /// <summary>X9 耳机（同帧结构，VID/PID 为 `3837:6045`，与键鼠同号段）。</summary>
     HeadsetX9,
+
+    /// <summary>A5 V2 Ultra 的厂商 Feature 通道（`3837:100C`）——归 <c>MchoseA5Plugin</c>，主插件必须让路。</summary>
+    MouseA5,
 }
 
 /// <summary>
@@ -73,6 +76,13 @@ public static class MchoseInterfaceClassifier
 
         // consumer/system/标准键盘接口即使产品名含 MCHOSE 也不是配置通道，必须是厂商用法 + 可用 I/O
         if (usagePage < 0xFF00 && usage < 0xFF00) return MchoseInterfaceKind.None;
+
+        // A5 靠**身份**归属（不是靠形态猜）：它走厂商 Feature 通道，归 MchoseA5Plugin。
+        // 主插件必须让路，否则会把 feature-only 集合当成鼠标接口、往上写 0x4D 握手帧。
+        if (MchoseDeviceCatalog.TryGet(vendorId, productId, out var a5) && a5.Protocol == "mouse-a5")
+            return featureLength >= MchoseA5Codec.PayloadLength + 1
+                ? MchoseInterfaceKind.MouseA5
+                : MchoseInterfaceKind.None;
 
         // 目录优先：VID/PID 精确命中时直接给协议族，不必靠形态猜（新设备靠这张表免适配）。
         // 耳机由上面的精确判据负责，这里跳过，避免同一条接口被重复认领。

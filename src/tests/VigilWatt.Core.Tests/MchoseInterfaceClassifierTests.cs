@@ -33,6 +33,10 @@ public sealed class MchoseInterfaceClassifierTests
     [InlineData(0x3837, 0x1018, @"\\?\hid#vid_3837&pid_1018&mi_02&col01#test", 0xFF0B, 0x00C4, 61, 61, 0, 0x00, MchoseInterfaceKind.MouseV2)]
     // 鼠标：Gmouse 主动查询接口（3837:4245，FF01/0x0010，65 字节）——必须抢在 MouseV2 之前
     [InlineData(0x3837, 0x4245, @"\\?\hid#vid_3837&pid_4245&mi_02#test", 0xFF01, 0x0010, 65, 65, 0, 0x00, MchoseInterfaceKind.Gmouse)]
+    // A5 V2 Ultra（3837:100C）：靠**身份**归属，主插件让路给 MchoseA5Plugin（CR-145）
+    [InlineData(0x3837, 0x100C, @"\\?\hid#vid_3837&pid_100c&mi_02&col01#test", 0xFF01, 0x0001, 0, 0, 21, 0x00, MchoseInterfaceKind.MouseA5)]
+    // 同 PID 但 feature 长度不足 21：不是 A5 的电量集合，主插件也不能接手
+    [InlineData(0x3837, 0x100C, @"\\?\hid#vid_3837&pid_100c&mi_01&col01#test", 0xFF01, 0x0001, 0, 0, 20, 0x00, MchoseInterfaceKind.None)]
     // 同一颗 G3 V2 dongle 的其它厂商集合（FF05/0x0002，64 字节无输出）：不按 Gmouse 认，落 MouseV2 兜底
     [InlineData(0x3837, 0x4245, @"\\?\hid#vid_3837&pid_4245&mi_01&col05#test", 0xFF06, 0x0002, 64, 64, 0, 0x00, MchoseInterfaceKind.MouseV2)]
     // 标准键盘用法：即使 VID 是迈从也不是配置通道

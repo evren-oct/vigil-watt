@@ -70,7 +70,7 @@
 ## 4. 安全边界
 
 - **会写帧**，因此走 `AppSettings.PluginEnabled["Mchose"]`，默认 `false`。**没有单独的 `MchoseX9` 开关**：设置页是品牌级开关（`AGENTS.md` §9），开「迈从」即授权向键盘、鼠标、V9 Pro、X9 发送各自工作所需的帧。
-- 实现位置：帧结构在 `MchoseX9Codec`（纯函数，有单测），接口分流在 `MchoseInterfaceClassifier`，I/O 在 `MchosePlugin`（`TryHeadsetX9` / `PollHeadsetX9` / `QueryHeadsetX9`），协议名 `headset-x9`，图标由 `ResolveKind` 给 `Headset`。
+- 实现位置：帧、偏移与充电码映射在 `Plugins/Mchose/specs/mchose.protocols.json` 的 `headset-x9`（解释器执行，`MchoseX9Codec` 只是薄壳、保留接口判据与既有断言），接口分流在 `MchoseInterfaceClassifier`，I/O 由 `Plugins/Protocol/` 的 `QueryRunner` 负责，协议名 `headset-x9`，图标由 `ResolveKind` 给 `Headset`。
 - 参与 15 秒发现节拍（`SupportsDiscoveryProbe` 是插件级属性）：未认领时每拍最多 1 条查询帧。耳机不在位时该接口仍然存在（接收器插着），会按拍重探。
 - 熔断与退避沿用基类：连续 3 次无应答 → 停写 + 标离线，退避 30 秒起、封顶 5 分钟。`Offline.CountPollFailures = false`，由 `PollDevice` 在确实发过帧的分支自己报账。
 - 无应答只在状态变化时记一条 Debug（`Log.Once` + 成功即复位），不逐次记 WARN。

@@ -115,6 +115,28 @@ public class DeviceClaimRegistryTests
         Assert.True(reg.TryClaim(PathA, "Rapoo"));
     }
 
+    /// <summary>CR-145：同名双插件（迈从键鼠 + A5）必须能各自互斥，不能因为共用设置键就互相踩。</summary>
+    [Fact]
+    public void R2b_同名不同认领身份互不干扰()
+    {
+        var reg = new DeviceClaimRegistry();
+        var main = new ClaimOwner("Mchose", "Mchose");
+        var a5 = new ClaimOwner("Mchose#A5", "Mchose");
+
+        Assert.True(reg.TryClaim(PathA, main));
+        Assert.False(reg.TryClaim(PathA, a5));        // A5 抢不走已归主插件的接口
+        Assert.True(reg.IsClaimedBy(PathA, main));
+        Assert.False(reg.IsClaimedBy(PathA, a5));
+
+        reg.Release(PathA, a5);                        // A5 释放不能把主插件的认领删掉
+        Assert.True(reg.IsClaimedBy(PathA, main));
+
+        reg.ReleaseAll(a5.Id);                         // 卸载 A5 也不能清主插件
+        Assert.True(reg.IsClaimedBy(PathA, main));
+
+        Assert.Equal("Mchose", reg.OwnerOf(PathA));    // 设置页仍按插件名查开关
+    }
+
     [Fact]
     public void R3_不同接口互不影响()
     {

@@ -1,11 +1,12 @@
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Plugins.Protocol;
 
 namespace VigilWatt.Core.Plugins.Mchose;
 
 /// <summary>
-/// 功 能： X9 耳机固定电量查询的报文构造与解析。
+/// 功 能： X9 耳机的薄壳——帧、偏移与充电码映射在 specs/mchose.protocols.json，这里只保留接口判据与回显剔除。
 /// 2026/10/20 10:20:00 MOSS
-/// 协议与验证范围见 docs/hardware/mchose-x9.md。
+/// 保留 <c>CreateQuery</c>/<c>TryParse</c> 是为了让既有断言继续钉住官方帧，实现已改为调用解释器。
 /// </summary>
 public static class MchoseX9Codec
 {
@@ -21,26 +22,7 @@ public static class MchoseX9Codec
     /// <summary>查询与响应共用的 report ID。</summary>
     public const byte ReportId = 0x55;
 
-    /// <summary>响应里的命令回显字节（与查询帧 `[1]` 相同）。</summary>
-    private const byte CommandEcho = 0x65;
-
-    /// <summary>响应里的状态字节偏移。</summary>
-    private const int StatusOffset = 3;
-
-    /// <summary>状态字节：放电。充电语义来自官方 M HUB 前端，见 mchose-x9.md §3。</summary>
-    private const byte StatusDischarging = 0x02;
-
-    /// <summary>状态字节：充电中。</summary>
-    private const byte StatusCharging = 0x03;
-
-    /// <summary>状态字节：已充满。</summary>
-    private const byte StatusFull = 0x04;
-
-    /// <summary>状态字节：休眠。此时电量仍有效，但与"真的低电量"难以区分，一律采信。</summary>
-    private const byte StatusSleep = 0x1A;
-
-    /// <summary>查询帧的固定形态，供 <see cref="TryParse"/> 识别回显。</summary>
-    private static readonly byte[] Query = BuildQuery();
+    private static ProtocolSpec Spec => MchoseSpecs.Get("headset-x9");
 
     /// <summary>
     /// 电量集合的接口判据。同接收器上还有 0xFF82 的 64 字节集合（col06），一律不认；
@@ -55,45 +37,22 @@ public static class MchoseX9Codec
            && inputLength == ReportLength && outputLength == ReportLength
            && featureLength == 0 && reportId == ReportId;
 
-    /// <summary>64 字节查询帧：`55 65 01`，余下 61 字节为 0。</summary>
-    public static byte[] CreateQuery() => (byte[])Query.Clone();
+    /// <summary>64 字节查询帧：<c>55 65 01</c>，余下 61 字节为 0（来自 JSON 的 <c>active.query</c>）。</summary>
+    public static byte[] CreateQuery() => (byte[])Spec.Active!.Query.Clone();
 
     /// <summary>
     /// 解析一条 input report，成功返回电量（1–100）与充电状态。
     /// 0 与 &gt;100 判无效：耳机休眠/关机时接收器会回 0，与"真的 0%"无法区分。
     /// </summary>
-    public static bool TryParse(ReadOnlySpan<byte> report, out int percent, out ChargingState charging)
+    public static bool TryParse(byte[] report, out int percent, out ChargingState charging)
     {
         percent = 0;
         charging = ChargingState.Unknown;
-        if (report.Length != ReportLength || report[0] != ReportId
-            || report[1] != CommandEcho || report[2] is 0 or > 100)
-            return false;
-
         // 有的接收器会把主机写入回显到输入队列：查询帧（55 65 01 …）正好能解析成 1%，整帧相等时丢弃
-        if (report.SequenceEqual(Query)) return false;
-
-        percent = report[2];
-        charging = report.Length > StatusOffset ? MapCharging(report[StatusOffset]) : ChargingState.Unknown;
+        if (report.AsSpan().SequenceEqual(Spec.Active!.Query)) return false;
+        if (FrameReader.Read(Spec.Active!.Response, report) is not { Percent: { } value } reading) return false;
+        percent = value;
+        charging = reading.Charging;
         return true;
-    }
-
-    /// <summary>状态字节 → 充电状态。未收录的取值一律 Unknown，不猜。</summary>
-    public static ChargingState MapCharging(byte status) => status switch
-    {
-        StatusDischarging => ChargingState.Discharging,
-        StatusCharging => ChargingState.Charging,
-        StatusFull => ChargingState.Full,
-        StatusSleep => ChargingState.Discharging,
-        _ => ChargingState.Unknown,
-    };
-
-    private static byte[] BuildQuery()
-    {
-        var report = new byte[ReportLength];
-        report[0] = ReportId;
-        report[1] = CommandEcho;
-        report[2] = 0x01;
-        return report;
     }
 }

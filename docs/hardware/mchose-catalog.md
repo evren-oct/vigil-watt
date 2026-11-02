@@ -4,7 +4,7 @@
 > `configCenter/custom/cardList.json`。**除注明外全部是静态分析，本机未真机验证**——
 > 本机只有 G87 V1（`41E4:2001`），没有鼠标、CZ 族键盘和耳机。
 > 协议实现细节见 [mchose.md](mchose.md)；本文只放**设备清单、协议族判定、取数口径**。
-> **已落地**：本体 62 条收进 `Plugins/Mchose/mchose-catalog.json`（内嵌资源）；共用 dongle 不收录，
+> **已落地**：本体 63 条收进 `Plugins/Mchose/mchose-catalog.json`（内嵌资源）；共用 dongle 不收录，
 > 由 `Probe` 的「先试 QHW 再试 V2」兜住。
 
 ## 1. 设备全景

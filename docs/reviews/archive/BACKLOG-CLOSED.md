@@ -95,3 +95,7 @@
 | CR-51 | 日志按用户要求一天一个文件，大小靠保留天数限制 |
 | CR-64 | 反复打开主窗口抬高的是工作集，不是泄漏。判泄漏只看私有提交。见 `memory-growth-2026-10-12.md` |
 | CR-78 | 原判断有误：`RunExclusiveAsync` 已 catch `WaitAsync` 的 `ObjectDisposedException` 并 return，`Release` 也有 catch。剩下的 `Detach` 与在跑 `Poll` 并发由插件内 try/catch 兜住，退出时不影响用户 |
+| CR-145 | `MchoseA5Plugin` 与 `MchosePlugin` 同名导致认领互斥失效。已把 `DeviceClaimRegistry` 的 owner 拆成 `ClaimOwner(Id, PluginName)`：Id 做互斥、PluginName 查设置开关；A5 覆写 `ClaimId = "Mchose#A5"`。A5 接收器 `3837:100C` 也进了目录，主插件按身份让路，不再靠形态猜。回归见 `PluginUtilsTests.R2b`、`MchoseInterfaceClassifierTests` |
+| CR-144 | 迈从 gmouse / V9 / X9 已迁进解释器：帧模板、窗口、重试次数在 `specs/mchose.protocols.json`，`MchosePlugin` 只剩 `TrySpec` 一次调用；三个 codec 改成薄壳（保留 `IsSupportedInterface` 与既有断言），35 条 codec 用例现在钉的是 JSON 偏移。接口形态判据仍在 `MchoseInterfaceClassifier`，见 CR-16 |
+| CR-146 | **原判断有误，撤回**：目录优先下 `0x2E3C:0x5745` 是会被查到的，`implementation: "none"` 正确地拒绝认领；`vendors` 白名单只影响"未收录设备"的形态回落，不影响已收录条目 |
+| CR-147 | `"qhw-push"` 不再进设备协议名：协议名统一记 `qhw`，"只拿到被动推送"另记在 `_pushOnly`（按路径）。`PollDevice` / `TryParsePassiveInput` 改查显式状态，UI 副标题也不会再显示内部标记 |

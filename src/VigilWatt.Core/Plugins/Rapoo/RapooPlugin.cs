@@ -1,36 +1,35 @@
 using System.Collections.Concurrent;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Plugins.Protocol;
 using VigilWatt.Core.Utils;
 
 namespace VigilWatt.Core.Plugins.Rapoo;
 
 /// <summary>
-/// 功 能： 雷柏 (Rapoo) 插件 —— 纯被动零写入，按协议族派发（族在 <see cref="RapooFamilies"/>，本类只管认领与转交）。
+/// 功 能： 雷柏 (Rapoo) 插件——纯被动零写入，协议细节全部来自内嵌 JSON，本类只管认领与转交。
 /// 2026/10/06 15:53:36 xliu
-/// 帧布局、充电编码与离线两条腿见 docs/hardware/rapoo.md §1；族清单与目录见 docs/hardware/rapoo-catalog.md §2。
+/// 帧布局、充电编码与离线两条腿见 docs/hardware/rapoo.md §1；协议与目录见 docs/hardware/rapoo-catalog.md §2。
 /// </summary>
 public sealed class RapooPlugin : BatteryPluginBase
 {
     public const ushort RapooVid = 0x24AE;
 
-    /// <summary>首次探测的被动监听窗口 = 实测心跳间隔 3.04 秒的 1.6 倍余量。</summary>
-    private static readonly TimeSpan ProbeWindow = TimeSpan.FromSeconds(5);
-
-    /// <summary>已实现的协议族。加一族只改 <see cref="RapooFamilies"/>，本类不动。</summary>
-    private readonly RapooFamily[] _families = RapooFamilies.CreateAll();
+    private readonly ProtocolEngine _engine = ProtocolEngine.Load(
+        "VigilWatt.Core.Plugins.Rapoo.specs.rapoo.protocols.json",
+        "VigilWatt.Core.Plugins.Rapoo.rapoo-catalog.json");
 
     public override string Name => "Rapoo";
     public override string DisplayName => "雷柏";
     public override string DisplayNameEn => "RAPOO";
 
     /// <summary>
-    /// 声明 Unknown：雷柏的电量帧挂在键盘集合上，按名字猜会猜错；具体图标由 <see cref="ResolveKind"/> 按协议族给。
+    /// 声明 Unknown：雷柏的电量帧挂在键盘集合上，按名字猜会猜错；具体图标由 <see cref="ResolveKind"/> 按协议给。
     /// 见 docs/hardware/rapoo.md §4.2。
     /// </summary>
     public override DeviceKind Kind => DeviceKind.Unknown;
 
-    /// <summary>含 "Mouse" 产品串的 VID:PID 集合（由 <see cref="OnDevicesScanned"/> 每轮刷新）。</summary>
+    /// <summary>含 "Mouse" 产品串的 VID:PID 集合（由 <see cref="AttachAsync"/> 每轮刷新）。</summary>
     private readonly ConcurrentDictionary<string, bool> _mousePids = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
@@ -69,105 +68,54 @@ public sealed class RapooPlugin : BatteryPluginBase
         CountPollFailures = false,
     };
 
-    /// <summary>按协议族查实现；未知协议（还没适配的族）返回 null，由基类当作"本帧不认识"。</summary>
-    private RapooFamily? FamilyOf(string? protocol)
-        => string.IsNullOrEmpty(protocol)
-            ? null
-            : _families.FirstOrDefault(f => Array.IndexOf(f.Protocols, protocol) >= 0);
-
-    /// <summary>
-    /// 认领判据。**目录优先**：收录过的设备先由目录定族，再用该族的形态判据筛接口——
-    /// 这样底座（没有族）在第一步就被挡掉，也不会把鼠标的升级接口当成配置接口。
-    /// 未收录的设备回落"任何族认这个形态"，新机型在同族里照样能认出来。
-    /// </summary>
-    protected override bool IsCandidate(HidDeviceInfo info)
-    {
-        if (info.VendorId != RapooVid) return false;
-        var shape = RapooInterfaceShape.Of(info);
-
-        if (RapooDeviceCatalog.TryGet(info.VendorId, info.ProductId, out var entry))
-        {
-            var family = FamilyOf(entry.Protocol);
-            return family != null && family.MatchesShape(shape);
-        }
-
-        return _families.Any(f => f.MatchesShape(shape));
-    }
+    /// <summary>认领判据完全由 JSON 的 interface 段决定：目录命中先定协议，未收录才按注册顺序比形态。</summary>
+    protected override bool IsCandidate(HidDeviceInfo info) => _engine.Matches(info);
 
     /// <summary>同步入口（基类要求）：转调异步版本，逻辑只有一份。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
         => ProbeAsync(handle).GetAwaiter().GetResult();
 
-    /// <summary>
-    /// 目录命中的设备**只试它那一个族**（省掉其它族的探测窗口，也避免误认）；
-    /// 未收录设备才按注册顺序逐个试，先出读数的算数。
-    /// </summary>
-    protected override async Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
+    /// <summary>探测 = 被动听一个窗口（纯被动协议没有主动查询段），听不到 = 鼠标睡着。</summary>
+    protected override Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
         HidDeviceHandle handle)
-    {
-        var shape = RapooInterfaceShape.Of(handle.Info);
-
-        if (RapooDeviceCatalog.TryGet(handle.Info.VendorId, handle.Info.ProductId, out var entry))
-        {
-            var known = FamilyOf(entry.Protocol);
-            if (known == null || !known.MatchesShape(shape)) return null;
-            var read = await known.ProbeAsync(handle, ProbeWindow).ConfigureAwait(false);
-            return read.HasValue ? (entry.Protocol, read.Value.Percent, read.Value.Charging) : null;
-        }
-
-        foreach (var family in _families)
-        {
-            if (!family.MatchesShape(shape)) continue;
-            var read = await family.ProbeAsync(handle, ProbeWindow).ConfigureAwait(false);
-            if (read.HasValue) return (family.Protocols[0], read.Value.Percent, read.Value.Charging);
-        }
-        return null;
-    }
+        => _engine.ProbeAsync(handle, WritesEnabled);
 
     /// <summary>
     /// 读数由后台被动监听负责；轮询不再占 ReadInput（避免与监听抢同一悬空读）。
-    /// 沉默离线见 <see cref="OfflinePolicy.Silence"/>。
+    /// 纯被动协议的 pollable 为 false，解释器直接报"没发帧"，不记失败。
     /// </summary>
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
-        => FamilyOf(dev.Protocol)?.Poll(RefOf(dev));
+    {
+        var outcome = _engine.Poll(dev.Handle, RefOf(dev), dev.Protocol, WritesEnabled);
+        return outcome.Attempt == PollAttempt.Answered ? (outcome.Percent, outcome.Charging) : null;
+    }
 
-    /// <summary>按认领时记下的协议族派发；族返回的链路提示转成离线候选（两条腿见 rapoo.md §3）。</summary>
+    /// <summary>按认领时记下的协议派发；链路位转成离线候选（两条腿见 rapoo.md §3）。</summary>
     protected override (int? Percent, ChargingState Charging, bool Offline)? TryParsePassiveInput(
         TrackedDevice dev, byte[] input)
     {
-        var family = FamilyOf(dev.Protocol);
-        if (family == null) return null;
-
-        var result = family.ParsePassive(RefOf(dev), input);
-        if (result is not { } r) return null;
+        if (_engine.Parse(RefOf(dev), dev.Protocol, input) is not { } result) return null;
 
         // 链路位与电量无关，先处理——电量越界的帧同样要能标记/撤销候选。
-        if (r.Link == RapooLinkHint.Down) MarkOfflineCandidate(dev);
-        else if (r.Link == RapooLinkHint.Up) ClearOfflineCandidate(dev);
+        if (result.Link == LinkState.Down) MarkOfflineCandidate(dev);
+        else if (result.Link == LinkState.Up) ClearOfflineCandidate(dev);
 
-        if (r.Reading is not { } reading) return null;
-        return (reading.Percent, reading.Charging, Offline: false);
+        return result.Percent is { } percent ? (percent, result.Charging, false) : null;
     }
 
-    /// <summary>协议族拿不到 <see cref="TrackedDevice"/>（protected 嵌套类型），只能摊成值。</summary>
-    private static RapooDeviceRef RefOf(TrackedDevice dev)
-        => new(dev.Status.Id, dev.Info.DevicePath, dev.Info.ProductId);
+    /// <summary>协议层拿不到 <see cref="TrackedDevice"/>（protected 嵌套类型），只能摊成值。</summary>
+    private static DeviceRef RefOf(TrackedDevice dev)
+        => new(dev.Status.Id, dev.Info.DevicePath, dev.Info.VendorId, dev.Info.ProductId);
 
-    /// <summary>图标按协议族给（一个插件管鼠标/键盘/底座多类设备，见 <see cref="RapooFamily.Kind"/>）。</summary>
-    protected override DeviceKind ResolveKind(string protocol)
-        => FamilyOf(protocol)?.Kind ?? DeviceKind.Unknown;
+    /// <summary>图标按协议给（一个插件管鼠标/键盘/底座多类设备，见 JSON 里各协议的 kind）。</summary>
+    protected override DeviceKind ResolveKind(string protocol) => _engine.KindOf(protocol);
 
     /// <summary>
     /// 显示名：目录命中用官方型号（"雷柏 VT3"）；未收录才退回产品串 + 兄弟接口判鼠标。
     /// 目录来源见 docs/hardware/rapoo-catalog.md §3。
     /// </summary>
     protected override string BuildDisplayName(HidDeviceInfo info)
-    {
-        if (RapooDeviceCatalog.TryGet(info.VendorId, info.ProductId, out var entry)
-            && entry.Model.Length > 0)
-            return $"雷柏 {entry.Model}";
-        return RapooCodec.DisplayName(info.Product, SiblingIsMouse(info), info.VidPid);
-    }
+        => _engine.DisplayNameOf(info) ?? RapooDisplayName.For(info.Product, SiblingIsMouse(info), info.VidPid);
 
     /// <summary>同 <c>VID:PID</c> 下是否存在标准鼠标集合（usage 0001:0002）的兄弟接口。</summary>
     private bool SiblingIsMouse(HidDeviceInfo info)
@@ -187,14 +135,14 @@ public sealed class RapooPlugin : BatteryPluginBase
             if (d.UsagePage == 0x0001 && d.Usage == 0x0002)
                 _mousePids[$"{d.VendorId:X4}:{d.ProductId:X4}"] = true;
         }
-        foreach (var family in _families) family.Prune(availableDevices);
+        _engine.Prune(availableDevices);
         return await base.AttachAsync(availableDevices, claims).ConfigureAwait(false);
     }
 
-    /// <summary>插件被禁用/卸载时清空各族按设备保存的状态。</summary>
+    /// <summary>插件被禁用/卸载时清空解释器按设备保存的状态。</summary>
     public override void Detach()
     {
-        foreach (var family in _families) family.Reset();
+        _engine.Reset();
         base.Detach();
     }
 }

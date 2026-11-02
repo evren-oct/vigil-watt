@@ -373,6 +373,12 @@
    "pid": "0x2133",
    "model": "Ace 68 Air III",
    "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x100c",
+   "model": "A5 V2 Ultra",
+   "protocol": "mouse-a5"
   }
  ]
 }

@@ -5,9 +5,9 @@
 > **除 §6 标注「真机验证」的条目外，全部是静态分析**——本机只有 VT3（`24AE:1412`）和
 > VT2S Air MAX V2（`24AE:4B13` / `1B13`）。
 > 协议帧细节见 [rapoo.md](rapoo.md)；本文只放**设备清单、协议族划分、取数口径**。
-> **已落地**：195 条 PID 收进 `src/VigilWatt.Core/Plugins/Rapoo/rapoo-catalog.json`（内嵌资源），
-> 加载器 `RapooDeviceCatalog.cs`；协议族按 `IRapooFamily` 注册表派发（§2.1）。
-> 加新机型 = 改这个 JSON；加新协议族 = 加一个族类 + 一行注册，插件主体不动。
+> **已落地**：195 条 PID 收进 `Plugins/Rapoo/rapoo-catalog.json`，12 套协议收进
+> `Plugins/Rapoo/specs/rapoo.protocols.json`（都是内嵌资源），由 `Plugins/Protocol/` 的解释器统一解析（§2.1）。
+> 加新机型 = 改目录一行；加形态固定的协议 = 改 protocols 一段 JSON，代码不动。
 
 ## 1. 数据来源与提取口径
 
@@ -68,32 +68,31 @@ manifest 的字段形状：
 > `GCOME_AP` 与 `OHID` 在主包里先后被 `Cs.register` 注册到同一个实现类（`XC`），
 > 但 `OHID` 随后又被重新注册成 `cA`，所以两者行为不同，**slug 不要合并**。
 
-### 2.1 插件结构：族 = 类，插件只派发
+### 2.1 插件结构：协议 = JSON，插件只派发
 
-迈从把 6 套协议塞进 1136 行的 `MchosePlugin`，加一族要同时改枚举、`Classify`、`MatchesShape`、
-`Probe`、`TryParsePassiveInput`、`PollDevice` 六处。雷柏有 12 套，照抄会失控，所以按族拆：
+迈从把 8 套协议塞进 1136 行的 `MchosePlugin`，加一套要同时改枚举、`Classify`、`MatchesShape`、
+`Probe`、`TryParsePassiveInput`、`PollDevice` 六处。雷柏有 12 套，照抄会失控，所以走**数据化**：
 
 | 文件 | 职责 |
 |---|---|
-| `RapooFamily.cs` | 族抽象：`Protocols`（**可多个**）/ `Kind` / `MatchesShape` / `ProbeAsync` / `ParsePassive` / `Poll` / `Prune` / `Reset` + 共用的被动听循环 |
-| `RapooFamilies.cs` | 注册表 `CreateAll()` + 5 个族实现（每个 20~60 行） |
-| `RapooCodec.cs` | 鼠标 user-data（`VT_nrf54L` / `LM20RT` / `VT_CH584`）纯解析，含充电去抖 |
-| `RapooTelink8273Codec.cs` / `RapooKeyboardCodec.cs` / `RapooGcomeApCodec.cs` | 其余三套帧的纯解析（可单测，不碰句柄） |
-| `RapooDeviceCatalog.cs` | 目录加载器（型号 / kind / 协议族 / pairedPid） |
-| `RapooPlugin.cs` | 只剩认领与转交：`IsCandidate` 问目录+形态、`Probe` 派给唯一匹配的族、被动帧按 `dev.Protocol` 派发 |
+| `Plugins/Protocol/` | 品牌无关的解释器：规格加载（`extends` 继承 + 设备级 `override` 深合并 + 加载期校验）、帧读取、查询执行、认领派发 |
+| `Plugins/Rapoo/specs/rapoo.protocols.json` | **12 套协议的全部数据**：接口指纹、字段偏移与类型、充电码映射、查询帧模板 |
+| `Plugins/Rapoo/rapoo-catalog.json` | 195 条 VID:PID → 型号 / kind / 协议 / pairedPid；`override` 处理偏移差一位的机型（V700diy 六个 PID） |
+| `RapooPlugin.cs` | 只剩认领与转交：`IsCandidate` 问解释器、`Probe` 交给解释器、被动帧交给解释器解析 |
+| `RapooDisplayName.cs` | 未收录设备的显示名启发式（展示逻辑，不是协议数据，所以留代码） |
 
 四条设计要点：
 
 1. **派发键用 `TrackedDevice.Protocol`**（基类已存），不需要迈从那种 `KnownProtocolByPath` 旁路字典。
-2. **一个族可以覆盖多个官方 driver**：`status-report7` 同时管 `lm20rt` 和 `vt-ch584`，因为三者帧布局一样。
-   `Protocols` 是集合，`Probe` 返回目录里的 slug，所以 `DeviceStatus.Protocol` 仍保留官方名。
-3. **目录优先 + 形态兜底**：收录过的设备只试它那一个族（省探测窗口、防误认），未收录的才按注册顺序逐个试。
-   底座没有族，在 `IsCandidate` 第一步就被挡掉，不会每 5 秒白等一个窗口。
-4. **`RapooPassiveResult` 把读数与链路提示分开**：电量越界的休眠瞬态帧没有读数，但链路位仍然可信，
+2. **一套协议可以覆盖多个官方 driver**：`lm20rt` / `vt-ch584` 用 `extends: status-report7`，
+   因为三者帧布局逐字节相同、只差 report ID；`DeviceStatus.Protocol` 仍保留官方名。
+3. **目录优先 + 形态兜底**：收录过的设备只试它那一套协议（省探测窗口、防误认），未收录的才按注册顺序逐个试。
+   底座与升级口用 `implementation: "none"` 显式排除，不会每 5 秒白等一个窗口。
+4. **读数与链路位分开返回**（`PassiveOutcome`）：电量越界的休眠瞬态帧没有读数，但链路位仍然可信，
    必须继续驱动离线候选（rapoo.md §3），所以不能用一个可空读数把两者绑在一起。
 
-`MatchesShape` 必须校验接口形状，不能只看 PID——同型号常有旁路接口（升级口、底座），
-这是迈从 `MchoseInterfaceClassifier.MatchesShape` 踩过的坑，直接沿用。
+接口指纹必须校验形状，不能只看 PID——同型号常有旁路接口（升级口、底座），
+这是迈从 `MchoseInterfaceClassifier.MatchesShape` 踩过的坑，直接沿用。写法见 `docs/dev/protocol-json.md`。
 
 ## 3. 设备清单
 
@@ -299,7 +298,7 @@ DPI 上限来自 `capabilities` 里的 `dpi` 项，四个具名常量 + 内联�
    反推的，单测用合成帧锁住，**没有一份真机帧**。错一位时靠"电量必须落在 1..100"这道闸挡住脏值，
    代价是可能整族读不出电量而不是读错。
 7. **ESM6xx 的 cybercafe 变体没处理**：官方 `Zx()` 会先剥掉一个 `0xB0` 前缀标记，现有
-   `RapooCodec.Parse` 只在偏移 0/1 找 report ID，8 台网吧专供机可能错位。
+   解释器（`specs/rapoo.protocols.json` 的 `status-report7.passive`）只在偏移 0/1 找 report ID，8 台网吧专供机可能错位。
 8. **区域差异**：17 台标 `china_cybercafe` 专供（ESM6xx 系列），5 台 MT 系列型号名随区域变。
    目录里统一用**国内零售名**。
 9. **主包会变**：文件名带 hash（`index-BNoOd8Jm.js`），发版即换。重新提取要重新抓 HTML 找入口。

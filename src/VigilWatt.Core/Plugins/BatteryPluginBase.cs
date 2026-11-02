@@ -20,6 +20,15 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>本插件处理的设备类型（UI 选图标用）。</summary>
     public abstract DeviceKind Kind { get; }
 
+    /// <summary>
+    /// 认领表里的互斥身份。默认等于 <see cref="Name"/>，但**同一品牌有多个插件类时必须各给一个**：
+    /// 迈从键鼠与 A5 共用 "Mchose" 这个设置键，只用名字会让两者的认领互斥失效。
+    /// </summary>
+    protected virtual string ClaimId => Name;
+
+    /// <summary>认领时提交的身份：Id 做互斥、Name 查设置页开关。</summary>
+    private ClaimOwner Claim => new(ClaimId, Name);
+
     /// <summary>新建设备时的来源。默认 2.4G；蓝牙 HID 插件自行覆写。</summary>
     protected virtual DeviceSource Source => DeviceSource.Hid24G;
 
@@ -237,7 +246,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 gone.Handle.Dispose();
                 gone.Status.IsOnline = false;
                 gone.Status.LastUpdated = DateTimeOffset.Now;
-                _claims.Release(path, Name);
+                _claims.Release(path, Claim);
                 Log.Info($"{DisplayName} 设备已移除: {path}");
                 claimed.Add(gone.Status);
             }
@@ -252,7 +261,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             StopPassiveListen(dropped);
             dropped.Handle.Dispose();
             dropped.Status.IsOnline = false;
-            _claims.Release(path, Name);
+            _claims.Release(path, Claim);
             Log.Info($"{DisplayName} 同一设备的另一条接口已接管，释放: {path}");
         }
 
@@ -272,7 +281,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 {
                     StopPassiveListen(blocked);
                     blocked.Handle.Dispose();
-                    _claims.Release(info.DevicePath, Name);
+                    _claims.Release(info.DevicePath, Claim);
                     Log.Info($"{DisplayName} 设备已永久移除，释放接口: {info.DevicePath}");
                 }
                 continue;
@@ -286,7 +295,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                     // 不这么做的话，设备会在列表里永远离线，直到用户重启应用。
                     _devices.Remove(info.DevicePath);
                     known.Handle.Dispose();
-                    _claims.Release(info.DevicePath, Name);
+                    _claims.Release(info.DevicePath, Claim);
                     Log.Info($"{DisplayName} 句柄已失效，重新打开: {info.DevicePath}");
                 }
                 else
@@ -305,14 +314,14 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 stale.Status.IsOnline = false;
                 stale.Status.LastUpdated = DateTimeOffset.Now;
                 claimed.Add(stale.Status);
-                _claims.Release(info.DevicePath, Name);
+                _claims.Release(info.DevicePath, Claim);
             }
 
             if (_probeFailedAt.TryGetValue(info.DevicePath, out var failedAt) &&
                 DateTimeOffset.Now - failedAt < ResolveProbeCooldown(info))
                 continue;
 
-            if (!claims.TryClaim(info.DevicePath, Name)) continue;   // 已被其他插件认领
+            if (!claims.TryClaim(info.DevicePath, Claim)) continue;   // 已被其他插件认领
 
             toProbe.Add(info);
         }
@@ -347,7 +356,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 StopPassiveListen(dev);
                 dev.Handle.Dispose();
                 dev.Status.IsOnline = false;
-                _claims.Release(path, Name);
+                _claims.Release(path, Claim);
                 Log.Info($"{DisplayName} 设备已移除: {path}");
                 // DeviceManager 只收返回列表；不上报则拔出后条目永远在线。
                 gone.Add(dev.Status);
@@ -410,7 +419,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         {
             if (o.Result is not { } probe)
             {
-                _claims.Release(o.Info.DevicePath, Name);
+                _claims.Release(o.Info.DevicePath, Claim);
                 _probeFailedAt[o.Info.DevicePath] = DateTimeOffset.Now;
                 continue;
             }
@@ -428,7 +437,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             {
                 Log.Warn($"{DisplayName} 设备 ID 读取失败，本轮放弃: {o.Info.DevicePath}（{ex.Message}）");
                 o.Handle!.Dispose();
-                _claims.Release(o.Info.DevicePath, Name);
+                _claims.Release(o.Info.DevicePath, Claim);
                 _probeFailedAt[o.Info.DevicePath] = DateTimeOffset.Now;
                 continue;
             }
@@ -439,7 +448,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             {
                 Log.Info($"{DisplayName} 同一设备的另一条接口已认领，释放: {o.Info.DevicePath}（同 {duplicateOf}）");
                 o.Handle!.Dispose();
-                _claims.Release(o.Info.DevicePath, Name);
+                _claims.Release(o.Info.DevicePath, Claim);
                 continue;
             }
 
@@ -818,7 +827,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             dev.Handle.Dispose();
         }
         _devices.Clear();
-        _claims?.ReleaseAll(Name);
+        _claims?.ReleaseAll(ClaimId);
         if (released > 0)
             Log.Info($"{DisplayName} 插件已卸载，释放 {released} 台设备");
     }

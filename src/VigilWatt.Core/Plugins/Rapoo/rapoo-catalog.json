@@ -1,5 +1,6 @@
 {
  "version": "2026-11-01",
+ "brand": "雷柏",
  "source": "RAPOO HUB 网页驱动 AHUB 2.0 内嵌 manifest（hid.rapoo.cn/AHUB_WEB/dist/assets/js/index-BNoOd8Jm.js）",
  "capsRule": "caps 只写本机真机验证过的能力；官方 manifest 声明但未验证的不写，见 docs/hardware/rapoo-catalog.md §6",
  "devices": [
@@ -341,7 +342,16 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x1907"
+   "pairedPid": "0x1907",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   }
   },
   {
    "brand": "rapoo",
@@ -351,7 +361,16 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x7204"
+   "pairedPid": "0x7204",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   }
   },
   {
    "brand": "rapoo",
@@ -361,7 +380,16 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x6204"
+   "pairedPid": "0x6204",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   }
   },
   {
    "brand": "rapoo",
@@ -381,7 +409,16 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x1906"
+   "pairedPid": "0x1906",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   }
   },
   {
    "brand": "rapoo",
@@ -401,7 +438,16 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x1905"
+   "pairedPid": "0x1905",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   }
   },
   {
    "brand": "rapoo",
@@ -421,7 +467,16 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x1924"
+   "pairedPid": "0x1924",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   }
   },
   {
    "brand": "rapoo",

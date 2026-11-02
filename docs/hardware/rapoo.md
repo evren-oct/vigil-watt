@@ -121,7 +121,7 @@ dongle 每 ~3 秒自发推送 **input report 0x07（19 字节，hidraw 含 ID �
 
 两条判据**独立生效，谁先满足谁算**，参数都装在本插件的 `OfflinePolicy Offline` 里
 （`CountPollFailures = false`——本插件零写入，轮询恒返回 null 是协议形态，不是失联）。
-帧解析与链路位判定都在 `RapooCodec`（纯函数，有单测）。
+帧解析与链路位判定都在 `Plugins/Rapoo/specs/rapoo.protocols.json`（由 `Plugins/Protocol/` 的解释器执行，有单测）。
 
 > **实测（2026-10-08 21:37~21:39 会话，用户断电重连鼠标+键盘）**：雷柏 39 帧心跳、
 > 最大空档 27.9s、出现 1 次 `bit7=False`，全程 `标记离线` / `重新上线` 各 **0 次**
@@ -169,7 +169,7 @@ bit7 恒为 0**（实测帧 `[18]=0x00`）。旧实现只看 bit7 → 每 3 秒�
 而它的产品串是 `Rapoo keyboard` → 直接用它做显示名，鼠标就成了键盘。
 
 **修法**：同 `VID:PID` 下若存在产品串含 `Mouse` 的兄弟接口，就按鼠标命名
-（`RapooCodec.DisplayName`）。这要求扫描器能看到 `MI_00` —— 而 `MI_00` 是
+（`RapooDisplayName.For`）。这要求扫描器能看到 `MI_00` —— 而 `MI_00` 是
 **受系统保护的 collection**，`GENERIC_READ`/`GENERIC_WRITE` 都打不开，
 **必须用 `dwDesiredAccess=0`（不请求任何权限）才能打开**并读到它的产品串。
 `HidDeviceScanner.Inspect` 因此加了 access=0 回退。
@@ -232,7 +232,7 @@ bit7 恒为 0**（实测帧 `[18]=0x00`）。旧实现只看 bit7 → 每 3 秒�
 **修法两条**：
 1. **满电（100%）一律判「充满」**，不看 `[7]`——满电就是满电，稳定显示才对。
    （有线充电到 100% 时也显示「充满」而非「充电中」，这是本次改动的连带效果。）
-2. **充电状态需连续两帧都是 `0x02` 才判充电**（`RapooCodec.ResolveCharging`），
+2. **充电状态需连续两帧都是 `0x02` 才判充电**（JSON 里的 `chargeDebounce: true`，算法在解释器），
    过渡帧不采信；稳态下两帧即确认，延迟一个心跳周期。
 
 修复前后同一动作对比：修复前「被动更新」+3 次（闪 3 次），修复后 **+0 次**。

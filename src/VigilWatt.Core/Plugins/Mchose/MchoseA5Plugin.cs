@@ -14,6 +14,9 @@ public sealed class MchoseA5Plugin : BatteryPluginBase
     /// <summary>与 <see cref="MchosePlugin"/> 共用品牌开关：设置页按 Name 去重，迈从只出一行（AGENTS.md §9）。</summary>
     public override string Name => "Mchose";
 
+    /// <summary>认领身份必须与主插件分开，否则两个插件对同一接口的互斥与释放会互相踩（CR-145）。</summary>
+    protected override string ClaimId => "Mchose#A5";
+
     public override string DisplayName => "迈从";
     public override string DisplayNameEn => "MCHOSE";
     public override DeviceKind Kind => DeviceKind.Mouse;

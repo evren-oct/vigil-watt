@@ -1,0 +1,155 @@
+{
+  "version": "2026-11-01",
+  "vendors": ["0x3837", "0x41E4", "0x291D"],
+  "protocols": {
+
+    "headset-v9": {
+      "kind": "headset",
+      "pollable": true,
+      "probeWindowMs": 750,
+      "interface": {
+        "usagePage": 65424,
+        "usage": 1,
+        "inputLength": { "eq": 64 },
+        "outputLength": { "eq": 64 },
+        "featureLength": { "eq": 0 },
+        "reportId": { "eq": 85 },
+        "pathContains": "&mi_00&col05#"
+      },
+      "active": {
+        "query": { "length": 64, "hex": "55 65 01" },
+        "windowMs": 750,
+        "attempts": 1,
+        "rejectQueryEcho": true,
+        "response": {
+          "length": { "eq": 64 },
+          "reportId": [85],
+          "validPercent": { "min": 1, "max": 100 },
+          "prefix": [ { "offset": 1, "value": 101 } ],
+          "fields": {
+            "percent": { "offset": 2, "type": "u8" }
+          }
+        }
+      }
+    },
+
+    "headset-x9": {
+      "kind": "headset",
+      "pollable": true,
+      "probeWindowMs": 750,
+      "interface": {
+        "usagePage": 65424,
+        "usage": 1,
+        "inputLength": { "eq": 64 },
+        "outputLength": { "eq": 64 },
+        "featureLength": { "eq": 0 },
+        "reportId": { "eq": 85 },
+        "pathContains": "&mi_00&col05#"
+      },
+      "active": {
+        "query": { "length": 64, "hex": "55 65 01" },
+        "windowMs": 750,
+        "attempts": 1,
+        "rejectQueryEcho": true,
+        "response": {
+          "length": { "eq": 64 },
+          "reportId": [85],
+          "validPercent": { "min": 1, "max": 100 },
+          "prefix": [ { "offset": 1, "value": 101 } ],
+          "fields": {
+            "percent": { "offset": 2, "type": "u8" },
+            "charge":  { "offset": 3, "type": "u8",
+                         "map": { "2": "discharging", "3": "charging", "4": "full", "26": "discharging" },
+                         "onMiss": "unknown" }
+          }
+        }
+      }
+    },
+
+    "gmouse": {
+      "kind": "mouse",
+      "pollable": true,
+      "probeWindowMs": 1200,
+      "interface": {
+        "usagePage": 65281,
+        "usage": 16,
+        "inputLength": { "min": 65 },
+        "outputLength": { "min": 65 }
+      },
+      "active": {
+        "query": { "length": 65, "hex": "00 55 30 A5 0B 2E 01 01 01" },
+        "windowMs": 1200,
+        "attempts": 2,
+        "response": {
+          "tryOffsets": [0, 1],
+          "fullAt": 100,
+          "validPercent": { "min": 1, "max": 100 },
+          "prefix": [ { "offset": 0, "value": 170 }, { "offset": 1, "value": 48 } ],
+          "fields": {
+            "percent": { "offset": 8, "type": "u8" },
+            "charge":  { "offset": 9, "type": "u8", "on": "nonzero", "onMiss": "discharging" }
+          }
+        }
+      }
+    },
+
+    "keyboard-v1": {
+      "kind": "keyboard",
+      "implementation": "code",
+      "codeFamily": "MchosePlugin",
+      "interface": {
+        "usagePage": { "min": 65280 },
+        "usage": { "min": 65280 },
+        "inputLength": { "eq": 20 },
+        "outputLength": { "eq": 20 }
+      }
+    },
+
+    "mouse-k7": {
+      "kind": "mouse",
+      "implementation": "code",
+      "codeFamily": "MchosePlugin",
+      "interface": {
+        "usagePage": 65281,
+        "usage": 1,
+        "inputLength": { "min": 64 },
+        "outputLength": { "min": 64 }
+      }
+    },
+
+    "mouse-v2": {
+      "kind": "mouse",
+      "implementation": "code",
+      "codeFamily": "MchosePlugin",
+      "interface": {
+        "usagePage": { "min": 65280 },
+        "usage": { "min": 65280 },
+        "inputLength": { "min": 60 },
+        "outputLength": { "min": 60 }
+      }
+    },
+
+    "qhw": {
+      "kind": "keyboard",
+      "implementation": "code",
+      "codeFamily": "MchosePlugin",
+      "interface": {
+        "usagePage": { "min": 65280 },
+        "usage": { "min": 65280 },
+        "inputLength": { "min": 20 },
+        "outputLength": { "min": 20 }
+      }
+    },
+
+    "mouse-a5": {
+      "kind": "mouse",
+      "implementation": "code",
+      "codeFamily": "MchosePlugin",
+      "interface": {
+        "usagePage": 65281,
+        "usage": 1,
+        "featureLength": { "min": 21 }
+      }
+    }
+  }
+}

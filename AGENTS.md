@@ -114,3 +114,12 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 - 具体型号是**扫描期产物**：由插件的 `BuildDisplayName` 识别，只出现在设备列表 / 托盘 / 历史里。设置页不关心用户插的是哪个型号。
 - 一个品牌接多个型号（迈从键+鼠、罗技键鼠）时，设置页仍然只有**一行**开关，型号差异在插件内部消化。
 - 一行只有两样东西：**中文名 + 英文名**。不挂品类、协议、通道——那些是扫描结果或能力细节，不进设置页。
+
+## 10. 协议数据化：硬编码红线
+
+- **帧偏移、VID/PID、充电码映射、协议名字符串**只允许出现在 `Plugins/Protocol/` 的规格类型与
+  `Plugins/<品牌>/specs/*.protocols.json`、`Plugins/<品牌>/*-catalog.json`。插件代码里不许再写。
+- 新增设备/新协议**先改 JSON**（写法见 `docs/dev/protocol-json.md`）；只有"新的判断或状态逻辑"
+  才写 `codeFamily` 指向的 C# 族。
+- 例外只限**协议流程本身**（握手顺序、会话状态机、校验和算法），且要在提交说明里写一句理由。
+- 改了 JSON 必须跑 `dotnet test --no-build --filter "FullyQualifiedName~Rapoo"`：真机帧用例会挡住偏移写错。

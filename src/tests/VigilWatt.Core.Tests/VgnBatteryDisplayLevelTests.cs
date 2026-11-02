@@ -100,11 +100,11 @@ public sealed class VgnBatteryDisplayLevelTests
         }
     }
 
-    /// <summary>间隔不足 1 分钟：保持旧值，不让设备电压抖动反映到界面。</summary>
+    /// <summary>间隔不足一个 tick（10 秒）：保持旧值，不让设备电压抖动反映到界面。</summary>
     [Fact]
-    public void SmoothHoldsInsideOneMinute()
+    public void SmoothHoldsInsideOneTick()
     {
-        Assert.Equal(93, VgnBatteryDisplayLevel.Smooth(lastLevel: 93, factLevel: 99, seconds: 30));
+        Assert.Equal(93, VgnBatteryDisplayLevel.Smooth(lastLevel: 93, factLevel: 99, seconds: 9));
         Assert.Equal(93, VgnBatteryDisplayLevel.Smooth(lastLevel: 93, factLevel: 50, seconds: 0));
     }
 
@@ -116,21 +116,38 @@ public sealed class VgnBatteryDisplayLevelTests
         Assert.Equal(99, VgnBatteryDisplayLevel.Smooth(lastLevel: 10, factLevel: 99, seconds: 7200));
     }
 
-    /// <summary>中间区间：上升按 0.028%/s、下降按 0.014%/s 夹住，不能一步跳到位。</summary>
-    [Fact]
-    public void SmoothClampsMidRangeSteps()
+    /// <summary>
+    /// 按 tick 走步：60 秒 = 6 步，差值在 6 以内直接到位。
+    ///
+    /// 这条是现场事故的回归——第一版把驱动"初始化时才用"的 0.014%/s 当成持续速率，
+    /// 60 秒只降 0.84%，而驱动 60 秒能降 6%，导致放电时程序比驱动高 1~2 个点
+    /// （用户实测：驱动 92、程序 93）。现在 94→92 这种 2 步的差必须在一次轮询内追平。
+    /// </summary>
+    [Theory]
+    [InlineData(94, 92, 60, 92)]   // 现场：驱动 92、程序 93，目标是 92 → 必须到位
+    [InlineData(93, 92, 60, 92)]
+    [InlineData(95, 90, 60, 90)]   // 5 步 < 6 步额度，一次追平
+    public void SmoothCatchesUpWithinOnePoll(int last, int fact, double seconds, int expected)
     {
-        // 600 秒内允许上界 = 93 + 0.028*600 = 109.8（截到 100）
-        // 目标 100 仍在窗口内 → 保持旧值（驱动是"慢慢爬"，不是一次跳满）
-        Assert.Equal(93, VgnBatteryDisplayLevel.Smooth(93, 100, 600));
+        Assert.Equal(expected, VgnBatteryDisplayLevel.Smooth(last, fact, seconds));
+    }
 
-        // 目标只涨 3，也在窗口内 → 保持
-        Assert.Equal(93, VgnBatteryDisplayLevel.Smooth(93, 96, 600));
+    /// <summary>差值超过本次 tick 数时按步数走，不一次跳到位（防止电压瞬断导致的暴跌）。</summary>
+    [Fact]
+    public void SmoothMovesAtMostOneStepPerTick()
+    {
+        // 60 秒 = 6 步，目标差 30 → 只走 6 步
+        Assert.Equal(87, VgnBatteryDisplayLevel.Smooth(93, 63, 60));
 
-        // 目标暴跌到 20：下界 = 93 - 0.014*600 = 84.6 → 取整 85
-        Assert.Equal(85, VgnBatteryDisplayLevel.Smooth(93, 20, 600));
+        // 20 秒 = 2 步
+        Assert.Equal(91, VgnBatteryDisplayLevel.Smooth(93, 63, 20));
+    }
 
-        // 目标越界才会被夹住：60 秒上界 = 93 + 1.68 = 94.68 → 目标 100 超出 → 夹到 94
-        Assert.Equal(94, VgnBatteryDisplayLevel.Smooth(93, 100, 60.1));
+    /// <summary>上升方向同理：60 秒最多升 6 步。</summary>
+    [Fact]
+    public void SmoothRisesAtMostOneStepPerTick()
+    {
+        Assert.Equal(99, VgnBatteryDisplayLevel.Smooth(93, 100, 60));
+        Assert.Equal(95, VgnBatteryDisplayLevel.Smooth(93, 100, 20));
     }
 }

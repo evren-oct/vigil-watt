@@ -38,8 +38,13 @@ namespace VigilWatt.Core.Plugins.Vgn;
 public static class VgnBatteryDisplayLevel
 {
     /// <summary>
-    /// 电压 → 百分比 的换算表，每档 5%，索引 i 对应 (i-1)*5%。
-    /// 首项 3050 是"低于此视为 0%"的哨兵，不参与插值基准。
+    /// 显示值朝目标移动的节拍（秒）。驱动用 10 秒一个 tick，这里保持一致。
+    /// </summary>
+    public const double TickSeconds = 10.0;
+
+    /// <summary>
+    /// 电压 → 百分比 的换算表，每档 5%，索引 i 对应 i*5%。
+    /// 首项 3050 是"低于此视为没电"的哨兵，不参与插值基准。
     /// 数值取自官方驱动实测行为（4072→93、4076→94 两点反推 + 全表行为一致）。
     /// </summary>
     private static readonly int[] Voltages =
@@ -87,24 +92,42 @@ public static class VgnBatteryDisplayLevel
     }
 
     /// <summary>
-    /// 采样间隔很长时不要跳变：把目标值限制在"这段时间最多能变多少"之内。
+    /// 朝实测值靠拢，但**按驱动的节拍走**：每 <see cref="TickSeconds"/> 秒最多移动 1 个百分点。
     ///
-    /// 驱动的时间模型（据其行为等价实现）：超过 30 分钟直接采信新值；
-    /// 1 分钟以内不动（太短没意义）；中间按 ±0.028%/s 的上升、±0.014%/s 的下降夹住。
+    /// ⚠ 这里曾经写错过一次，值得记下来：
+    /// 驱动里有**两套**时间模型，一个只在首次初始化（<c>batteryHandleInit</c>）时跑一次，
+    /// 按 ±0.028/±0.014 %/s 夹住；另一个是常驻定时器（<c>level1TimerTick</c>），
+    /// **每 10 秒**让显示值朝目标走一步（1%）。
+    /// 第一版实现误把前者当成持续平滑速率，结果下降只有 0.014%/s ——
+    /// 60 秒才掉 0.84%，而驱动 60 秒能掉 6%，于是放电时我们的读数一直偏高 1~2 个点
+    /// （现场观测：驱动 92 时程序显示 93）。
+    ///
+    /// 现在的做法：按采样间隔折算成"过了几个 tick"，最多移动同样多的步数。
     /// </summary>
     /// <param name="lastLevel">上次显示值。</param>
     /// <param name="factLevel">本次实测值（已由电压换算）。</param>
     /// <param name="seconds">距上次采样的秒数。</param>
-    public static int Smooth(int lastLevel, int factLevel, double seconds)
+    /// <param name="tickSeconds">一步的间隔；默认 10 秒（与驱动一致），测试可显式传入。</param>
+    public static int Smooth(int lastLevel, int factLevel, double seconds, double tickSeconds = 10.0)
     {
-        if (seconds > 1800) return factLevel;      // 隔太久：旧值已无参考意义
-        if (seconds < 60) return lastLevel;        // 间隔太短：设备电压抖动不该反映到界面
+        if (factLevel == lastLevel) return lastLevel;
 
-        double maxUp = Math.Min(100, 0.028 * seconds + lastLevel);
-        double minDown = Math.Max(0, lastLevel - 0.014 * seconds);
+        // 隔太久（超过半小时）说明中间没有观测，旧值已无参考意义，直接采信新值
+        if (seconds > 1800) return factLevel;
 
-        if (factLevel > maxUp) return (int)Math.Floor(maxUp);
-        if (factLevel < minDown) return (int)Math.Ceiling(minDown);
-        return lastLevel;
+        // 采样间隔短于一个 tick：还没到该动的时刻，保持不动
+        if (seconds < tickSeconds || tickSeconds <= 0) return lastLevel;
+
+        int steps = (int)(seconds / tickSeconds);
+        if (factLevel > lastLevel)
+        {
+            int next = lastLevel + steps;
+            return next >= factLevel ? factLevel : next;
+        }
+        else
+        {
+            int next = lastLevel - steps;
+            return next <= factLevel ? factLevel : next;
+        }
     }
 }

@@ -764,11 +764,13 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     }
 
     /// <summary>
-    /// 统一应用读数（过滤 + 更新字段）。<paramref name="push"/> = true 时若有变化则 RaiseStatusPushed。
-    /// 返回是否产生了应对外可见的状态变化。
+    /// 统一应用读数（过滤 + 更新字段）：电量与充电各自独立，null / Unknown 都不覆盖已知值（PR-2）。
+    /// <paramref name="push"/> = true 时若有变化则 RaiseStatusPushed；返回是否产生对外可见的变化。
     /// </summary>
     private bool TryApplyReading(TrackedDevice dev, int? percent, ChargingState charging, bool push)
     {
+        bool changed = false;
+
         if (percent.HasValue)
         {
             int baseline = dev.Filter.LastAcceptedPercent;
@@ -794,14 +796,19 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 Log.Warn($"{DisplayName} {dev.Status.DisplayName} 读数 {baseline}%→{percent}% " +
                          $"已持续 {dev.Filter.PersistWindow.TotalMinutes:0} 分钟，采信为真实变化");
             }
+
+            changed |= dev.Status.BatteryPercent != percent.Value;
+            dev.Status.BatteryPercent = percent.Value;
         }
+        // percent 为 null = 没有新的电量信息，保留旧值；"电量归零"必须由 0 表达，不能用 null 代替
 
-        bool changed = dev.Status.BatteryPercent != percent
-                    || dev.Status.Charging != charging
-                    || !dev.Status.IsOnline;
+        if (charging != ChargingState.Unknown)
+        {
+            changed |= dev.Status.Charging != charging;
+            dev.Status.Charging = charging;
+        }
+        // charging 为 Unknown = 没有新的充电信息，保留旧值；具体状态（含 Full）照常覆盖
 
-        dev.Status.BatteryPercent = percent;
-        dev.Status.Charging = charging;
         dev.Status.LastUpdated = DateTimeOffset.Now;
         if (!dev.Status.IsOnline)
         {

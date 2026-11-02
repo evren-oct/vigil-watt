@@ -71,6 +71,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Vgn\VgnCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Vgn\VgnY2Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Vgn\VgnDevicePairing.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Vgn\VgnBatteryDisplayLevel.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Vgn\VgnV98ProCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaG9Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaL9Codec.cs" />

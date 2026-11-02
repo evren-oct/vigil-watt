@@ -89,6 +89,9 @@ public sealed class VgnPlugin : BatteryPluginBase
     protected override IReadOnlyCollection<string> SkipPathsForThisPass(
         IReadOnlyList<HidDeviceInfo> availableDevices)
     {
+        // 顺手清理已不在场的显示缓存：换口/换接口后路径会变，留着旧条目会让新的一直按旧值平滑
+        PruneDisplayCache(availableDevices);
+
         var refs = availableDevices
             .Select(d => new VgnInterfaceRef(d.DevicePath, d.VendorId, d.ProductId, d.Product, d.SerialNumber))
             .ToList();
@@ -182,7 +185,7 @@ public sealed class VgnPlugin : BatteryPluginBase
     /// y2 协议（蜻蜓 F2 大师+）：report ID 固定 <c>0x08</c>，发一条 <c>BatteryLevel</c>（cmd 0x04）等应答。
     /// 与 kc2 不同，这里不需要试 report ID——官方驱动写死 8，写别的 ID 会被驱动直接拒。
     /// </summary>
-    private static (int Percent, ChargingState Charging)? QueryY2(HidDeviceHandle handle)
+    private (int Percent, ChargingState Charging)? QueryY2(HidDeviceHandle handle)
     {
         if (!handle.WriteOutput(VgnY2Codec.BuildCommand(VgnY2Codec.CmdBatteryLevel),
                 TimeSpan.FromMilliseconds(500), quiet: true))
@@ -199,8 +202,9 @@ public sealed class VgnPlugin : BatteryPluginBase
 
             if (VgnY2Codec.TryParseBattery(input, out var percent, out var charging, out int voltageMv))
             {
-                Log.Debug($"VGN y2 电量应答: {percent}% {charging} {voltageMv}mV 原始={Log.Hex(input)}");
-                return (percent, charging);
+                int display = DisplayPercent(handle.Info.DevicePath, percent, charging, voltageMv);
+                Log.Debug($"VGN y2 电量应答: 设备报{percent}% 显示{display}% {charging} {voltageMv}mV 原始={Log.Hex(input)}");
+                return (display, charging);
             }
 
             // 收到了却解不出来：最常见的两种是"报错回显"和"长度/首字节不对"，必须留证才排得动
@@ -208,6 +212,57 @@ public sealed class VgnPlugin : BatteryPluginBase
         }
         Log.Debug($"VGN y2 窗口内无任何应答: {handle.Info.DevicePath}");
         return null;
+    }
+
+    /// <summary>
+    /// 每台设备上一次的显示值与采样时刻——用于"不要每秒跳"的平滑（见 <see cref="VgnBatteryDisplayLevel.Smooth"/>）。
+    /// 键是接口路径；换接口/换口就是另一台（路径会变），旧条目由 <see cref="PruneDisplayCache"/> 顺手清掉。
+    /// </summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (int Level, DateTimeOffset At)>
+        _displayCache = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 决定"界面上显示多少"：
+    /// 设备报的是 5% 一档的整数（95、90…），官方驱动显示的是**用电压换算的连续值**（94、93…）。
+    /// 要跟驱动对齐就得走电压，而不是直接采信百分比字段——现场抓包与逆向结论见
+    /// <see cref="VgnBatteryDisplayLevel"/> 的类注释。
+    /// 电压缺失（0）时才退回设备百分比。
+    /// </summary>
+    private int DisplayPercent(string devicePath, int devicePercent, ChargingState charging, int voltageMv)
+    {
+        bool isCharging = charging is ChargingState.Charging or ChargingState.Full;
+        int? fromVoltage = VgnBatteryDisplayLevel.FromVoltage(voltageMv, isCharging);
+        if (fromVoltage is not { } fact)
+        {
+            _displayCache.TryRemove(devicePath, out _);
+            return devicePercent;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        int display;
+        if (_displayCache.TryGetValue(devicePath, out var last))
+        {
+            display = VgnBatteryDisplayLevel.Smooth(last.Level, fact, (now - last.At).TotalSeconds);
+        }
+        else
+        {
+            // 第一次见到这台设备：没有历史可比，直接采信实测值
+            display = fact;
+        }
+
+        _displayCache[devicePath] = (display, now);
+        return display;
+    }
+
+    /// <summary>设备不在本轮扫描结果里时清掉它的显示缓存，避免换口后新旧两条互相干扰。</summary>
+    private void PruneDisplayCache(IReadOnlyList<HidDeviceInfo> available)
+    {
+        if (available.Count == 0 || _displayCache.IsEmpty) return;
+        var live = available.Select(d => d.DevicePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in _displayCache.Keys.ToList())
+        {
+            if (!live.Contains(key)) _displayCache.TryRemove(key, out _);
+        }
     }
 
     /// <summary>候选 report ID：驱动报的优先（个别固件会变），再补两个真机验证过的常量。</summary>

@@ -21,13 +21,28 @@ internal static class ProtocolSpecLoader
         NumberHandling = JsonNumberHandling.AllowReadingFromString,
     };
 
+    /// <summary>注释与尾随逗号是两份规格 JSON 的既有写法，资源入口与字符串入口必须共用同一份选项。</summary>
+    private static readonly JsonDocumentOptions DocumentOptions = new()
+    {
+        CommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true,
+    };
+
     /// <summary>加载一套规格；两个参数都是完整的内嵌资源名（命名空间 + 目录 + 文件名）。</summary>
     public static SpecBundle Load(string protocolsResource, string devicesResource)
-    {
-        var protocolsRoot = ReadObject(protocolsResource);
-        var devicesRoot = ReadObject(devicesResource);
-        var prefix = protocolsResource;
+        => LoadFromJsonCore(ReadObject(protocolsResource), ReadObject(devicesResource), protocolsResource);
 
+    /// <summary>测试接缝：直接喂两份 JSON 文本，走与资源入口完全相同的加载核心（PR-0）。</summary>
+    internal static SpecBundle LoadFromJson(string protocolsJson, string devicesJson)
+        => LoadFromJsonCore(
+            ParseObject(protocolsJson, "<inline>/protocols.json"),
+            ParseObject(devicesJson, "<inline>/devices.json"),
+            "<inline>");
+
+    /// <summary>加载后处理：继承展开、override 合并、目录装配。两个入口共用，不另写第二份。</summary>
+    private static SpecBundle LoadFromJsonCore(
+        JsonObject protocolsRoot, JsonObject devicesRoot, string prefix)
+    {
         var rawProtocols = ReadProtocols(protocolsRoot, prefix);
         var effective = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
         var resolved = ResolveAll(rawProtocols, effective, prefix);
@@ -59,13 +74,25 @@ internal static class ProtocolSpecLoader
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name)
             ?? throw new InvalidOperationException($"嵌入资源缺失: {name}");
-        var documentOptions = new JsonDocumentOptions
-        {
-            CommentHandling = JsonCommentHandling.Skip,
-            AllowTrailingCommas = true,
-        };
-        return JsonNode.Parse(stream, nodeOptions: null, documentOptions) as JsonObject
+        return JsonNode.Parse(stream, nodeOptions: null, DocumentOptions) as JsonObject
             ?? throw new InvalidOperationException($"{name} 根节点不是对象");
+    }
+
+    /// <summary>字符串入口的解析：选项与资源入口一致，异常带来源标识以便定位是哪一份 JSON。</summary>
+    private static JsonObject ParseObject(string json, string source)
+    {
+        JsonNode? node;
+        try
+        {
+            node = JsonNode.Parse(json, nodeOptions: null, DocumentOptions);
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"{source} 不是合法 JSON: {ex.Message}", ex);
+        }
+
+        return node as JsonObject
+            ?? throw new InvalidOperationException($"{source} 根节点不是对象");
     }
 
     private static Dictionary<string, JsonObject> ReadProtocols(JsonObject root, string prefix)

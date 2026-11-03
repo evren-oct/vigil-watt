@@ -230,9 +230,15 @@ internal static class ProtocolSpecLoader
     private static FrameSpec BuildFrame(FrameDto dto, string name, string prefix, string where)
     {
         var prefixBytes = (dto.Prefix ?? []).Select(p => (p.Offset, p.Value)).ToArray();
+        // 缺省和 [] 都用 [0, 1]。空数组原样留下时，读取循环一条分支都不会进。
+        int[] tryOffsets;
+        if (dto.TryOffsets is null || dto.TryOffsets.Length == 0)
+            tryOffsets = [0, 1];
+        else
+            tryOffsets = dto.TryOffsets;
         return new FrameSpec
         {
-            TryOffsets = dto.TryOffsets is { Length: > 0 } o ? o : [0, 1],
+            TryOffsets = tryOffsets,
             ReportId = dto.ReportId,
             Xor = dto.Xor,
             Prefix = prefixBytes,
@@ -386,26 +392,78 @@ internal static class ProtocolSpecLoader
         throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 的映射表键 \"{text}\" 不是数字");
     }
 
-    /// <summary>有确切帧长时校验偏移不越界——这是 JSON 最容易写错、又最不报错的地方。</summary>
     private static void ValidateOffsets(ProtocolSpec spec, string name, string prefix)
     {
-        int? known = spec.Passive?.Length?.Eq ?? spec.Interface.InputLength?.Eq;
-        if (known is not { } len) return;
-        var frame = spec.Passive;
-        if (frame is null) return;
+        if (spec.Passive is { } passive)
+            ValidateFrame(passive, name, prefix, "passive");
+        if (spec.Active is not { } active) return;
+        ValidateFrame(active.Response, name, prefix, "active.response");
+        ValidateQuery(spec.Interface.OutputLength, active.Query.Length, name, prefix);
+    }
 
-        void Check(int offset, int width, string field)
+    /// <summary>Any 非 null 即优先；空集合没有下界，不能写成 Length &gt; 0 再落到 Eq。</summary>
+    internal static int? TryGetMinimumAcceptedValue(IntMatch match)
+    {
+        if (match.Any is { } any)
         {
-            if (offset < 0 || offset + width > len)
-                throw new InvalidOperationException(
-                    $"{prefix}: 协议 \"{name}\" 的 {field} 偏移 {offset}+{width} 超出帧长 {len}");
+            if (any.Length == 0) return null;
+            int min = any[0];
+            for (int i = 1; i < any.Length; i++)
+                if (any[i] < min) min = any[i];
+            return min;
         }
 
-        if (frame.Percent is { } p) Check(p.Offset, Width(p.Type), "percent");
-        if (frame.Charge is { } c) Check(c.Offset, Width(c.Type), "charge");
-        if (frame.Link is { } l) Check(l.Offset, 1, "link");
-        if (frame.Mode is { } m) Check(m.Offset, 1, "linkMode");
-        foreach (var (off, _) in frame.Prefix) Check(off, 1, "prefix");
+        if (match.Eq is { } eq) return eq;
+        return match.Min;
+    }
+
+    /// <summary>负的主分支和字段 offset 一律拒绝；有 Length 下界才验宽度。见 docs/dev/protocol-json.md §4。</summary>
+    private static void ValidateFrame(FrameSpec frame, string name, string prefix, string where)
+    {
+        int primary = frame.TryOffsets[0];
+        if (primary < 0)
+            throw new InvalidOperationException(
+                $"{prefix}: 协议 \"{name}\" 的 {where} TryOffsets[0]={primary} 为负");
+
+        void RejectNegative(int offset, string field)
+        {
+            if (offset < 0)
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的 {where}.{field} 偏移 {offset} 为负");
+        }
+
+        if (frame.Percent is { } p) RejectNegative(p.Offset, "percent");
+        if (frame.Charge is { } c) RejectNegative(c.Offset, "charge");
+        if (frame.Link is { } l) RejectNegative(l.Offset, "link");
+        if (frame.Mode is { } m) RejectNegative(m.Offset, "linkMode");
+        foreach (var (off, _) in frame.Prefix) RejectNegative(off, "prefix");
+
+        if (frame.Length is not { } length) return;
+        if (TryGetMinimumAcceptedValue(length) is not { } len) return;
+
+        void CheckWidth(int offset, int width, string field)
+        {
+            // (long)offset + width：int 在 MaxValue 附近回绕成负数，越界比较会放行
+            long end = ((long)offset + width) + primary;
+            if (end > len)
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的 {where}.{field} 偏移 {offset}+{width}（TryOffsets[0]={primary}）超出帧长 {len}");
+        }
+
+        if (frame.Percent is { } percent) CheckWidth(percent.Offset, Width(percent.Type), "percent");
+        if (frame.Charge is { } charge) CheckWidth(charge.Offset, Width(charge.Type), "charge");
+        if (frame.Link is { } link) CheckWidth(link.Offset, 1, "link");
+        if (frame.Mode is { } mode) CheckWidth(mode.Offset, 1, "linkMode");
+        foreach (var (off, _) in frame.Prefix) CheckWidth(off, 1, "prefix");
+    }
+
+    /// <summary>OutputLength 只有 Eq 才是确切输出长度，Min 不能拿来卡查询帧。</summary>
+    private static void ValidateQuery(IntMatch? outputLength, int queryLength, string name, string prefix)
+    {
+        if (outputLength?.Eq is not { } exact) return;
+        if ((long)queryLength > exact)
+            throw new InvalidOperationException(
+                $"{prefix}: 协议 \"{name}\" 的 active.query 长度 {queryLength} 超出 outputLength {exact}");
     }
 
     private static int Width(FieldType type) => type switch

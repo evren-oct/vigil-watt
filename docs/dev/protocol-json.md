@@ -96,14 +96,44 @@
 
 `ProtocolSpecLoader` 在插件构造时校验，失败直接抛异常（`DeviceManager` 会跳过该插件并记 Error）：
 
-- 偏移越界（帧长确定时）
+- `TryOffsets[0]` 或字段 offset 为负（与有没有帧长无关，不含回退分支）
+- 字段宽度越界（只在有可靠帧长下界时，不含运行时回退分支）
+- `active.query` 长于 `interface.outputLength` 的精确值
 - `type` 不在闭集合、`map` 的键不是数字、`kind` 拼错
 - 设备引用了不存在的协议、`extends` 成环
 - `implementation=code` 但没给 `codeFamily`
+- `active.query.hex` 超出 `query.length`
 
 > `codeFamily` 必须是真实类型：抽族前填插件名（如 `MchosePlugin`），**不要预留不存在的族名**——数据里写了个找不到的类，下一个人会去翻文件。
 
-宁可启动失败，不要静默不认领。
+宁可启动失败，不要静默不认领。加载期校验不改 `FrameReader` 的回退顺序，也不改 `IntMatch.Matches`。
+
+### 4.1 帧字段边界
+
+`passive` 和 `active.response` 用同一套检查。帧长**只**认这一帧自己的 `FrameSpec.Length`，禁止退回到 `interface.inputLength`。
+
+`InputLength` 是 HID 接口声明的报告长度，不保证这次实际读到多少字节。拿它当帧长，会把「声明很长、实际是短帧」或「声明很短、缓冲更长」判错。
+
+负数和帧长是两道检查。`TryOffsets[0] < 0`，以及 `percent` / `charge` / `link` / `linkMode` / `prefix` 的 `offset < 0`，没有可靠帧长也拒绝；正的主分支不能把负的字段偏移加回合法范围。后面的 `tryOffsets` 回退分支不在加载期查。只有拿到下界之后，才用 `long` 检查 `TryOffsets[0] + offset + width` 是否超出该下界。没有可靠下界时跳过的是这段宽度检查。迈从 Gmouse 的 response 没有 `length`，正偏移因此不会被卡宽度，不要为了让宽度检查跑起来补一个长度。
+
+下界取 `Length` 能接受的最小值，优先级与 `IntMatch.Matches` 相同（`Any` 非 null 优先于 `Eq` / `Min`）：
+
+| `length` | 用来卡偏移的长度 |
+|---|---|
+| `{"eq": N}` 或数字 `N` | 精确长度 N |
+| `{"min": N}`（没有 `Eq`，也没有 `Any`） | 最小长度 N，字段必须放进最短的合法帧 |
+| `[N, M, …]`（非空） | 集合里的最小值 |
+| 没写、只有 `max` / `not`、或 `[]` | 没有可靠下界，跳过宽度检查（负偏移仍拒绝） |
+
+`[]` 是空的 `Any`：任何长度都匹配失败，下界是「没有」，不是退回 `Eq` / `Min`。`{"any": []}` 这种对象写法加载器不认，仍然报「空对象」。
+
+宽度用 `long` 相加：`int` 在接近 `int.MaxValue` 时会回绕成负数，越界会被当成合法。只拿 `TryOffsets[0]` 做主分支；后面的偏移是运行时回退（Windows 缓冲带不带 report ID），加载期不排序、不去重，也不按最坏的那条分支拒绝。没写 `tryOffsets`，或写成 `[]`，都归一成 `[0, 1]`；空数组若留在规格里，读取时一条分支都不会试。
+
+检查的位置：`percent`、`charge`、`link`、`linkMode`、`prefix`。宽度按 `type`（`u16` / `u24` / `u32` 为 2 / 3 / 4，其余 1 字节）。
+
+### 4.2 主动查询
+
+`active.query` 的字节数只在 `interface.outputLength` 写了 `eq` 时，按这个精确长度卡上界（查询帧可以更短，不能更长）。`outputLength.min` 只说明接口至少这么长，实际输出报告可能更长，不能当成查询帧的长度。
 
 ## 5. 什么时候必须写代码
 

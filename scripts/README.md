@@ -8,6 +8,7 @@
 
 | 脚本 | 用途 |
 |---|---|
+| `probe-vgn-f503.py` | VGN `3554:F503` 单次查询（纯 ctypes）：默认只核对接口，`--query` 向 `FF02/0002`、17/17 接口发一次官方电量查询，校验回包；`--self-test` 仅检查解析器 |
 | `run-app.ps1` | **运行 Debug 版**：结束运行中实例（不然锁 DLL）→ 把 exe 的完整性级别提回 Medium（工作区目录带 `Low` 标签，重建的 exe 会继承它，导致没托盘/贴片跑到原点/写不进注册表）→ 从 `bin\x64\Debug\...\win-x64` 启动。Debug 的数据目录就在该目录下的 `data\`（`AppPaths` 用 `#if DEBUG` 分流），所以默认不用复制、不碰 `%LOCALAPPDATA%`。`-Copy` 是兜底：复制到工作区之外（默认 `C:\VigilWattRun`）并用 `VIGILWATT_DATA_DIR` 指过去。判据见 `docs/dev/runtime-pitfalls.md` §20，用法见 `docs/dev/build.md` §3.1 |
 | `build-installer.ps1` | 打安装包：`dotnet publish`（Release x64 self-contained）→ 读发布 exe 的 FileVersion 当版本（截 3 段）→ `vpk pack`。产物落 `dist/`（Setup.exe、Portable.zip、`releases.win.json`、`RELEASES`、`*.nupkg`）。发新版**别清 `dist/`**，留着上一版全量包才有 delta；详见 `docs/dev/build.md` §8 |
 | `publish-gitee.ps1` | 将 `dist/` 全部打包产物作为当前版本的 Gitee Release 附件发布；需要已推送的 `v<版本>` 标签与 Gitee 写权限令牌（`-Token` 或 `GITEE_TOKEN`，**脚本不读令牌文件**；本机令牌在仓库根 `.vpk-gitee-token`，需人工读进环境变量）。完整发版序列与三个 Gitee 特有坑见 `docs/dev/build.md` §8 |

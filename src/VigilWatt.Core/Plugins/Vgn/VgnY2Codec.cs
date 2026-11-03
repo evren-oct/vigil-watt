@@ -3,7 +3,7 @@ using VigilWatt.Core.Models;
 namespace VigilWatt.Core.Plugins.Vgn;
 
 /// <summary>
-/// 功 能： VGN 蜻蜓 F2 大师+（y2）私有协议的纯帧编解码：电量查询与应答解析，零 I/O。
+/// 功 能： VGN F2 大师+ 与 F503 接收器的电量帧编解码，零 I/O。
 /// 2026/10/21 00:00:00
 /// 帧结构、来源与真机样本见 docs/hardware/vgn.md。
 /// </summary>
@@ -17,6 +17,8 @@ internal static class VgnY2Codec
 
     /// <summary>蜻蜓 F2 大师 的有线 PID（VHUB 设备表 64343）；同族同协议，**本机未复测**。</summary>
     public const ushort PidWired = 0xFB57;
+
+    public const ushort PidF503Receiver = 0xF503;
 
     /// <summary>厂商通道的 usagePage（65346）。</summary>
     public const ushort VendorUsagePage = 0xFF02;
@@ -42,16 +44,12 @@ internal static class VgnY2Codec
     /// <summary>校验基数：官方实现里 crc = 85 - sum，再减 report ID 落到报文末字节。</summary>
     private const int ChecksumBase = 85;
 
-    /// <summary>
-    /// 设备匹配（纯数据，方便单测）：VID + 两个 PID + 厂商 usage + **恰好** 17/17。
-    /// 长度必须精确相等而不是 "≥"：同 VID 下 F99 Pro 是 20/20，长度放宽就会把 17 字节帧
-    /// 写进一条 20 字节的通道里；宁可认领失败（设备只是不显示），也不要往别的协议里灌字节。
-    /// </summary>
+    /// <summary>共用 VID 下存在其他品牌及协议，只认已登记 PID、厂商 usage 与精确 17/17 长度。</summary>
     public static bool IsMatch(ushort vid, ushort pid, ushort usagePage, ushort usage,
         int inputLength, int outputLength)
     {
         if (vid != Vid) return false;
-        if (pid != PidReceiver && pid != PidWired) return false;
+        if (pid != PidReceiver && pid != PidWired && pid != PidF503Receiver) return false;
         if (usagePage != VendorUsagePage || usage != VendorUsage) return false;
         return inputLength == FrameLength && outputLength == FrameLength;
     }

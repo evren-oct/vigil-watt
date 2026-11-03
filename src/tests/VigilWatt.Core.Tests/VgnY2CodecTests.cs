@@ -59,6 +59,20 @@ public sealed class VgnY2CodecTests
     }
 
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void F503CapturedBatteryFrameIs95Percent(bool withReportId)
+    {
+        var frame = Convert.FromHexString("0804000000025F001005000000000000D3");
+        var input = withReportId ? frame : frame[1..];
+
+        Assert.True(VgnY2Codec.TryParseBattery(input, out int percent, out var charging, out int voltageMv));
+        Assert.Equal(95, percent);
+        Assert.Equal(ChargingState.Discharging, charging);
+        Assert.Equal(4101, voltageMv);
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(5)]
@@ -130,6 +144,12 @@ public sealed class VgnY2CodecTests
     [Theory]
     [InlineData(0x3554, 0xFB56, 0xFF02, 0x0002, 17, 17, true)]   // 本机接收器
     [InlineData(0x3554, 0xFB57, 0xFF02, 0x0002, 17, 17, true)]   // 同族有线（未复测，同协议）
+    [InlineData(0x3554, 0xF503, 0xFF02, 0x0002, 17, 17, true)]
+    [InlineData(0x3554, 0xF503, 0xFF04, 0x0002, 17, 17, false)]
+    [InlineData(0x3554, 0xF503, 0xFF02, 0x0001, 17, 17, false)]
+    [InlineData(0x3554, 0xF503, 0xFF02, 0x0002, 20, 17, false)]
+    [InlineData(0x3554, 0xF503, 0xFF02, 0x0002, 17, 20, false)]
+    [InlineData(0x3554, 0xF504, 0xFF02, 0x0002, 17, 17, false)]
     [InlineData(0x3554, 0xFA09, 0xFF02, 0x0002, 17, 17, false)]  // 狼蛛 F99 Pro 的 PID，不归 VGN
     [InlineData(0x3554, 0xFB56, 0xFF02, 0x0002, 20, 20, false)]  // 20/20 是 0x13 会话协议，不是 y2
     [InlineData(0x3554, 0xFB56, 0xFF04, 0x0002, 17, 17, false)]  // 同族 feature 接口不参与

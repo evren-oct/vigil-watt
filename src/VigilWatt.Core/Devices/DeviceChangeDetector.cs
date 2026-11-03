@@ -15,6 +15,10 @@ public static class DeviceChangeDetector
         || stored.Charging != incoming.Charging
         || stored.IsOnline != incoming.IsOnline;
 
+    /// <summary>Pointer 是否带来新值（只比 Value + Source，不看 ObservedAt）。**不能并进 HasChanged**：那会让 DPI 变化写出一条电量采样。</summary>
+    public static bool HasPointerChanged(DeviceStatus stored, DeviceStatus incoming)
+        => PointerTelemetry.ValueDiffers(stored.Pointer, incoming.Pointer);
+
     /// <summary>降幅超过 <paramref name="maxDropPoints"/> 视为不可信（休眠/关机的伪读数），先不提醒、等下次读数确认。</summary>
     public static bool IsImplausibleDrop(int? previousPercent, int currentPercent, int maxDropPoints) =>
         previousPercent is { } prev && prev - currentPercent > maxDropPoints;

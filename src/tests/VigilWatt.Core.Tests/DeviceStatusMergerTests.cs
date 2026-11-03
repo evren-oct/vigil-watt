@@ -97,4 +97,81 @@ public class DeviceStatusMergerTests
         Assert.Equal(66, incoming.BatteryPercent);
         Assert.True(incoming.IsOnline);
     }
+
+    // ── 指针遥测（PR-A）────────────────────────────────────────────
+
+    private static readonly DateTimeOffset T0 = new(2026, 11, 3, 12, 0, 0, TimeSpan.Zero);
+
+    private static DeviceStatus WithPointer(PointerTelemetry pointer) => new()
+    {
+        Id = "rapoo:1",
+        Name = "雷柏 VT3",
+        Source = DeviceSource.Hid24G,
+        Kind = DeviceKind.Mouse,
+        BatteryPercent = 80,
+        Charging = ChargingState.Discharging,
+        IsOnline = true,
+        Pointer = pointer,
+    };
+
+    [Fact]
+    public void M4_incoming没带指针信息时保留已知遥测()
+    {
+        var stored = WithPointer(new PointerTelemetry
+        {
+            DpiX = TelemetryValue<int>.Reported(1600, T0),
+            ReportRateSettingHz = TelemetryValue<int>.Reported(1000, T0),
+        });
+        var incoming = WithPointer(default);
+
+        DeviceStatusMerger.Apply(stored, incoming);
+
+        Assert.Equal(1600, stored.Pointer.DpiX.Value);
+        Assert.Equal(1000, stored.Pointer.ReportRateSettingHz.Value);
+        Assert.Equal(T0, stored.Pointer.DpiX.ObservedAt);
+    }
+
+    [Fact]
+    public void M5_空遥测被首次观测填上()
+    {
+        var stored = WithPointer(default);
+        var incoming = WithPointer(new PointerTelemetry { DpiX = TelemetryValue<int>.Reported(3200, T0) });
+
+        DeviceStatusMerger.Apply(stored, incoming);
+
+        Assert.Equal(3200, stored.Pointer.DpiX.Value);
+    }
+
+    [Fact]
+    public void M6_部分更新只改带值的那一项()
+    {
+        var stored = WithPointer(new PointerTelemetry
+        {
+            DpiX = TelemetryValue<int>.Reported(1600, T0),
+            ReportRateSettingHz = TelemetryValue<int>.Reported(1000, T0),
+        });
+        var incoming = WithPointer(new PointerTelemetry
+        {
+            DpiLevel = TelemetryValue<int>.Reported(3, T0 + TimeSpan.FromSeconds(3)),
+        });
+
+        DeviceStatusMerger.Apply(stored, incoming);
+
+        Assert.Equal(3, stored.Pointer.DpiLevel.Value);
+        Assert.Equal(1600, stored.Pointer.DpiX.Value);          // 没带的项原样保留
+        Assert.Equal(1000, stored.Pointer.ReportRateSettingHz.Value);
+    }
+
+    [Fact]
+    public void M7_电量仍是无条件覆盖()
+    {
+        // 既有语义（PR-2 的"null 不覆盖"落在 TryApplyReading，不在 merger）：这里必须照旧被清成 null
+        var stored = WithPointer(default);
+        var incoming = WithPointer(default);
+        incoming.BatteryPercent = null;
+
+        DeviceStatusMerger.Apply(stored, incoming);
+
+        Assert.Null(stored.BatteryPercent);
+    }
 }

@@ -37,6 +37,7 @@ VigilWatt.sln
 │   │   ├── Akg/                       # N9 Hybrid RACE 固定查询 + 控制输入读取，默认关
 │   │   └── Sony/                      # DualSense 蓝牙 HID 只读电量
 │   ├── Models/DeviceStatus            # 统一设备状态快照（Id/电量/充电/在线）
+│   ├── Models/PointerTelemetry        # 指针遥测（DPI/回报率）模型；见 project/pointer-telemetry.md
 │   ├── Settings/AppSettings           # settings.json 读写
 │   ├── Storage/HistoryStore           # SQLite（Microsoft.Data.Sqlite）：写入/查询/按设备删除/VACUUM
 │   ├── Capture/                       # 设备诊断：USB/HID 只读采集（模型/分析/报告/打包/存储 + Hid 采集层）

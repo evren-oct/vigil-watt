@@ -90,7 +90,7 @@ public sealed class RapooPlugin : BatteryPluginBase
         return outcome.Attempt == PollAttempt.Answered ? (outcome.Percent, outcome.Charging) : null;
     }
 
-    /// <summary>按认领时记下的协议派发；链路位转成离线候选（两条腿见 rapoo.md §3）。</summary>
+    /// <summary>按认领时记下的协议派发；链路位转成离线候选（两条腿见 rapoo.md §3），遥测随帧落地。</summary>
     protected override (int? Percent, ChargingState Charging, bool Offline)? TryParsePassiveInput(
         TrackedDevice dev, byte[] input)
     {
@@ -100,7 +100,12 @@ public sealed class RapooPlugin : BatteryPluginBase
         if (result.Link == LinkState.Down) MarkOfflineCandidate(dev);
         else if (result.Link == LinkState.Up) ClearOfflineCandidate(dev);
 
-        return result.Percent is { } percent ? (percent, result.Charging, false) : null;
+        if (result.Percent is not { } percent) return null;
+
+        // 只在这条已被电量判据接受的帧上采信遥测：休眠/占位帧结构合法但整帧是 0，DPI 会读成 0
+        if (result.Pointer.HasAny) SetPointerTelemetry(dev, result.Pointer);
+
+        return (percent, result.Charging, false);
     }
 
     /// <summary>协议层拿不到 <see cref="TrackedDevice"/>（protected 嵌套类型），只能摊成值。</summary>

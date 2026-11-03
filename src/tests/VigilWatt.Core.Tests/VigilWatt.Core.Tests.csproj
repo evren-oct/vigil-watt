@@ -125,6 +125,7 @@
     <Compile Include="..\..\VigilWatt.Core\Models\ClassicDeviceKindResolver.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceSourceInfo.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatus.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Models\PointerTelemetry.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\DeviceCustomization.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatusFormatter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ChargingStateMap.cs" />

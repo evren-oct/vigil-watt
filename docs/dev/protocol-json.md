@@ -75,7 +75,15 @@
                     "onMiss": "discharging" },        // 也支持 "on": "nonzero" / "zero"
       "link":     { "offset": 18, "bit": 7, "connectedWhen": 1,
                     "onlyWhenMode": "wireless2g" },   // 有线时 bit 恒 0 不算断链
-      "linkMode": { "offset": 1, "mask": 15, "map": { "0": "wireless2g", "2": "wired" } }
+      "linkMode": { "offset": 1, "mask": 15, "map": { "0": "wireless2g", "2": "wired" } },
+
+      // 指针遥测（可选，五个字段独立）：只在这套协议确有这些字段时才写
+      "dpiX":     { "offset": 3, "type": "u16", "min": 50, "max": 26000 },
+      "dpiY":     { "offset": 5, "type": "u16", "min": 50, "max": 26000 },
+      "dpiLevel": { "offset": 2, "type": "u8", "min": 0, "max": 6 },   // 档位索引，不是 DPI
+      "dpiLevelCount": { "offset": 9, "type": "u8" },
+      "rateHz":   { "offset": 11, "type": "u8",
+                    "mapValue": { "1": 1000, "132": 2000 } }   // 码 → 数值（与 charge 的 map 不同）
     }
   },
 
@@ -91,6 +99,19 @@
 
 `type` 的闭集合：`u8` `u16` `u24` `u32` `bit4` `bit`。**没有表达式、没有算术、没有条件**——
 出现这类需求就该写 `codeFamily`。
+
+### 3.1 指针遥测字段（PR-B 起）
+
+`dpiX` / `dpiY` / `dpiLevel` / `dpiLevelCount` / `rateHz` 五个字段独立可选，缺哪个就是"这套协议没有"。
+它们**只填遥测，不影响电量/充电/链路**，规则见 [project/pointer-telemetry.md](../project/pointer-telemetry.md)。
+
+- `min` / `max`：取值域，越界给 `Unknown`（雷柏用 `min: 50` 挡住休眠零帧的 `0`）。
+- `mapValue`：码 → 数值（`int → int`），**映射表里没有的码给 `Unknown`，不拿 0 冒充**。
+  注意它与 `charge` 的 `map`（码 → 枚举）不是一回事。
+- 来源固定是 `DeviceReported`：**码表属于协议本身**，查表不降级成 `Inferred`。
+- 观测时刻由解释器在边界处盖（`ProtocolEngine.Parse`），JSON 里不写时间。
+- **只给已验证的型号加**：写进协议本体会让同族所有设备一起产出遥测，通常应当放在
+  设备目录的 `override` 里（`rapoo-catalog.json` 的 `0x1412` 就是这么做的）。
 
 ## 4. 校验（加载期就报错）
 

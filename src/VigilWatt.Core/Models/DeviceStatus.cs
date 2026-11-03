@@ -46,6 +46,9 @@ public class DeviceStatus
 
     public bool IsOnline { get; set; } = true;
 
+    /// <summary>指针类遥测（DPI / 回报率）。默认全未知，未适配设备天然就是它。</summary>
+    public PointerTelemetry Pointer { get; set; }
+
     /// <summary>参与统计曲线时用于图例显示的短名；BLE 端点解析不出名字时给可读兜底，别把裸设备 ID 摆到界面上。</summary>
     public string DisplayName => !string.IsNullOrEmpty(Name) ? Name
         : Source == DeviceSource.Ble ? "BLE 设备"
@@ -63,6 +66,7 @@ public class DeviceStatus
         Protocol = Protocol,
         LastUpdated = LastUpdated,
         IsOnline = IsOnline,
+        Pointer = Pointer,
     };
 
     public override string ToString() => $"{DisplayName} {BatteryPercent?.ToString() ?? "?"}%";

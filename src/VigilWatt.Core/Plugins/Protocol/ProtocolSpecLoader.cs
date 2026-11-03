@@ -284,6 +284,40 @@ internal static class ProtocolSpecLoader
             MinPercent = dto.ValidPercent?.Min ?? 1,
             MaxPercent = dto.ValidPercent?.Max ?? 100,
             FullAt = dto.FullAt,
+            Pointer = BuildPointer(dto.Fields, name, prefix),
+        };
+    }
+
+    /// <summary>五个指针字段全缺就返回 null（绝大多数协议如此），免得每个帧都白读一遍。</summary>
+    private static PointerSpec? BuildPointer(FieldsDto? fields, string name, string prefix)
+    {
+        if (fields is null) return null;
+        var spec = new PointerSpec
+        {
+            DpiX = BuildFieldSpec(fields.DpiX, name, prefix),
+            DpiY = BuildFieldSpec(fields.DpiY, name, prefix),
+            DpiLevel = BuildFieldSpec(fields.DpiLevel, name, prefix),
+            DpiLevelCount = BuildFieldSpec(fields.DpiLevelCount, name, prefix),
+            ReportRateSettingHz = BuildFieldSpec(fields.RateHz, name, prefix),
+        };
+        return spec.DpiX is null && spec.DpiY is null && spec.DpiLevel is null
+               && spec.DpiLevelCount is null && spec.ReportRateSettingHz is null
+            ? null
+            : spec;
+    }
+
+    private static FieldSpec? BuildFieldSpec(FieldDto? dto, string name, string prefix)
+    {
+        if (dto is null) return null;
+        return new FieldSpec
+        {
+            Offset = dto.Offset,
+            Type = ParseFieldType(dto.Type, name, prefix),
+            ValueMap = dto.MapValue?.ToDictionary(
+                kv => ParseKey(kv.Key, name, prefix),
+                kv => kv.Value),
+            Min = dto.Min,
+            Max = dto.Max,
         };
     }
 
@@ -436,6 +470,8 @@ internal static class ProtocolSpecLoader
         if (frame.Charge is { } c) RejectNegative(c.Offset, "charge");
         if (frame.Link is { } l) RejectNegative(l.Offset, "link");
         if (frame.Mode is { } m) RejectNegative(m.Offset, "linkMode");
+        if (frame.Pointer is { } pointer)
+            foreach (var (field, spec) in PointerFields(pointer)) RejectNegative(spec.Offset, field);
         foreach (var (off, _) in frame.Prefix) RejectNegative(off, "prefix");
 
         if (frame.Length is not { } length) return;
@@ -454,7 +490,18 @@ internal static class ProtocolSpecLoader
         if (frame.Charge is { } charge) CheckWidth(charge.Offset, Width(charge.Type), "charge");
         if (frame.Link is { } link) CheckWidth(link.Offset, 1, "link");
         if (frame.Mode is { } mode) CheckWidth(mode.Offset, 1, "linkMode");
+        if (frame.Pointer is { } wide)
+            foreach (var (field, spec) in PointerFields(wide)) CheckWidth(spec.Offset, Width(spec.Type), field);
         foreach (var (off, _) in frame.Prefix) CheckWidth(off, 1, "prefix");
+
+        static IEnumerable<(string Field, FieldSpec Spec)> PointerFields(PointerSpec pointer)
+        {
+            if (pointer.DpiX is { } dpiX) yield return ("dpiX", dpiX);
+            if (pointer.DpiY is { } dpiY) yield return ("dpiY", dpiY);
+            if (pointer.DpiLevel is { } level) yield return ("dpiLevel", level);
+            if (pointer.DpiLevelCount is { } count) yield return ("dpiLevelCount", count);
+            if (pointer.ReportRateSettingHz is { } rate) yield return ("rateHz", rate);
+        }
     }
 
     /// <summary>OutputLength 只有 Eq 才是确切输出长度，Min 不能拿来卡查询帧。</summary>
@@ -580,6 +627,11 @@ internal static class ProtocolSpecLoader
         public FieldDto? Charge { get; set; }
         public FieldDto? Link { get; set; }
         public FieldDto? LinkMode { get; set; }
+        public FieldDto? DpiX { get; set; }
+        public FieldDto? DpiY { get; set; }
+        public FieldDto? DpiLevel { get; set; }
+        public FieldDto? DpiLevelCount { get; set; }
+        public FieldDto? RateHz { get; set; }
     }
 
     private sealed class FieldDto
@@ -591,6 +643,9 @@ internal static class ProtocolSpecLoader
         public string? OnlyWhenMode { get; set; }
         public int? Mask { get; set; }
         public Dictionary<string, string>? Map { get; set; }
+        public Dictionary<string, int>? MapValue { get; set; }
+        public int? Min { get; set; }
+        public int? Max { get; set; }
         public string? On { get; set; }
         public string? OnMiss { get; set; }
         public int? FullAt { get; set; }

@@ -8,6 +8,7 @@
 - [architecture.md](project/architecture.md)：模块职责、关键设计和数据存储。
 - [capture.md](project/capture.md)：设备诊断（USB/HID 采集）的流程、能力边界、包格式与验证记录。
 - [code-flow.md](project/code-flow.md)：启动、设备发现、轮询和 UI 更新流程。
+- [pointer-telemetry.md](project/pointer-telemetry.md)：DPI / 回报率遥测模型、来源口径与过期规则（尚无插件接入）。
 - [experience.md](project/experience.md)：项目经验与后续规划；不维护待办。
 - [changelog.md](project/changelog.md)：按日期记录重要改动及原因。
 - [contributions.md](project/contributions.md)：收进仓库的社区改动、贡献者和没有采纳的部分。

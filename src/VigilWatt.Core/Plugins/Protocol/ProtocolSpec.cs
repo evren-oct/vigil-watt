@@ -54,7 +54,30 @@ internal readonly record struct IntMatch(int? Eq, int? Min, int? Max, int[]? Any
 
 /// <summary>一条被动/应答帧解析出来的原始事实；判据与反应留给调用方。</summary>
 internal readonly record struct FrameReading(
-    int? Percent, ChargingState Charging, LinkState Link, LinkMode Mode);
+    int? Percent, ChargingState Charging, LinkState Link, LinkMode Mode, PointerTelemetry Pointer);
+
+/// <summary>
+/// 一个整型字段：偏移、宽度、可选值域与取值映射。映射表里没有的码视为无值，不拿 0 冒充。
+/// 偏移与码表都写在 JSON 里（AGENTS.md §10）。
+/// </summary>
+internal sealed class FieldSpec
+{
+    public required int Offset { get; init; }
+    public FieldType Type { get; init; } = FieldType.U8;
+    public Dictionary<int, int>? ValueMap { get; init; }
+    public int? Min { get; init; }
+    public int? Max { get; init; }
+}
+
+/// <summary>指针遥测字段；整套协议没声明就是 null（绝大多数协议如此）。</summary>
+internal sealed class PointerSpec
+{
+    public FieldSpec? DpiX { get; init; }
+    public FieldSpec? DpiY { get; init; }
+    public FieldSpec? DpiLevel { get; init; }
+    public FieldSpec? DpiLevelCount { get; init; }
+    public FieldSpec? ReportRateSettingHz { get; init; }
+}
 
 /// <summary>电量字段。</summary>
 internal sealed class PercentSpec
@@ -108,6 +131,8 @@ internal sealed class FrameSpec
     public ChargeSpec? Charge { get; init; }
     public LinkSpec? Link { get; init; }
     public ModeSpec? Mode { get; init; }
+    /// <summary>指针遥测（DPI / 回报率）；只在这套协议确有这些字段时才非 null。</summary>
+    public PointerSpec? Pointer { get; init; }
     public IntMatch? Length { get; init; }
     public int MinPercent { get; init; } = 1;
     public int MaxPercent { get; init; } = 100;

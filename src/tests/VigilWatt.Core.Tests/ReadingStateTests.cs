@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Plugins;
@@ -225,6 +226,92 @@ public class ReadingStateTests : IDisposable
         Assert.Equal(1, plugin.BreakerTier);
     }
 
+    // ── 指针遥测（PR-A）：注入点与推送节流 ───────────────────────────
+
+    /// <summary>建立 TrackedDevice：第一次 Poll 因 FreshlyClaimed 跳过，第二次才落到 PollDevice。</summary>
+    private static async Task<StateFakePlugin> PluginWithDeviceAsync()
+    {
+        var plugin = new StateFakePlugin();
+        await plugin.AttachAsync([Info("dev")], new DeviceClaimRegistry());
+        plugin.Poll();
+        plugin.Poll();
+        plugin.ResetPushCount();
+        return plugin;
+    }
+
+    private static PointerTelemetry Dpi(int dpi, DateTimeOffset at) => new()
+    {
+        DpiX = TelemetryValue<int>.Reported(dpi, at),
+    };
+
+    [Fact]
+    public async Task D1_指针遥测能独立触发推送()
+    {
+        using var plugin = await PluginWithDeviceAsync();
+
+        bool changed = plugin.PushPointer(Dpi(1600, DateTimeOffset.Now));
+
+        Assert.True(changed);
+        Assert.Equal(1, plugin.PushCount);
+        Assert.Equal(42, plugin.Percent);            // 电量没被这次推送动过
+    }
+
+    [Fact]
+    public async Task D2_空patch是noop()
+    {
+        using var plugin = await PluginWithDeviceAsync();
+
+        // ① 从未推送过（时间戳为 0）+ 空 patch：不能因为 heartbeatDue 恒真而推
+        plugin.PointerPushTicks = 0;
+        Assert.False(plugin.PushPointer(default));
+        Assert.Equal(0, plugin.PushCount);
+        Assert.Equal(0, plugin.PointerPushTicks);
+
+        // ② 已有值 + 空 patch：不推、值原样保留
+        plugin.PushPointer(Dpi(1600, DateTimeOffset.Now));
+        plugin.ResetPushCount();
+        var ticksBefore = plugin.PointerPushTicks;
+
+        Assert.False(plugin.PushPointer(default));
+
+        Assert.Equal(0, plugin.PushCount);
+        Assert.Equal(1600, plugin.Pointer.DpiX.Value);
+
+        // ③ 空 patch 不得刷新节流时间戳，否则下一个有值 patch 要白等 30 秒
+        Assert.Equal(ticksBefore, plugin.PointerPushTicks);
+    }
+
+    [Fact]
+    public async Task D3_相同值在节流窗口内不重复推送()
+    {
+        using var plugin = await PluginWithDeviceAsync();
+        var now = DateTimeOffset.Now;
+        plugin.PushPointer(Dpi(1600, now));
+        plugin.ResetPushCount();
+
+        Assert.False(plugin.PushPointer(Dpi(1600, now.AddSeconds(3))));
+
+        Assert.Equal(0, plugin.PushCount);
+        Assert.Equal(now.AddSeconds(3), plugin.Pointer.DpiX.ObservedAt);   // 合并照做，只是不推
+    }
+
+    [Fact]
+    public async Task D4_超过节流窗口后补推一次()
+    {
+        using var plugin = await PluginWithDeviceAsync();
+        var now = DateTimeOffset.Now;
+        plugin.PushPointer(Dpi(1600, now));
+        plugin.ResetPushCount();
+
+        // 单调时间戳回拨 31 秒 = 距上次推送已超窗口（不需要真的等，也不需要可注入时钟）
+        plugin.PointerPushTicks = Stopwatch.GetTimestamp() - (long)(Stopwatch.Frequency * 31);
+
+        Assert.False(plugin.PushPointer(Dpi(1600, now.AddSeconds(31))));
+
+        Assert.Equal(1, plugin.PushCount);
+        Assert.Equal(now.AddSeconds(31), plugin.Pointer.DpiX.ObservedAt);
+    }
+
     // ── 厂商回归：真实 codec 产出 → 基类消费 ─────────────────────────
     // 三个插件是 sealed 且未链接进测试工程，这里钉住"codec 给的元组"与"基类怎么用"两端。
 
@@ -351,7 +438,11 @@ public class ReadingStateTests : IDisposable
         private readonly bool _passive;
         private TimeSpan _breakerInterval = TimeSpan.Zero;
 
-        public StateFakePlugin(bool passiveListen = false) => _passive = passiveListen;
+        public StateFakePlugin(bool passiveListen = false)
+        {
+            _passive = passiveListen;
+            StatusPushed += _ => PushCount++;
+        }
 
         public override string Name => "Test";
         public override string DisplayName => "Test";
@@ -371,6 +462,22 @@ public class ReadingStateTests : IDisposable
         public bool RequestConfirmOnNextPoll { get; set; }
 
         public int MarkerParsed { get; private set; }
+
+        /// <summary>StatusPushed 的累计次数（D 组用来断言"推没推"）。</summary>
+        public int PushCount { get; private set; }
+
+        public void ResetPushCount() => PushCount = 0;
+
+        /// <summary>测试用：直接驱动基类的遥测注入点（须先 Poll 一次让 Dev 建立）。</summary>
+        public bool PushPointer(PointerTelemetry patch) => SetPointerTelemetry(Dev!, patch);
+
+        public PointerTelemetry Pointer => Dev!.Status.Pointer;
+
+        public long PointerPushTicks
+        {
+            get => Dev!.LastPointerPushTicks;
+            set => Dev!.LastPointerPushTicks = value;
+        }
 
         private TrackedDevice? Dev { get; set; }
 

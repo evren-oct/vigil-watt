@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using VigilWatt.Core.Devices;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
@@ -50,6 +51,29 @@ public abstract class BatteryPluginBase : IBatteryPlugin
 
     /// <summary>供子类/基类被动监听推送轮询外的状态更新。</summary>
     protected void RaiseStatusPushed(DeviceStatus status) => StatusPushed?.Invoke(status);
+
+    /// <summary>指针遥测的补推间隔：值不变时也每 30 秒推一次，把最新 ObservedAt 同步进 DeviceManager。</summary>
+    private static readonly TimeSpan PointerPushInterval = TimeSpan.FromSeconds(30);
+
+    /// <summary>把解析出的指针遥测合并进设备状态。空 patch 直接 no-op；值变立即推，值不变每 30 秒补推一次刷新 ObservedAt。</summary>
+    protected bool SetPointerTelemetry(TrackedDevice dev, PointerTelemetry patch)
+    {
+        if (!patch.HasAny) return false;
+
+        bool valueChanged = PointerTelemetry.ValueDiffers(dev.Status.Pointer, patch);
+        dev.Status.Pointer = PointerTelemetry.Merge(dev.Status.Pointer, patch);
+
+        // 节流用单调时钟：系统时间回拨/跳变不能让补推停摆或连推（ObservedAt 仍走 DateTimeOffset）
+        long now = Stopwatch.GetTimestamp();
+        bool heartbeatDue = dev.LastPointerPushTicks == 0
+                            || Stopwatch.GetElapsedTime(dev.LastPointerPushTicks, now) >= PointerPushInterval;
+        if (valueChanged || heartbeatDue)
+        {
+            dev.LastPointerPushTicks = now;
+            RaiseStatusPushed(dev.Status);
+        }
+        return valueChanged;
+    }
 
     /// <summary>认领时没有读数是否标离线。默认 true，避免只剩 dongle 时假装在线。</summary>
     protected virtual bool NullPercentMeansOffline => true;
@@ -180,6 +204,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         public readonly object IoGate = new();
         /// <summary>最近一次被动监听收到**任何**报文的时间（用于沉默离线；不是"解析成功"的时间）。</summary>
         public DateTimeOffset LastPassiveAt;
+        /// <summary>指针遥测最近一次推送的单调时间戳（<see cref="Stopwatch.GetTimestamp"/>；0 = 从未推送）。</summary>
+        public long LastPointerPushTicks;
         /// <summary>连续"读取立即返回 null"的次数：句柄失效的特征，用来触发退避（CR-75/76）。</summary>
         public int FastNullReads;
         /// <summary>

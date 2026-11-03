@@ -236,6 +236,109 @@ public sealed class ProtocolSpecLoaderTests
         Assert.Equal(8, bundle.Protocols["p"].Passive!.Percent!.Offset); // 协议本体不变
     }
 
+    // ── 指针遥测字段（PR-B）────────────────────────────────────────
+
+    private const string PointerProtocols = """
+        {
+          "vendors": ["0x1234"],
+          "protocols": {
+            "p": {
+              "kind": "mouse",
+              "interface": { "usagePage": 1 },
+              "passive": {
+                "length": { "min": 19 },
+                "fields": {
+                  "percent": { "offset": 8, "type": "u8" },
+                  "dpiLevel": { "offset": 2, "type": "u8", "min": 0, "max": 6 },
+                  "dpiX": { "offset": 3, "type": "u16", "min": 50, "max": 26000 },
+                  "rateHz": { "offset": 11, "type": "u8",
+                              "mapValue": { "1": 1000, "132": 2000 } }
+                }
+              }
+            }
+          }
+        }
+        """;
+
+    [Fact]
+    public void LoadFromJson_PointerFields_LoadsTypeRangeAndMap()
+    {
+        var pointer = ProtocolSpecLoader.LoadFromJson(PointerProtocols, EmptyDevices)
+            .Protocols["p"].Passive!.Pointer!;
+
+        Assert.Equal(2, pointer.DpiLevel!.Offset);
+        Assert.Equal(0, pointer.DpiLevel.Min);
+        Assert.Equal(6, pointer.DpiLevel.Max);
+        Assert.Equal(FieldType.U16, pointer.DpiX!.Type);
+        Assert.Equal(50, pointer.DpiX.Min);
+        Assert.Equal(26000, pointer.DpiX.Max);
+        Assert.Equal(1000, pointer.ReportRateSettingHz!.ValueMap![1]);
+        Assert.Equal(2000, pointer.ReportRateSettingHz.ValueMap[132]);
+        Assert.Null(pointer.DpiY);                                  // 没声明的字段不占位
+    }
+
+    [Fact]
+    public void LoadFromJson_PointerFieldsAbsent_PointerIsNull()
+    {
+        // 绝大多数协议没有指针字段：整块为 null，帧解析不用白读五个偏移
+        Assert.Null(ProtocolSpecLoader.LoadFromJson(MinimalProtocols, EmptyDevices)
+            .Protocols["p"].Passive!.Pointer);
+    }
+
+    [Fact]
+    public void LoadFromJson_PointerOffsetNegative_Throws()
+    {
+        var json = PointerProtocols.Replace(
+            "\"dpiX\": { \"offset\": 3,", "\"dpiX\": { \"offset\": -1,");
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(json, EmptyDevices));
+        Assert.Contains("dpiX", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_PointerWidthOverflowsFrame_Throws()
+    {
+        // u32 在偏移 17：17+4 > 最短合法帧长 19
+        var json = PointerProtocols.Replace(
+            "\"dpiX\": { \"offset\": 3, \"type\": \"u16\"",
+            "\"dpiX\": { \"offset\": 17, \"type\": \"u32\"");
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(json, EmptyDevices));
+        Assert.Contains("dpiX", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_PointerMapKeyNotNumber_Throws()
+    {
+        var json = PointerProtocols.Replace("\"1\": 1000", "\"one\": 1000");
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(json, EmptyDevices));
+        Assert.Contains("映射表键", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_PointerOnlyOnOverriddenDevice()
+    {
+        const string devices = """
+            {
+              "devices": [
+                { "vid": "0x1234", "pid": "0x0001", "model": "A", "kind": "mouse", "protocol": "p" },
+                { "vid": "0x1234", "pid": "0x0002", "model": "B", "kind": "mouse", "protocol": "p",
+                  "override": { "passive": { "fields": { "dpiX": { "offset": 3, "type": "u16" } } } } }
+              ]
+            }
+            """;
+
+        var bundle = ProtocolSpecLoader.LoadFromJson(MinimalProtocols, devices);
+
+        // 没 override 的设备拿的是协议本体（无指针字段），有 override 的才有
+        Assert.Null(bundle.DeviceSpecs[((ushort)0x1234, (ushort)0x0001)].Passive!.Pointer);
+        Assert.NotNull(bundle.DeviceSpecs[((ushort)0x1234, (ushort)0x0002)].Passive!.Pointer);
+    }
+
     [Fact]
     public void LoadFromJson_ProtocolOrder_FollowsDeclarationOrder()
     {

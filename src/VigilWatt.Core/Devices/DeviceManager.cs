@@ -738,6 +738,8 @@ public sealed class DeviceManager : IDisposable
         var previousKind = status.Kind;
 
         bool changed = DeviceChangeDetector.HasChanged(status, snapshot);
+        // 指针遥测只影响 UI 刷新，**不参与** changed：否则 DPI 一变就写出一条电量采样
+        bool pointerChanged = DeviceChangeDetector.HasPointerChanged(status, snapshot);
         // 原地同步（Kind/Protocol 的"声明覆盖猜测"规则见 DeviceStatusMerger）
         DeviceStatusMerger.Apply(status, snapshot);
 
@@ -754,9 +756,9 @@ public sealed class DeviceManager : IDisposable
                 _history.Insert(DeviceCustomizationResolver.ApplyName(status, _settings.DeviceCustomizations));
             DeviceUpdated?.Invoke(status);
         }
-        else if (status.Kind != previousKind)
+        else if (pointerChanged || status.Kind != previousKind)
         {
-            // 类型后解析出来（Unknown → Mouse）：电量没变也要换图标，但不写历史
+            // 类型后解析出来（Unknown → Mouse）、或只有指针遥测变了：换图标/刷新读数，但不写历史
             DeviceUpdated?.Invoke(status);
         }
 

@@ -21,5 +21,7 @@ public static class DeviceStatusMerger
         if (incoming.Protocol.Length > 0) status.Protocol = incoming.Protocol;
         status.LastUpdated = incoming.LastUpdated;
         status.IsOnline = incoming.IsOnline;
+        // 电量是无条件覆盖（既有语义）；Pointer 相反：incoming 没带值就不覆盖，否则轮询会抹掉被动帧读到的值
+        status.Pointer = PointerTelemetry.Merge(status.Pointer, incoming.Pointer);
     }
 }

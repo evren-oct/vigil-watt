@@ -16,7 +16,8 @@ internal enum PollAttempt
 internal readonly record struct PollOutcome(PollAttempt Attempt, int? Percent, ChargingState Charging);
 
 /// <summary>一次被动帧解析的结果；电量可为 null（帧有效但电量越界），链路位仍然可信。</summary>
-internal readonly record struct PassiveOutcome(int? Percent, ChargingState Charging, LinkState Link);
+internal readonly record struct PassiveOutcome(
+    int? Percent, ChargingState Charging, LinkState Link, PointerTelemetry Pointer);
 
 /// <summary>插件视角的设备标识：协议层拿不到 <c>TrackedDevice</c>，只能摊成值。</summary>
 internal readonly record struct DeviceRef(string Id, string DevicePath, ushort VendorId, ushort ProductId);
@@ -118,13 +119,15 @@ internal sealed class ProtocolEngine
             : new PollOutcome(PollAttempt.Failed, null, ChargingState.Unknown);
     }
 
-    /// <summary>被动帧解析。帧结构不匹配返回 null；电量越界的帧返回 Percent=null 但保留链路位。</summary>
+    /// <summary>被动帧解析。帧结构不匹配返回 null；电量越界的帧返回 Percent=null 但保留链路位与遥测。</summary>
     public PassiveOutcome? Parse(DeviceRef dev, string protocol, byte[] frame)
     {
         var spec = SpecFor(dev, protocol);
         if (spec?.Passive is not { } passive) return null;
         if (FrameReader.Read(passive, frame) is not { } reading) return null;
-        return new PassiveOutcome(reading.Percent, ApplyDebounce(spec, dev, reading), reading.Link);
+        // 观测时刻在这里补：FrameReader 是纯函数不带时钟，而遥测值必须有真实时间（否则永不过期）
+        return new PassiveOutcome(reading.Percent, ApplyDebounce(spec, dev, reading), reading.Link,
+            reading.Pointer.WithObservedAt(DateTimeOffset.Now));
     }
 
     /// <summary>设备拔掉后清掉它的去抖状态，防随插拔累积。</summary>

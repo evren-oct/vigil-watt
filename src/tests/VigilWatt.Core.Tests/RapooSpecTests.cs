@@ -389,4 +389,114 @@ public sealed class RapooSpecTests
             DevicePath = $@"\\?\hid#vid_{vid:x4}&pid_{pid:x4}#test",
             Product = "",
         };
+
+    // ---------- 指针遥测（PR-B）：只对已验证的 VT3（0x1412）生效 ----------
+
+    [Fact]
+    public void R27_真机VT3帧解出DPI档位与回报率设置()
+    {
+        var before = DateTimeOffset.Now;
+        var r = Engine.Parse(Dev(), "status-report7", NormalFrame);
+        var after = DateTimeOffset.Now;
+
+        Assert.NotNull(r);
+        var p = r!.Value.Pointer;
+        Assert.Equal(3200, p.DpiX.Value);          // [3..4] = 0x0C80
+        Assert.Equal(3200, p.DpiY.Value);          // [5..6] = 0x0C80
+        Assert.Equal(4, p.DpiLevel.Value);         // [2] = 0x04
+        Assert.Equal(1000, p.ReportRateSettingHz.Value);   // [11] = 0x01
+
+        // 来源是设备上报；码表映射不降级成 Inferred
+        Assert.Equal(TelemetrySource.DeviceReported, p.DpiX.Source);
+        Assert.Equal(TelemetrySource.DeviceReported, p.ReportRateSettingHz.Source);
+
+        // 观测时刻由引擎在边界处盖，必须是真实时间（default 会让它永不过期）
+        Assert.InRange(p.DpiX.ObservedAt, before, after);
+        Assert.False(p.IsStale(after));
+    }
+
+    [Fact]
+    public void R28_未验证型号不产出指针遥测()
+    {
+        // 同一套 status-report7 的 VT2S Air Max（0x4B13）没有 override：电量照旧，遥测全空
+        var r = Engine.Parse(Dev(0x4B13, @"\\?\hid#vid_24ae&pid_4b13#test"),
+            "status-report7", WiredFrame);
+
+        Assert.NotNull(r);
+        Assert.Equal(100, r!.Value.Percent);
+        Assert.False(r.Value.Pointer.HasAny);
+    }
+
+    [Fact]
+    public void R29_协议本体不带指针字段()
+    {
+        // 指针字段只挂在 1412 的设备级 override 上；写进协议本体会让同族 98 台设备被顺带认领
+        Assert.Null(Engine.SpecOf("status-report7")!.Passive!.Pointer);
+    }
+
+    [Theory]
+    [InlineData(0x08, 125)]
+    [InlineData(0x04, 250)]
+    [InlineData(0x02, 500)]
+    [InlineData(0x01, 1000)]
+    [InlineData(0x84, 2000)]     // 132
+    [InlineData(0x82, 4000)]     // 130
+    [InlineData(0x81, 8000)]     // 129
+    public void R30_回报率码表逐档映射(byte code, int expectedHz)
+    {
+        var r = Engine.Parse(Dev(), "status-report7", WithByte(NormalFrame, 11, code));
+
+        Assert.Equal(expectedHz, r!.Value.Pointer.ReportRateSettingHz.Value);
+        Assert.Equal(TelemetrySource.DeviceReported, r.Value.Pointer.ReportRateSettingHz.Source);
+    }
+
+    [Fact]
+    public void R31_码表外的回报率码不冒充()
+    {
+        var r = Engine.Parse(Dev(), "status-report7", WithByte(NormalFrame, 11, 0x09));
+
+        Assert.False(r!.Value.Pointer.ReportRateSettingHz.HasValue);
+        Assert.Null(r.Value.Pointer.ReportRateSettingHz.Value);   // 不是 0
+        Assert.Equal(3200, r.Value.Pointer.DpiX.Value);           // 同帧其它字段不受影响
+    }
+
+    [Fact]
+    public void R32_全零帧不产生DPI与回报率()
+    {
+        // 休眠/占位帧：结构合法（reportId 对、长度够）但整帧清零
+        var frame = new byte[19];
+        frame[0] = 0x07;
+
+        var r = Engine.Parse(Dev(), "status-report7", frame);
+
+        Assert.NotNull(r);
+        Assert.Null(r!.Value.Percent);                              // 0% 被既有判据挡掉
+        Assert.False(r.Value.Pointer.DpiX.HasValue);                // 0 < min 50
+        Assert.False(r.Value.Pointer.ReportRateSettingHz.HasValue); // 0 不在码表
+    }
+
+    [Fact]
+    public void R33_档位越界不冒充()
+    {
+        var r = Engine.Parse(Dev(), "status-report7", WithByte(NormalFrame, 2, 7));
+
+        Assert.False(r!.Value.Pointer.DpiLevel.HasValue);
+    }
+
+    [Fact]
+    public void R34_帧结构不符时不产出任何读数()
+    {
+        Assert.Null(Engine.Parse(Dev(), "status-report7", WithByte(NormalFrame, 0, 0x04)));
+    }
+
+    [Fact]
+    public void R35_电量与遥测同帧共存互不影响()
+    {
+        var r = Engine.Parse(Dev(), "status-report7", NormalFrame);
+
+        Assert.Equal(94, r!.Value.Percent);
+        Assert.Equal(ChargingState.Discharging, r.Value.Charging);
+        Assert.Equal(LinkState.Up, r.Value.Link);
+        Assert.Equal(3200, r.Value.Pointer.DpiX.Value);
+    }
 }

@@ -51,7 +51,35 @@ internal static class FrameReader
         if (spec.FullAt is { } fullAt && percent >= fullAt) charging = ChargingState.Full;
         var mode = ReadMode(spec.Mode, data, off);
         var link = ReadLink(spec.Link, data, off, mode);
-        return new FrameReading(percent, charging, link, mode);
+        return new FrameReading(percent, charging, link, mode, ReadPointer(spec.Pointer, data, off));
+    }
+
+    /// <summary>指针遥测；字段缺失、越界、码不在映射表、越出值域一律给 Unknown（不拿 0 冒充）。</summary>
+    private static PointerTelemetry ReadPointer(PointerSpec? spec, byte[] data, int off)
+    {
+        if (spec is null) return PointerTelemetry.Empty;
+        return new PointerTelemetry
+        {
+            DpiX = ReadInt(spec.DpiX, data, off),
+            DpiY = ReadInt(spec.DpiY, data, off),
+            DpiLevel = ReadInt(spec.DpiLevel, data, off),
+            DpiLevelCount = ReadInt(spec.DpiLevelCount, data, off),
+            ReportRateSettingHz = ReadInt(spec.ReportRateSettingHz, data, off),
+        };
+    }
+
+    /// <summary>观测时刻留空，由 <see cref="ProtocolEngine"/> 在边界处补——解析层不带时钟。</summary>
+    private static TelemetryValue<int> ReadInt(FieldSpec? spec, byte[] data, int off)
+    {
+        if (spec is null) return TelemetryValue<int>.Unknown;
+        if (!TryRead(data, off + spec.Offset, spec.Type, out var raw)) return TelemetryValue<int>.Unknown;
+
+        int value = raw;
+        if (spec.ValueMap is { } map && !map.TryGetValue(raw, out value)) return TelemetryValue<int>.Unknown;
+        if (spec.Min is { } min && value < min) return TelemetryValue<int>.Unknown;
+        if (spec.Max is { } max && value > max) return TelemetryValue<int>.Unknown;
+
+        return TelemetryValue<int>.Reported(value, default);
     }
 
     private static ChargingState ReadCharging(ChargeSpec? spec, byte[] data, int off, int? percent)

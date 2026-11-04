@@ -219,4 +219,7 @@ internal sealed class DeviceEntry
     public DeviceKind Kind { get; init; }
     public required string Protocol { get; init; }
     public ushort PairedPid { get; init; }
+
+    /// <summary>本型号自己的能力声明。**不能**放到 ProtocolSpec 上：同协议多设备会串用（docs/dev/protocol-json.md §2.1）。</summary>
+    public CapabilitySet Capabilities { get; init; } = CapabilitySet.Empty;
 }

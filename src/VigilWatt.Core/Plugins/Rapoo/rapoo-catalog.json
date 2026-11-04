@@ -886,6 +886,9 @@
    "caps": [
     "battery"
    ],
+   "capabilities": {
+    "batteryRead": "supported"
+   },
    "pairedPid": "0x4b13"
   },
   {
@@ -898,6 +901,9 @@
    "caps": [
     "battery"
    ],
+   "capabilities": {
+    "batteryRead": "supported"
+   },
    "pairedPid": "0x1b13"
   },
   {
@@ -971,6 +977,12 @@
     "battery",
     "dpi"
    ],
+   "capabilities": {
+    "batteryRead": "supported",
+    "dpiRead": "supported",
+    "dpiLevelRead": "supported",
+    "rateRead": "supported"
+   },
    "pairedPid": "0x4612",
    "override": {
     "passive": {

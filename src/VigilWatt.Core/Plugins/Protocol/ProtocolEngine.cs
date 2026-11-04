@@ -77,6 +77,13 @@ internal sealed class ProtocolEngine
     public DeviceEntry? DeviceOf(HidDeviceInfo info)
         => _bundle.Devices.GetValueOrDefault((info.VendorId, info.ProductId));
 
+    /// <summary>
+    /// 设备能力查询：**纯配置查询**，不开句柄、不发帧、不动解析状态与去抖。
+    /// 未收录设备按"什么也没声明"处理（Unverified）；非法枚举值仍然抛，不拿默认值兜底。
+    /// </summary>
+    public CapabilityState CapabilityOf(HidDeviceInfo info, DeviceCapability capability)
+        => (DeviceOf(info)?.Capabilities ?? CapabilitySet.Empty).Of(capability);
+
     public DeviceKind KindOf(string protocol) => SpecOf(protocol)?.Kind ?? DeviceKind.Unknown;
 
     /// <summary>目录命中且型号非空时给官方名；未收录返回 null，由插件自己回落。</summary>

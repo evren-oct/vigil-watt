@@ -256,9 +256,25 @@ DPI 上限来自 `capabilities` 里的 `dpi` 项，四个具名常量 + 内联�
 **路径含空格时必须转义**（`manifests/VT2SAir%20MAX%20V2/thumb_Morning_Mist_Blue.png`）。
 配色色值在 `colors.series[].value`，个别是渐变色（数组，如 `Metallic_Iridescent`）。
 
-## 6. 能力（caps）验证状态
+## 6. 能力：旧 `caps` 与新 `capabilities`
 
-`rapoo-catalog.json` 的 `caps` **只写真机验证过的能力**，官方声明但没插机读过的**一律不写**：
+目录里**两个字段并存**，语义完全不同，别混：
+
+| 字段 | 是什么 | 谁读它 |
+|---|---|---|
+| `caps` | 2026-11 建目录时的**历史验证记录**（`["battery"]` / `["battery","dpi"]`），只写本机真机插过机的能力 | **代码不读**，纯档案 |
+| `capabilities` | PR-C 起的**正式能力声明**，三态、按型号逐项写，见 [dev/protocol-json.md](../dev/protocol-json.md) §2.1 | `ProtocolSpecLoader` → `DeviceEntry.Capabilities` |
+
+两条规则：
+
+1. **旧 `caps` 全部保留，不删空数组，也不自动映射成 `capabilities`。**
+   `caps` 里的 `dpi` 分不出新的 `dpiRead` 与 `dpiLevelRead`，自动映射只能靠猜；
+   而 `[]` 是"没验证"，不是"不支持"——映射成 `unsupported` 会造出假结论。
+2. **只有 `capabilities` 参与判断。** 以后新增型号直接写 `capabilities`，`caps` 不再追加。
+
+### 6.1 旧 `caps` 记录（历史，勿据此推断能力）
+
+`caps` **只写真机验证过的能力**，官方声明但没插机读过的**一律不写**：
 
 | PID | 型号 | caps | 依据 |
 |---|---|---|---|
@@ -271,6 +287,20 @@ DPI 上限来自 `capabilities` 里的 `dpi` 项，四个具名常量 + 内联�
 
 `rate` 至今没有一台填：VT3 读到 `[11]=1`（→1000Hz，在合法域内），但改回报率必须开官方 HUB，
 会与本应用抢 dongle 会话（[safety.md](safety.md) §2），所以「读到合法值」不算「验证过」。
+
+### 6.2 新 `capabilities` 声明（当前唯一有效来源）
+
+| PID | 型号 | 声明 | 依据 |
+|---|---|---|---|
+| `0x1412` | VT3（2.4G） | `batteryRead` / `dpiRead` / `dpiLevelRead` / `rateRead` = supported | 真机电量 + `[2]` 档位 + `[3..6]` DPI + `[11]` 回报率设置（[pointer-telemetry.md](../project/pointer-telemetry.md) §0） |
+| `0x1B13` | VT2S Air MAX V2（2.4G） | `batteryRead` = supported | rapoo.md §5 实测表 |
+| `0x4B13` | VT2S Air MAX V2（有线） | `batteryRead` = supported | rapoo.md §5 实测表 |
+
+- **`dpiWrite` / `rateWrite` 一条都没写**：本应用没有任何写入实现，写能力全是 `unverified`。
+  不是 `unsupported`——没做不等于确认设备不支持。
+- **VT3 有线 `0x4612` 没声明**：它与 `0x1412` 是同一只鼠标的两条枚举，但 `caps` 为空，
+  没有独立真机记录，按"没有证据"处理（`unverified`）。要用就单独插线验一次再补。
+- 其余 192 条设备一律不填：不按共享协议、不按品牌、不按厂商宣传推断能力。
 
 ## 7. 有线 / 无线是同一个设备的两条 PID
 

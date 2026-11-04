@@ -126,6 +126,8 @@
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceSourceInfo.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatus.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\PointerTelemetry.cs" />
+    <!-- 能力声明是纯数据模型（零 WinRT / 零 HID），测试直接链真源文件，不为它引入 ProjectReference -->
+    <Compile Include="..\..\VigilWatt.Core\Models\DeviceCapability.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\DeviceCustomization.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatusFormatter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ChargingStateMap.cs" />

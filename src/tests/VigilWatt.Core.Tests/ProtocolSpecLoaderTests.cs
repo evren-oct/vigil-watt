@@ -361,6 +361,156 @@ public sealed class ProtocolSpecLoaderTests
         Assert.Equal(new[] { "zeta", "alpha", "mu" }, bundle.Ordered.Select(s => s.Name));
     }
 
+    // ── 设备能力声明（PR-C）────────────────────────────────────────
+
+    private static string OneDevice(string extra = "") => $$"""
+        {
+          "devices": [
+            { "vid": "0x1234", "pid": "0x0001", "model": "T", "kind": "mouse", "protocol": "p"{{extra}} }
+          ]
+        }
+        """;
+
+    private static CapabilitySet CapsOf(string devicesJson)
+        => ProtocolSpecLoader.LoadFromJson(MinimalProtocols, devicesJson)
+            .Devices[((ushort)0x1234, (ushort)0x0001)].Capabilities;
+
+    [Fact]
+    public void LoadFromJson_Capabilities_LoadsAllSix()
+    {
+        var caps = CapsOf(OneDevice("""
+            , "capabilities": {
+                "batteryRead": "supported",
+                "dpiRead": "supported",
+                "dpiLevelRead": "supported",
+                "rateRead": "supported",
+                "dpiWrite": "unsupported",
+                "rateWrite": "unverified"
+              }
+            """));
+
+        Assert.Equal(CapabilityState.Supported, caps.Of(DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Supported, caps.Of(DeviceCapability.DpiRead));
+        Assert.Equal(CapabilityState.Supported, caps.Of(DeviceCapability.DpiLevelRead));
+        Assert.Equal(CapabilityState.Supported, caps.Of(DeviceCapability.RateRead));
+        Assert.Equal(CapabilityState.Unsupported, caps.Of(DeviceCapability.DpiWrite));
+        Assert.Equal(CapabilityState.Unverified, caps.Of(DeviceCapability.RateWrite));
+        Assert.Equal(6, caps.Declared.Count);
+    }
+
+    [Fact]
+    public void LoadFromJson_Capabilities_UndeclaredAreUnverified()
+    {
+        var caps = CapsOf(OneDevice(""", "capabilities": { "batteryRead": "supported" }"""));
+
+        Assert.Equal(CapabilityState.Supported, caps.Of(DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Unverified, caps.Of(DeviceCapability.DpiRead));
+        Assert.Equal(CapabilityState.Unverified, caps.Of(DeviceCapability.RateWrite));
+        Assert.Single(caps.Declared);
+    }
+
+    [Fact]
+    public void LoadFromJson_Capabilities_ExplicitUnsupportedLoads()
+    {
+        var caps = CapsOf(OneDevice(""", "capabilities": { "rateWrite": "unsupported" }"""));
+
+        Assert.Equal(CapabilityState.Unsupported, caps.Of(DeviceCapability.RateWrite));
+        Assert.Equal(CapabilityState.Unverified, caps.Of(DeviceCapability.RateRead));
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilitiesMissing_IsEmptyNotError()
+    {
+        // 195 条老目录没有这个字段：缺省必须正常加载，且是共享的 Empty
+        var caps = CapsOf(OneDevice());
+
+        Assert.Same(CapabilitySet.Empty, caps);
+        Assert.True(caps.IsEmpty);
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilitiesEmptyObject_AllUnverified()
+    {
+        var caps = CapsOf(OneDevice(""", "capabilities": { }"""));
+
+        Assert.True(caps.IsEmpty);
+        foreach (var capability in Enum.GetValues<DeviceCapability>())
+            Assert.Equal(CapabilityState.Unverified, caps.Of(capability));
+    }
+
+    [Fact]
+    public void LoadFromJson_LegacyCapsField_StillLoadsAndDeclaresNothing()
+    {
+        // 旧 caps 是历史验证记录，新系统只读 capabilities：不能拿它自动推断能力
+        var caps = CapsOf(OneDevice(""", "caps": ["battery", "dpi"]"""));
+
+        Assert.True(caps.IsEmpty);
+        Assert.Equal(CapabilityState.Unverified, caps.Of(DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Unverified, caps.Of(DeviceCapability.DpiRead));
+    }
+
+    [Fact]
+    public void LoadFromJson_UnknownCapabilityName_Throws()
+    {
+        // 拼错（batteryRed）静默变成 Unverified，等于把已验能力悄悄丢掉
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => CapsOf(OneDevice(""", "capabilities": { "batteryRed": "supported" }""")));
+
+        Assert.Contains("1234:0001", ex.Message);
+        Assert.Contains("capabilities.batteryRed", ex.Message);
+        Assert.Contains("不是已知能力", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilityNameIsCaseSensitive_Throws()
+    {
+        // 能力名固定 camelCase；PascalCase 也算拼错，不做大小写宽松匹配
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => CapsOf(OneDevice(""", "capabilities": { "BatteryRead": "supported" }""")));
+
+        Assert.Contains("capabilities.BatteryRead", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_IllegalCapabilityState_Throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => CapsOf(OneDevice(""", "capabilities": { "batteryRead": "yes" }""")));
+
+        Assert.Contains("1234:0001", ex.Message);
+        Assert.Contains("capabilities.batteryRead", ex.Message);
+        Assert.Contains("非法", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilitiesNotObject_Throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => CapsOf(OneDevice(""", "capabilities": ["batteryRead"]""")));
+
+        Assert.Contains("1234:0001", ex.Message);
+        Assert.Contains("capabilities 必须是对象", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilityStateNotString_Throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => CapsOf(OneDevice(""", "capabilities": { "batteryRead": 1 }""")));
+
+        Assert.Contains("capabilities.batteryRead", ex.Message);
+        Assert.Contains("必须是字符串状态值", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilityStateNull_Throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => CapsOf(OneDevice(""", "capabilities": { "batteryRead": null }""")));
+
+        Assert.Contains("capabilities.batteryRead", ex.Message);
+    }
+
     // ── 内嵌资源回归（数量必须来自实际加载结果）────────────────────────
 
     [Fact]

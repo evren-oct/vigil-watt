@@ -8,7 +8,7 @@
 
 | 进 JSON | 留代码 |
 |---|---|
-| vid / pid / 型号 / kind / pairedPid | 去抖（`chargeDebounce` 只开开关，算法在解释器里） |
+| vid / pid / 型号 / kind / pairedPid / capabilities | 去抖（`chargeDebounce` 只开开关，算法在解释器里） |
 | 接口指纹：usagePage / usage / 长度 / pathContains / reportId | 无效帧怎么处理（丢读数 / 标离线 / 请求核实） |
 | 查询帧模板（十六进制串 + 总长） | 链路位 → 离线候选 |
 | 字段：偏移 / 类型 / 位宽 / mask / xor | 握手、会话、状态机、轮询策略 |
@@ -34,6 +34,46 @@
 ```
 
 `override` 是**结构化深合并**，叠在"已展开 extends"的协议上；只写要改的叶子，其余继承。
+
+### 2.1 设备能力声明（`capabilities`，PR-C 起）
+
+`capabilities` 写在**设备条目**上，**不在协议里**：同一套 `status-report7` 被 98 台鼠标共用，
+能力若挂在协议上，VT3 的真机验证结果会顺带漏给所有同族设备。
+
+```jsonc
+{ "vid": "0x24AE", "pid": "0x1412", "model": "VT3", "kind": "mouse", "protocol": "status-report7",
+  "capabilities": {
+    "batteryRead": "supported",
+    "dpiRead": "supported",
+    "dpiLevelRead": "supported",
+    "rateRead": "supported"
+  } }
+```
+
+**语义**：VigilWatt **针对这个型号、在当前适配与连接方式下已经实现并验证**的功能。
+不是厂商理论能力，也不是"能读就能写"。
+
+| 能力 | 含义 |
+|---|---|
+| `batteryRead` | 读电量 |
+| `dpiRead` | 读当前生效 DPI 数值 |
+| `dpiLevelRead` | 读 DPI 档位索引（不是 DPI 值，也不是档位总数） |
+| `rateRead` | 读设备**保存的**回报率设置值，不是实测 USB/HID 吞吐率 |
+| `dpiWrite` | 写 DPI |
+| `rateWrite` | 写回报率 |
+
+| 状态 | 含义 |
+|---|---|
+| `supported` | 已实现，且有足够证据（真机读数 / 被单测钉住的解析） |
+| `unsupported` | 已确认当前 VigilWatt 适配不提供该能力 |
+| `unverified` | 尚未验证或证据不足。**默认态**：没实现不等于已确认不支持 |
+
+- 只写已验证的几项即可，其余省略即 `unverified`；`"capabilities": {}` 与省略等价。
+- **不继承**：`extends`、设备 `override`、共享协议引用都不会把能力带过去，每条设备各自声明。
+- 与旧 `caps` 的区别：`caps` 是历史验证记录（只在雷柏目录、代码不读），`capabilities` 才是当前正式声明，
+  两者**不自动映射**，见 [hardware/rapoo-catalog.md](../hardware/rapoo-catalog.md) §6。
+- 查询入口 `ProtocolEngine.CapabilityOf(info, capability)`：纯配置查询——不开句柄、不发帧、不动解析状态；
+  未收录设备一律 `unverified`，非法枚举值抛异常而不是回落到默认值。
 
 ## 3. 加一套协议（形态固定时，约 20–30 行）
 
@@ -124,6 +164,8 @@
 - 设备引用了不存在的协议、`extends` 成环
 - `implementation=code` 但没给 `codeFamily`
 - `active.query.hex` 超出 `query.length`
+- `capabilities` 不是对象、能力名拼错（大小写敏感）、状态不是 `supported`/`unsupported`/`unverified`、
+  状态值不是字符串。报错带设备 `VID:PID` 与 `capabilities.<字段名>`，**不许静默变成 `unverified`**
 
 > `codeFamily` 必须是真实类型：抽族前填插件名（如 `MchosePlugin`），**不要预留不存在的族名**——数据里写了个找不到的类，下一个人会去翻文件。
 
@@ -168,4 +210,4 @@ dotnet build VigilWatt.sln -c Debug
 dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~Rapoo"
 ```
 
-雷柏的真机帧用例在 `RapooSpecTests`（R1–R26）：偏移改错会被它们挡住。
+雷柏的真机帧用例在 `RapooSpecTests`（R1–R42）：偏移改错会被它们挡住。

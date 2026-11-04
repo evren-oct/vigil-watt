@@ -499,4 +499,102 @@ public sealed class RapooSpecTests
         Assert.Equal(LinkState.Up, r.Value.Link);
         Assert.Equal(3200, r.Value.Pointer.DpiX.Value);
     }
+
+    // ---------- 设备能力声明（PR-C）：只读配置查询 ----------
+
+    [Fact]
+    public void R36_本机VT3声明四项读取能力_写能力仍为未验证()
+    {
+        var info = MakeInfo(0x24AE, 0x1412);
+
+        Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.DpiRead));
+        Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.DpiLevelRead));
+        Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.RateRead));
+
+        // 能读不等于能写：两项写能力没有声明，也不许从读能力推断出来
+        Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.DpiWrite));
+        Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.RateWrite));
+    }
+
+    [Fact]
+    public void R37_VT2S两个PID都只声明电量读取()
+    {
+        // 依据 rapoo.md §5 实测表：有线 4B13 与 2.4G 1B13 都有真机电量读数
+        foreach (var pid in new ushort[] { 0x1B13, 0x4B13 })
+        {
+            var info = MakeInfo(0x24AE, pid);
+            Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));
+            Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.DpiRead));
+            Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.RateRead));
+        }
+    }
+
+    [Fact]
+    public void R38_VT3有线PID没有独立证据_保持未验证()
+    {
+        // 0x4612 的 caps 是空数组：同一只鼠标的另一条枚举，但没有单独的真机记录
+        var info = MakeInfo(0x24AE, 0x4612);
+
+        Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.DpiRead));
+    }
+
+    [Fact]
+    public void R39_共用status_report7的其他型号不继承VT3的能力()
+    {
+        // VT3 Air MAX V2 走同一套协议，但没插过机：一项都不能跟着 Supported
+        var info = MakeInfo(0x24AE, 0x1B0C);
+
+        foreach (var capability in Enum.GetValues<DeviceCapability>())
+            Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, capability));
+    }
+
+    [Fact]
+    public void R40_未收录设备与别家VID都返回未验证()
+    {
+        Assert.Equal(CapabilityState.Unverified,
+            Engine.CapabilityOf(MakeInfo(0x24AE, 0xFFFF), DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Unverified,
+            Engine.CapabilityOf(MakeInfo(0x3837, 0x1412), DeviceCapability.BatteryRead));
+
+        // 未收录设备的"默认 Unverified"不能顺带把非法枚举值也放过
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => Engine.CapabilityOf(MakeInfo(0x24AE, 0xFFFF), (DeviceCapability)99));
+    }
+
+    [Fact]
+    public void R41_能力查询不动解析状态也不改解析结果()
+    {
+        var info = MakeInfo(0x24AE, 0x1412);
+        var dev = Dev(path: @"\\?\hid#capability-41");
+        var charging = WithByte(NormalFrame, 7, 0x02);
+
+        Assert.Equal(ChargingState.Discharging, Engine.Parse(dev, "status-report7", charging)!.Value.Charging);
+        Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.DpiRead));
+        // 去抖计数没被清：第二帧照旧判充电
+        Assert.Equal(ChargingState.Charging, Engine.Parse(dev, "status-report7", charging)!.Value.Charging);
+
+        var before = Engine.Parse(dev, "status-report7", NormalFrame)!.Value;
+        _ = Engine.CapabilityOf(info, DeviceCapability.BatteryRead);
+        var after = Engine.Parse(dev, "status-report7", NormalFrame)!.Value;
+        Assert.Equal(before.Percent, after.Percent);
+        Assert.Equal(before.Link, after.Link);
+        Assert.Equal(before.Pointer.DpiX.Value, after.Pointer.DpiX.Value);
+    }
+
+    [Fact]
+    public void R42_能力查询不打开设备句柄()
+    {
+        // 路径指向不存在的设备：只要走 CreateFile 就会抛，能正常返回说明它只读配置
+        var info = new VigilWatt.Core.Hid.HidDeviceInfo
+        {
+            DevicePath = @"\\?\hid#vid_24ae&pid_1412#nope",
+            VendorId = 0x24AE,
+            ProductId = 0x1412,
+        };
+
+        Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.RateWrite));
+    }
 }

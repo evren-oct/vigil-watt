@@ -3,6 +3,11 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-04
+
+- **新增设备能力声明（PR-C）**：`DeviceCapability` 六项 × `CapabilityState` 三态，声明挂在**设备目录**的 `capabilities` 上而不是协议上——同一套 `status-report7` 被 98 台鼠标共用，放协议层会让 VT3 的验证结果漏给同族。`CapabilitySet` 不可变、未声明一律 `unverified`、非法枚举值直接抛；加载期对未知能力名 / 非法状态 / 非法类型报错（带 `VID:PID` 与 `capabilities.<字段>`），不静默。查询入口 `ProtocolEngine.CapabilityOf` 是纯配置查询，不开句柄、不发帧、不动解析状态。见 `dev/protocol-json.md` §2.1。
+- **只迁移有真机证据的三条**：VT3 `0x1412` 声明四项读取能力，VT2S Air MAX V2 两个 PID 声明 `batteryRead`；写能力一条没写（本应用没有写入实现）。旧 `caps` 全部保留、不自动映射——`dpi` 分不出 `dpiRead`/`dpiLevelRead`，`[]` 是"没验证"不是"不支持"。见 `hardware/rapoo-catalog.md` §6。
+
 ## 2026-11-01
 
 - **协议数据化：新增解释器，雷柏 12 套协议全部搬进 JSON**。`Plugins/Protocol/` 提供规格加载（`extends` 继承 + 设备级 `override` 深合并 + 加载期校验）、帧读取与查询执行；`RapooPlugin` 只留认领与转交，删掉 `RapooCodec`/`RapooFamily`/`RapooFamilies` 等 7 个文件（约 500 行）。**判断与状态仍留代码**：充电去抖、链路位→离线候选、握手与会话都在解释器或插件里。以后加机型改 1 行 JSON、加形态固定的协议改约 20 行 JSON。真机帧用例（R1–R26，含 VT3 断链帧与有线帧）全部改走解释器并通过。

@@ -543,9 +543,59 @@ internal static class ProtocolSpecLoader
                 Kind = ParseKind(dto.Kind, $"{dto.Vid}:{dto.Pid}", prefix),
                 Protocol = dto.Protocol.Trim(),
                 PairedPid = paired,
+                Capabilities = ReadCapabilities(dto.Capabilities, vid, pid, prefix),
             }, dto.Override));
         }
         return result;
+    }
+
+    /// <summary>能力名用 camelCase；未知名字一律报错——拼错静默成 Unverified 等于把已验能力悄悄丢掉。</summary>
+    private static readonly Dictionary<string, DeviceCapability> CapabilityNames = new(StringComparer.Ordinal)
+    {
+        ["batteryRead"] = DeviceCapability.BatteryRead,
+        ["dpiRead"] = DeviceCapability.DpiRead,
+        ["dpiLevelRead"] = DeviceCapability.DpiLevelRead,
+        ["rateRead"] = DeviceCapability.RateRead,
+        ["dpiWrite"] = DeviceCapability.DpiWrite,
+        ["rateWrite"] = DeviceCapability.RateWrite,
+    };
+
+    /// <summary>缺省或空对象都得到"全部 Unverified"；非法类型/名字/状态带 VID:PID 与字段名报错。</summary>
+    private static CapabilitySet ReadCapabilities(JsonNode? node, ushort vid, ushort pid, string prefix)
+    {
+        if (node is null) return CapabilitySet.Empty;
+        if (node is not JsonObject map)
+            throw new InvalidOperationException(
+                $"{prefix}/devices.json: 设备 {vid:X4}:{pid:X4} 的 capabilities 必须是对象");
+
+        var declared = new List<KeyValuePair<DeviceCapability, CapabilityState>>(map.Count);
+        foreach (var (name, value) in map)
+        {
+            if (!CapabilityNames.TryGetValue(name, out var capability))
+                throw new InvalidOperationException(
+                    $"{prefix}/devices.json: 设备 {vid:X4}:{pid:X4} 的 capabilities.{name} 不是已知能力" +
+                    $"（可选：{string.Join(" / ", CapabilityNames.Keys)}）");
+            declared.Add(new(capability, ParseCapabilityState(value, name, vid, pid, prefix)));
+        }
+        return CapabilitySet.Create(declared);
+    }
+
+    private static CapabilityState ParseCapabilityState(JsonNode? value, string field,
+        ushort vid, ushort pid, string prefix)
+    {
+        if (value is not JsonValue v || !v.TryGetValue<string>(out var text))
+            throw new InvalidOperationException(
+                $"{prefix}/devices.json: 设备 {vid:X4}:{pid:X4} 的 capabilities.{field} 必须是字符串状态值");
+
+        return text.Trim().ToLowerInvariant() switch
+        {
+            "supported" => CapabilityState.Supported,
+            "unsupported" => CapabilityState.Unsupported,
+            "unverified" => CapabilityState.Unverified,
+            var other => throw new InvalidOperationException(
+                $"{prefix}/devices.json: 设备 {vid:X4}:{pid:X4} 的 capabilities.{field} 状态 \"{other}\" 非法" +
+                "（supported / unsupported / unverified）"),
+        };
     }
 
     private static JsonObject MergeObject(JsonObject target, JsonObject patch)
@@ -681,6 +731,10 @@ internal static class ProtocolSpecLoader
         public string? Kind { get; set; }
         public string? Protocol { get; set; }
         public string? PairedPid { get; set; }
+
+        /// <summary>用 JsonNode 收，好把"不是对象 / 值不是字符串"变成带 VID:PID 的加载期错误，而不是反序列化异常。</summary>
+        public JsonNode? Capabilities { get; set; }
+
         public JsonObject? Override { get; set; }
     }
 }

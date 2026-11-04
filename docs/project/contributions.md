@@ -5,7 +5,7 @@
 
 ## 2026-11-04
 
-- **Archer-Wen**（PR 待提交，目标 `dev`）：纳入迈从通用 2.4G dongle（`0x3837:0x3033`）的电量支持。收：`specs/mchose.protocols.json` 新增 `cz-block`（CZ 分块读，`55 05 00 38 38 00` 一次读满 `0..0x37`；`[0x20]` bit7=充电、bit0..6=电量，`fullAt: 100` 判满电）；`Protocol` 解释器给 `percent`/`charge` 补 `mask` 位域（1..255，缺省整字节，`0` 加载期拒）；`MchosePlugin` 在 `MouseV2` 分支 QHW 失败后按 JSON 规格试一次分块读，并接进 `TryKnownProtocol` / `PollDevice`；`MchoseCzSpecTests` 7 例（规格加载 2 + 真机帧三态 3 + 魔数/非法 mask 2）；`hardware/mchose.md` §2.4、`protocol-json.md` §3.0、`sources.md`、`protocols.md` 状态行。**未纳入**：探针脚本按项目规则只留作者本地；`scripts/run-app.ps1` 的 `icacls` 容错是本机环境相关，已剔除。**本机已真机复测**：作者本机即目标机（G87 V2 2.4G），90% / 98% / 100% 与充电、放电、充满三态均与官方页面逐次对齐；单测 1580 通过 / 1 跳过 / 0 失败，构建 0 错误。**遗留**：`[0x20]` 低 7 位是电压估算，同簇内 ±2 抖动；100% 时的"充满"靠 `fullAt` 补判，设备没有独立的满电字段（见 CR-148）。
+- **Archer-Wen**（[#104](https://github.com/evren-oct/vigil-watt/pull/104)，目标 `dev`）：纳入迈从通用 2.4G dongle（`0x3837:0x3033`）的电量支持。收：`specs/mchose.protocols.json` 新增 `cz-block`（CZ 分块读，`55 05 00 38 38 00` 一次读满 `0..0x37`；`[0x20]` bit7=充电、bit0..6=电量，`fullAt: 100` 判满电）；`Protocol` 解释器给 `percent`/`charge` 补 `mask` 位域（1..255，缺省整字节，`0` 加载期拒）；`MchosePlugin` 在 `MouseV2` 分支 QHW 失败后按 JSON 规格试一次分块读，并接进 `TryKnownProtocol` / `PollDevice`；`MchoseCzSpecTests` 7 例（规格加载 2 + 真机帧三态 3 + 魔数/非法 mask 2）；`hardware/mchose.md` §2.4、`protocol-json.md` §3.0、`sources.md`、`protocols.md` 状态行。**未纳入**：探针脚本按项目规则只留作者本地；`scripts/run-app.ps1` 的 `icacls` 容错是本机环境相关，已剔除。**本机已真机复测**：作者本机即目标机（G87 V2 2.4G），90% / 98% / 100% 与充电、放电、充满三态均与官方页面逐次对齐；单测 1580 通过 / 1 跳过 / 0 失败，构建 0 错误。**遗留**：`[0x20]` 低 7 位是电压估算，同簇内 ±2 抖动；100% 时的"充满"靠 `fullAt` 补判，设备没有独立的满电字段（见 CR-148）。
 
 ## 2026-11-01
 

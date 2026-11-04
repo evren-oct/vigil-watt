@@ -99,3 +99,4 @@
 | CR-144 | 迈从 gmouse / V9 / X9 已迁进解释器：帧模板、窗口、重试次数在 `specs/mchose.protocols.json`，`MchosePlugin` 只剩 `TrySpec` 一次调用；三个 codec 改成薄壳（保留 `IsSupportedInterface` 与既有断言），35 条 codec 用例现在钉的是 JSON 偏移。接口形态判据仍在 `MchoseInterfaceClassifier`，见 CR-16 |
 | CR-146 | **原判断有误，撤回**：目录优先下 `0x2E3C:0x5745` 是会被查到的，`implementation: "none"` 正确地拒绝认领；`vendors` 白名单只影响"未收录设备"的形态回落，不影响已收录条目 |
 | CR-147 | `"qhw-push"` 不再进设备协议名：协议名统一记 `qhw`，"只拿到被动推送"另记在 `_pushOnly`（按路径）。`PollDevice` / `TryParsePassiveInput` 改查显式状态，UI 副标题也不会再显示内部标记 |
+| CR-148 | `capabilities` 写在设备 `override` 里会被静默丢弃：它先深合并进协议对象，再在 `ProtocolDto` 反序列化时丢掉（`ProtocolDto` 没有该字段）。已在 `ReadDevices` 合并前拒绝，报错带 `VID:PID` 与完整字段路径（含嵌套对象与数组元素），`map` / `mapValue` 的取值表不参与扫描；设备条目顶层 `capabilities` 与现有 7 条 `passive.fields` override 不受影响。回归见 `ProtocolSpecLoaderTests.LoadFromJson_Override*`，规则见 `dev/protocol-json.md` §2.1 |

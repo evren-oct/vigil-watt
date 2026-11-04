@@ -981,7 +981,7 @@
     "batteryRead": "supported",
     "dpiRead": "supported",
     "dpiLevelRead": "supported",
-    "rateRead": "supported"
+    "rateRead": "unverified"
    },
    "pairedPid": "0x4612",
    "override": {

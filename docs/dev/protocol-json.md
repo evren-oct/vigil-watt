@@ -46,7 +46,7 @@
     "batteryRead": "supported",
     "dpiRead": "supported",
     "dpiLevelRead": "supported",
-    "rateRead": "supported"
+    "rateRead": "unverified"       // 只有单点观测，证据不足；省略也是同一结果
   } }
 ```
 
@@ -69,6 +69,13 @@
 | `unverified` | 尚未验证或证据不足。**默认态**：没实现不等于已确认不支持 |
 
 - 只写已验证的几项即可，其余省略即 `unverified`；`"capabilities": {}` 与省略等价。
+- **唯一合法位置是 `devices[].capabilities`**：`ProtocolDto` 里没有这个字段，未知字段默认被忽略，写错层就是"加载成功但声明丢失"。
+  加载器对**协议对象**和**设备 `override`** 的**任意层级**（嵌套对象、数组元素都算，字段名不区分大小写）都直接报错：
+  协议层带协议名 + 字段路径（如 `passive.capabilities`、`interface.anyOf[0].capabilities`），
+  `override` 层带 `VID:PID` + 字段路径（如 `override.passive.fields.capabilities`）。
+  两处都跳过 `map` / `mapValue` 的值——它们是数字取值表，不是协议字段。
+- **大小写**：字段名 `capabilities` 不区分大小写；**能力名区分大小写**，`batteryRead` 写成 `BatteryRead` 会报错。
+- 其余未知字段仍按现有 JSON 反序列化策略忽略：**拼写错误（如 `capabilites`）不会被识别或报告**，别指望加载器兜住。
 - **不继承**：`extends`、设备 `override`、共享协议引用都不会把能力带过去，每条设备各自声明。
 - 与旧 `caps` 的区别：`caps` 是历史验证记录（只在雷柏目录、代码不读），`capabilities` 才是当前正式声明，
   两者**不自动映射**，见 [hardware/rapoo-catalog.md](../hardware/rapoo-catalog.md) §6。

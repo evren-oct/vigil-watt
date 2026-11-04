@@ -503,14 +503,16 @@ public sealed class RapooSpecTests
     // ---------- 设备能力声明（PR-C）：只读配置查询 ----------
 
     [Fact]
-    public void R36_本机VT3声明四项读取能力_写能力仍为未验证()
+    public void R36_本机VT3声明三项读取能力_回报率与写能力为未验证()
     {
         var info = MakeInfo(0x24AE, 0x1412);
 
         Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));
         Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.DpiRead));
         Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.DpiLevelRead));
-        Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.RateRead));
+
+        // [11] 只有单点观测、没验证过"改回报率设置后 [11] 随之变化"，证据不足即 unverified（rapoo.md §1.1）
+        Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.RateRead));
 
         // 能读不等于能写：两项写能力没有声明，也不许从读能力推断出来
         Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.DpiWrite));

@@ -102,8 +102,14 @@ internal static class ProtocolSpecLoader
         var result = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
         foreach (var (key, value) in map)
         {
-            result[key] = value as JsonObject
-                ?? throw new InvalidOperationException($"{prefix}/protocols.json: 协议 \"{key}\" 不是对象");
+            if (value is not JsonObject protocol)
+                throw new InvalidOperationException($"{prefix}/protocols.json: 协议 \"{key}\" 不是对象");
+            // ProtocolDto 没有 Capabilities，写在这里会被默认的"忽略未知字段"静默吞掉，等于声明不存在
+            if (FindCapabilitiesPath(protocol, "") is { } misplaced)
+                throw new InvalidOperationException(
+                    $"{prefix}/protocols.json: 协议 \"{key}\" 的 {misplaced} 不能声明在协议对象中" +
+                    "（同协议多型号共用，会互相串用），必须声明在设备条目上（devices[].capabilities）");
+            result[key] = protocol;
         }
         return result;
     }
@@ -535,6 +541,7 @@ internal static class ProtocolSpecLoader
             if (string.IsNullOrWhiteSpace(dto.Protocol))
                 throw new InvalidOperationException($"{prefix}/devices.json: {dto.Vid}:{dto.Pid} 缺少 protocol");
             TryParseHex(dto.PairedPid, out var paired);
+            if (dto.Override is { } patch) RejectCapabilitiesInOverride(patch, vid, pid, prefix);
             result.Add((new DeviceEntry
             {
                 VendorId = vid,
@@ -548,6 +555,43 @@ internal static class ProtocolSpecLoader
         }
         return result;
     }
+
+    /// <summary>override 只覆盖协议字段：capabilities 写进来会在反序列化时被丢弃，必须在合并前拦下。</summary>
+    private static void RejectCapabilitiesInOverride(JsonObject patch, ushort vid, ushort pid, string prefix)
+    {
+        if (FindCapabilitiesPath(patch, "override") is not { } path) return;
+        throw new InvalidOperationException(
+            $"{prefix}/devices.json: 设备 {vid:X4}:{pid:X4} 的 {path} 不能声明——override 只覆盖协议字段，" +
+            "capabilities 必须声明在设备条目顶层的 capabilities 上（devices[].capabilities）");
+    }
+
+    /// <summary>递归找 capabilities 并返回字段路径（协议对象与设备 override 共用）；只跳过 map / mapValue 的值——它们的键是数据不是协议字段。</summary>
+    private static string? FindCapabilitiesPath(JsonNode? node, string path)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                foreach (var (key, value) in obj)
+                {
+                    var childPath = path.Length == 0 ? key : $"{path}.{key}";
+                    if (string.Equals(key, "capabilities", StringComparison.OrdinalIgnoreCase)) return childPath;
+                    if (IsFieldMapKey(key)) continue;
+                    if (FindCapabilitiesPath(value, childPath) is { } hit) return hit;
+                }
+                return null;
+            case JsonArray list:
+                for (int i = 0; i < list.Count; i++)
+                    if (FindCapabilitiesPath(list[i], $"{path}[{i}]") is { } hit) return hit;
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>map / mapValue 的键是数字取值表、不是 schema；往里递归会把业务数据当成字段名。</summary>
+    private static bool IsFieldMapKey(string key)
+        => string.Equals(key, "map", StringComparison.OrdinalIgnoreCase)
+           || string.Equals(key, "mapValue", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>能力名用 camelCase；未知名字一律报错——拼错静默成 Unverified 等于把已验能力悄悄丢掉。</summary>
     private static readonly Dictionary<string, DeviceCapability> CapabilityNames = new(StringComparer.Ordinal)

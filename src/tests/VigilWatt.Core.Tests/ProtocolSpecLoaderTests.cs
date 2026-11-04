@@ -511,6 +511,280 @@ public sealed class ProtocolSpecLoaderTests
         Assert.Contains("capabilities.batteryRead", ex.Message);
     }
 
+    // ── capabilities 放错层：协议对象上必须报错（PR-C 修复批次 A）────────
+
+    [Fact]
+    public void LoadFromJson_CapabilitiesOnProtocol_Throws()
+    {
+        // ProtocolDto 没有 Capabilities，而未知字段默认被忽略：写在协议上等于"声明了但没人看"
+        const string protocols = """
+            {
+              "protocols": {
+                "p": {
+                  "kind": "mouse",
+                  "capabilities": { "batteryRead": "supported" },
+                  "interface": { "usagePage": 1 },
+                  "passive": { "length": { "min": 19 }, "fields": { "percent": { "offset": 8 } } }
+                }
+              }
+            }
+            """;
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices));
+
+        Assert.Contains("协议 \"p\"", ex.Message);
+        Assert.Contains("capabilities", ex.Message);
+        Assert.Contains("不能声明在协议对象中", ex.Message);
+        Assert.Contains("devices[].capabilities", ex.Message);
+
+        // 同样的声明写在设备条目上是合法的：报错只针对放错位置，不是禁用 capabilities
+        var bundle = ProtocolSpecLoader.LoadFromJson(MinimalProtocols,
+            OneDevice(""", "capabilities": { "batteryRead": "supported" }"""));
+        Assert.Equal(CapabilityState.Supported,
+            bundle.Devices[((ushort)0x1234, (ushort)0x0001)].Capabilities.Of(DeviceCapability.BatteryRead));
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilitiesOnProtocol_IsDetectedCaseInsensitively()
+    {
+        // 未知字段的忽略本身不区分大小写，写成 Capabilities 同样会被静默吞掉
+        const string protocols = """
+            {
+              "protocols": {
+                "p": {
+                  "kind": "mouse",
+                  "Capabilities": { "batteryRead": "supported" },
+                  "interface": { "usagePage": 1 },
+                  "passive": { "fields": { "percent": { "offset": 8 } } }
+                }
+              }
+            }
+            """;
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices));
+
+        Assert.Contains("的 Capabilities 不能声明", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilitiesNestedInProtocol_Throws()
+    {
+        // 协议对象任意层级都会被 ProtocolDto 丢掉，只查顶层就等于留一个静默口子
+        const string protocols = """
+            {
+              "protocols": {
+                "p": {
+                  "kind": "mouse",
+                  "interface": { "usagePage": 1 },
+                  "passive": { "length": { "min": 19 },
+                               "capabilities": { "batteryRead": "supported" },
+                               "fields": { "percent": { "offset": 8 } } }
+                }
+              }
+            }
+            """;
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices));
+
+        Assert.Contains("协议 \"p\"", ex.Message);
+        Assert.Contains("passive.capabilities", ex.Message);
+        Assert.Contains("devices[].capabilities", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_CapabilitiesInProtocolArray_Throws()
+    {
+        // interface.anyOf 是对象数组：数组元素里的 capabilities 一样会被反序列化丢掉
+        const string protocols = """
+            {
+              "protocols": {
+                "p": {
+                  "kind": "mouse",
+                  "interface": { "anyOf": [ { "usagePage": 1, "capabilities": { "dpiRead": "supported" } } ] },
+                  "passive": { "fields": { "percent": { "offset": 8 } } }
+                }
+              }
+            }
+            """;
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices));
+
+        Assert.Contains("interface.anyOf[0].capabilities", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_NestedProtocolCapabilities_IsCaseInsensitive()
+    {
+        // 嵌套位置的大小写变体同样要拦
+        const string protocols = """
+            {
+              "protocols": {
+                "p": {
+                  "kind": "mouse",
+                  "interface": { "usagePage": 1 },
+                  "passive": { "Capabilities": { "batteryRead": "supported" },
+                               "fields": { "percent": { "offset": 8 } } }
+                }
+              }
+            }
+            """;
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices));
+
+        Assert.Contains("passive.Capabilities", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_OtherUnknownProtocolField_StillIgnored()
+    {
+        // 只对 capabilities 开这一个洞：其余未知字段仍按默认策略忽略，不改全局 UnmappedMemberHandling
+        const string protocols = """
+            {
+              "protocols": {
+                "p": {
+                  "kind": "mouse",
+                  "futureField": { "nested": [1, 2, 3] },
+                  "interface": { "usagePage": 1 },
+                  "passive": { "length": { "min": 19 }, "fields": { "percent": { "offset": 8 } } }
+                }
+              }
+            }
+            """;
+
+        var bundle = ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices);
+
+        Assert.Equal(8, Assert.Single(bundle.Protocols).Value.Passive!.Percent!.Offset);
+    }
+
+    // ── capabilities 写进 override：合并前拒绝（CR-148）─────────────────
+
+    [Fact]
+    public void LoadFromJson_OverrideCapabilities_Throws()
+    {
+        // override 只覆盖协议字段，合并后 capabilities 会被 ProtocolDto 丢掉：必须在加载期拦下
+        var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
+            MinimalProtocols,
+            OneDevice(""", "override": { "capabilities": { "rateRead": "supported" } }""")));
+
+        Assert.Contains("1234:0001", ex.Message);
+        Assert.Contains("override.capabilities", ex.Message);
+        Assert.Contains("devices[].capabilities", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_OverrideCapabilities_IsCaseInsensitive()
+    {
+        // 未知字段的忽略本身不区分大小写，写成 Capabilities 一样会被丢掉
+        var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
+            MinimalProtocols,
+            OneDevice(""", "override": { "Capabilities": { "rateRead": "supported" } }""")));
+
+        Assert.Contains("1234:0001", ex.Message);
+        Assert.Contains("override.Capabilities", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_OverrideNestedCapabilities_Throws()
+    {
+        // 嵌套位置同样会被丢弃，报错要给出完整字段路径而不是只说"override 里有"
+        var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
+            MinimalProtocols,
+            OneDevice(""", "override": { "passive": { "fields": { "capabilities": { "rateRead": "supported" } } } }""")));
+
+        Assert.Contains("1234:0001", ex.Message);
+        Assert.Contains("override.passive.fields.capabilities", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_OverrideCapabilitiesInArray_Throws()
+    {
+        // prefix / anyOf 是对象数组，数组元素里的 capabilities 一样会被反序列化丢掉
+        var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
+            MinimalProtocols,
+            OneDevice(""", "override": { "passive": { "prefix": [ { "offset": 0, "value": 7, "capabilities": {} } ] } }""")));
+
+        Assert.Contains("override.passive.prefix[0].capabilities", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_OverrideDictionaryValues_AreNotScannedAsFields()
+    {
+        // mapValue 的键是数字取值表：里面的数据不能当成协议字段名去查 capabilities
+        var bundle = ProtocolSpecLoader.LoadFromJson(MinimalProtocols, OneDevice("""
+            , "override": { "passive": { "fields": {
+                "rateHz": { "offset": 11, "mapValue": { "1": 1000, "2": 500 } } } } }
+            """));
+
+        var rate = bundle.DeviceSpecs[((ushort)0x1234, (ushort)0x0001)].Passive!.Pointer!.ReportRateSettingHz!;
+        Assert.Equal(11, rate.Offset);
+        Assert.Equal(500, rate.ValueMap![2]);
+    }
+
+    [Fact]
+    public void LoadFromJson_OverrideMapDictionary_IsNotScannedAsFields()
+    {
+        // charge.map 是真实协议写法（rapoo / mchose 都有）：键是数字码表、值是充电态，
+        // 不能因为"值是字符串"或"键名不像字段"被 capabilities 检查误判
+        var bundle = ProtocolSpecLoader.LoadFromJson(MinimalProtocols, OneDevice("""
+            , "override": { "passive": { "fields": {
+                "charge": { "offset": 7, "type": "u8",
+                            "map": { "1": "discharging", "2": "charging" },
+                            "onMiss": "discharging" } } } }
+            """));
+
+        var charge = bundle.DeviceSpecs[((ushort)0x1234, (ushort)0x0001)].Passive!.Charge!;
+        Assert.Equal(7, charge.Offset);
+        Assert.Equal(ChargingState.Discharging, charge.Table![1]);
+        Assert.Equal(ChargingState.Charging, charge.Table[2]);
+        // 覆盖只作用于这一台设备，共享协议没有被改
+        Assert.Null(bundle.Protocols["p"].Passive!.Charge);
+    }
+
+    [Fact]
+    public void LoadFromJson_OverrideMapValueNamedCapabilities_IsNotTreatedAsField()
+    {
+        // map 的"值"是业务数据：写成 "capabilities" 也不该被当成字段名，
+        // 仍按原有码表校验报"充电映射值非法"，而不是报"capabilities 放错位置"
+        var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
+            MinimalProtocols,
+            OneDevice(""", "override": { "passive": { "fields": { "charge": { "offset": 7, "map": { "1": "capabilities" } } } } }""")));
+
+        Assert.Contains("充电映射值", ex.Message);
+        Assert.DoesNotContain("不能声明", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_DeviceCapabilities_OutsideOverride_StillLoads()
+    {
+        // 能力写在设备条目顶层是唯一合法位置：同一台设备再有 override 也不受影响
+        var bundle = ProtocolSpecLoader.LoadFromJson(MinimalProtocols, OneDevice("""
+            , "capabilities": { "batteryRead": "supported" },
+              "override": { "passive": { "fields": { "percent": { "offset": 9 } } } }
+            """));
+
+        var device = bundle.Devices[((ushort)0x1234, (ushort)0x0001)];
+        Assert.Equal(CapabilityState.Supported, device.Capabilities.Of(DeviceCapability.BatteryRead));
+        Assert.Single(device.Capabilities.Declared);
+    }
+
+    [Fact]
+    public void LoadFromJson_OverrideOtherFields_StillWork()
+    {
+        // 现有 7 条 override 全是 passive.fields 覆盖，这条守住它们不被新校验波及
+        var bundle = ProtocolSpecLoader.LoadFromJson(MinimalProtocols, OneDevice("""
+            , "override": { "passive": { "fields": { "percent": { "offset": 9, "type": "u8" } } } }
+            """));
+
+        Assert.Equal(9, bundle.DeviceSpecs[((ushort)0x1234, (ushort)0x0001)].Passive!.Percent!.Offset);
+        Assert.Equal(8, bundle.Protocols["p"].Passive!.Percent!.Offset);
+        Assert.True(bundle.Devices[((ushort)0x1234, (ushort)0x0001)].Capabilities.IsEmpty);
+    }
+
     // ── 内嵌资源回归（数量必须来自实际加载结果）────────────────────────
 
     [Fact]

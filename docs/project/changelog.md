@@ -5,8 +5,10 @@
 
 ## 2026-11-04
 
-- **新增设备能力声明（PR-C）**：`DeviceCapability` 六项 × `CapabilityState` 三态，声明挂在**设备目录**的 `capabilities` 上而不是协议上——同一套 `status-report7` 被 98 台鼠标共用，放协议层会让 VT3 的验证结果漏给同族。`CapabilitySet` 不可变、未声明一律 `unverified`、非法枚举值直接抛；加载期对未知能力名 / 非法状态 / 非法类型报错（带 `VID:PID` 与 `capabilities.<字段>`），不静默。查询入口 `ProtocolEngine.CapabilityOf` 是纯配置查询，不开句柄、不发帧、不动解析状态。见 `dev/protocol-json.md` §2.1。
-- **只迁移有真机证据的三条**：VT3 `0x1412` 声明四项读取能力，VT2S Air MAX V2 两个 PID 声明 `batteryRead`；写能力一条没写（本应用没有写入实现）。旧 `caps` 全部保留、不自动映射——`dpi` 分不出 `dpiRead`/`dpiLevelRead`，`[]` 是"没验证"不是"不支持"。见 `hardware/rapoo-catalog.md` §6。
+- **新增设备能力声明（PR-C）**：`DeviceCapability` 六项 × `CapabilityState` 三态，声明挂在**设备目录**的 `capabilities` 上而不是协议上——同一套 `status-report7` 被 77 个型号（146 个 PID）共用，放协议层会让 VT3 的验证结果漏给同族。`CapabilitySet` 不可变、未声明一律 `unverified`、非法枚举值直接抛；加载期对未知能力名 / 非法状态 / 非法类型报错（带 `VID:PID` 与 `capabilities.<字段>`），不静默。查询入口 `ProtocolEngine.CapabilityOf` 是纯配置查询，不开句柄、不发帧、不动解析状态。见 `dev/protocol-json.md` §2.1。
+- **只迁移有真机证据的三条设备记录**：VT3 `0x1412` 声明三项读取能力，VT2S Air MAX V2 两个 PID 声明 `batteryRead`；写能力一条没写（本应用没有写入实现）。旧 `caps` 全部保留、不自动映射——`dpi` 分不出 `dpiRead`/`dpiLevelRead`，`[]` 是"没验证"不是"不支持"。见 `hardware/rapoo-catalog.md` §6。
+- **修 PR-C 审查两项（修复批次 A）**：VT3 `0x1412` 的 `rateRead` 由 `supported` 降为 `unverified`——`[11]` 只有单点观测，没验证过"改回报率设置后 `[11]` 随之变化"，`[17]` 的 sensor 模式只印证帧偏移对齐、不是回报率的直接证据；升回 `supported` 需先做这项对照实验（`hardware/rapoo.md` §1.1）。`ProtocolSpecLoader` 改为拒收协议对象（含嵌套层级）里的 `capabilities`：`ProtocolDto` 没有该字段、未知字段默认被忽略，写错层就是"加载成功但声明丢失"，现在加载期报错并指明必须写进设备条目；其余未知字段的忽略策略不变，设备条目的 `capabilities` 照常加载（`dev/protocol-json.md` §2.1）。
+- **补 CR-148（批次 A 补充修复）**：`capabilities` 写进设备 `override` 原本会被静默丢弃——它先深合并进协议对象，再在 `ProtocolDto` 反序列化时丢掉。现在 `ReadDevices` 在合并前拒绝，报错带 `VID:PID` 与完整字段路径（含嵌套对象与数组元素），`map` / `mapValue` 的取值表不参与扫描。调查结论：拒绝逻辑确实被绕过，但能力到不了最终对象（`ProtocolSpec` 无该成员），危害是"声明静默丢失"而非注入；现有 7 条 `passive.fields` override 与设备顶层 `capabilities` 零影响。见 `dev/protocol-json.md` §2.1。
 
 ## 2026-11-01
 

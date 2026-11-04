@@ -292,10 +292,18 @@ DPI 上限来自 `capabilities` 里的 `dpi` 项，四个具名常量 + 内联�
 
 | PID | 型号 | 声明 | 依据 |
 |---|---|---|---|
-| `0x1412` | VT3（2.4G） | `batteryRead` / `dpiRead` / `dpiLevelRead` / `rateRead` = supported | 真机电量 + `[2]` 档位 + `[3..6]` DPI + `[11]` 回报率设置（[pointer-telemetry.md](../project/pointer-telemetry.md) §0） |
+| `0x1412` | VT3（2.4G） | `batteryRead` / `dpiRead` / `dpiLevelRead` = supported；`rateRead` = **unverified** | 真机电量 + `[2]` 档位 + `[3..6]` DPI（[rapoo.md](rapoo.md) §1.1）；回报率证据不足，见下条 |
 | `0x1B13` | VT2S Air MAX V2（2.4G） | `batteryRead` = supported | rapoo.md §5 实测表 |
 | `0x4B13` | VT2S Air MAX V2（有线） | `batteryRead` = supported | rapoo.md §5 实测表 |
 
+- **VT3 的 `rateRead` 是 `unverified`，不是 `supported`**（2026-11-04 复核降级）：
+  `[11]` 只有**单点观测**——2026-11-01 那次采集读到 `1`（→1000Hz），而当时设备的回报率设置本来就是 1000Hz，
+  没有对照组。**尚未直接验证**「在设备上改变回报率设置后 `[11]` 是否随之变化」。
+  `[17]`（`sensorMode`=`firepower`）只印证帧偏移对齐（1000Hz 下允许的模式集含 `2`），
+  **不能**当成回报率的间接验证。
+  升回 `supported` 需要一次对照实验：改变设备回报率设置 → 观察并确认 `[11]` 随设置变化
+  （至少两个点，其中一个是非 1000Hz 档位）。注意这只是**证据等级**问题，
+  不代表 `[11]` 的偏移与码表有问题——那部分仍是真机逐字节校准过的。
 - **`dpiWrite` / `rateWrite` 一条都没写**：本应用没有任何写入实现，写能力全是 `unverified`。
   不是 `unsupported`——没做不等于确认设备不支持。
 - **VT3 有线 `0x4612` 没声明**：它与 `0x1412` 是同一只鼠标的两条枚举，但 `caps` 为空，

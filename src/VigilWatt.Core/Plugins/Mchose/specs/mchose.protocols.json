@@ -93,6 +93,35 @@
       }
     },
 
+    "cz-block": {
+      "kind": "keyboard",
+      "pollable": true,
+      "probeWindowMs": 1500,
+      "interface": {
+        "usagePage": 65329,
+        "usage": 116,
+        "inputLength": { "eq": 65 },
+        "outputLength": { "eq": 65 }
+      },
+      "active": {
+        "query": { "length": 65, "hex": "00 55 05 00 38 38 00 00 00" },
+        "windowMs": 1200,
+        "attempts": 2,
+        "response": {
+          "tryOffsets": [0, 1],
+          "length": { "eq": 65 },
+          "fullAt": 100,
+          "validPercent": { "min": 1, "max": 100 },
+          "prefix": [ { "offset": 1, "value": 170 }, { "offset": 2, "value": 5 },
+                      { "offset": 11, "value": 170 }, { "offset": 12, "value": 187 } ],
+          "fields": {
+            "percent": { "offset": 41, "mask": 127 },
+            "charge":  { "offset": 41, "mask": 128, "on": "nonzero", "onMiss": "unknown" }
+          }
+        }
+      }
+    },
+
     "keyboard-v1": {
       "kind": "keyboard",
       "implementation": "code",

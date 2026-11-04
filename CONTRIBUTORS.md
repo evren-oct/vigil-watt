@@ -33,6 +33,7 @@ VigilWatt 的设备适配大多来自社区：有人提供抓包样本，有人�
 | **haloneko** | 英菲克 IN9 适配实现（`248A:5B2F`，feature `0x0C` 快照 + 每轮递增序号刷新帧，充电按 `[19]=0x01` 判、充电中不报电量），含 19 项 codec 单测 | [PR #86](https://github.com/evren-oct/vigil-watt/pull/86) |
 | **Skwater** | VXE R1 Nearlink（接收器 `373B:10C9` / 本体 `10C7`）：ATK 同款 17 字节查询帧，两端 `FF02` 都带 20B 干扰集合故都走严格判据；插线由本体接管、两种形态同一设备 ID 与名称。附接口枚举表、原始帧证据与运行期验收记录 | [PR #79](https://github.com/evren-oct/vigil-watt/pull/79) |
 | **Raven3000** | ilovbee b98 键盘（`258A:01BB`）的采集包与逐字节协议说明：20 字节 `0x13` 被动帧、前 19 字节和校验、开关机帧与充电位，2026-11-01 据此落地 `IlovbeePlugin` | [issue #68](https://github.com/evren-oct/vigil-watt/issues/68) |
+| **Archer-Wen** | 迈从官方通用 2.4G dongle（`3837:3033`，G87 V2 / G75 V2 / K87S / K99 V3 共用）的电量：从官方 M HUB WEB 抓帧确认该 dongle 不认 QHW `0x4D`，而是 **CZ 分块读**（`55 05` 读 64 字节状态块），电量与充电同在 `[0x20]`（bit7 充电、bit0..6 百分比）；顺带给协议 JSON 补 `mask` 位域与 `MchoseCzSpecTests` | PR 待提交 |
 
 ## 还能怎么帮
 

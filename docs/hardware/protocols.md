@@ -9,7 +9,7 @@
 | 品牌 | 型号 | VID:PID | 文档 | 状态 |
 |---|---|---|---|---|
 | 迈从 MCHOSE | G87 键盘 | `41E4:2001` | [mchose.md](mchose.md) | 本机验证 |
-| 迈从 MCHOSE | QHW 新一代 dongle | `3837:3033` | [mchose.md](mchose.md) | 已实现，备用 |
+| 迈从 MCHOSE | QHW 新一代 dongle | `3837:3033` | [mchose.md](mchose.md) | 本机验证（走 CZ 分块读 `cz-block`） |
 | 迈从 MCHOSE | K7 V2 Ultra+ 鼠标 | `3837:1018` | [mchose.md](mchose.md) | 贡献者真机 |
 | 迈从 MCHOSE | V9 Pro 耳机 | `291D:385D` | [mchose-v9-pro.md](mchose-v9-pro.md) | 贡献者真机 |
 | 迈从 MCHOSE | X9 耳机 | `3837:6045` | [mchose-x9.md](mchose-x9.md) | 贡献者声明 |

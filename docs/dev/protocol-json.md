@@ -147,6 +147,22 @@
 `type` 的闭集合：`u8` `u16` `u24` `u32` `bit4` `bit`。**没有表达式、没有算术、没有条件**——
 出现这类需求就该写 `codeFamily`。
 
+### 3.0 位域：`mask`
+
+`percent` 与 `charge` 支持 `mask`（1..255，缺省 255 = 整字节），取值先与运算再判：
+`percent` 比 `min`/`max`、`charge` 查 `map` 或判 `on`。用于**电量与标志位同处一字节**的协议：
+
+```jsonc
+"fields": {
+  "percent": { "offset": 41, "mask": 127 },                          // 低 7 位 = 电量
+  "charge":  { "offset": 41, "mask": 128, "on": "nonzero",           // bit7 = 充电中
+               "onMiss": "unknown" }
+}
+```
+
+`mask: 0` 会把所有取值抹平，属配置错误，加载期直接抛。满电仍由 `fullAt` 判，不要试图用
+`mask` 表达"充满"——那是条件，不是字段。
+
 ### 3.1 指针遥测字段（PR-B 起）
 
 `dpiX` / `dpiY` / `dpiLevel` / `dpiLevelCount` / `rateHz` 五个字段独立可选，缺哪个就是"这套协议没有"。

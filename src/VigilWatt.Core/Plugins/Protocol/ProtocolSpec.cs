@@ -84,6 +84,9 @@ internal sealed class PercentSpec
 {
     public required int Offset { get; init; }
     public FieldType Type { get; init; } = FieldType.U8;
+
+    /// <summary>位域掩码，缺省整字节。用于「电量与标志位同处一字节」的协议（如迈从 CZ 通道）。</summary>
+    public int Mask { get; init; } = 0xFF;
 }
 
 /// <summary>充电字段：查表 / 非零即充电 / 零即充电，三选一；满电优先由帧级 <see cref="FrameSpec.FullAt"/> 管。</summary>
@@ -91,6 +94,9 @@ internal sealed class ChargeSpec
 {
     public required int Offset { get; init; }
     public FieldType Type { get; init; } = FieldType.U8;
+
+    /// <summary>位域掩码，缺省整字节；与电量同处一字节时取 bit7 之类。</summary>
+    public int Mask { get; init; } = 0xFF;
     public Dictionary<int, ChargingState>? Table { get; init; }
     public bool NonZero { get; init; }
     public bool Zero { get; init; }

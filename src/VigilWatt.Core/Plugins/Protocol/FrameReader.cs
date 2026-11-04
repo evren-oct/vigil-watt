@@ -43,9 +43,12 @@ internal static class FrameReader
     private static FrameReading ReadFields(FrameSpec spec, byte[] data, int off)
     {
         int? percent = null;
-        if (spec.Percent is { } p && TryRead(data, off + p.Offset, p.Type, out var rawPercent)
-            && rawPercent >= spec.MinPercent && rawPercent <= spec.MaxPercent)
-            percent = rawPercent;
+        if (spec.Percent is { } p && TryRead(data, off + p.Offset, p.Type, out var rawPercent))
+        {
+            // 位域掩码：电量可能与标志位同处一字节（迈从 CZ 通道 bit7 = 充电、bit0..6 = 电量）
+            int value = rawPercent & p.Mask;
+            if (value >= spec.MinPercent && value <= spec.MaxPercent) percent = value;
+        }
 
         var charging = ReadCharging(spec.Charge, data, off, percent);
         if (spec.FullAt is { } fullAt && percent >= fullAt) charging = ChargingState.Full;
@@ -88,6 +91,7 @@ internal static class FrameReader
         // 电量越界说明这帧本身可疑，充电位不能单独采信
         if (percent is null) return ChargingState.Unknown;
         if (!TryRead(data, off + spec.Offset, spec.Type, out var raw)) return ChargingState.Unknown;
+        raw &= spec.Mask;
         if (spec.NonZero) return raw != 0 ? ChargingState.Charging : ChargingState.Discharging;
         if (spec.Zero) return raw == 0 ? ChargingState.Charging : ChargingState.Discharging;
         if (spec.Table is { } table && table.TryGetValue(raw, out var mapped)) return mapped;

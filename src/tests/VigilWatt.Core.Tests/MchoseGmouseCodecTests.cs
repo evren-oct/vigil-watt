@@ -12,9 +12,10 @@ public sealed class MchoseGmouseCodecTests
 {
     /// <summary>本机蝰蛇 X11（A8A5:2255）的接收器产品串；产品串不含它就不认新 VID。</summary>
     private const string KsnakeProduct = "USB Receiver";
-    /// <summary>真机 Gmouse 电量应答：前缀 AA 30，电量在 [8] = 0x59 = 89%，充电在 [9] = 0。</summary>
+    /// <summary>真机 Gmouse 电量应答：完整帧头 <c>AA 30 A5 0B 0A 01 01 01</c>，电量在 [8] = 0x59 = 89%，充电在 [9] = 0。
+    /// 帧头与 dongle 自己的帧（<c>AA FA A5 5B 38…</c>）只差一个字节，用途见 <see cref="UnsolicitedFramesSharingPrefixAreNotTreatedAsBattery"/>。</summary>
     private const string BatteryReply =
-        "AA30" + "000000000000" + "59" + "00";
+        "AA30" + "A50B0A010101" + "59" + "00";
 
     private static byte[] Frame(string hex, int totalLength = MchoseGmouseCodec.FrameLength)
     {
@@ -49,7 +50,7 @@ public sealed class MchoseGmouseCodecTests
     [Fact]
     public void ParsesChargingReply()
     {
-        var charging = Frame("AA30" + "000000000000" + "64" + "01");
+        var charging = Frame("AA30" + "A50B0A010101" + "64" + "01");
 
         Assert.True(MchoseGmouseCodec.TryParse(charging, out int percent, out bool isCharging));
 
@@ -88,6 +89,19 @@ public sealed class MchoseGmouseCodecTests
     [InlineData("FAFB070000")]        // QHW 的 CZ 推送
     [InlineData("0000000000000000")]  // 全零噪声
     public void ForeignFramesAreNotParsed(string hex)
+        => Assert.False(MchoseGmouseCodec.TryParse(Frame(hex), out _, out _));
+
+    /// <summary>
+    /// dongle 会周期性地在对我们查询的应答之前塞一条**自发帧**（本机实录 <c>AA FA A5 5B 38 01 01 01 D0 …</c>）。
+    /// 它同样以 <c>AA</c> 开头，[8]=0xD0 落到 1..100 之外已能被拒；但若只比 <c>AA 30</c> 前缀，
+    /// <c>AA 30 …</c> 形状的自发帧就会带着无关字节被当成电量——所以判据必须是完整帧头。
+    /// </summary>
+    [Theory]
+    [InlineData("AAFA" + "A55B38010101" + "D0" + "50")]  // 本机实录自发帧（[8]=208%）
+    [InlineData("AA30" + "A55B38010101" + "30" + "00")]  // 前缀对、序列号段不对 → 不是查询回包
+    [InlineData("AA30" + "000000000000" + "30" + "00")]  // 只有前缀对，其余全零
+    [InlineData("AA30" + "A50B0A010100" + "30" + "00")]  // 帧头差最后一个字节
+    public void UnsolicitedFramesSharingPrefixAreNotTreatedAsBattery(string hex)
         => Assert.False(MchoseGmouseCodec.TryParse(Frame(hex), out _, out _));
 
     /// <summary>电量越界（0 是"还没算出来"的占位、>100 不可信）不能报出去。</summary>

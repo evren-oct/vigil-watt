@@ -64,7 +64,12 @@ public static class MchoseGmouseCodec
         return report;
     }
 
-    /// <summary>解析电量应答：前缀 <c>AA 30</c>（偏移 0 或 1），电量 <c>[off+8]</c>、充电 <c>[off+9]</c>（非 0 即充电中）。</summary>
+    /// <summary>电量应答的固定帧头 <c>[2..7]</c>：查询回包的第二字节是 0x30、序列号逐字节复述 5B 38 01 01 01。见 ksnake.md §7.6。</summary>
+    private static readonly byte[] ReplyHead = { 0xAA, 0x30, 0xA5, 0x0B, 0x0A, 0x01, 0x01, 0x01 };
+
+    /// <summary>解析电量应答：<c>[off..off+7]</c> 必须等于 <c>AA 30 A5 0B 0A 01 01 01</c>（偏移 0 或 1）。
+    /// 只比前缀 <c>AA 30</c> 会把 <c>AA FA A5 5B 38…</c> 这类自发帧误当电量（[8]=0xD0，即 208%，见 ksnake.md §7.6）。
+    /// 电量 <c>[off+8]</c>、充电 <c>[off+9]</c>（非 0 即充电中）。</summary>
     public static bool TryParse(ReadOnlySpan<byte> report, out int percent, out bool charging)
     {
         percent = 0;
@@ -73,7 +78,7 @@ public static class MchoseGmouseCodec
         foreach (int off in Offsets)
         {
             if (report.Length < off + 10) continue;
-            if (report[off] != 0xAA || report[off + 1] != 0x30) continue;
+            if (!report.Slice(off, ReplyHead.Length).SequenceEqual(ReplyHead)) continue;
 
             int value = report[off + 8];
             if (!IsPlausiblePercent(value)) return false;

@@ -102,7 +102,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     private static MchoseInterfaceKind Classify(HidDeviceInfo info)
         => MchoseInterfaceClassifier.Classify(info.VendorId, info.ProductId, info.DevicePath,
             info.UsagePage, info.Usage, info.InputReportLength, info.OutputReportLength,
-            info.FeatureReportLength, info.OutputReportId);
+            info.FeatureReportLength, info.OutputReportId, info.Product);
 
     /// <summary>G75 与 AULA F99 Pro 的接口指纹完全一致（3554:FA09 / 0xFF02:0x0002 / 20 字节），以会话 ACK 的型号密码定归属。</summary>
     private static bool IsSharedWithAula(HidDeviceInfo info)
@@ -130,6 +130,9 @@ public sealed class MchosePlugin : BatteryPluginBase
             return "迈从 X9";
         if (info.VendorId == MchoseV9ProCodec.VendorId && info.ProductId == MchoseV9ProCodec.ProductId)
             return "迈从 V9 Pro";
+        // 同代接收器只说自己是「USB Receiver」，型号回执里没有名字，只能按 VID/PID 写死（mchose.md §4.1）
+        if (info.VendorId == MchoseGmouseCodec.VidKsnake && info.ProductId == MchoseGmouseCodec.PidKsnake)
+            return "蝰蛇 X11";
 
         var product = string.IsNullOrEmpty(info.Product) ? "" : info.Product.Replace("MCHOSE", "").Trim();
         var model = KnownModelByPath.TryGetValue(info.DevicePath, out var m) ? m : "";
@@ -188,7 +191,8 @@ public sealed class MchosePlugin : BatteryPluginBase
 
         var kind = MchoseInterfaceClassifier.Classify(handle.Info.VendorId, handle.Info.ProductId, path,
             handle.Info.UsagePage, handle.Info.Usage, handle.Info.InputReportLength,
-            handle.Info.OutputReportLength, handle.Info.FeatureReportLength, handle.Info.OutputReportId);
+            handle.Info.OutputReportLength, handle.Info.FeatureReportLength, handle.Info.OutputReportId,
+            handle.Info.Product);
 
         // 耳机必须排在下面「≥60 字节只走鼠标」之前：它的输出同样是 64 字节，
         // 落到鼠标分支会往耳机发 0x11/0x06 触发帧。判据是完整接口匹配，抢不走键盘/鼠标的通道。

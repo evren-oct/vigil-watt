@@ -37,6 +37,13 @@ public sealed class MchoseInterfaceClassifierTests
     [InlineData(0x3837, 0x4245, @"\\?\hid#vid_3837&pid_4245&mi_01&col05#test", 0xFF06, 0x0002, 64, 64, 0, 0x00, MchoseInterfaceKind.MouseV2)]
     // 标准键盘用法：即使 VID 是迈从也不是配置通道
     [InlineData(0x3837, 0x201B, @"\\?\hid#vid_3837&pid_201b&mi_00&col01#test", 0x0001, 0x0006, 20, 20, 0, 0x00, MchoseInterfaceKind.None)]
+    // 蝰蛇 X11 接收器（A8A5:2255）：mi_02 的 FF01/0x0010 双向 65 字节 = Gmouse 命令通道
+    [InlineData(0xA8A5, 0x2255, @"\\?\hid#vid_a8a5&pid_2255&mi_02#test", 0xFF01, 0x0010, 65, 65, 0, 0x00, MchoseInterfaceKind.Gmouse)]
+    // 同一接收器的其它厂商集合一律 None——不能落 MouseV2 兜底被白写触发帧（CR-124）
+    [InlineData(0xA8A5, 0x2255, @"\\?\hid#vid_a8a5&pid_2255&mi_01&col05#test", 0xFF06, 0x0002, 64, 64, 0, 0x00, MchoseInterfaceKind.None)]
+    [InlineData(0xA8A5, 0x2255, @"\\?\hid#vid_a8a5&pid_2255&mi_01&col04#test", 0xFF05, 0x0002, 64, 0, 0, 0x00, MchoseInterfaceKind.None)]
+    [InlineData(0xA8A5, 0x2255, @"\\?\hid#vid_a8a5&pid_2255&mi_00&col04#test", 0xFFA5, 0x0088, 2, 0, 0, 0x00, MchoseInterfaceKind.None)]
+    [InlineData(0xA8A5, 0x2255, @"\\?\hid#vid_a8a5&pid_2255&mi_00&col01#test", 0x0001, 0x0002, 9, 0, 0, 0x00, MchoseInterfaceKind.None)]
     // 别家 VID：罗技（046D）、雷柏（24AE）、AULA（3554）都不能进迈从链路
     [InlineData(0x046D, 0xC548, @"\\?\hid#vid_046d&pid_c548&mi_01&col01#test", 0xFF00, 0x0001, 20, 20, 0, 0x11, MchoseInterfaceKind.None)]
     [InlineData(0x24AE, 0x1412, @"\\?\hid#vid_24ae&pid_1412&mi_01&col01#test", 0xFF00, 0x0002, 19, 19, 0, 0x07, MchoseInterfaceKind.None)]
@@ -49,8 +56,19 @@ public sealed class MchoseInterfaceClassifierTests
     public void ClassifyRoutesEachLinkToItsOwnKind(ushort vid, ushort pid, string path,
         ushort page, ushort usage, ushort input, ushort output, ushort feature, int id,
         MchoseInterfaceKind expected)
+        // 蝰蛇接收器只按「USB Receiver」产品串放行（其它用例的 VID 不看这个参数）
         => Assert.Equal(expected, MchoseInterfaceClassifier.Classify(vid, pid, path,
-            page, usage, input, output, feature, (byte)id));
+            page, usage, input, output, feature, (byte)id,
+            vid == 0xA8A5 ? "USB Receiver" : ""));
+
+    /// <summary>蝰蛇接收器的新 VID 还要求产品串是接收器：兄弟型号共用 VID/PID 时宁可漏认，不误写帧。</summary>
+    [Theory]
+    [InlineData("USB Receiver", MchoseInterfaceKind.Gmouse)]
+    [InlineData("K-snake X11", MchoseInterfaceKind.None)]
+    [InlineData("", MchoseInterfaceKind.None)]
+    public void KsnakeGmouseRequiresReceiverProduct(string product, MchoseInterfaceKind expected)
+        => Assert.Equal(expected, MchoseInterfaceClassifier.Classify(0xA8A5, 0x2255,
+            @"\\?\hid#vid_a8a5&pid_2255&mi_02#test", 0xFF01, 0x0010, 65, 65, 0, 0x00, product));
 
     /// <summary>耳机判据要求 feature 长度为 0、reportId 为 0x55，任一条不满足就不能落到耳机链路。</summary>
     [Theory]

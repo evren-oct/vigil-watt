@@ -64,6 +64,7 @@
 | **CR-121** | **便携版的数据和日志仍落在 `%LOCALAPPDATA%`**，应在 exe 所在目录。`AppPaths` 现在只按 `#if DEBUG` 分两档（Debug → bin 下 `data\`，Release → `%LOCALAPPDATA%\VigilWatt`），没有「便携模式」这一档。要做得多一个判定（exe 旁标记文件，或按 exe 目录可写性），且老用户升级时已有数据不能丢 | issue #81（`AppPaths`、`dev/build.md` §3.1、`runtime-pitfalls.md` §20） | `open` |
 | **CR-122** | **多显示器不同缩放比例下小组件缩放不对**。贴片是原生子窗口（`SetParent` 进 `Shell_TrayWnd`）、小组件走 `TransparentWindowSurface`，两者对 DPI 的处理本来就不同。issue 没给截图和显示器配置，需先复现：跨屏拖动、各屏缩放不同、拖完再改缩放 | issue #70（`Services/WidgetWindow.xaml.cs`、`runtime-pitfalls.md` §17） | `open` |
 | **CR-123** | issue #41 **混了三个互不相关的问题**，都缺复现信息：① 貔貅75 键盘不识别；② 安装版装完打开即闪退但进程残留（完全卸载重装才恢复）；③ 英菲克 2.4G 鼠标搜不到。②最像真 bug（配置损坏或单实例残留），需先要日志与 `settings.json` | issue #41 | `open` |
+| **CR-124** | 迈从键鼠插件默认关闭（会写帧的品牌都一样），而设置页摘要是**只读文本**（`PluginSummaryText`），新用户装完看到的永远是「当前都没开启」，不会知道要自己去点开。本轮适配蝰蛇 X11 时实测踩到：设备列表空白、日志里连一条「跳过」都没有，要从「0 条认领」反推 | `Views/SettingsPage.xaml.cs:UpdatePluginSummary`、`Settings/AppSettings.cs:PluginEnabled`（`hardware/mchose.md` §4） | `open` |
 
 ## 重构候选（未做）
 

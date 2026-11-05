@@ -15,7 +15,7 @@ public enum MchoseInterfaceKind
     /// <summary>鼠标 K7 V2 Ultra+ 的命令通道（64 字节 output `0x4D`，3837:1018）。</summary>
     MouseK7,
 
-    /// <summary>鼠标 Gmouse 主动查询接口（65 字节，usagePage 0xFF01/usage 0x10，3837:4245 等）。</summary>
+    /// <summary>鼠标 Gmouse 主动查询接口（65 字节，usagePage 0xFF01/usage 0x10，3837:4245 / A8A5:2255）。</summary>
     Gmouse,
 
     /// <summary>V9 Pro 耳机（64 字节、reportId `0x55`）。</summary>
@@ -45,16 +45,25 @@ public static class MchoseInterfaceClassifier
     /// <summary>
     /// 判定接口去向。<b>耳机必须排在最前</b>：它也是 64 字节输出，落到鼠标分支会收到 `0x11/0x06` 触发帧。
     /// 品牌排除（罗技/雷柏/北通/英菲克/HECATE/AULA 的 VID）留在插件里做纵深防御，这里只管迈从自己的指纹。
+    /// <paramref name="product"/> 只给 Gmouse 的新 VID 收窄用（见其 §4.6）。
     /// </summary>
     public static MchoseInterfaceKind Classify(ushort vendorId, ushort productId, string path,
         ushort usagePage, ushort usage, ushort inputLength, ushort outputLength,
-        ushort featureLength, byte? outputReportId)
+        ushort featureLength, byte? outputReportId, string product = "")
     {
         // 耳机是独立 VID/PID，判据与键鼠完全独立；同 VID 的其它 PID 一律不认（不做型号推断）
         if (vendorId == MchoseV9ProCodec.VendorId)
             return MchoseV9ProCodec.IsSupportedInterface(vendorId, productId, path, usagePage, usage,
                 inputLength, outputLength, featureLength, outputReportId)
                 ? MchoseInterfaceKind.HeadsetV9
+                : MchoseInterfaceKind.None;
+
+        // 同一个 K-snake 接收器的其余厂商接口：Gmouse 只认双向 65 字节那条，其它一律 None。
+        // 不加这道闸的话 0xFF06/0x0002（64/64）会被下面的 V2 兜底认领，每 15 秒白写一条触发帧（CR-94 同源）。
+        if (MchoseGmouseCodec.IsSiblingVendorInterface(vendorId, productId))
+            return MchoseGmouseCodec.IsSupportedInterface(vendorId, productId, product, usagePage, usage,
+                inputLength, outputLength)
+                ? MchoseInterfaceKind.Gmouse
                 : MchoseInterfaceKind.None;
 
         if (vendorId != MchoseVid && vendorId != MchoseLegacyVid) return MchoseInterfaceKind.None;
@@ -79,7 +88,7 @@ public static class MchoseInterfaceClassifier
 
         // Gmouse 主动查询接口：同样是 ≥60 字节，但 usagePage=0xFF01/usage=0x10，与 V2 被动 E2 链路
         // 靠完整指纹区分。必须排在「≥60 字节只走鼠标」之前，否则 G3 V2 会被当成等 E2 帧的接收器白等。
-        if (MchoseGmouseCodec.IsSupportedInterface(vendorId, productId, usagePage, usage, inputLength, outputLength))
+        if (MchoseGmouseCodec.IsSupportedInterface(vendorId, productId, product, usagePage, usage, inputLength, outputLength))
             return MchoseInterfaceKind.Gmouse;
 
         // 鼠标接收器厂商接口 65 = 64 数据 + 1 report ID；V2 世代长度差异大，按 ≥60 收口

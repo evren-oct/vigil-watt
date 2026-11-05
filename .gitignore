@@ -14,3 +14,7 @@ dist/
 .workbuddy/
 .workbuddy-ai/
 .zcode/
+
+# 测试运行产物（dotnet test --logger trx）
+TestResults/
+

@@ -201,7 +201,7 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 | **`[0x20]` bit0..6** | **电量百分比**（实测 0x5A=90、0x62=98、0x64=100，与官方页面逐次一致） |
 | `[0x20]` 以下/以上其余字节 | 语义未定，不参与判定 |
 
-充满判据 = 未充电且电量 100，与官方前端 `resolveMCChargeStatus` 一致（JSON 里用 `fullAt: 100`）。
+充满判据 = 未充电且电量 100，与官方前端 `resolveMCChargeStatus` 一致。JSON 里**不写 `fullAt`**——通用满电阈值会无条件覆盖设备报的充电态，改用插件层的 `MchoseSpecs.ResolveFull` 补判：100% 且 bit7=0 才判"已充满"，bit7=1 仍显示"充电中"。
 
 **证据来源**：浏览器 hook `HIDDevice.sendReport`，在官方 www.mchose.com.cn 连上这颗 dongle 时抓到两条读帧 `55 05 00 38 38 00` / `55 05 00 40 08 38`；原样回放即有应答，随后按插拔对照锁定 `[0x20]` 的位含义。
 
@@ -210,7 +210,7 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 - **QHW `0x4D`**（§2.1/2.2）：这颗 dongle 全静默，`docs/protocols.md` 里"已实现，备用"说的就是它
 - **官方 `audio.mc` 单帧电量命令**（`reportId 0x55`、帧头 `AA`、`subCmd 11`）：4 种摆放全失败，其中两条回错误帧 `00 AB AA 01 00 00 01 00 0A 63 73 65 72 72`（尾部 ASCII `cserr`）。CZ 通道的命令字在 `[2]`，把 MC 的帧头 `0xAA` 放进去会被当未知命令拒掉；`0xAB` 首字节 + 明文错误串才是真 NAK
 
-**注意**：`[0x20]` 的低 7 位是电压估算，同簇内会有 ±2 抖动（90→89→90）。所以"充满"只能靠 `fullAt` 补判，不是独立字段。
+**注意**：`[0x20]` 的低 7 位是电压估算，同簇内会有 ±2 抖动（90→89→90）。所以"充满"只能靠 `MchoseSpecs.ResolveFull` 补判，不是独立字段。
 
 ## 3. MCHOSE K7 V2 Ultra+（接收器 VID_3837&PID_1018）—— 贡献者真机验证
 

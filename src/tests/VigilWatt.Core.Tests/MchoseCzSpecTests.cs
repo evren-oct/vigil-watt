@@ -1,4 +1,5 @@
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Plugins.Mchose;
 using VigilWatt.Core.Plugins.Protocol;
 using Xunit;
 
@@ -69,7 +70,8 @@ public sealed class MchoseCzSpecTests
         Assert.Equal(0x7F, response.Percent.Mask);
         Assert.Equal(41, response.Charge!.Offset);
         Assert.Equal(0x80, response.Charge.Mask);
-        Assert.Equal(100, response.FullAt!.Value);
+        // 不声明 fullAt：通用满电阈值会覆盖设备报的充电态，迈从改在插件层按官方口径补判（见 CZ5/CZ8）
+        Assert.Null(response.FullAt);
     }
 
     // ── 帧解析：三态 ──────────────────────────────────────────────────
@@ -93,12 +95,98 @@ public sealed class MchoseCzSpecTests
     }
 
     [Fact]
-    public void CZ5_满电判充满_优先于充电位()
+    public void CZ5_满电且已停止充电判充满()
     {
+        // 真机充满态 0x64：100% 且 bit7=0（设备已停止充电）。解析层只如实报位，满电由插件补判。
         var r = FrameReader.Read(Response, FrameWith(0x64));
-
         Assert.Equal(100, r!.Value.Percent);
-        Assert.Equal(ChargingState.Full, r.Value.Charging);
+        Assert.Equal(ChargingState.Discharging, r.Value.Charging);
+
+        var (percent, charging) = MchoseSpecs.ResolveFull(r.Value.Percent, r.Value.Charging);
+        Assert.Equal(100, percent);
+        Assert.Equal(ChargingState.Full, charging);
+    }
+
+    [Fact]
+    public void CZ8_满电但仍明确在充电时保留充电态()
+    {
+        // 0xE4 = 100 | 0x80：电量到顶但设备明确报充电 → 充电中，满电补判不得覆盖
+        var r = FrameReader.Read(Response, FrameWith(0xE4));
+        Assert.Equal(100, r!.Value.Percent);
+        Assert.Equal(ChargingState.Charging, r.Value.Charging);
+
+        var (percent, charging) = MchoseSpecs.ResolveFull(r.Value.Percent, r.Value.Charging);
+        Assert.Equal(100, percent);
+        Assert.Equal(ChargingState.Charging, charging);
+    }
+
+    [Fact]
+    public void CZ9_未满电与未知状态不补判()
+    {
+        Assert.Equal(ChargingState.Discharging, MchoseSpecs.ResolveFull(90, ChargingState.Discharging).Charging);
+        Assert.Equal(ChargingState.Unknown, MchoseSpecs.ResolveFull(100, ChargingState.Unknown).Charging);
+        Assert.Equal(ChargingState.Unknown, MchoseSpecs.ResolveFull(null, ChargingState.Unknown).Charging);
+    }
+
+    [Fact]
+    public void CZ10_未声明mask的协议保持整字节语义()
+    {
+        var bundles = new[]
+        {
+            ProtocolSpecLoader.Load(Protocols, Devices),
+            ProtocolSpecLoader.Load(
+                "VigilWatt.Core.Plugins.Rapoo.specs.rapoo.protocols.json",
+                "VigilWatt.Core.Plugins.Rapoo.rapoo-catalog.json"),
+        };
+
+        foreach (var spec in bundles.SelectMany(b => b.Protocols.Values).Where(s => s.Name != "cz-block"))
+        {
+            foreach (var frame in new[] { spec.Passive, spec.Active?.Response })
+            {
+                if (frame?.Percent is { } p) Assert.Equal(0xFF, p.Mask);
+                if (frame?.Charge is { } c) Assert.Equal(0xFF, c.Mask);
+            }
+        }
+    }
+
+    [Fact]
+    public void CZ11_电量与充电的mask可分别配置且互不影响()
+    {
+        const string protocols = """
+            {
+              "vendors": ["0x3837"],
+              "protocols": {
+                "p": {
+                  "kind": "keyboard",
+                  "interface": { "usagePage": 65329 },
+                  "active": {
+                    "query": { "length": 8 },
+                    "response": {
+                      "length": { "eq": 8 },
+                      "validPercent": { "min": 1, "max": 100 },
+                      "fields": {
+                        "percent": { "offset": 1, "mask": 15 },
+                        "charge":  { "offset": 2, "mask": 128, "on": "nonzero" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """;
+        var spec = ProtocolSpecLoader.LoadFromJson(protocols, """{ "devices": [] }""")
+            .Protocols["p"].Active!.Response;
+
+        // [1]=0x0A 只取低 4 位 → 10%；[2]=0x80 只取 bit7 → 充电中
+        var r = FrameReader.Read(spec, [0x00, 0x0A, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+        Assert.Equal(10, r!.Value.Percent);
+        Assert.Equal(ChargingState.Charging, r.Value.Charging);
+
+        // 两个字段的偏移与掩码互不影响：换 [2] 不影响电量判读
+        var discharging = FrameReader.Read(spec, [0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        Assert.Equal(10, discharging!.Value.Percent);
+        Assert.Equal(ChargingState.Discharging, discharging.Value.Charging);
     }
 
     [Fact]

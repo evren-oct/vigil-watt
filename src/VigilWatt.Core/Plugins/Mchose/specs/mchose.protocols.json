@@ -110,7 +110,6 @@
         "response": {
           "tryOffsets": [0, 1],
           "length": { "eq": 65 },
-          "fullAt": 100,
           "validPercent": { "min": 1, "max": 100 },
           "prefix": [ { "offset": 1, "value": 170 }, { "offset": 2, "value": 5 },
                       { "offset": 11, "value": 170 }, { "offset": 12, "value": 187 } ],

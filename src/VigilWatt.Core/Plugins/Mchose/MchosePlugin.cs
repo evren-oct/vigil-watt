@@ -337,7 +337,13 @@ public sealed class MchosePlugin : BatteryPluginBase
 
     /// <summary>形态固定的协议交给解释器：帧模板、窗口、重试次数全在 JSON 里，这里只剩一次调用。</summary>
     private (string Protocol, int? Percent, ChargingState Charging)? TrySpec(HidDeviceHandle handle)
-        => Engine.ProbeAsync(handle, IsWritesEnabled(SettingsKey)).GetAwaiter().GetResult();
+    {
+        var reading = Engine.ProbeAsync(handle, IsWritesEnabled(SettingsKey)).GetAwaiter().GetResult();
+        if (reading is not { } r || r.Protocol != ProtocolCzBlock) return reading;
+
+        var (percent, charging) = MchoseSpecs.ResolveFull(r.Percent, r.Charging);
+        return (r.Protocol, percent, charging);
+    }
 
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
@@ -358,7 +364,11 @@ public sealed class MchosePlugin : BatteryPluginBase
             if (outcome.Attempt == PollAttempt.NotAttempted) return null;
             if (outcome.Attempt == PollAttempt.Answered) ReportPollAnswered(dev);
             else ReportPollFailure(dev);
-            return outcome.Attempt == PollAttempt.Answered ? (outcome.Percent, outcome.Charging) : null;
+            if (outcome.Attempt != PollAttempt.Answered) return null;
+
+            return dev.Protocol == ProtocolCzBlock
+                ? MchoseSpecs.ResolveFull(outcome.Percent, outcome.Charging)
+                : (outcome.Percent, outcome.Charging);
         }
 
         var read = dev.Protocol switch

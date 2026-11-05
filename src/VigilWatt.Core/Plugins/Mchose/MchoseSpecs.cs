@@ -1,3 +1,4 @@
+using VigilWatt.Core.Models;
 using VigilWatt.Core.Plugins.Protocol;
 
 namespace VigilWatt.Core.Plugins.Mchose;
@@ -19,4 +20,10 @@ internal static class MchoseSpecs
     public static ProtocolSpec Get(string protocol)
         => Engine.SpecOf(protocol)
            ?? throw new InvalidOperationException($"mchose.protocols.json 里没有协议 \"{protocol}\"");
+
+    /// <summary>满电补判：100% 且设备明确报未充电才判 Full（官方 resolveMCChargeStatus 同口径），充电中与未知态都不猜。</summary>
+    public static (int? Percent, ChargingState Charging) ResolveFull(int? percent, ChargingState charging)
+        => percent >= 100 && charging == ChargingState.Discharging
+            ? (percent, ChargingState.Full)
+            : (percent, charging);
 }

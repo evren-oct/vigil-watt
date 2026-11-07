@@ -588,12 +588,16 @@ public sealed class RapooSpecTests
     [Fact]
     public void R42_能力查询不打开设备句柄()
     {
-        // 路径指向不存在的设备：只要走 CreateFile 就会抛，能正常返回说明它只读配置
+        // 路径指向不存在的设备：只要走 CreateFile 就会抛，能正常返回说明它只读配置。
+        // 接口指纹必须写全——能力查询与认领同源，形态不符会被当成未收录（见 DeviceCapabilityTests 边界组）
         var info = new VigilWatt.Core.Hid.HidDeviceInfo
         {
             DevicePath = @"\\?\hid#vid_24ae&pid_1412#nope",
             VendorId = 0x24AE,
             ProductId = 0x1412,
+            UsagePage = 0xFF00,
+            Usage = 0x0002,
+            InputReportLength = 19,
         };
 
         Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));

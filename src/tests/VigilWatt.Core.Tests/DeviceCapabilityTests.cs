@@ -1,3 +1,4 @@
+using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Plugins.Protocol;
 using Xunit;
@@ -5,7 +6,7 @@ using Xunit;
 namespace VigilWatt.Core.Tests;
 
 /// <summary>
-/// 功 能： CapabilitySet 的三态语义、非法值拒绝，以及"能力属于设备而非协议"的隔离性。
+/// 功 能： CapabilitySet 的三态语义、非法值拒绝，"能力属于设备而非协议"的隔离性，以及查询的接口边界。
 /// 2026/11/04 21:05:00 xliu
 /// 加载期校验在 ProtocolSpecLoaderTests，真实目录在 RapooSpecTests。规则见 docs/dev/protocol-json.md §2.1。
 /// </summary>
@@ -185,5 +186,127 @@ public sealed class DeviceCapabilityTests
             bundle.Devices[((ushort)0x1234, (ushort)0x0001)].Capabilities.Of(DeviceCapability.DpiRead));
         Assert.Equal(CapabilityState.Unverified,
             bundle.Devices[((ushort)0x1234, (ushort)0x0002)].Capabilities.Of(DeviceCapability.DpiRead));
+    }
+
+    // ── 查询边界：能力只对「本插件认领的那条接口」成立（PR-C1）────────
+
+    private const string BoundaryProtocols = """
+        {
+          "vendors": ["0x1234"],
+          "protocols": {
+            "data-p": {
+              "kind": "mouse",
+              "interface": { "usagePage": 65280, "usage": 2, "inputLength": 19 },
+              "passive": {
+                "length": { "min": 19 },
+                "fields": { "percent": { "offset": 8, "type": "u8" } }
+              }
+            },
+            "code-p": {
+              "kind": "mouse",
+              "implementation": "code",
+              "codeFamily": "SomeFamily",
+              "interface": { "usagePage": 65280, "usage": 2, "inputLength": 19 }
+            },
+            "none-p": {
+              "kind": "mouse",
+              "implementation": "none",
+              "interface": { "usagePage": 65280, "usage": 2, "inputLength": 19 }
+            }
+          }
+        }
+        """;
+
+    private const string BoundaryDevices = """
+        {
+          "devices": [
+            { "vid": "0x1234", "pid": "0x0001", "model": "Data", "kind": "mouse", "protocol": "data-p",
+              "capabilities": { "batteryRead": "supported" } },
+            { "vid": "0x1234", "pid": "0x0002", "model": "Code", "kind": "mouse", "protocol": "code-p",
+              "capabilities": { "batteryRead": "supported" } },
+            { "vid": "0x1234", "pid": "0x0003", "model": "None", "kind": "mouse", "protocol": "none-p",
+              "capabilities": { "batteryRead": "supported" } }
+          ]
+        }
+        """;
+
+    private static readonly ProtocolEngine BoundaryEngine =
+        ProtocolEngine.FromJson(BoundaryProtocols, BoundaryDevices);
+
+    /// <summary>默认参数就是目录里那条接口的形态；改任一项即"同一 VID/PID 的另一条 collection"。</summary>
+    private static HidDeviceInfo Info(ushort pid,
+        ushort usagePage = 0xFF00, ushort usage = 0x0002, ushort inputLength = 19) => new()
+    {
+        DevicePath = $@"\\?\hid#vid_1234&pid_{pid:x4}#test",
+        VendorId = 0x1234,
+        ProductId = pid,
+        UsagePage = usagePage,
+        Usage = usage,
+        InputReportLength = inputLength,
+    };
+
+    [Fact]
+    public void 接口匹配且实现为Data时返回设备声明()
+    {
+        Assert.Equal(CapabilityState.Supported, BoundaryEngine.CapabilityOf(Info(0x0001), DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Unverified, BoundaryEngine.CapabilityOf(Info(0x0001), DeviceCapability.DpiRead));
+    }
+
+    [Fact]
+    public void 接口匹配且实现为Code时返回设备声明()
+        => Assert.Equal(CapabilityState.Supported,
+            BoundaryEngine.CapabilityOf(Info(0x0002), DeviceCapability.BatteryRead));
+
+    [Fact]
+    public void UsagePage不符时返回未验证()
+        => Assert.Equal(CapabilityState.Unverified,
+            BoundaryEngine.CapabilityOf(Info(0x0001, usagePage: 0x0001), DeviceCapability.BatteryRead));
+
+    [Fact]
+    public void Usage不符时返回未验证()
+        => Assert.Equal(CapabilityState.Unverified,
+            BoundaryEngine.CapabilityOf(Info(0x0001, usage: 0x0001), DeviceCapability.BatteryRead));
+
+    [Fact]
+    public void 报告长度不符时返回未验证()
+        => Assert.Equal(CapabilityState.Unverified,
+            BoundaryEngine.CapabilityOf(Info(0x0001, inputLength: 32), DeviceCapability.BatteryRead));
+
+    [Fact]
+    public void 同VIDPID的另一条接口不继承目录声明()
+    {
+        // 同一只鼠标既有厂商集合也有鼠标集合：只有前者被认领，后者不能"因为 VID/PID 相同"拿到 Supported
+        var vendor = Info(0x0001);
+        var mouse = Info(0x0001, usagePage: 0x0001, usage: 0x0002, inputLength: 8);
+
+        Assert.NotNull(BoundaryEngine.Resolve(vendor));
+        Assert.Null(BoundaryEngine.Resolve(mouse));
+        Assert.Equal(CapabilityState.Supported, BoundaryEngine.CapabilityOf(vendor, DeviceCapability.BatteryRead));
+        Assert.Equal(CapabilityState.Unverified, BoundaryEngine.CapabilityOf(mouse, DeviceCapability.BatteryRead));
+    }
+
+    [Fact]
+    public void 未收录设备返回未验证()
+        => Assert.Equal(CapabilityState.Unverified,
+            BoundaryEngine.CapabilityOf(Info(0xFFFF), DeviceCapability.BatteryRead));
+
+    [Fact]
+    public void 实现为None的目录条目即使声明了能力也返回未验证()
+    {
+        // 目录收录但没适配：接口形态完全相符也不能把声明当"已验证"
+        Assert.Null(BoundaryEngine.Resolve(Info(0x0003)));
+        Assert.Equal(CapabilityState.Unverified,
+            BoundaryEngine.CapabilityOf(Info(0x0003), DeviceCapability.BatteryRead));
+    }
+
+    [Fact]
+    public void 非法枚举值在三种边界下都抛()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => BoundaryEngine.CapabilityOf(Info(0x0001), (DeviceCapability)99));
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => BoundaryEngine.CapabilityOf(Info(0x0003), (DeviceCapability)99));
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => BoundaryEngine.CapabilityOf(Info(0x0001, usagePage: 0x0001), (DeviceCapability)99));
     }
 }

@@ -40,6 +40,10 @@ internal sealed class ProtocolEngine
     public static ProtocolEngine Load(string protocolsResource, string devicesResource)
         => new(ProtocolSpecLoader.Load(protocolsResource, devicesResource));
 
+    /// <summary>测试接缝：与 <see cref="Load"/> 走同一加载核心，直接喂两份 JSON 文本。</summary>
+    internal static ProtocolEngine FromJson(string protocolsJson, string devicesJson)
+        => new(ProtocolSpecLoader.LoadFromJson(protocolsJson, devicesJson));
+
     /// <summary>显示名前缀（"雷柏"），来自 devices.json 的 brand 字段。</summary>
     public string Brand => _bundle.Brand;
 
@@ -78,11 +82,17 @@ internal sealed class ProtocolEngine
         => _bundle.Devices.GetValueOrDefault((info.VendorId, info.ProductId));
 
     /// <summary>
-    /// 设备能力查询：**纯配置查询**，不开句柄、不发帧、不动解析状态与去抖。
-    /// 未收录设备按"什么也没声明"处理（Unverified）；非法枚举值仍然抛，不拿默认值兜底。
+    /// 设备能力查询：**纯配置查询**，不开句柄、不发帧、不动解析状态与去抖。判据与认领同源，
+    /// 接口不符 / implementation=none / 未收录一律 Unverified；非法枚举值仍然抛，不拿默认值兜底。
     /// </summary>
     public CapabilityState CapabilityOf(HidDeviceInfo info, DeviceCapability capability)
-        => (DeviceOf(info)?.Capabilities ?? CapabilitySet.Empty).Of(capability);
+        => DeclaredCapabilities(info).Of(capability);
+
+    /// <summary>目录按 VID/PID 索引，但同一台设备的鼠标集合、底座集合不参与认领，不能借用目录里的声明。</summary>
+    private CapabilitySet DeclaredCapabilities(HidDeviceInfo info)
+        => Resolve(info) is null
+            ? CapabilitySet.Empty
+            : DeviceOf(info)?.Capabilities ?? CapabilitySet.Empty;
 
     public DeviceKind KindOf(string protocol) => SpecOf(protocol)?.Kind ?? DeviceKind.Unknown;
 

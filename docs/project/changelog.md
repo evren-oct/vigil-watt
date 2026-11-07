@@ -3,6 +3,10 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-07
+
+- **修 Capability 查询的设备匹配边界（PR-C1）**：`ProtocolEngine.CapabilityOf` 原本只按 VID/PID 取目录条目，同一只鼠标的鼠标集合、底座集合都会拿到 `supported`。现在判据与认领同源——先过设备 `interface` 指纹，接口不符 / `implementation: none` / 未收录一律 `unverified`，`data` 与 `code` 两种实现的正常行为不变。见 `dev/protocol-json.md` §2.1。
+
 ## 2026-11-04
 
 - **新增设备能力声明（PR-C）**：`DeviceCapability` 六项 × `CapabilityState` 三态，声明挂在**设备目录**的 `capabilities` 上而不是协议上——同一套 `status-report7` 被 77 个型号（146 个 PID）共用，放协议层会让 VT3 的验证结果漏给同族。`CapabilitySet` 不可变、未声明一律 `unverified`、非法枚举值直接抛；加载期对未知能力名 / 非法状态 / 非法类型报错（带 `VID:PID` 与 `capabilities.<字段>`），不静默。查询入口 `ProtocolEngine.CapabilityOf` 是纯配置查询，不开句柄、不发帧、不动解析状态。见 `dev/protocol-json.md` §2.1。

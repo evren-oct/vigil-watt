@@ -23,6 +23,8 @@ public static class DeviceStatusMerger
         status.IsOnline = incoming.IsOnline;
         // 电量是无条件覆盖（既有语义）；Pointer 相反：incoming 没带值就不覆盖，否则轮询会抹掉被动帧读到的值
         status.Pointer = PointerTelemetry.Merge(status.Pointer, incoming.Pointer);
+        // 连接方式同 Kind：Unknown 是"这一轮没带信息"，不能把已知的有线/2.4G 洗回未知
+        if (incoming.Connection != ConnectionKind.Unknown) status.Connection = incoming.Connection;
         // 能力是认领期常量：离线墓碑等来源没有能力，空集不能把已声明的覆盖成 Unverified
         if (!incoming.Capabilities.IsEmpty) status.Capabilities = incoming.Capabilities;
     }

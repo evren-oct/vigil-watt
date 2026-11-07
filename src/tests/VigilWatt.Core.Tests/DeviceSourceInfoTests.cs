@@ -28,6 +28,19 @@ public class DeviceSourceInfoTests
     }
 
     [Fact]
+    public void S4_徽标优先连接方式_未知才回落来源()
+    {
+        // 插线的雷柏：来源仍是 Hid24G，但徽标必须写「有线」——拿来源当连接方式是本次修的 bug
+        Assert.Equal("有线", DeviceSourceInfo.BadgeLabel(ConnectionKind.Wired, DeviceSource.Hid24G));
+        Assert.Equal("2.4G", DeviceSourceInfo.BadgeLabel(ConnectionKind.Wireless24G, DeviceSource.Hid24G));
+
+        // 未知一律回落旧标签：未适配设备零回归
+        Assert.Equal("2.4G", DeviceSourceInfo.BadgeLabel(ConnectionKind.Unknown, DeviceSource.Hid24G));
+        Assert.Equal("蓝牙", DeviceSourceInfo.BadgeLabel(ConnectionKind.Unknown, DeviceSource.Ble));
+        Assert.Equal("本机", DeviceSourceInfo.BadgeLabel(ConnectionKind.Unknown, DeviceSource.System));
+    }
+
+    [Fact]
     public void S2_标签非空_且三种来源互不重复()
     {
         var labels = Enum.GetValues<DeviceSource>().Select(DeviceSourceInfo.ShortLabel).ToList();

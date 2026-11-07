@@ -603,4 +603,63 @@ public sealed class RapooSpecTests
         Assert.Equal(CapabilityState.Supported, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));
         Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.RateWrite));
     }
+
+    // ---------- 连接方式归一化（有线 / 2.4G） ----------
+
+    [Fact]
+    public void R43_有线帧解析出连接方式_有线()
+    {
+        // 插线的 VT3 走 0x4612：来源仍是 Hid24G，但徽标必须靠这个字段说「有线」
+        var r = Engine.Parse(Dev(0x4612, @"\\?\hid#vid_24ae&pid_4612#test"), "status-report7", WiredFrame);
+
+        Assert.Equal(ConnectionKind.Wired, r!.Value.Connection);
+    }
+
+    [Fact]
+    public void R44_2_4G帧解析出连接方式_无线()
+    {
+        var r = Engine.Parse(Dev(), "status-report7", NormalFrame);
+
+        Assert.Equal(ConnectionKind.Wireless24G, r!.Value.Connection);
+    }
+
+    [Fact]
+    public async Task R45_探测那一帧就把连接方式带出来()
+    {
+        // 认领落地时若拿不到连接方式，徽标会先按来源显示成 2.4G，要等下一帧才纠正
+        var info = MakeInfo(0x24AE, 0x4612);
+        using var handle = FakeHandle(info, WiredFrame);
+
+        var probe = await Engine.ProbeAsync(handle, writesEnabled: false);
+
+        Assert.NotNull(probe);
+        Assert.Equal(ConnectionKind.Wired, Engine.ProbeConnectionOf(info));
+    }
+
+    [Fact]
+    public async Task R46_占位帧不采信连接方式()
+    {
+        // 整帧清零的占位帧结构合法但电量越界，[1]=0 会被读成 2.4G——与遥测同一条门槛
+        var frame = new byte[19];
+        frame[0] = 0x07;
+        var info = MakeInfo(0x24AE, 0x4612);
+        using var handle = FakeHandle(info, frame);
+
+        var probe = await Engine.ProbeAsync(handle, writesEnabled: false);
+
+        Assert.NotNull(probe);
+        Assert.Equal(ConnectionKind.Unknown, Engine.ProbeConnectionOf(info));
+    }
+
+    /// <summary>把一段字节塞进临时文件当"设备输入"，读一次就得到一条报文。</summary>
+    private static VigilWatt.Core.Hid.HidDeviceHandle FakeHandle(
+        VigilWatt.Core.Hid.HidDeviceInfo info, byte[] input)
+    {
+        var stream = new FileStream(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")),
+            FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0, FileOptions.DeleteOnClose);
+        stream.Write(input);
+        stream.Flush();
+        stream.Position = 0;
+        return new VigilWatt.Core.Hid.HidDeviceHandle(info, stream);
+    }
 }

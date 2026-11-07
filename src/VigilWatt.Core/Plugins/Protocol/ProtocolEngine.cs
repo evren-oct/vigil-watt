@@ -17,7 +17,7 @@ internal readonly record struct PollOutcome(PollAttempt Attempt, int? Percent, C
 
 /// <summary>一次被动帧解析的结果；电量可为 null（帧有效但电量越界），链路位仍然可信。</summary>
 internal readonly record struct PassiveOutcome(
-    int? Percent, ChargingState Charging, LinkState Link, PointerTelemetry Pointer);
+    int? Percent, ChargingState Charging, LinkState Link, ConnectionKind Connection, PointerTelemetry Pointer);
 
 /// <summary>插件视角的设备标识：协议层拿不到 <c>TrackedDevice</c>，只能摊成值。</summary>
 internal readonly record struct DeviceRef(string Id, string DevicePath, ushort VendorId, ushort ProductId);
@@ -33,6 +33,10 @@ internal sealed class ProtocolEngine
 
     /// <summary>按设备路径隔离的充电去抖状态（R3：多台设备共用一份会互相串味）。</summary>
     private readonly ConcurrentDictionary<string, ChargingState> _lastCharging =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>探测时读到的连接方式，按路径暂存到认领落地为止（认领后由插件按帧维护）。</summary>
+    private readonly ConcurrentDictionary<string, ConnectionKind> _probeConnection =
         new(StringComparer.OrdinalIgnoreCase);
 
     private ProtocolEngine(SpecBundle bundle) => _bundle = bundle;
@@ -114,9 +118,18 @@ internal sealed class ProtocolEngine
         var spec = Resolve(handle.Info);
         if (spec is null || spec.Implementation != SpecImplementation.Data) return null;
 
+        // 每次探测先清掉上一条：这次读不到就该是 Unknown，不能拿上一次的旧值冒充
+        _probeConnection.TryRemove(handle.Info.DevicePath, out _);
+
         if (spec.Passive is { } passive
             && await ListenAsync(handle, spec.ProbeWindowMs, passive).ConfigureAwait(false) is { } listened)
+        {
+            // 认领那一刻就要有连接方式，否则徽标会先按来源显示成 2.4G，等下一帧才纠正。
+            // 与插件同一条门槛：电量越界的帧可能是占位帧，[1] 不可信。
+            if (listened.Percent is not null)
+                _probeConnection[handle.Info.DevicePath] = ConnectionOf(listened.Mode);
             return (spec.Name, listened.Percent, listened.Charging);
+        }
 
         if (spec.Active is { } active && writesEnabled
             && await QueryRunner.RunAsync(handle, active).ConfigureAwait(false) is { } answered)
@@ -124,6 +137,10 @@ internal sealed class ProtocolEngine
 
         return null;
     }
+
+    /// <summary>探测时读到过的连接方式（认领落地用）；没探过或没读到返回 <see cref="ConnectionKind.Unknown"/>。</summary>
+    public ConnectionKind ProbeConnectionOf(HidDeviceInfo info)
+        => _probeConnection.TryGetValue(info.DevicePath, out var connection) ? connection : ConnectionKind.Unknown;
 
     /// <summary>轮询。没发帧与发了没应答必须分开，否则零写入协议会被误记成失败。</summary>
     public PollOutcome Poll(HidDeviceHandle handle, DeviceRef dev, string protocol, bool writesEnabled)
@@ -147,19 +164,33 @@ internal sealed class ProtocolEngine
         if (FrameReader.Read(passive, frame) is not { } reading) return null;
         // 观测时刻在这里补：FrameReader 是纯函数不带时钟，而遥测值必须有真实时间（否则永不过期）
         return new PassiveOutcome(reading.Percent, ApplyDebounce(spec, dev, reading), reading.Link,
-            reading.Pointer.WithObservedAt(DateTimeOffset.Now));
+            ConnectionOf(reading.Mode), reading.Pointer.WithObservedAt(DateTimeOffset.Now));
     }
 
-    /// <summary>设备拔掉后清掉它的去抖状态，防随插拔累积。</summary>
+    /// <summary>协议层的 <see cref="LinkMode"/> 只到解释器为止：模型层用 <see cref="ConnectionKind"/>，不把 JSON 词汇漏进 UI。</summary>
+    private static ConnectionKind ConnectionOf(LinkMode mode) => mode switch
+    {
+        LinkMode.Wired => ConnectionKind.Wired,
+        LinkMode.Wireless2G => ConnectionKind.Wireless24G,
+        _ => ConnectionKind.Unknown,
+    };
+
+    /// <summary>设备拔掉后清掉它的去抖与探测缓存，防随插拔累积。</summary>
     public void Prune(IReadOnlyList<HidDeviceInfo> present)
     {
         var alive = present.Select(d => d.DevicePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var key in _lastCharging.Keys.Where(k => !alive.Contains(k)).ToList())
             _lastCharging.TryRemove(key, out _);
+        foreach (var key in _probeConnection.Keys.Where(k => !alive.Contains(k)).ToList())
+            _probeConnection.TryRemove(key, out _);
     }
 
     /// <summary>插件被禁用/卸载时清空全部状态。</summary>
-    public void Reset() => _lastCharging.Clear();
+    public void Reset()
+    {
+        _lastCharging.Clear();
+        _probeConnection.Clear();
+    }
 
     /// <summary>设备有覆盖规格（偏移差一位那种）时优先用它，否则回落协议默认。</summary>
     private ProtocolSpec? SpecFor(DeviceRef dev, string protocol)

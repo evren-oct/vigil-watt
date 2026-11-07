@@ -428,10 +428,12 @@ public sealed partial class DevicesPage : Page
         };
         var secondary = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush;
         var critical = Application.Current.Resources["SystemFillColorCriticalBrush"] as Brush;
+        // 已知连接方式时说「连接」，否则只能说「来源」——蓝牙/本机没有有线无线之分
+        string badgePrefix = device.Connection == ConnectionKind.Unknown ? "来源" : "连接";
         var body = new StackPanel { Spacing = 6, MinWidth = 380 };
         body.Children.Add(new TextBlock
         {
-            Text = $"来源：{DeviceSourceInfo.ShortLabel(device.Source)} · 最后更新 {device.LastUpdated:MM-dd HH:mm}",
+            Text = $"{badgePrefix}：{DeviceSourceInfo.BadgeLabel(device.Connection, device.Source)} · 最后更新 {device.LastUpdated:MM-dd HH:mm}",
             FontSize = 12,
             Foreground = secondary,
         });

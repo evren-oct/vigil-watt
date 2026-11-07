@@ -102,7 +102,8 @@ public sealed class RapooPlugin : BatteryPluginBase
 
         if (result.Percent is not { } percent) return null;
 
-        // 只在这条已被电量判据接受的帧上采信遥测：休眠/占位帧结构合法但整帧是 0，DPI 会读成 0
+        // 连接方式与遥测都只采信"已被电量判据接受"的帧：休眠/占位帧整帧是 0，[1] 会被读成 2.4G
+        SetConnection(dev, result.Connection);
         if (result.Pointer.HasAny) SetPointerTelemetry(dev, result.Pointer);
 
         return (percent, result.Charging, false);
@@ -117,6 +118,9 @@ public sealed class RapooPlugin : BatteryPluginBase
 
     /// <summary>能力来自设备目录的 `capabilities`；纯配置查询，不开句柄不发帧（接口边界见 dev/protocol-json.md §2.1）。</summary>
     protected override CapabilitySet CapabilitiesOf(HidDeviceInfo info) => _engine.CapabilitiesOf(info);
+
+    /// <summary>认领时直接用探测窗口里那一帧的连接方式，插线设备不会先显示成 2.4G。</summary>
+    protected override ConnectionKind ConnectionOfProbe(HidDeviceInfo info) => _engine.ProbeConnectionOf(info);
 
     /// <summary>
     /// 显示名：目录命中用官方型号（"雷柏 VT3"）；未收录才退回产品串 + 兄弟接口判鼠标。

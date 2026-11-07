@@ -75,6 +75,15 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         return valueChanged;
     }
 
+    /// <summary>合并帧里解析出的连接方式（有线/2.4G）。Unknown 是"这帧没带信息"，不覆盖已知值。</summary>
+    protected bool SetConnection(TrackedDevice dev, ConnectionKind connection)
+    {
+        if (connection == ConnectionKind.Unknown || dev.Status.Connection == connection) return false;
+        dev.Status.Connection = connection;
+        RaiseStatusPushed(dev.Status);
+        return true;
+    }
+
     /// <summary>认领时没有读数是否标离线。默认 true，避免只剩 dongle 时假装在线。</summary>
     protected virtual bool NullPercentMeansOffline => true;
 
@@ -494,6 +503,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 // 无读数默认离线。子类把 NullPercentMeansOffline 覆写为 false 时保持在线。
                 IsOnline = percent.HasValue || !NullPercentMeansOffline,
                 Capabilities = CapabilitiesOf(o.Info),
+                Connection = ConnectionOfProbe(o.Info),
             };
             var dev = new TrackedDevice
             {
@@ -990,6 +1000,12 @@ public abstract class BatteryPluginBase : IBatteryPlugin
 
     /// <summary>本设备声明过的只读能力（默认空 = 全 Unverified）。纯配置查询，不许开句柄或发帧。</summary>
     protected virtual CapabilitySet CapabilitiesOf(HidDeviceInfo info) => CapabilitySet.Empty;
+
+    /// <summary>
+    /// 认领落地时的连接方式（默认 Unknown）。能拿到就该在这里给：否则徽标会先按来源显示成 2.4G，
+    /// 要等第一条被动帧才纠正——插线设备会短暂显示错标签。
+    /// </summary>
+    protected virtual ConnectionKind ConnectionOfProbe(HidDeviceInfo info) => ConnectionKind.Unknown;
 
     /// <summary>接口是否属于本插件（按 VID/usage/报告长度严格过滤——多滤不会漏设备，少滤可能碰别家硬件）。</summary>
     protected abstract bool IsCandidate(HidDeviceInfo info);

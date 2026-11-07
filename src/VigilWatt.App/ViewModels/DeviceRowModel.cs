@@ -147,12 +147,12 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         // 无读数用 "----"：与 "100%" 同宽，右对齐时不会和相邻行差半个字
         PercentText = DeviceStatusFormatter.PercentText(percent, "----");
         Progress = percent ?? 0;
-        SourceText = DeviceSourceInfo.ShortLabel(d.Source);
+        SourceText = DeviceSourceInfo.BadgeLabel(d.Connection, d.Source);
         SubText = $"{d.Protocol}{state}{(remainingTime.IsAvailable ? $" · 约{RemainingTimeEstimator.Format(remainingTime.Remaining!.Value)}剩余" : $" · {remainingTime.Explain()}")} · 更新于 {d.LastUpdated:HH:mm:ss}";
         IsCharging = charging;
         IsOnline = d.IsOnline;
 
-        SetSourceColor(UiPalette.SourceTag(d.Source));
+        SetSourceColor(UiPalette.ConnectionTag(d.Connection, d.Source));
         SetProgressColor(d.IsOnline ? UiPalette.BatteryLevel(percent, charging) : UiPalette.Offline);
         // null = 用主题前景色（正常态），非空才换 UiPalette 的固定色
         SetPercentColor(!d.IsOnline ? UiPalette.Offline

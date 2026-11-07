@@ -258,9 +258,9 @@ public sealed partial class WidgetWindow : Window
         foreach (var d in devices)
         {
             // 充电行比放电行多一列 ⚡（列宽 + 该列两侧间距）；放电行的 ⚡ 列放空串，只占列间距。
-            // 来源徽标（蓝牙/2.4G/本机）所有行恒定存在。
+            // 徽标（蓝牙/2.4G/有线/本机）所有行恒定存在。
             double chargeW = DeviceStatusFormatter.IsCharging(d.Charging) ? ChargeMarkWidth : 0;
-            double w = IconSize + IconGap + nameW + 10 + SourceTagWidth(d.Source) + 10 + chargeW + 10 + PercentWidth(d);
+            double w = IconSize + IconGap + nameW + 10 + TagWidth(DeviceSourceInfo.BadgeLabel(d.Connection, d.Source)) + 10 + chargeW + 10 + PercentWidth(d);
             if (w > rowW) rowW = w;
         }
 
@@ -294,6 +294,7 @@ public sealed partial class WidgetWindow : Window
               .Append(',').Append(d.DisplayName)
               .Append(',').Append((int)d.Kind)
               .Append(',').Append((int)d.Source)
+              .Append(',').Append((int)d.Connection)
               .Append(',').Append((int)d.Charging)
               .Append(',').Append(d.BatteryPercent?.ToString() ?? "-")
               .Append(',').Append(PointerTelemetryFormatter.Summary(d, now) ?? "-");
@@ -363,11 +364,11 @@ public sealed partial class WidgetWindow : Window
     private static double PercentWidth(DeviceStatus d) =>
         d.BatteryPercent.HasValue ? $"{d.BatteryPercent}%".Length * 11 : 22;
 
-    /// <summary>来源徽标近似宽度（10 号字 + 左右内边距）：CJK≈10px、ASCII≈6px，偏宽松留余量。</summary>
-    private static double SourceTagWidth(DeviceSource source)
+    /// <summary>徽标近似宽度（10 号字 + 左右内边距）：CJK≈10px、ASCII≈6px，偏宽松留余量。**按文案算**——「2.4G」与「有线」字数不同。</summary>
+    private static double TagWidth(string label)
     {
         double w = TagPadH * 2;
-        foreach (var ch in DeviceSourceInfo.ShortLabel(source)) w += ch > 0x2E80 ? 10 : 6;
+        foreach (var ch in label) w += ch > 0x2E80 ? 10 : 6;
         return w;
     }
 
@@ -403,8 +404,8 @@ public sealed partial class WidgetWindow : Window
         Grid.SetColumn(name, 1);
         line.Children.Add(name);
 
-        // 来源徽标：与设备列表页同款彩色胶囊（蓝牙蓝 / 2.4G 紫 / 本机青）
-        var sourceTag = BuildSourceTag(d.Source);
+        // 徽标：与设备列表页同款彩色胶囊（蓝牙蓝 / 2.4G 紫 / 有线钢蓝 / 本机青）
+        var sourceTag = BuildSourceTag(d);
         Grid.SetColumn(sourceTag, 2);
         line.Children.Add(sourceTag);
 
@@ -496,13 +497,13 @@ public sealed partial class WidgetWindow : Window
     }
 
     /// <summary>
-    /// 来源徽标：彩色胶囊（文字=来源色，底色=同色压淡），与设备列表页 <c>DevicesPage</c> 的徽标同款。
-    /// 颜色走 <see cref="UiPalette.SourceTag"/> 固定值、不走 ThemeResource——
+    /// 徽标：彩色胶囊（文字=徽标色，底色=同色压淡），与设备列表页 <c>DevicesPage</c> 同款。
+    /// 颜色走 <see cref="UiPalette.ConnectionTag"/> 固定值、不走 ThemeResource——
     /// 本方法在 DispatcherQueue 回调路径上跑，查 Resources 抛异常会直接 fail-fast（同 <see cref="Skin"/> 的理由）。
     /// </summary>
-    private static FrameworkElement BuildSourceTag(DeviceSource source)
+    private static FrameworkElement BuildSourceTag(DeviceStatus device)
     {
-        var color = UiPalette.SourceTag(source);
+        var color = UiPalette.ConnectionTag(device.Connection, device.Source);
         return new Border
         {
             CornerRadius = new CornerRadius(4),
@@ -511,7 +512,7 @@ public sealed partial class WidgetWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
             Child = new TextBlock
             {
-                Text = DeviceSourceInfo.ShortLabel(source),
+                Text = DeviceSourceInfo.BadgeLabel(device.Connection, device.Source),
                 FontSize = TagFontSize,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Foreground = new SolidColorBrush(color),

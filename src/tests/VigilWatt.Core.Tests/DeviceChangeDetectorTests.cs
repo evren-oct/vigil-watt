@@ -24,6 +24,20 @@ public class DeviceChangeDetectorTests
     };
 
     [Fact]
+    public void C14_连接方式变化只刷新徽标_不产生电量采样()
+    {
+        var stored = Device(80);
+        var incoming = Device(80);
+        incoming.Connection = ConnectionKind.Wired;
+
+        Assert.True(DeviceChangeDetector.HasConnectionChanged(stored, incoming));
+        Assert.False(DeviceChangeDetector.HasChanged(stored, incoming));   // 插拔线不该写历史
+
+        // Unknown 是"这轮没带信息"，不是变化——否则轮询会每拍都触发刷新
+        Assert.False(DeviceChangeDetector.HasConnectionChanged(stored, Device(80)));
+    }
+
+    [Fact]
     public void C1_数据源原地改写_快照能识别出变化()
     {
         // 模拟首建：库里存快照，数据源继续持有自己的实例

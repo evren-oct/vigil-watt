@@ -24,12 +24,23 @@ public static class UiPalette
     public static readonly Color Source24G = FromRgb(0xAF, 0x52, 0xDE);
     public static readonly Color SourceSystem = FromRgb(0x30, 0xB0, 0xC7);
 
+    // 有线=钢蓝灰：比蓝牙蓝更暗更灰，不与它抢色相；徽标本身写着「有线」，颜色只做辅助。
+    public static readonly Color SourceWired = FromRgb(0x5E, 0x7C, 0x99);
+
     /// <summary>来源 → 徽标主色（文字色；胶囊底色用 <see cref="Tint"/> 压淡）。</summary>
     public static Color SourceTag(DeviceSource source) => source switch
     {
         DeviceSource.Ble or DeviceSource.BluetoothClassic => SourceBluetooth,
         DeviceSource.System => SourceSystem,
         _ => Source24G,
+    };
+
+    /// <summary>徽标取色：连接方式优先，未知才回落来源——与 <see cref="DeviceSourceInfo.BadgeLabel"/> 同一套口径。</summary>
+    public static Color ConnectionTag(ConnectionKind connection, DeviceSource source) => connection switch
+    {
+        ConnectionKind.Wired => SourceWired,
+        ConnectionKind.Wireless24G => Source24G,
+        _ => SourceTag(source),
     };
 
     /// <summary>同色半透明底（徽标胶囊背景）。默认约 16% 不透明度——明暗主题下都够淡，不抢电量条。</summary>

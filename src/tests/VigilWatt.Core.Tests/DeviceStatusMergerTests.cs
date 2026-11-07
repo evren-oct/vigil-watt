@@ -163,6 +163,22 @@ public class DeviceStatusMergerTests
     }
 
     [Fact]
+    public void M8_连接方式未知不覆盖已知()
+    {
+        var stored = WithPointer(default);
+        stored.Connection = ConnectionKind.Wired;
+
+        // 轮询 / 离线墓碑都不带这个字段（默认 Unknown），不能把已知的「有线」洗回未知
+        DeviceStatusMerger.Apply(stored, WithPointer(default));
+        Assert.Equal(ConnectionKind.Wired, stored.Connection);
+
+        var incoming = WithPointer(default);
+        incoming.Connection = ConnectionKind.Wireless24G;
+        DeviceStatusMerger.Apply(stored, incoming);
+        Assert.Equal(ConnectionKind.Wireless24G, stored.Connection);
+    }
+
+    [Fact]
     public void M7_电量仍是无条件覆盖()
     {
         // 既有语义（PR-2 的"null 不覆盖"落在 TryApplyReading，不在 merger）：这里必须照旧被清成 null

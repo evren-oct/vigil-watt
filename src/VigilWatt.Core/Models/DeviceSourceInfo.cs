@@ -22,4 +22,15 @@ public static class DeviceSourceInfo
         DeviceSource.System => "本机",
         _ => "2.4G",
     };
+
+    /// <summary>
+    /// 徽标文案：**连接方式优先，未知才回落来源**。2.4G 插件的设备来源恒为 <see cref="DeviceSource.Hid24G"/>，
+    /// 拿来源当连接方式会把插线的设备也写成 2.4G，所以有线必须有独立文案。
+    /// </summary>
+    public static string BadgeLabel(ConnectionKind connection, DeviceSource source) => connection switch
+    {
+        ConnectionKind.Wired => "有线",
+        ConnectionKind.Wireless24G => "2.4G",
+        _ => ShortLabel(source),
+    };
 }

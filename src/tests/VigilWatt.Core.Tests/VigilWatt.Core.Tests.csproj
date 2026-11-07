@@ -124,6 +124,8 @@
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceKindGuesser.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ClassicDeviceKindResolver.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceSourceInfo.cs" />
+    <!-- 连接方式（有线/2.4G）是纯枚举，徽标文案与合并规则都要能在单测里钉住 -->
+    <Compile Include="..\..\VigilWatt.Core\Models\ConnectionKind.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatus.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\PointerTelemetry.cs" />
     <!-- 卡片上那行 DPI / 档位 / 回报率的文案是纯函数（零 WinRT），展示状态必须能在单测里钉住 -->

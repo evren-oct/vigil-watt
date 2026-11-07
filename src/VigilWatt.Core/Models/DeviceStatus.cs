@@ -49,6 +49,9 @@ public class DeviceStatus
     /// <summary>指针类遥测（DPI / 回报率）。默认全未知，未适配设备天然就是它。</summary>
     public PointerTelemetry Pointer { get; set; }
 
+    /// <summary>本设备声明过的只读能力。默认空 = 全 Unverified，UI 据此决定能不能说"未获取"。</summary>
+    public CapabilitySet Capabilities { get; set; } = CapabilitySet.Empty;
+
     /// <summary>参与统计曲线时用于图例显示的短名；BLE 端点解析不出名字时给可读兜底，别把裸设备 ID 摆到界面上。</summary>
     public string DisplayName => !string.IsNullOrEmpty(Name) ? Name
         : Source == DeviceSource.Ble ? "BLE 设备"
@@ -67,6 +70,7 @@ public class DeviceStatus
         LastUpdated = LastUpdated,
         IsOnline = IsOnline,
         Pointer = Pointer,
+        Capabilities = Capabilities,
     };
 
     public override string ToString() => $"{DisplayName} {BatteryPercent?.ToString() ?? "?"}%";

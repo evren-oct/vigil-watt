@@ -5,6 +5,11 @@
 
 ## 2026-11-07
 
+- **设备卡片展示 DPI / 档位 / 回报率（PR-D）**：模型与解析在 PR-A/PR-B 就绪，界面此前一处都没展示。新增 `PointerTelemetryFormatter`（Core 纯函数）产出分段与单行文案，设备页只多一个 TextBlock；`DeviceStatus.Capabilities` 在认领落地时由插件写入，用来区分"能读但还没读到（未获取）"与"不支持（该字段不出现）"。离线与过期一律不渲染，实测回报率带 `≈` 与来源标记。见 `project/pointer-telemetry.md` §8。
+- **指标行配色**：标签按类别上色（DPI 青绿 / 档位 琥珀 / 回报率 靛蓝，色值进 `UiPalette`），数值保持主题前景色；未获取的项整段灰显。三个色相避开来源徽标与电量状态色，免得卡片上三套颜色互相干扰。
+- **修设备卡片刷新时整行闪一下**：`RefreshCore` 原来在内容指纹变化时执行 `_rows[i] = fresh[i]`，那是 `ObservableCollection` 的 Replace 通知，`ListView` 会回收容器、重建整行；而指纹里带着 `更新于 HH:mm:ss`，等于每次轮询全表重建。行模型改成可变 + `INotifyPropertyChanged` 原地更新，`x:Bind` 显式 `Mode=OneWay`，集合只在设备增删 / 换位时变动。见 `dev/runtime-pitfalls.md` §25。
+- **修"在线设备百分比显示成灰色"**：原地更新用"旧值 == 新值就 return"省通知，而 `PercentBrush` 的字段默认值 `null` 恰好是正常态的合法值，首帧被判成"没变化"，刷子停在构造函数那个灰色——只有充电或低于 20% 才会自愈。改用透明色当哨兵。见 `dev/runtime-pitfalls.md` §25 规则 5。
+- **小组件与任务栏贴片也展示指针遥测（PR-E）**：小组件在电量条下加第三行（有指标的行高 62 DIP，窗口高度改为按设备累加）；贴片横向塞不下（单格会从 60px 涨到 120px），只加进悬停提示。小组件顺带按内容指纹跳过无谓重建——心跳每 30 秒补推一次，原来每次都清空重建整棵元素树；缩放比例因此也进了指纹，并单独监听 `XamlRoot.Changed`，否则拖到不同 DPI 的屏幕后窗口尺寸不再修正。见 `project/pointer-telemetry.md` §8.1。
 - **修 Capability 查询的设备匹配边界（PR-C1）**：`ProtocolEngine.CapabilityOf` 原本只按 VID/PID 取目录条目，同一只鼠标的鼠标集合、底座集合都会拿到 `supported`。现在判据与认领同源——先过设备 `interface` 指纹，接口不符 / `implementation: none` / 未收录一律 `unverified`，`data` 与 `code` 两种实现的正常行为不变。见 `dev/protocol-json.md` §2.1。
 
 ## 2026-11-04

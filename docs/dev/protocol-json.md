@@ -80,7 +80,8 @@
 - 与旧 `caps` 的区别：`caps` 是历史验证记录（只在雷柏目录、代码不读），`capabilities` 才是当前正式声明，
   两者**不自动映射**，见 [hardware/rapoo-catalog.md](../hardware/rapoo-catalog.md) §6。
 - 查询入口 `ProtocolEngine.CapabilityOf(info, capability)`：纯配置查询——不开句柄、不发帧、不动解析状态；
-  非法枚举值抛异常而不是回落到默认值。
+  非法枚举值抛异常而不是回落到默认值。整块取用 `CapabilitiesOf(info)`（PR-D 起由插件在**认领落地时**
+  写进 `DeviceStatus.Capabilities`，UI 靠它区分"能读但还没读到"与"不支持"）。
 - **判据与认领同源**：VID/PID 命中目录后还要过设备 `interface` 指纹。未收录、接口不符（同一只鼠标的
   鼠标集合 / 底座集合、底座 PID 的另一条 collection）、`implementation: none` 三种情况一律 `unverified`——
   能力只对"本插件认领的那条接口"成立，不会因为 VID/PID 相同就跨接口继承。

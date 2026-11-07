@@ -115,6 +115,9 @@ public sealed class RapooPlugin : BatteryPluginBase
     /// <summary>图标按协议给（一个插件管鼠标/键盘/底座多类设备，见 JSON 里各协议的 kind）。</summary>
     protected override DeviceKind ResolveKind(string protocol) => _engine.KindOf(protocol);
 
+    /// <summary>能力来自设备目录的 `capabilities`；纯配置查询，不开句柄不发帧（接口边界见 dev/protocol-json.md §2.1）。</summary>
+    protected override CapabilitySet CapabilitiesOf(HidDeviceInfo info) => _engine.CapabilitiesOf(info);
+
     /// <summary>
     /// 显示名：目录命中用官方型号（"雷柏 VT3"）；未收录才退回产品串 + 兄弟接口判鼠标。
     /// 目录来源见 docs/hardware/rapoo-catalog.md §3。

@@ -88,6 +88,9 @@ internal sealed class ProtocolEngine
     public CapabilityState CapabilityOf(HidDeviceInfo info, DeviceCapability capability)
         => DeclaredCapabilities(info).Of(capability);
 
+    /// <summary>整块能力：认领时落到 <see cref="DeviceStatus"/>，UI 靠它区分"能读但还没读到"与"不支持"。</summary>
+    public CapabilitySet CapabilitiesOf(HidDeviceInfo info) => DeclaredCapabilities(info);
+
     /// <summary>目录按 VID/PID 索引，但同一台设备的鼠标集合、底座集合不参与认领，不能借用目录里的声明。</summary>
     private CapabilitySet DeclaredCapabilities(HidDeviceInfo info)
         => Resolve(info) is null

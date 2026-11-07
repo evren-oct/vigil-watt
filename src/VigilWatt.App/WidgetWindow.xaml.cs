@@ -4,8 +4,10 @@ using VigilWatt.Core.Utils;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using System.Text;
 using Windows.Graphics;
 using Windows.UI;
 
@@ -34,9 +36,27 @@ public sealed partial class WidgetWindow : Window
     private const double ChargeMarkWidth = 14;  // 充电标识 ⚡ 列宽度（13 号字近似，与列表页同款字符）
     private const double TagFontSize = 10;      // 来源徽标字号（与设备列表页一致）
     private const double TagPadH = 5;           // 来源徽标左右内边距
+    private const double PointerFontSize = 11;  // 指标行字号（DPI / 档位 / 回报率）
+    private const double PointerLineHeight = 16; // 11 号中文行高约 14.5，留 1.5 的余量免得切字脚
+    private const double PointerGap = 9;        // 电量条与指标行的间距（同 RowInnerGap）
 
-    /// <summary>n 行内容（含行间距）的总高度。</summary>
-    private static double RowsHeight(int rows) => rows <= 0 ? 0 : rows * RowHeight + (rows - 1) * RowGap;
+    private const double RowHeightWithPointer = RowHeight + PointerGap + PointerLineHeight;
+
+    /// <summary>有指标的设备多一行；行高按设备算，所以窗口高度不是简单的"行数 × 常量"。</summary>
+    private static double RowHeightOf(DeviceStatus d, DateTimeOffset now)
+        => HasPointer(d, now) ? RowHeightWithPointer : RowHeight;
+
+    private static bool HasPointer(DeviceStatus d, DateTimeOffset now)
+        => PointerTelemetryFormatter.Metrics(d, now).Count > 0;
+
+    /// <summary>前 <paramref name="count"/> 行（含行间距）的总高度。</summary>
+    private static double RowsHeight(IReadOnlyList<DeviceStatus> devices, int count, DateTimeOffset now)
+    {
+        if (count <= 0) return 0;
+        double h = 0;
+        for (int i = 0; i < count; i++) h += RowHeightOf(devices[i], now);
+        return h + (count - 1) * RowGap;
+    }
 
     /// <summary>
     /// Win10 圆角半径（DIP）。比 Win11 大一圈是刻意的：
@@ -94,8 +114,23 @@ public sealed partial class WidgetWindow : Window
         Root.Loaded += (_, _) =>
         {
             if (_win10Chrome) ApplyWin10Chrome();
+            // 内容指纹会跳过"没变化"的刷新，于是 DPI 变化不再顺带修正窗口尺寸，必须自己听
+            if (!_rootHooked && Root.XamlRoot is { } xamlRoot)
+            {
+                _rootHooked = true;
+                _lastScale = Scale;
+                xamlRoot.Changed += OnXamlRootChanged;
+            }
             RefreshContent();
         };
+        RefreshContent();
+    }
+
+    /// <summary>只对缩放比例变化重画：尺寸变化是我们自己 Resize 引起的，跟着重画会来回打架。</summary>
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        if (Math.Abs(Scale - _lastScale) < 0.01) return;
+        _lastScale = Scale;
         RefreshContent();
     }
 
@@ -106,6 +141,15 @@ public sealed partial class WidgetWindow : Window
     private void OnThemeChanged(FrameworkElement sender, object args) => RefreshContent();
 
     private int _refreshQueued;
+
+    /// <summary>上一次真正画出来的内容指纹：相同就整块跳过，不重建元素树（心跳补推每 30 秒来一次）。</summary>
+    private string? _lastSignature;
+
+    /// <summary>订阅过 XamlRoot.Changed 没有（Loaded 可能重复触发，不挡住会叠加回调）。</summary>
+    private bool _rootHooked;
+
+    /// <summary>上一次的缩放比例：只关心 DPI 变化，尺寸变化由 ResizeContent 自己引起。</summary>
+    private double _lastScale;
 
     /// <summary>
     /// 合并刷新请求（CR-29）：一轮轮询会对 N 台设备各发一次 DeviceUpdated、外加一次 DevicesChanged，
@@ -127,6 +171,7 @@ public sealed partial class WidgetWindow : Window
         App.Services.Manager.DeviceUpdated -= OnDeviceUpdated;
         App.Services.Manager.DevicesChanged -= OnDevicesChanged;
         Root.ActualThemeChanged -= OnThemeChanged;
+        if (_rootHooked && Root.XamlRoot is { } xamlRoot) xamlRoot.Changed -= OnXamlRootChanged;
     }
 
     private double Scale => Root.XamlRoot?.RasterizationScale is > 0 ? Root.XamlRoot.RasterizationScale : 1.0;
@@ -164,8 +209,8 @@ public sealed partial class WidgetWindow : Window
 
     private void RefreshContentCore()
     {
-        ChipStack.Children.Clear();
         var skin = SkinFor(Root.ActualTheme);
+        var now = DateTimeOffset.Now;
 
         // 低电量优先：充电中/已满的排末尾，未知电量殿后，同级按名称保持稳定
         var devices = App.Services.Manager.Devices
@@ -177,6 +222,14 @@ public sealed partial class WidgetWindow : Window
             .ThenBy(d => d.BatteryPercent ?? 999)
             .ThenBy(d => d.DisplayName)
             .ToList();
+
+        var maxVisible = WidgetMaxDevicesOptions.Clamp(App.Services.Settings.WidgetMaxDevices);
+
+        // 显示内容没变就不重建元素树：心跳每 30 秒补推一次、轮询每拍一次，重建整棵树的代价是肉眼可见的闪
+        string signature = BuildSignature(devices, maxVisible, Root.ActualTheme, Scale, now);
+        if (signature == _lastSignature) return;
+
+        ChipStack.Children.Clear();
 
         if (devices.Count == 0)
         {
@@ -191,6 +244,7 @@ public sealed partial class WidgetWindow : Window
                 Foreground = new SolidColorBrush(skin.Text) { Opacity = 0.55 },
             });
             ResizeContent(PadH * 2 + 100 + 6, PadV * 2 + LineHeight + 2);
+            _lastSignature = signature;
             return;
         }
 
@@ -212,19 +266,39 @@ public sealed partial class WidgetWindow : Window
 
         foreach (var d in devices)
         {
-            ChipStack.Children.Add(BuildRow(d, rowW, skin));
+            ChipStack.Children.Add(BuildRow(d, rowW, skin, now));
         }
 
         // 一屏最多显示 MaxVisibleDevices 条（设置项，1~5，默认 3），多出来的靠滚轮查看。
         // 高度按 min(实际条数, 上限) 算：窗口尺寸因此**封顶**，设备增减不会让卡片一跳一跳。
         // 上限的 DIP 高度向上取整，避免滚动容器把最后一行切掉半个像素。
-        var maxVisible = WidgetMaxDevicesOptions.Clamp(App.Services.Settings.WidgetMaxDevices);
         var visibleRows = Math.Min(devices.Count, maxVisible);
-        double visibleRowsH = Math.Ceiling(RowsHeight(visibleRows));
+        double visibleRowsH = Math.Ceiling(RowsHeight(devices, visibleRows, now));
 
         // 总宽补上 Root Border 的 1 DIP 边框线（两侧共 2）+ DPI 舍入余量，
         // 少算几个 DIP 最右侧的百分比列就会被窗口边缘裁掉
         ResizeContent(PadH * 2 + rowW + 6, PadV * 2 + visibleRowsH + 8);
+        _lastSignature = signature;
+    }
+
+    /// <summary>只覆盖"画得出来的东西"：时间戳之类不进指纹，否则每拍都判定为变化。缩放比例要进——它决定窗口物理尺寸。</summary>
+    private static string BuildSignature(
+        IReadOnlyList<DeviceStatus> devices, int maxVisible, ElementTheme theme, double scale, DateTimeOffset now)
+    {
+        var sb = new StringBuilder(64 + devices.Count * 48);
+        sb.Append((int)theme).Append('|').Append(maxVisible).Append('|').Append(scale.ToString("0.###"))
+          .Append('|').Append(devices.Count);
+        foreach (var d in devices)
+        {
+            sb.Append('|').Append(d.Id)
+              .Append(',').Append(d.DisplayName)
+              .Append(',').Append((int)d.Kind)
+              .Append(',').Append((int)d.Source)
+              .Append(',').Append((int)d.Charging)
+              .Append(',').Append(d.BatteryPercent?.ToString() ?? "-")
+              .Append(',').Append(PointerTelemetryFormatter.Summary(d, now) ?? "-");
+        }
+        return sb.ToString();
     }
 
     private void ResizeContent(double widthDip, double heightDip)
@@ -297,7 +371,7 @@ public sealed partial class WidgetWindow : Window
         return w;
     }
 
-    private static UIElement BuildRow(DeviceStatus d, double width, Skin skin)
+    private static UIElement BuildRow(DeviceStatus d, double width, Skin skin, DateTimeOffset now)
     {
         var percent = d.BatteryPercent;
         var charging = DeviceStatusFormatter.IsCharging(d.Charging);
@@ -375,7 +449,50 @@ public sealed partial class WidgetWindow : Window
             Background = new SolidColorBrush(stateColor),
         });
         row.Children.Add(track);
+
+        // 指标行：与设备列表页同一份分段（PointerMetric），只是这里用代码拼 Run 而不是 x:Bind
+        var metrics = PointerTelemetryFormatter.Metrics(d, now);
+        if (metrics.Count > 0) row.Children.Add(BuildPointerLine(metrics, skin));
+
         return row;
+    }
+
+    /// <summary>
+    /// 指标行：标签按类别上色、数值跟主题文字色，未获取的项整段灰显。
+    /// 颜色一律走 <see cref="UiPalette"/> 固定值——本方法在 DispatcherQueue 回调路径上跑，查 Resources 会 fail-fast。
+    /// </summary>
+    private static UIElement BuildPointerLine(IReadOnlyList<PointerMetric> metrics, Skin skin)
+    {
+        var line = new TextBlock
+        {
+            FontSize = PointerFontSize,
+            Height = PointerLineHeight,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+
+        var textBrush = new SolidColorBrush(skin.Text);
+        var gapBrush = new SolidColorBrush(skin.Text) { Opacity = 0.45 };
+
+        for (int i = 0; i < metrics.Count; i++)
+        {
+            var metric = metrics[i];
+            if (i > 0) line.Inlines.Add(new Run { Text = "  ·  ", Foreground = gapBrush });
+
+            var labelColor = metric.IsKnown ? UiPalette.Metric(metric.Kind) : UiPalette.Offline;
+            line.Inlines.Add(new Run
+            {
+                Text = metric.Label,
+                Foreground = new SolidColorBrush(labelColor),
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            });
+            line.Inlines.Add(new Run
+            {
+                Text = " " + metric.Value,
+                Foreground = metric.IsKnown ? textBrush : new SolidColorBrush(UiPalette.Offline),
+            });
+        }
+        return line;
     }
 
     /// <summary>

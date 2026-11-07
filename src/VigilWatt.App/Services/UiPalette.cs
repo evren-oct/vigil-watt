@@ -36,6 +36,21 @@ public static class UiPalette
     public static Color Tint(Color color, byte alpha = 0x28) =>
         Color.FromArgb(alpha, color.R, color.G, color.B);
 
+    // ---- 指针遥测标签色（设备列表卡片那行 DPI / 档位 / 回报率）----
+    // 只给标签上色、数值保持主题前景色：颜色当"路标"用，别让彩色数字跟右侧大号百分比抢注意力。
+    // 三个色相刻意避开来源徽标（蓝/紫/青）与电量状态色（红/琥珀/绿/蓝/灰），取更深的中间调，明暗主题都够对比。
+    public static readonly Color MetricDpi = FromRgb(0x1D, 0x9E, 0x75);
+    public static readonly Color MetricLevel = FromRgb(0xBA, 0x75, 0x17);
+    public static readonly Color MetricRate = FromRgb(0x53, 0x4A, 0xB7);
+
+    /// <summary>指标 → 标签色；未获取的项由调用方改用 <see cref="Offline"/>（灰），不上色。</summary>
+    public static Color Metric(PointerMetricKind kind) => kind switch
+    {
+        PointerMetricKind.Level => MetricLevel,
+        PointerMetricKind.Rate => MetricRate,
+        _ => MetricDpi,
+    };
+
     /// <summary>多系列图表循环取色（首位为主系列色）。</summary>
     public static readonly Color[] SeriesColors =
     [

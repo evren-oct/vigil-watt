@@ -126,6 +126,8 @@
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceSourceInfo.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatus.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\PointerTelemetry.cs" />
+    <!-- 卡片上那行 DPI / 档位 / 回报率的文案是纯函数（零 WinRT），展示状态必须能在单测里钉住 -->
+    <Compile Include="..\..\VigilWatt.Core\Models\PointerTelemetryFormatter.cs" />
     <!-- 能力声明是纯数据模型（零 WinRT / 零 HID），测试直接链真源文件，不为它引入 ProjectReference -->
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceCapability.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\DeviceCustomization.cs" />

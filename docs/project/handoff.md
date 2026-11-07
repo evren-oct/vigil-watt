@@ -10,7 +10,7 @@
 
 当前安装包 **1.3.1**（`dist/`，本机试装用；尚未上传正式 Release）。正式线上以 GitHub 最新 Release 为准，Gitee 是回退源；更新源 GitHub 优先、8 秒不通回退 Gitee。发新版时保留上一版 `*-full.nupkg` 作为 delta 基准；规则见 `dev/build.md` §8。
 
-本机已打通：迈从 G87（0x13）、迈从官方通用 dongle `3837:3033`（`cz-block` 分块读，电量/充电/充满三态真机验证，见 `hardware/mchose.md` §2.4）、雷柏 VT3 + VT2S Air Max（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。雷柏 VT3 与 VT2S Air MAX V2 已在设备目录写 `capabilities`（电量 / DPI / 档位；VT3 的回报率读取证据不足，记 `unverified`），声明属设备、不随协议继承，查询走 `ProtocolEngine.CapabilityOf`（`dev/protocol-json.md` §2.1）。
+本机已打通：迈从 G87（0x13）、迈从官方通用 dongle `3837:3033`（`cz-block` 分块读，电量/充电/充满三态真机验证，见 `hardware/mchose.md` §2.4）、雷柏 VT3 + VT2S Air Max（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。雷柏 VT3 与 VT2S Air MAX V2 已在设备目录写 `capabilities`（电量 / DPI / 档位；VT3 的回报率读取证据不足，记 `unverified`），声明属设备、不随协议继承，查询走 `ProtocolEngine.CapabilityOf`（`dev/protocol-json.md` §2.1）。**设备卡片已展示 DPI / 档位 / 回报率**（PR-D/E）：单行文案由 `PointerTelemetryFormatter` 产出，能力决定"能不能说未获取"，离线与过期整行不渲染；小组件加第三行、贴片只进悬停提示（`pointer-telemetry.md` §8、§8.1）。
 
 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），不是 WinUI 覆盖窗；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。**拖动走 16ms 轮询，不靠鼠标捕获**——捕获对非前台窗口无效（`dev/runtime-pitfalls.md` §16、§16.5.1；§17 只对小组件）。选屏由 `Services/TaskbarPillManager.cs` 每秒按 `monitorDevicePath` 匹配，配置的屏不在就降级贴主屏，设置页显示真实屏幕名——`\\.\DISPLAYn` 是配置序号不是身份，见 `dev/monitor-identity.md`。
 
@@ -83,7 +83,7 @@
 4. **页面缓存真机**：来回切换是否变快、离开再回来数据是否仍刷新、设置值是否与 `settings.json` 一致、搜索是否仍可用。坑见 `dev/runtime-pitfalls.md` §19。相关未修项 CR-61 / CR-63。
 5. **启动更新确认框**：本轮只验到"托盘气泡 + 日志发现新版本"（当时 `StartMinimized=true`，窗口没开）。**2026-10-20 起 `StartMinimized` 默认 `false`，所以「发现新版本」确认框成了默认路径，更需要在真机上确认一次**——打开主窗口时应弹确认框，未真机验证。
 6. **贴片选屏真机复看**：本机只有「仅第二屏」一种接法实测过（配置屏不在 → 降级主屏，日志已确认）。还需切「仅电脑屏幕 / 扩展 / 复制」各一次，看贴片是否 2 秒内跟到新任务栏（重建去抖 2 拍，见 §16.12）、设置页刷新按钮后列表是否反映当前接法、`<名字>（未连接）` 是否显示正确。清单在 `dev/monitor-identity.md` §7。
-7. **设备页 / 诊断页真机复核**：诊断页的 Feature 读取（勾选后实际 GET_REPORT）、采集中拔设备、记录上限截断、另存为对话框与剪贴板（非打包 WinUI）——本机只验到被动监听拿到真实报文，清单在 `capture.md` §7；设备页「忽略此设备」要复看托盘/贴片/小组件是否同步消失、恢复是否立刻回来、重启后是否仍被忽略。
+7. **设备页 / 诊断页真机复核**：诊断页的 Feature 读取（勾选后实际 GET_REPORT）、采集中拔设备、记录上限截断、另存为对话框与剪贴板（非打包 WinUI）——本机只验到被动监听拿到真实报文，清单在 `capture.md` §7；设备页「忽略此设备」要复看托盘/贴片/小组件是否同步消失、恢复是否立刻回来、重启后是否仍被忽略；**卡片上那行 DPI / 档位 / 回报率（PR-D）**要看是否显示、拔掉与休眠后整行是否消失、用官方软件改 DPI 后是否跟着变（`pointer-telemetry.md` §8）；小组件同一行还要看 1~5 台混排（有指标的行更高）时最后一行有没有被切、贴片悬停提示三行是否不折行。
 8. **本机无设备的真机复核**：墨将 GALE2 应用内验证（开关默认关、须用本仓库源码构建，看列表条目与电量/充电标志是否与官方助手一致，边看边插拔接收器确认有线↔2.4G 切换那 0.5 秒是否闪离线，mojhon.md §7.5、§9）；狼途 T98 看默认开、插线电量爬升，`Silence = 300 秒` 需一份真实休眠样本确认不误判离线（langtu.md §2）；ATK `11FE` 要补本体 PID，否则插数据线会多一条记录（atk.md §10.3）；ilovbee 要一份**插上充电器后静置 3 分钟**的采集，确认 `[7] bit0` 是否保持、`[6]` 是否爬升（ilovbee.md §3）。另：雷柏 VT3 有线 `0x4612` 没声明 `capabilities`（无独立真机记录），要用就插线验一次再补（`hardware/rapoo-catalog.md` §6.2）。
 
 ## 5. 给下一个 AI 的注意事项

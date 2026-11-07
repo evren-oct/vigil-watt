@@ -100,25 +100,23 @@ public sealed partial class DevicesPage : Page
     {
         var devices = App.Services.Manager.Devices;
         var settings = App.Services.Settings;
+        var now = DateTimeOffset.Now;
 
-        // 按 Id 取旧行，内容指纹相同就整行复用，避免静止设备跟着重建
+        // 按 Id 取旧行原地 Update：集合元素不替换，ListView 就不会回收容器（替换会让整行闪一下）
         var existing = new Dictionary<string, DeviceRowModel>(_rows.Count);
         foreach (var row in _rows) existing[row.Id] = row;
 
         var fresh = new List<DeviceRowModel>(devices.Count);
         foreach (var d in devices)
         {
-            existing.TryGetValue(d.Id, out var previous);
-            fresh.Add(DeviceRowModel.From(d, settings, App.Services.Manager.GetRemainingTimeEstimate(d), previous));
+            if (!existing.Remove(d.Id, out var row)) row = new DeviceRowModel();
+            row.Update(d, settings, App.Services.Manager.GetRemainingTimeEstimate(d), now);
+            fresh.Add(row);
         }
 
-        // 逐位比较引用：复用的行原地不动，只替换真正变了的那些
-        for (int i = 0; i < fresh.Count; i++)
-        {
-            if (i >= _rows.Count) _rows.Add(fresh[i]);
-            else if (!ReferenceEquals(_rows[i], fresh[i])) _rows[i] = fresh[i];
-        }
-        while (_rows.Count > fresh.Count) _rows.RemoveAt(_rows.Count - 1);
+        // existing 里剩下的是这一轮没再出现的设备，先摘掉，再对齐顺序
+        foreach (var gone in existing.Values) _rows.Remove(gone);
+        SyncRows(fresh);
 
         var online = devices.Count(d => d.IsOnline);
         // 带上时间戳：即使设备数没变，用户也能一眼看出这次刷新确实跑过了
@@ -142,6 +140,27 @@ public sealed partial class DevicesPage : Page
         EmptyHint.Text = ignored > 0
             ? $"已忽略 {ignored} 台设备，可在下方恢复"
             : "连接蓝牙设备或插入 2.4G 接收器，然后点击刷新";
+    }
+
+    /// <summary>把 _rows 对齐到 fresh 的顺序：同实例同位置一律不动，只处理换位与新增（换位才会触发重排动画）。</summary>
+    private void SyncRows(List<DeviceRowModel> fresh)
+    {
+        for (int i = 0; i < fresh.Count; i++)
+        {
+            if (i < _rows.Count && ReferenceEquals(_rows[i], fresh[i])) continue;
+            int at = IndexOfRow(fresh[i]);
+            if (at >= 0) _rows.Move(at, i);
+            else _rows.Insert(i, fresh[i]);
+        }
+    }
+
+    private int IndexOfRow(DeviceRowModel row)
+    {
+        for (int i = 0; i < _rows.Count; i++)
+        {
+            if (ReferenceEquals(_rows[i], row)) return i;
+        }
+        return -1;
     }
 
     private async void CustomizeDevice_Click(object sender, RoutedEventArgs e)

@@ -15,7 +15,8 @@ public static class TaskbarTipRenderer
     public const double PadV = 6;
     public const double FontSize = 12;
     public const double Radius = 6;
-    public const double MaxWidth = 240;
+    /// <summary>提示最大宽度：要放得下"DPI 1600 · 档位 4 · 1000 Hz"这一行而不折行。</summary>
+    public const double MaxWidth = 280;
     public const double Shadow = 6;
     public const double ShadowOffsetY = 1;
 

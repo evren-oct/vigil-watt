@@ -40,29 +40,45 @@
                             RightTapped="DeviceRow_RightTapped">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
                             <controls:DeviceIconPresenter Grid.Column="0" VerticalAlignment="Center"
-                                                          Kind="{x:Bind IconKind}" IconColor="{x:Bind IconColor}" />
+                                                          Kind="{x:Bind IconKind, Mode=OneWay}"
+                                                          IconColor="{x:Bind IconColor, Mode=OneWay}" />
                             <StackPanel Grid.Column="1" Spacing="6">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                    <TextBlock Text="{x:Bind Name}" FontSize="15" FontWeight="SemiBold"
+                                    <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontSize="15" FontWeight="SemiBold"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                     <Border Grid.Column="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
-                                            Background="{x:Bind SourceBackgroundBrush}">
-                                        <TextBlock Text="{x:Bind SourceText}" FontSize="10" FontWeight="SemiBold"
-                                                   Foreground="{x:Bind SourceBrush}" />
+                                            Background="{x:Bind SourceBackgroundBrush, Mode=OneWay}">
+                                        <TextBlock Text="{x:Bind SourceText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="{x:Bind SourceBrush, Mode=OneWay}" />
                                     </Border>
                                     <TextBlock Grid.Column="2" Text="⚡" FontSize="13" VerticalAlignment="Center"
-                                               Foreground="{x:Bind ProgressBrush}"
-                                               Visibility="{x:Bind IsCharging}" />
+                                               Foreground="{x:Bind ProgressBrush, Mode=OneWay}"
+                                               Visibility="{x:Bind IsCharging, Mode=OneWay}" />
                                 </Grid>
-                                <ProgressBar Value="{x:Bind Progress}" Maximum="100" Height="6"
-                                             CornerRadius="3" Foreground="{x:Bind ProgressBrush}" />
-                                <TextBlock Text="{x:Bind SubText}" FontSize="11"
+                                <ProgressBar Value="{x:Bind Progress, Mode=OneWay}" Maximum="100" Height="6"
+                                             CornerRadius="3" Foreground="{x:Bind ProgressBrush, Mode=OneWay}" />
+                                <!-- DPI / 档位 / 回报率：标签按类别上色、数值跟主题前景色，未获取的项整段灰显 -->
+                                <TextBlock FontSize="12" Visibility="{x:Bind HasPointer, Mode=OneWay}"
+                                           TextTrimming="CharacterEllipsis">
+                                    <Run Text="{x:Bind DpiLabel, Mode=OneWay}" Foreground="{x:Bind DpiLabelBrush, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text=" " />
+                                    <Run Text="{x:Bind DpiValue, Mode=OneWay}" Foreground="{x:Bind DpiValueBrush, Mode=OneWay}" />
+                                    <Run Text="{x:Bind LevelSeparator, Mode=OneWay}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    <Run Text="{x:Bind LevelLabel, Mode=OneWay}" Foreground="{x:Bind LevelLabelBrush, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text=" " />
+                                    <Run Text="{x:Bind LevelValue, Mode=OneWay}" Foreground="{x:Bind LevelValueBrush, Mode=OneWay}" />
+                                    <Run Text="{x:Bind RateSeparator, Mode=OneWay}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    <Run Text="{x:Bind RateLabel, Mode=OneWay}" Foreground="{x:Bind RateLabelBrush, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text=" " />
+                                    <Run Text="{x:Bind RateValue, Mode=OneWay}" Foreground="{x:Bind RateValueBrush, Mode=OneWay}" />
+                                </TextBlock>
+                                <TextBlock Text="{x:Bind SubText, Mode=OneWay}" FontSize="11"
                                            Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             </StackPanel>
-                            <TextBlock Grid.Column="2" Text="{x:Bind PercentText}" FontSize="26"
+                            <TextBlock Grid.Column="2" Text="{x:Bind PercentText, Mode=OneWay}" FontSize="26"
                                        FontWeight="Bold" VerticalAlignment="Center"
                                        MinWidth="78" TextAlignment="Right"
-                                       Foreground="{x:Bind PercentBrush}" />
+                                       Foreground="{x:Bind PercentBrush, Mode=OneWay}" />
                         </Grid>
                     </Border>
                 </DataTemplate>

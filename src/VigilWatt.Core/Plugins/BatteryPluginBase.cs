@@ -493,6 +493,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 Charging = charging,
                 // 无读数默认离线。子类把 NullPercentMeansOffline 覆写为 false 时保持在线。
                 IsOnline = percent.HasValue || !NullPercentMeansOffline,
+                Capabilities = CapabilitiesOf(o.Info),
             };
             var dev = new TrackedDevice
             {
@@ -986,6 +987,9 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// 一个插件管多种设备的品牌（迈从的键 + 鼠）覆盖它；只在认领落地时调用，只影响图标。
     /// </summary>
     protected virtual DeviceKind ResolveKind(string protocol) => Kind;
+
+    /// <summary>本设备声明过的只读能力（默认空 = 全 Unverified）。纯配置查询，不许开句柄或发帧。</summary>
+    protected virtual CapabilitySet CapabilitiesOf(HidDeviceInfo info) => CapabilitySet.Empty;
 
     /// <summary>接口是否属于本插件（按 VID/usage/报告长度严格过滤——多滤不会漏设备，少滤可能碰别家硬件）。</summary>
     protected abstract bool IsCandidate(HidDeviceInfo info);

@@ -134,9 +134,11 @@ dongle 的配置会话一次只服务一个客户端。崩溃进程不关会话 
 
 耳机 V9 Pro 用的是另一个 VID（`291D:385D`），不在这条链路上，见 [mchose-v9-pro.md](mchose-v9-pro.md)。
 
-## 2. QHW 协议（新一代 dongle，M HUB WEB 前端逆向）—— 已实现备用
+## 2. QHW 协议（新一代 dongle，M HUB WEB 前端逆向）—— QHW 备用，CZ 分块读已真机打通
 
 来源：官方 www.mchose.com.cn 的 M HUB WEB 前端 JS（QhwCmdQueueItem 类），适用于 0x3837 世代 dongle（官方通用 2.4G dongle = VID 0x3837&PID 0x3033，G87 V2/G75 V2/K87S/K99 V3 共用）。用户现款 41E4:2001 不适用，代码已备好（TryQhw），遇到新 dongle 直接用。
+
+**⚠ 0x3033 这颗 dongle 实际上不认 QHW**：本机 2026-11-04 实测，`0x4D` 握手与 `0x0904` 在三条 65 字节通道上全部静默；官方 web 驱动走的是下面 §2.4 的 CZ 分块读。
 
 ### 2.1 帧格式（report ID 0x4D）
 
@@ -160,6 +162,55 @@ WebHID 侧 reportId 自动加首字节；Windows WriteFile 时 [0] 就是要写�
 ### 2.3 CZ 通道（同代键盘的批量配置协议）
 
 帧：flag=0x55 / 响应 expect=0xAA，`[55, cmd, 0, chk, size, offsetLo, offsetHi, 0, payload…]`（chk 逻辑见 JS）。批量灯效/配置走这条。电量推送：dongle 自发 `[FA, FB, 07, 电量%, 充电标志]`。
+
+### 2.4 CZ 分块读：这颗 dongle 真正认的电量通道 —— ✅ 本机真机验证
+
+协议名 `cz-block`，帧与解析全在 `specs/mchose.protocols.json`（`implementation` 缺省 `data`），插件只负责分流。
+
+接口地图（本机 `3837:3033`，G87 V2 2.4G）：
+
+| 接口 | usagePage/usage | 长度 | 读电量的结果 |
+|---|---|---|---|
+| MI_01 | `0x0001/0x0000` | 65/65 | ✅ 有应答，但分类器按"非厂商页"排除，不走 |
+| MI_02 | `0xFF31/0x0074` | 65/65 | ✅ **实现走这条**（官方 WebHID filters 也登记它） |
+| MI_03 | `0xFF70/0x0071` | 65/65 | ❌ 任何写入都只回固定 `00 0F 01 FE 0E`（占位帧，不是 NAK） |
+
+请求（65 字节，首字节是 report ID 槽，本机为 `0x00`）：
+
+```
+55 05 00 [off+size] size offLo offHi 00 …补零
+```
+
+`[3]` 是 **offset+size**，不是校验和（别和 §2.3 的 `chk` 混）。官方一次性读 `offset=0, size=0x38`，覆盖 `0x00..0x37`；电量在 `0x20`，所以**第二段 `0x38..0x3F` 不必读**。
+
+应答：
+
+```
+AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report ID 槽）
+```
+
+`[5]=size`、`[6..7]=offset`、`[4]` 随包变化（不是长度）。数据段头两字节 `[2..3] == AA BB` 是"这是合法状态块"的判据。
+
+状态块字段（本机实测）：
+
+| 偏移 | 含义 |
+|---|---|
+| `[0]` | 恒为 `0x50`，**不是电量**（80%→100% 全程不变，另一个 64 字节块里也是 0x50） |
+| `[2..3]` | `AA BB` 魔数 |
+| **`[0x20]` bit7** | **充电中**（插线置位，拔线清零，实测 0xCE↔0x4E） |
+| **`[0x20]` bit0..6** | **电量百分比**（实测 0x5A=90、0x62=98、0x64=100，与官方页面逐次一致） |
+| `[0x20]` 以下/以上其余字节 | 语义未定，不参与判定 |
+
+充满判据 = 未充电且电量 100，与官方前端 `resolveMCChargeStatus` 一致。JSON 里**不写 `fullAt`**——通用满电阈值会无条件覆盖设备报的充电态，改用插件层的 `MchoseSpecs.ResolveFull` 补判：100% 且 bit7=0 才判"已充满"，bit7=1 仍显示"充电中"。
+
+**证据来源**：浏览器 hook `HIDDevice.sendReport`，在官方 www.mchose.com.cn 连上这颗 dongle 时抓到两条读帧 `55 05 00 38 38 00` / `55 05 00 40 08 38`；原样回放即有应答，随后按插拔对照锁定 `[0x20]` 的位含义。
+
+**两条别再试的路**：
+
+- **QHW `0x4D`**（§2.1/2.2）：这颗 dongle 全静默，`docs/protocols.md` 里"已实现，备用"说的就是它
+- **官方 `audio.mc` 单帧电量命令**（`reportId 0x55`、帧头 `AA`、`subCmd 11`）：4 种摆放全失败，其中两条回错误帧 `00 AB AA 01 00 00 01 00 0A 63 73 65 72 72`（尾部 ASCII `cserr`）。CZ 通道的命令字在 `[2]`，把 MC 的帧头 `0xAA` 放进去会被当未知命令拒掉；`0xAB` 首字节 + 明文错误串才是真 NAK
+
+**注意**：`[0x20]` 的低 7 位是电压估算，同簇内会有 ±2 抖动（90→89→90）。所以"充满"只能靠 `MchoseSpecs.ResolveFull` 补判，不是独立字段。
 
 ## 3. MCHOSE K7 V2 Ultra+（接收器 VID_3837&PID_1018）—— 贡献者真机验证
 

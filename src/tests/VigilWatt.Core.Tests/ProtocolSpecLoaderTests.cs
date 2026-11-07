@@ -803,11 +803,11 @@ public sealed class ProtocolSpecLoaderTests
     }
 
     [Fact]
-    public void Load_MchoseResources_Loads8ProtocolsAnd63Devices()
+    public void Load_MchoseResources_Loads9ProtocolsAnd63Devices()
     {
         var bundle = ProtocolSpecLoader.Load(MchoseProtocols, MchoseDevices);
 
-        Assert.Equal(8, bundle.Protocols.Count);
+        Assert.Equal(9, bundle.Protocols.Count);
         Assert.Equal(63, bundle.Devices.Count);
 
         // Gmouse 的 response 没有 length，outputLength 只有 Min：加载必须成功，不能补造帧长

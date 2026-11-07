@@ -250,10 +250,15 @@ internal static class ProtocolSpecLoader
             Prefix = prefixBytes,
             Length = ToMatch(dto.Length, name, prefix, $"{where}.length"),
             Percent = dto.Fields?.Percent is { } p
-                ? new PercentSpec { Offset = p.Offset, Type = ParseFieldType(p.Type, name, prefix) }
+                ? new PercentSpec
+                {
+                    Offset = p.Offset,
+                    Type = ParseFieldType(p.Type, name, prefix),
+                    Mask = BuildMask(p.Mask, name, prefix, $"{where}.percent"),
+                }
                 : null,
             Charge = dto.Fields?.Charge is { } c
-                ? BuildCharge(c, name, prefix)
+                ? BuildCharge(c, name, prefix, where)
                 : null,
             Link = dto.Fields?.Link is { } l
                 ? new LinkSpec
@@ -327,10 +332,11 @@ internal static class ProtocolSpecLoader
         };
     }
 
-    private static ChargeSpec BuildCharge(FieldDto c, string name, string prefix) => new()
+    private static ChargeSpec BuildCharge(FieldDto c, string name, string prefix, string where) => new()
     {
         Offset = c.Offset,
         Type = ParseFieldType(c.Type, name, prefix),
+        Mask = BuildMask(c.Mask, name, prefix, $"{where}.charge"),
         NonZero = string.Equals(c.On, "nonzero", StringComparison.OrdinalIgnoreCase),
         Zero = string.Equals(c.On, "zero", StringComparison.OrdinalIgnoreCase),
         Table = c.Map?.ToDictionary(
@@ -388,6 +394,16 @@ internal static class ProtocolSpecLoader
             frame[i] = b;
         }
         return frame;
+    }
+
+    /// <summary>位域掩码：缺省整字节；0 会把所有取值抹平，属配置错误，直接拒。</summary>
+    private static int BuildMask(int? mask, string name, string prefix, string where)
+    {
+        if (mask is not { } value) return 0xFF;
+        if (value is < 0x01 or > 0xFF)
+            throw new InvalidOperationException(
+                $"{prefix}: 协议 \"{name}\" 的 {where}.mask {value} 非法（取值 1..255）");
+        return value;
     }
 
     private static FieldType ParseFieldType(string? text, string name, string prefix)

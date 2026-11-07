@@ -8,6 +8,8 @@
 
 | 编号 | 一句话 | 证据 | 状态 |
 |---|---|---|---|
+| **CR-148** | 迈从 CZ 状态块没有独立的"已充满"字段：`[0x20]` 只报充电中 + 电量百分比，"满电"靠 `fullAt: 100` 补判，且低 7 位是电压估算、同簇内 ±2 抖动（90→89→90）；只有本机一台样本 | `specs/mchose.protocols.json:cz-block`、`hardware/mchose.md` §2.4 | `open` |
+| **CR-149** | 迈从 CZ 分块读只验证了第一段（`0x00..0x37`）：`0x38..0x3F` 那一段官方也读，但电量在 `0x20`，其内容语义未定（疑灯效/配置），未解析也未记录 | `hardware/mchose.md` §2.4 | `open` |
 | **CR-84** | AKG N9 Hybrid 已见 50% / 100% 读数，尚未核对官方 App、连续电量变化、关机与长期运行；用户观察充电时无法工作并取消充电测试，不接入充电标志，状态保持 Unknown | `Plugins/Akg/AkgN9Codec.cs:TryParseBattery`、`hardware/akg.md` §2 | `open` |
 | **CR-97** | HERO 68 Air 传输流程直接依赖 `HidDeviceHandle`，缺少传输层离线回归；维护者认可现有认领、分片及写入闸门，可合入，建议后续补通知穿插等传输流程测试，此项不阻塞合入 | `Plugins/Aula/AulaHero68Transport.cs`、PR #44 维护者反馈 | `open` |
 | **CR-57** | 小组件自绘投影未做。原判据基于 Win10 19045，本机已升到 26200（Win11），需按新系统重判 | `WidgetWindow.xaml.cs:ApplyWin10Chrome` | `open` |

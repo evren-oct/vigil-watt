@@ -46,6 +46,9 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>QHW 协议（report 0x4D）。</summary>
     private const string ProtocolQhw = "qhw";
 
+    /// <summary>CZ 分块读（官方 web 驱动对通用 dongle 用的通道，帧在 mchose.protocols.json）。</summary>
+    private const string ProtocolCzBlock = "cz-block";
+
     /// <summary>QHW 探测"只拿到被动推送"的返回值标记——只在 <see cref="ClaimQhw"/> 内部用，不进设备协议名。</summary>
     private const string ProtocolQhwPush = "qhw-push";
 
@@ -282,6 +285,14 @@ public sealed class MchosePlugin : BatteryPluginBase
             var qhwFirst = ClaimQhw(path, TryQhw(handle));
             if (qhwFirst != null) return qhwFirst;
 
+            // 官方通用 dongle（0x3837:0x3033）对 QHW 静默，走的是 CZ 分块读。只有接口指纹命中 JSON 规格
+            // 才会发帧，其余接收器在这里拿不到规格、一个字节都不写。见 hardware/mchose.md §2.4。
+            if (TrySpec(handle) is { } cz)
+            {
+                KnownProtocolByPath[path] = cz.Protocol;
+                return cz;
+            }
+
             var mouse = TryMouseV2(handle);
             if (mouse != null) KnownProtocolByPath[path] = ProtocolMouseV2;
             return mouse;
@@ -320,13 +331,19 @@ public sealed class MchosePlugin : BatteryPluginBase
                 : null,
             ProtocolMouseV2 => TryMouseV2(handle),
             ProtocolMouseK7 => TryMouseK7(handle),
-            ProtocolGmouse or ProtocolHeadsetV9 or ProtocolHeadsetX9 => TrySpec(handle),
+            ProtocolGmouse or ProtocolHeadsetV9 or ProtocolHeadsetX9 or ProtocolCzBlock => TrySpec(handle),
             _ => null,
         };
 
     /// <summary>形态固定的协议交给解释器：帧模板、窗口、重试次数全在 JSON 里，这里只剩一次调用。</summary>
     private (string Protocol, int? Percent, ChargingState Charging)? TrySpec(HidDeviceHandle handle)
-        => Engine.ProbeAsync(handle, IsWritesEnabled(SettingsKey)).GetAwaiter().GetResult();
+    {
+        var reading = Engine.ProbeAsync(handle, IsWritesEnabled(SettingsKey)).GetAwaiter().GetResult();
+        if (reading is not { } r || r.Protocol != ProtocolCzBlock) return reading;
+
+        var (percent, charging) = MchoseSpecs.ResolveFull(r.Percent, r.Charging);
+        return (r.Protocol, percent, charging);
+    }
 
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
@@ -341,13 +358,17 @@ public sealed class MchosePlugin : BatteryPluginBase
             return PollMouseK7(dev);
 
         // 形态固定的协议由解释器发帧与解析；"没发帧"与"发了没应答"必须分开，否则会被误记成失败
-        if (dev.Protocol is ProtocolGmouse or ProtocolHeadsetV9 or ProtocolHeadsetX9)
+        if (dev.Protocol is ProtocolGmouse or ProtocolHeadsetV9 or ProtocolHeadsetX9 or ProtocolCzBlock)
         {
             var outcome = Engine.Poll(dev.Handle, RefOf(dev), dev.Protocol, IsWritesEnabled(SettingsKey));
             if (outcome.Attempt == PollAttempt.NotAttempted) return null;
             if (outcome.Attempt == PollAttempt.Answered) ReportPollAnswered(dev);
             else ReportPollFailure(dev);
-            return outcome.Attempt == PollAttempt.Answered ? (outcome.Percent, outcome.Charging) : null;
+            if (outcome.Attempt != PollAttempt.Answered) return null;
+
+            return dev.Protocol == ProtocolCzBlock
+                ? MchoseSpecs.ResolveFull(outcome.Percent, outcome.Charging)
+                : (outcome.Percent, outcome.Charging);
         }
 
         var read = dev.Protocol switch

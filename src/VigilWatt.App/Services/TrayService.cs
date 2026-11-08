@@ -330,6 +330,7 @@ public sealed class TrayService : IDisposable
         // 以前 AppServices.Dispose 全仓无人调用（CR-07），这里是它唯一的真实退出路径。
         try { App.Services.Dispose(); } catch (Exception ex) { Log.Warn($"退出时资源释放失败: {ex.Message}"); }
         // 退出收尾：释放单实例互斥量 + 刷盘并释放 app.log 句柄。与 ProcessExit 兜底互为保险。
+        App.StopLiveTile();
         App.ShutdownLogging();
         Environment.Exit(0);
     }

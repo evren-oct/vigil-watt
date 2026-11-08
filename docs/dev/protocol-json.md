@@ -61,6 +61,8 @@
 | `rateRead` | 读设备**保存的**回报率设置值，不是实测 USB/HID 吞吐率 |
 | `dpiWrite` | 写 DPI |
 | `rateWrite` | 写回报率 |
+| `connectionRead` | 读当前数据链路（有线 / 2.4G）。M2-3 起，迈从 0x4D 的 `payload[10]` 已真机读到 |
+| `chargingRead` | 读充电状态（未充 / 充电中 / 已充满）。M2-3 起，迈从 0x4D 的 `payload[11]` 已真机读到 |
 
 | 状态 | 含义 |
 |---|---|

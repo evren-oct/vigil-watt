@@ -71,7 +71,8 @@ DiscoverOnlyAsync
 - `Attach` 返回值立即 `Upsert` → **新设备探测出来就进 UI**，不等整轮扫描结束；
 - 基类给本轮新认领的设备打 `FreshlyClaimed` 标记，**本轮 `Poll` 跳过**（探测值即最新读数），下一轮起正常轮询；
 - 雷柏 `IsCandidate` 收敛到"输入长度 ==19"（协议文档里状态报表就是 19 字节那一条）——旧版放行 19/32/33，本机 0x0011/32B 与 0x000E/33B 两条 vendor 通道从不发 0x07，每次首扫各白等一整个窗口；收敛后一个 dongle 只剩唯一候选，探测窗口 7s→5s；
-- 迈从 `TryQhw` 改官方时序（**先握手**，非 QHW dongle 写入立即失败即快速退出，省掉旧版先空等 3s 被动监听），并按接口路径缓存已判定协议。
+- 迈从 `Try0x4D`（原 `TryQhw`，M2-2 合并后改名）按接口路径缓存已判定协议。2026-11-08 起**不再发握手**：
+  官方只对 WCH 四款（V7 / V7 Pro / G3 V3 / G3 S）发 `AA 55 AA 55 AA 55`，不是通用步骤；改成一条 `0x0900`。
 
 **探测失败冷却（`ProbeCooldown`）必须明显小于轮询周期**：失败发生在轮询开始后几秒处，冷却若等于一整轮，
 下一拍只剩 5x 秒会被判"冷却未过"而整轮跳过，实际重试间隔翻倍（雷柏 3 分钟 → 4 分钟、北通 1 分钟 → 2 分钟，
@@ -218,10 +219,11 @@ BatteryPluginBase.Attach(hidDevices, claims)
     │   ├── 守卫：输出/输入 < 20 字节 → 放弃
     │   ├── KnownProtocolByPath 命中 → 只试那一条通道，**失败直接返回、不清记忆**
     │   │   （2026-10-08 实修：旧代码失败即 TryRemove 并回落完整探测，于是每 15 秒发现节拍
-    │   │    都白写一次 QHW 握手 + 重试一遍 keyboard-v1，写入翻倍、WARN 刷屏）
-    │   ├── TryQhw：                    # 新世代 dongle 协议（本机不命中）
-    │   │   握手 0x4D+AA55… → getBattery(0x0904) → 解析（未授权写入时退化为被动监听 CZ 推送 3s）
-    │   │   握手写用 quiet: true —— 非 QHW 通道必然 ERROR_INVALID_PARAMETER，那是判据不是故障
+    │   │    都白写一次 0x4D 查询 + 重试一遍 keyboard-v1，写入翻倍、WARN 刷屏）
+    │   ├── Try0x4D：                   # 0x4D 通道（原 qhw / mouse-k7 已于 M2-2 合并）
+    │   │   一条 0x0900（flags=1 / seq=0 / XOR[2..7+len] / 64 字节）→ 解析 payload[10..13]
+    │   │   已知通道（0x1018 精确指纹）写成功即认领；把握不足的通道必须解析出读数才认领
+    │   │   （未授权写入时退化为被动监听 CZ 推送 3s）
     │   └── TryKeyboardV1：             # 本机 G87 dongle 协议 ✅
     │       SendKeyboardV1Frame(0x05,0x01) 开会话 → 收 ACK/推送
     │       SendKeyboardV1Frame(0x4A,0x01) 查电量 → [5]=% [6]=充电标志
@@ -232,7 +234,7 @@ BatteryPluginBase.Attach(hidDevices, claims)
 **探测期的日志一律"状态变化才记"**（`Log.Once` / `Log.ResetOnce`，key = `MchosePlugin.LogKey(handle, 用途)`
 即 `路径|用途`；2026-10-08 加，2026-10-10 收拢到 `Log` 公共入口）：发现节拍每 15 秒重探一次，
 而设备睡着 / 未授权写入时这些路径**永远走不到成功**，逐次记录会把日志文件刷满且没有新信息。
-现在三个位置各只记第一次——"这条通道不是 QHW"、"未授权写入"、"keyboard-v1 两次询问无响应"，
+现在三个位置各只记第一次——"这条通道不是 0x4D"、"未授权写入"、"keyboard-v1 两次询问无响应"，
 恢复正常时 `Log.ResetOnce` 清标记，于是"好了之后又出问题"会重新记一条（与北通占位帧同一记法）。
 
 ### 4.2 轮询（Poll，基类骨架 + 子类 PollDevice）

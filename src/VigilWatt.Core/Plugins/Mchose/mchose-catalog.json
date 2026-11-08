@@ -1,18 +1,76 @@
 {
- "version": "2026-11-01",
+ "version": "2026-11-08",
  "source": "M HUB WEB cardList.json + Vb + zye (MCHOSE HUB 1.2.05)",
+ "transports": [
+  {
+   "vid": "0x3837",
+   "pid": "0x1014",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "官方 newMouseWirelessPids；多型号共用，型号由 0x0900 自报 VID/PID 决定"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x1016",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "官方 newMouseWirelessPids；多型号共用（V7 等），型号由 0x0900 决定"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x1018",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "通用 8K dongle：K7 V2 全系 / A7 V3 全系 / K5 Pro+Ultra / R7 Ultra 共用，**不是 K7 专属**。能力声明只覆盖 0x4D 通道本身（真机 100% / connect=2 / charge=0，见 mchose.md §3.3、§3.7）；型号仍由 0x0900 自报 VID/PID 决定",
+   "capabilities": {
+    "batteryRead": "supported",
+    "connectionRead": "supported",
+    "chargingRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x101C",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "官方 newMouseWirelessPids；K5 V2 等共用，型号由 0x0900 决定"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x101D",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "官方 newMouseWirelessPids；V7 Pro / G3 V3 / G3 S 共用，型号由 0x0900 决定"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x100C",
+   "role": "dongle-wireless",
+   "protocol": "mouse-a5",
+   "note": "A5 V2 Ultra 的接收器；本体是 0x41E4:0x1101/0x1102，走反码 Feature，见 mchose.md §6"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3033",
+   "role": "dongle-cz",
+   "protocol": "cz-block",
+   "note": "官方通用 2.4G dongle（G87 V2 / G75 V2 / K87S / K99 V3），走 CZ 分块读，见 mchose.md §2.4"
+  }
+ ],
  "devices": [
   {
    "vid": "0x19f5",
    "pid": "0xff0f",
    "model": "Ace 60 Pro",
-   "protocol": "qhw"
+   "protocol": "qhw",
+   "note": "Ace 60 Pro 的贴牌 VID；分类器 VID 白名单不含 0x19F5，当前不可达（同型号见 0x41E4:0x2104）"
   },
   {
    "vid": "0x19f5",
    "pid": "0xff1b",
    "model": "Ace 60",
-   "protocol": "qhw"
+   "protocol": "qhw",
+   "note": "Ace 60 的贴牌 VID；分类器 VID 白名单不含 0x19F5，当前不可达（同型号见 0x41E4:0x2102）"
   },
   {
    "vid": "0x291d",
@@ -156,13 +214,13 @@
    "vid": "0x3837",
    "pid": "0x4027",
    "model": "K7 V2 Pro+",
-   "protocol": "mouse-k7"
+   "protocol": "mchose-0x4d"
   },
   {
    "vid": "0x3837",
    "pid": "0x4028",
    "model": "K7 V2 Ultra+",
-   "protocol": "mouse-k7"
+   "protocol": "mchose-0x4d"
   },
   {
    "vid": "0x3837",
@@ -240,13 +298,13 @@
    "vid": "0x3837",
    "pid": "0x403b",
    "model": "K7 V2 Pro",
-   "protocol": "mouse-k7"
+   "protocol": "mchose-0x4d"
   },
   {
    "vid": "0x3837",
    "pid": "0x403c",
    "model": "K7 V2 Ultra",
-   "protocol": "mouse-k7"
+   "protocol": "mchose-0x4d"
   },
   {
    "vid": "0x3837",

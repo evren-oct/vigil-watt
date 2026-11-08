@@ -67,7 +67,7 @@ public sealed class DeviceCapabilityTests
     }
 
     [Fact]
-    public void 空集合六项全是Unverified()
+    public void 空集合各项全是Unverified()
     {
         foreach (var capability in Enum.GetValues<DeviceCapability>())
             Assert.Equal(CapabilityState.Unverified, CapabilitySet.Empty.Of(capability));
@@ -99,7 +99,7 @@ public sealed class DeviceCapabilityTests
     {
         var set = Set((DeviceCapability.BatteryRead, CapabilityState.Supported));
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => set.Of((DeviceCapability)6));
+        Assert.Throws<ArgumentOutOfRangeException>(() => set.Of((DeviceCapability)8));
         Assert.Throws<ArgumentOutOfRangeException>(() => set.Of((DeviceCapability)(-1)));
         Assert.Throws<ArgumentOutOfRangeException>(() => CapabilitySet.Empty.Of((DeviceCapability)99));
     }

@@ -133,7 +133,7 @@
       }
     },
 
-    "mouse-k7": {
+    "mchose-0x4d": {
       "kind": "mouse",
       "implementation": "code",
       "codeFamily": "MchosePlugin",

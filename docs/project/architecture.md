@@ -28,7 +28,7 @@ VigilWatt.sln
 │   │   ├── PluginUtils                # 共享工具（路径 FNV-1a 稳定哈希）
 │   │   ├── Logitech/                  # HID++ 1.0/2.0（接收器会话型）
 │   │   ├── Rapoo/RapooPlugin          # 雷柏 status-report7（纯被动零写入）
-│   │   ├── Mchose/MchosePlugin        # 0x13 会话协议（在用）+ QHW 0x4D（备用）
+│   │   ├── Mchose/MchosePlugin        # 0x13 会话 / 0x4D 通道（mchose-0x4d）/ CZ 分块读 / Gmouse / 耳机
 │   │   ├── Betop/BetopPlugin          # 北通手柄：厂商接口 0x15 状态报告 + T9 被动流 + BetopCodec（纯逻辑）
 │   │   ├── Inphic/                    # 英菲克 ZHEN 被动帧 / IN9 feature 0x0C 刷新查询
 │   │   ├── Hecate/                    # HECATE report 0x04 被动状态帧

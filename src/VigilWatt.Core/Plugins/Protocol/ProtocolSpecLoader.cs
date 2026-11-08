@@ -610,7 +610,7 @@ internal static class ProtocolSpecLoader
            || string.Equals(key, "mapValue", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>能力名用 camelCase；未知名字一律报错——拼错静默成 Unverified 等于把已验能力悄悄丢掉。</summary>
-    private static readonly Dictionary<string, DeviceCapability> CapabilityNames = new(StringComparer.Ordinal)
+    internal static readonly Dictionary<string, DeviceCapability> CapabilityNames = new(StringComparer.Ordinal)
     {
         ["batteryRead"] = DeviceCapability.BatteryRead,
         ["dpiRead"] = DeviceCapability.DpiRead,
@@ -618,6 +618,8 @@ internal static class ProtocolSpecLoader
         ["rateRead"] = DeviceCapability.RateRead,
         ["dpiWrite"] = DeviceCapability.DpiWrite,
         ["rateWrite"] = DeviceCapability.RateWrite,
+        ["connectionRead"] = DeviceCapability.ConnectionRead,
+        ["chargingRead"] = DeviceCapability.ChargingRead,
     };
 
     /// <summary>缺省或空对象都得到"全部 Unverified"；非法类型/名字/状态带 VID:PID 与字段名报错。</summary>

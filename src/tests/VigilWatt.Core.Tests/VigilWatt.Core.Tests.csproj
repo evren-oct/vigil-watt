@@ -58,7 +58,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\WriteBackoff.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV1Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseK7Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\Mchose0x4DCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseGmouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV9ProCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseX9Codec.cs" />
@@ -66,6 +66,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseProtocol.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceIdentity.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseSpecs.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Lingbao\LingbaoCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Compx\CompxSessionAck.cs" />

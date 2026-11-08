@@ -27,10 +27,19 @@ public sealed class MchoseInterfaceClassifierTests
     [InlineData(0x3837, 0x100A, @"\\?\hid#vid_3837&pid_100a&mi_02&col03#test", 0xFF00, 0x0002, 65, 65, 0, 0x11, MchoseInterfaceKind.MouseV2)]
     // 鼠标：QHW 世代 dongle（3837:3033）
     [InlineData(0x3837, 0x3033, @"\\?\hid#vid_3837&pid_3033&mi_01&col01#test", 0xFF00, 0x0002, 64, 64, 0, 0x4D, MchoseInterfaceKind.MouseV2)]
-    // 鼠标：K7 V2 Ultra+ 的命令通道（3837:1018，FF01/0x0001，64 字节 output 0x4D）——必须抢在 MouseV2 之前
-    [InlineData(0x3837, 0x1018, @"\\?\hid#vid_3837&pid_1018&mi_02&col02#test", 0xFF01, 0x0001, 64, 64, 0, 0x4D, MchoseInterfaceKind.MouseK7)]
-    // 同一颗 K7 dongle 的另一条接口（FF0B/0x00C4，61 字节）：实测零报文，仍按普通鼠标接口走
+    // 鼠标：0x4D 命令通道（3837:1018，FF01/0x0001，64 字节 output 0x4D）——必须抢在 MouseV2 之前
+    [InlineData(0x3837, 0x1018, @"\\?\hid#vid_3837&pid_1018&mi_02&col02#test", 0xFF01, 0x0001, 64, 64, 0, 0x4D, MchoseInterfaceKind.Mouse0x4D)]
+    // 同一颗 8K dongle 的另一条接口（FF0B/0x00C4，61 字节）：实测零报文，仍按普通鼠标接口走
     [InlineData(0x3837, 0x1018, @"\\?\hid#vid_3837&pid_1018&mi_02&col01#test", 0xFF0B, 0x00C4, 61, 61, 0, 0x00, MchoseInterfaceKind.MouseV2)]
+    // 通用 0x4D 传输 PID（0x1014 / 0x1016 / 0x101C / 0x101D）：目录登记 + 厂商页 64/64，没有真机指纹
+    [InlineData(0x3837, 0x1014, @"\\?\hid#vid_3837&pid_1014&mi_02&col02#test", 0xFF01, 0x0001, 64, 64, 0, 0x4D, MchoseInterfaceKind.Mouse0x4D)]
+    [InlineData(0x3837, 0x1016, @"\\?\hid#vid_3837&pid_1016&mi_02&col02#test", 0xFF01, 0x0001, 64, 64, 0, 0x4D, MchoseInterfaceKind.Mouse0x4D)]
+    [InlineData(0x3837, 0x101C, @"\\?\hid#vid_3837&pid_101c&mi_02&col02#test", 0xFF01, 0x0001, 64, 64, 0, 0x4D, MchoseInterfaceKind.Mouse0x4D)]
+    [InlineData(0x3837, 0x101D, @"\\?\hid#vid_3837&pid_101d&mi_02&col02#test", 0xFF01, 0x0001, 64, 64, 0, 0x4D, MchoseInterfaceKind.Mouse0x4D)]
+    // 同 PID 落在标准键盘页：不是厂商通道，不能认成 0x4D
+    [InlineData(0x3837, 0x1014, @"\\?\hid#vid_3837&pid_1014&mi_00&col01#test", 0x0001, 0x0006, 20, 20, 0, 0x00, MchoseInterfaceKind.None)]
+    // 同 PID 但长度不足 64：不放开（宁可漏认，不误认）
+    [InlineData(0x3837, 0x1014, @"\\?\hid#vid_3837&pid_1014&mi_02&col03#test", 0xFF01, 0x0001, 61, 61, 0, 0x00, MchoseInterfaceKind.MouseV2)]
     // 鼠标：Gmouse 主动查询接口（3837:4245，FF01/0x0010，65 字节）——必须抢在 MouseV2 之前
     [InlineData(0x3837, 0x4245, @"\\?\hid#vid_3837&pid_4245&mi_02#test", 0xFF01, 0x0010, 65, 65, 0, 0x00, MchoseInterfaceKind.Gmouse)]
     // A5 V2 Ultra（3837:100C）：靠**身份**归属，主插件让路给 MchoseA5Plugin（CR-145）
@@ -72,7 +81,7 @@ public sealed class MchoseInterfaceClassifierTests
     [Theory]
     [InlineData(0x3837, 0x2019, 0xFF00, 0x0001, 64, 64, MchoseInterfaceKind.Qhw)]      // G87 V2 本体
     [InlineData(0x3837, 0x200F, 0xFF00, 0x0001, 64, 64, MchoseInterfaceKind.Qhw)]      // K87S
-    [InlineData(0x3837, 0x4028, 0xFF01, 0x0001, 64, 64, MchoseInterfaceKind.MouseK7)]  // K7 V2 Ultra+ 本体
+    [InlineData(0x3837, 0x4028, 0xFF01, 0x0001, 64, 64, MchoseInterfaceKind.Mouse0x4D)]  // K7 V2 Ultra+ 本体
     [InlineData(0x3837, 0x2019, 0x0001, 0x0006, 20, 20, MchoseInterfaceKind.None)]     // 目录型号的标准键盘页
     [InlineData(0x3837, 0x4099, 0xFF00, 0x0002, 64, 64, MchoseInterfaceKind.MouseV2)]  // 未收录 → 形态兜底
     public void CatalogHitRoutesToItsProtocol(ushort vid, ushort pid,

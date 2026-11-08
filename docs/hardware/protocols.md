@@ -9,8 +9,8 @@
 | 品牌 | 型号 | VID:PID | 文档 | 状态 |
 |---|---|---|---|---|
 | 迈从 MCHOSE | G87 键盘 | `41E4:2001` | [mchose.md](mchose.md) | 本机验证 |
-| 迈从 MCHOSE | QHW 新一代 dongle | `3837:3033` | [mchose.md](mchose.md) | 本机验证（走 CZ 分块读 `cz-block`） |
-| 迈从 MCHOSE | K7 V2 Ultra+ 鼠标 | `3837:1018` | [mchose.md](mchose.md) | 贡献者真机 |
+| 迈从 MCHOSE | 通用 2.4G dongle（G87 V2 / G75 V2 / K87S / K99 V3） | `3837:3033` | [mchose.md](mchose.md) §2.4 | 本机验证（走 CZ 分块读 `cz-block`；不认 0x4D） |
+| 迈从 MCHOSE | 0x4D 鼠标通道（`3837:1018` 通用 8K dongle，协议名 `mchose-0x4d`） | `3837:1018` | [mchose.md](mchose.md) §3 | 贡献者真机；**配对型号身份待复核**，另有 4 颗传输 PID 未验证 |
 | 迈从 MCHOSE | V9 Pro 耳机 | `291D:385D` | [mchose-v9-pro.md](mchose-v9-pro.md) | 贡献者真机 |
 | 迈从 MCHOSE | X9 耳机 | `3837:6045` | [mchose-x9.md](mchose-x9.md) | 贡献者声明 |
 | 迈从 MCHOSE | A5 V2 Ultra 鼠标（反码 Feature） | `3837:100C` | [mchose.md](mchose.md) §6 | 贡献者声明 |

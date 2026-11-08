@@ -221,7 +221,7 @@ bit: 7 6 5 4 | 3 2 1 0
 - 熔断（连续失败递增退避，safety.md §3 规则 3）对北通**当前不生效**：`OfflinePolicy.CountPollFailures = false`
   且插件未上报轮询失败——手柄关机静默时不会自动停写，1 帧/60 秒持续查询；等真机休眠样本再决定是否接线
   `ReportPollFailure`。
-- 迈从插件已按 VID 排除北通接口（`MchosePlugin.IsCandidate`，两个 VID 都排），避免对北通 dongle 发 QHW / 0x13 帧。
+- 迈从插件已按 VID 排除北通接口（`MchosePlugin.IsCandidate`，两个 VID 都排），避免对北通 dongle 发 0x4D / 0x13 帧。
 
 ## 1.8 鲲鹏20 三通道接入（2.4G 广播 / 有线查询 / 蓝牙无通道）与身份归一
 

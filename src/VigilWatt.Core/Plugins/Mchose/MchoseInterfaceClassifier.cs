@@ -15,8 +15,8 @@ public enum MchoseInterfaceKind
     /// <summary>QHW 通道（report `0x4D`）：CZ 族键盘与多数鼠标，含共用 dongle。</summary>
     Qhw,
 
-    /// <summary>鼠标 K7 V2 Ultra+ 的命令通道（64 字节 output `0x4D`，3837:1018）。</summary>
-    MouseK7,
+    /// <summary>0x4D 命令通道（64 字节 output `0x4D`）：`0x1018` 及目录登记的通用 dongle——通道名不是型号名。</summary>
+    Mouse0x4D,
 
     /// <summary>鼠标 Gmouse 主动查询接口（65 字节，usagePage 0xFF01/usage 0x10，3837:4245 等）。</summary>
     Gmouse,
@@ -96,11 +96,20 @@ public static class MchoseInterfaceClassifier
         if (outputLength == KeyboardReportLength && inputLength == KeyboardReportLength)
             return MchoseInterfaceKind.KeyboardV1;
 
-        // K7 必须排在下面的"≥60 字节只走鼠标"之前：它的命令通道正好也是 64/64，
+        // 0x4D 通道必须排在下面的"≥60 字节只走鼠标"之前：它正好也是 64/64，
         // 落到 V2 分支会被当成"等 E2 状态帧"的接收器，白等两轮、一帧读不到。
-        // 判据是完整指纹（PID + 厂商用法 + 双方向长度），同 VID 的其它 PID 不受影响。
-        if (MchoseK7Codec.IsSupportedInterface(vendorId, productId, usagePage, usage, inputLength, outputLength))
-            return MchoseInterfaceKind.MouseK7;
+        // ① `0x1018`：唯一有真机指纹的一颗，按完整指纹收窄（同 dongle 的 61 字节旁路接口不会被误认）。
+        if (Mchose0x4DCodec.IsSupportedInterface(vendorId, productId, usagePage, usage, inputLength, outputLength))
+            return MchoseInterfaceKind.Mouse0x4D;
+
+        // ② 目录登记的其它 0x4D 传输通道（0x1014 / 0x1016 / 0x101C / 0x101D）：没有真机指纹，
+        //    用「厂商页 + 双向 64 字节」的宽松判据。宁可漏认（退回 V2 兜底）也不按 VID 泛化。
+        //    `0x1018` 不参与这条：它只认精确指纹，否则放宽后同 dongle 的其它 64/64 集合也会被当命令通道。
+        if (productId != Mchose0x4DCodec.PidDongle8K
+            && MchoseDeviceCatalog.TryGetTransport(vendorId, productId, out var transport)
+            && transport.Protocol == Mchose0x4DCodec.ProtocolName
+            && Mchose0x4DCodec.IsVendorTransportInterface(usagePage, usage, inputLength, outputLength))
+            return MchoseInterfaceKind.Mouse0x4D;
 
         // Gmouse 主动查询接口：同样是 ≥60 字节，但 usagePage=0xFF01/usage=0x10，与 V2 被动 E2 链路
         // 靠完整指纹区分。必须排在「≥60 字节只走鼠标」之前，否则 G3 V2 会被当成等 E2 帧的接收器白等。
@@ -118,7 +127,7 @@ public static class MchoseInterfaceClassifier
     {
         "keyboard-v1" => MchoseInterfaceKind.KeyboardV1,
         "qhw" => MchoseInterfaceKind.Qhw,
-        "mouse-k7" => MchoseInterfaceKind.MouseK7,
+        "mchose-0x4d" => MchoseInterfaceKind.Mouse0x4D,
         "gmouse" => MchoseInterfaceKind.Gmouse,
         "headset-v9" => MchoseInterfaceKind.HeadsetV9,
         "headset-x9" => MchoseInterfaceKind.HeadsetX9,
@@ -136,9 +145,9 @@ public static class MchoseInterfaceClassifier
             => outputLength == KeyboardReportLength && inputLength == KeyboardReportLength,
         MchoseInterfaceKind.Qhw
             => outputLength >= MinVendorReportLength && inputLength >= MinVendorReportLength,
-        MchoseInterfaceKind.MouseK7
-            => usagePage == MchoseK7Codec.UsagePage && usage == MchoseK7Codec.Usage
-               && inputLength >= MchoseK7Codec.FrameLength && outputLength >= MchoseK7Codec.FrameLength,
+        MchoseInterfaceKind.Mouse0x4D
+            => usagePage == Mchose0x4DCodec.UsagePage && usage == Mchose0x4DCodec.Usage
+               && inputLength >= Mchose0x4DCodec.FrameLength && outputLength >= Mchose0x4DCodec.FrameLength,
         MchoseInterfaceKind.Gmouse
             => usagePage == MchoseGmouseCodec.UsagePage && usage == MchoseGmouseCodec.Usage
                && inputLength >= MchoseGmouseCodec.FrameLength && outputLength >= MchoseGmouseCodec.FrameLength,

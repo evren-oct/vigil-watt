@@ -1,7 +1,7 @@
-# 迈从 MCHOSE（G87 键盘 / QHW 新一代 dongle / K7 V2 Ultra+ / Gmouse G3 V2）
+# 迈从 MCHOSE（G87 键盘 / 0x4D 鼠标通道 / Gmouse G3 V2 / 耳机）
 
 > 从 [protocols.md](protocols.md) 拆出（2026-10-21）。结论均来自真机验证或官方软件抓包；改协议代码前先读本文。
-> **设备清单、协议族判定、QHW 鼠标的 DPI/回报率取数口径**见 [mchose-catalog.md](mchose-catalog.md)（2026-11-01 逆向，静态分析）。
+> **设备清单、协议族判定、鼠标 DPI/回报率取数口径**见 [mchose-catalog.md](mchose-catalog.md)（2026-11-01 逆向，静态分析）。
 
 ## 1. 迈从键盘 G87（dongle VID_41E4&PID_2001）—— ✅ 已打通，应用在用
 
@@ -96,7 +96,7 @@
 
 - **feat8（Col06，feature 0x06）**：`06 <命令回显> <连接模式 01=有线/02=2.4G> 64 64 64 B5 6A`。[3..5] 恒为 0x64（=100），**不随电量变化**——旧版读出 100% 的错误来源。SetFeature 只是回显写入字节。
 - **经典鼠标协议（feature 0x11）/ Rapou7 V2（64 字节 output 0x4D）**：此 dongle 物理上不支持——feature 通道数量为 0（HidD 返回 err=1）、输出只有 20 字节。Rapou7/offline-mchose 项目只覆盖迈丛**鼠标**（A7/L7/M7/AX5/A5/K7），不含键盘，不要再看它。（`0x3837` 世代接收器另当别论，见 §1.6。）
-- **QHW 0x4D 报文**：WriteFile 报"参数错误"，此 dongle 不认（见 §2，那是新一代 dongle 的协议）。
+- **0x4D 报文**：WriteFile 报"参数错误"，此 dongle 不认（见 §2，那是新一代 dongle 的协议）。
 
 ### 1.5 会话排他（运维注意）
 
@@ -134,30 +134,47 @@ dongle 的配置会话一次只服务一个客户端。崩溃进程不关会话 
 
 耳机 V9 Pro 用的是另一个 VID（`291D:385D`），不在这条链路上，见 [mchose-v9-pro.md](mchose-v9-pro.md)。
 
-## 2. QHW 协议（新一代 dongle，M HUB WEB 前端逆向）—— QHW 备用，CZ 分块读已真机打通
+## 2. 0x4D 协议（新一代 dongle，M HUB WEB 前端逆向）—— 鼠标主力通道；键盘走 §2.4 的 CZ 分块读
 
-来源：官方 www.mchose.com.cn 的 M HUB WEB 前端 JS（QhwCmdQueueItem 类），适用于 0x3837 世代 dongle（官方通用 2.4G dongle = VID 0x3837&PID 0x3033，G87 V2/G75 V2/K87S/K99 V3 共用）。用户现款 41E4:2001 不适用，代码已备好（TryQhw），遇到新 dongle 直接用。
+来源：官方 www.mchose.com.cn 的 M HUB WEB 运行时 JS（当前是 `main-CRYCuU75.js`，2026-11-07 抓取；
+旧版文件名是 `purify.es-*.js`，现在的 `purify.es-*` 只剩 DOMPurify）。VigilWatt 侧只有一个执行器
+`Mchose0x4DCodec`——原 `qhw` 与 `mouse-k7` 两套实现已于 M2-2 合并，运行时协议名统一 `mchose-0x4d`。
 
-**⚠ 0x3033 这颗 dongle 实际上不认 QHW**：本机 2026-11-04 实测，`0x4D` 握手与 `0x0904` 在三条 65 字节通道上全部静默；官方 web 驱动走的是下面 §2.4 的 CZ 分块读。
+**⚠ 0x3033 这颗 dongle 实际上不认 0x4D**：本机 2026-11-04 实测，`0x4D` 写入在三条 65 字节通道上
+全部静默；官方 web 驱动与 VigilWatt 都走下面 §2.4 的 CZ 分块读。
+（旧文档记的 `0x0904` 查询同样无效——该命令在当前官方代码里已不存在，见 §2.2。）
 
-### 2.1 帧格式（report ID 0x4D）
+### 2.1 帧格式（report ID 0x4D，请求与应答同布局）
 
 ```
-[0]=0x4D [1]=ver=1 [2]=flags=3 [3]=payload长度 [4]=cmdLo [5]=cmdHi [6]=bizCode=0 [7]=seq [8…]=payload [8+len]=XOR(从[1]起到最后一个payload字节)
+[0]=0x4D [1]=ver=1 [2]=flags=1 [3]=payload长度 [4]=cmdLo [5]=cmdHi [6]=bizCode=0 [7]=seq=0 [8…]=payload [8+len]=XOR([2]..[7+len])
 ```
+
+- **flags 恒 1**：官方 `getCommandBuffer` 只在 `flags === 1` 时写校验字节。
+- **seq 恒 0**：不要自增（自增会让设备的应答匹配错位）。
+- **校验是异或，范围从 `[2]`（flags）起**，不含 version 与 report ID。
+- 帧长固定 64 字节（官方 `length: 64`），不足补零。
 
 WebHID 侧 reportId 自动加首字节；Windows WriteFile 时 [0] 就是要写的 report ID。
+`ReadInput` 缓冲可能带 report ID 前缀，解析时偏移 0 / 1 都试（`Mchose0x4DCodec.TryLocate`）。
 
-### 2.2 命令表（来自官方 JS）
+### 2.2 命令表（来自官方 JS；读与写是两套命令号）
 
-| 命令 | 含义 | 响应 payload |
-|---|---|---|
-| 0x0900 (2304) | getBaseInfo（连接后第一条） | [0..1]=VID le, [2..3]=PID le, [4]=maxProfile, [10]=连接(1有线/2无线), [11]=充电(0未充/1充电/2充满), [12]=电量%, [13]=gameSafeMode |
-| 0x0901 (2305) | getFwVersion（参数 [0]=主固件 / [1]=RF 固件） | parseFwVersion |
-| **0x0904 (2308)** | **getBattery** | **[0]=充电状态(0/1/2), [1]=电量%** |
-| 0x0906/0x090D/0x0918/0x0921/0x0924 等 | 灯效/配置/宏/心跳 | 见 JS |
+| 命令 | 含义 | 响应 payload | 方向 |
+|---|---|---|---|
+| `0x0900` | getBaseInfo（连接后第一条，**电量也在这条**） | `[0..1]`=配对本体 VID le、`[2..3]`=PID le、`[4]`=maxProfile、`[10]`=连接(1有线/2无线)、`[11]`=充电(0未充/1充电/2充满)、`[12]`=电量%、`[13]`=gameSafeMode | 只读 |
+| `0x0901` | getFwVersion（参数 `[0]`=主固件 / `[1]`=RF 固件） | parseFwVersion | 只读 |
+| `0x0905` | 板名分块读（`[board, offset, size]`，每块 23 B，累计 60 B） | UTF-8 文本 | 只读 |
+| `0x0002` / `0x0003` / `0x0009` / `0x000a` | 基础配置 / DPI / LOD / 回报模式 | 见 [mchose-catalog.md](mchose-catalog.md) §2 | 只读（VigilWatt 未实现） |
+| `0x0102` / `0x0103` / `0x0109` / `0x010a` 等 | 上表同项的**写**方向（读命令 + 0x0100） | — | **禁止** |
+| `0x0906` / `0x090D` / `0x0918` / `0x0921` / `0x0924` | 灯效 / 配置 / 宏 / 心跳 | 见 JS | **禁止** |
 
-连接握手：report 0x4D，数据 `AA 55 AA 55 AA 55`（无 QHW 头、无校验），连接时发一次。
+**`0x0904` 不存在**：当前官方 `readMap` 里没有这条命令，电量由 `0x0900` 的 `payload[12]` 给出。
+VigilWatt 旧实现曾按 `0x0904` 发送（且 flags / 校验范围也不对），M2-2 已改正。
+
+**握手帧**：官方只在 `newMouseWCH` 四款（V7 / V7 Pro / G3 V3 / G3 S）上发
+`AA 55 AA 55 AA 55`（63 字节裸 report，无 0x4D 头），**不是通用步骤**；VigilWatt 未实现，
+这些型号是否必须握手**尚未真机验证**。
 
 ### 2.3 CZ 通道（同代键盘的批量配置协议）
 
@@ -207,14 +224,17 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 
 **两条别再试的路**：
 
-- **QHW `0x4D`**（§2.1/2.2）：这颗 dongle 全静默，`docs/protocols.md` 里"已实现，备用"说的就是它
+- **`0x4D` 帧**（§2.1/2.2）：这颗 dongle 全静默，写进去没有任何应答
 - **官方 `audio.mc` 单帧电量命令**（`reportId 0x55`、帧头 `AA`、`subCmd 11`）：4 种摆放全失败，其中两条回错误帧 `00 AB AA 01 00 00 01 00 0A 63 73 65 72 72`（尾部 ASCII `cserr`）。CZ 通道的命令字在 `[2]`，把 MC 的帧头 `0xAA` 放进去会被当未知命令拒掉；`0xAB` 首字节 + 明文错误串才是真 NAK
 
 **注意**：`[0x20]` 的低 7 位是电压估算，同簇内会有 ±2 抖动（90→89→90）。所以"充满"只能靠 `MchoseSpecs.ResolveFull` 补判，不是独立字段。
 
-## 3. MCHOSE K7 V2 Ultra+（接收器 VID_3837&PID_1018）—— 贡献者真机验证
+## 3. 0x4D 通道（`3837:0x1018` 等通用 dongle）—— 贡献者真机验证
 
-并入迈从插件，协议名 `mouse-k7`，帧与解析全部在 `MchoseK7Codec`（纯函数，有单测）。
+协议名统一 `mchose-0x4d`，帧与解析全部在 `Mchose0x4DCodec`（纯函数，有单测）；原 `qhw` / `mouse-k7`
+两套实现已于 M2-2 合并。**本节标题与历史记录里的 "K7" 是叫法问题，不是型号判定**：
+`0x1018` 是通用 8K dongle（K7 V2 全系 / A7 V3 全系 / K5 Pro+Ultra / R7 Ultra 共用），
+具体型号只能由 `0x0900` 自报的 VID/PID 决定（§3.3、§3.8）。
 
 ### 3.1 接口地图
 
@@ -245,14 +265,33 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 
 请求 9 字节有效：`4D 01 01 00 00 09 00 00 08`。
 
-应答 16 字节 payload，字段表照抄官方 `_K()`：
+应答 16 字节 payload，字段表照抄官方 `deviceInfoToObj`（旧文档称 `_K()`）：
 
-| payload[10] | payload[11] | payload[12] | payload[13] |
-|---|---|---|---|
-| connectStatus | **chargeStatus** | **batteryLevel** | gameMode |
+| payload[0..1] | payload[2..3] | payload[4] | payload[10] | payload[11] | payload[12] | payload[13] |
+|---|---|---|---|---|---|---|
+| 配对**本体** VID（LE） | 配对**本体** PID（LE） | maxConfigNum | connectStatus | **chargeStatus** | **batteryLevel** | gameMode |
 
 真机样本：`4D 01 01 10 00 09 00 00 | 37 38 26 40 04 00 00 00 00 10 02 00 64 00 08 E4 | EF`
 → 连接状态 2、充电状态 0、**电量 `0x64` = 100%**。
+
+**字段 → 统一模型（M2-3 起接入）**：三项一次读出，映射只写在 `Mchose0x4DCodec` 里，插件不另写码表。
+
+| 字段 | 取值 | 映射 | 证据 |
+|---|---|---|---|
+| `[10]` connectStatus | `1` | `ConnectionKind.Wired` | 官方枚举；**真机未留证**（样本全是 2.4G） |
+| | `2` | `ConnectionKind.Wireless24G` | 官方枚举 + 真机（`0x1018` dongle） |
+| | `0` / 其它 | `ConnectionKind.Unknown` | 官方没给这两个值的语义，**不猜** |
+| `[11]` chargeStatus | `0` | 未充电（100% 时按"已充满"收尾） | 官方枚举 + 真机（`0x0900` 与 `0x0600` 都见过 0） |
+| | `1` | `ChargingState.Charging` | 官方枚举 + 真机（`0x0600` 上底座那条） |
+| | `2` | `ChargingState.Full` | 官方枚举；**真机未留证** |
+| | 其它 | `Unknown` | **不默认成"未充电"** |
+| `[12]` batteryLevel | 1..100 | `BatteryPercent` | 真机 100%；`0` 视为"还没算出来"，不报 0% |
+
+连接方式**只刷徽标**：`Unknown` 不覆盖已知值、不参与在线判定、也不触发重新认领（认领只看 VID/PID 与接口描述符）。
+`0x0600` 事件里没有连接字段，所以连接方式只能来自 `0x0900`。
+
+**身份字段（M2-1 起解析，只用于显示名，不参与认领）**：样本前 4 字节解出 VID `0x3837` / PID `0x4026`，
+按官方型号表 `0x4026` 是 **A5 V3 Ultra+**，不是 K7 V2 Ultra+（`0x4028`）——见 §3.8。
 
 ### 3.4 命令 `0x0600`：设备主动上报的电源事件
 
@@ -280,17 +319,18 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 真机常态应答是 `4D 01 01 01 00 09 00 00 FF`（payload 只有 1 字节）。官方 `hgt()` 遇它也是重试 + 容忍无读数。
 
 **绝不能当查询失败记账**：按普通失败记的话，睡着的鼠标三轮就被判离线并熔断停写，醒了也不会再被问。
-`PollMouseK7` 因此自己记账——收到任何 `0x4D` 帧就 `ReportPollAnswered`，只有一帧都没收到才算失败。
+`Poll0x4D` 因此自己记账——收到任何 `0x4D` 帧就 `ReportPollAnswered`，只有一帧都没收到才算失败。
 
 ### 3.6 证据来源
 
 官方 M HUB 是 Electron 套壳，`app.asar` 里一个协议字符串都没有，真实驱动是运行时从
-`https://www.mchose.com.cn/assets/purify.es-*.js` 拉的 7.7 MB 打包 JS。定位过程：
+`https://www.mchose.com.cn/assets/` 拉的打包 JS（2026-11-07 抓取时是 `main-CRYCuU75.js`，7.67 MB；
+旧版文件名 `purify.es-*.js`，现在这个文件只剩 DOMPurify）。定位过程：
 
 1. `--remote-debugging-port=9222` 启动 M HUB，CDP 连上内嵌 iframe
 2. 在页面里 hook `HIDDevice.prototype.sendReport` 与 `inputreport`，拿到 WebHID 层原始报文
-3. 在 JS 里按命令码**十进制值**定位：`2304`(0x0900) → `hgt()` / `_K()`；`1536`(0x0600) → `LA()`
-4. 帧构造器 `i1e()` 就在相邻位置，一起读出来即得完整协议
+3. 在 JS 里按命令码**十进制值**定位：`2304`(0x0900) → `readDeviceInfo` / `deviceInfoToObj`；`1536`(0x0600) → `LA()`
+4. 帧构造器 `getCommandBuffer` 就在相邻位置，一起读出来即得完整协议
 
 **教训：能读到官方解析代码时，不要靠改字节暴力猜。** 本轮穷举猜了两个小时没结果，读到 `i1e()` 后十分钟闭环。
 
@@ -306,6 +346,21 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 - **被动事件路径**（0x0600）：鼠标唤醒即上报，离线设备能被翻回在线
 - **长跑**：01:13 → 07:42 连续 6.5 小时设备静止休眠，零告警刷屏、零异常
 - **未留证**：充电（未被放上底座）、断连（dongle 全程插着）两态
+- 日志里的 `proto=mouse-k7` 是当时的协议名，M2-2 已统一为 `mchose-0x4d`（记录本身不改）
+
+### 3.8 未验证边界（M2-2 之后）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| `0x1014` / `0x1016` / `0x101C` / `0x101D` 四颗传输 PID | **未真机验证** | 官方 `newMouseWirelessPids` 里有它们，VigilWatt 按「目录登记 + 厂商页 + 双向 64 字节」认领；命令通道的 usage 没有真机指纹，若不在厂商页会退回 MouseV2 兜底（不误认，但也读不到） |
+| 配对本体身份 | **未闭环** | 唯一真机样本自报 `0x4026`（A5 V3 Ultra+），与当时记录的 K7 V2 Ultra+（`0x4028`）不符；设备型号、官方型号表、字段表三者至少有一处需复核 |
+| WCH 四款（V7 / V7 Pro / G3 V3 / G3 S）的握手 | **未实现、未验证** | 官方对这四款先发 `AA 55 AA 55 AA 55`（63 字节裸 report）；VigilWatt 不发，能否读到数未知 |
+| `0x0900` 应答布局在其它型号上是否一致 | **未验证** | 只有一条真机样本 |
+| `connectStatus = 1`（有线） | **未留证** | 全部样本都是 2.4G 接收器，`Wired` 映射只有官方枚举支撑 |
+| `chargeStatus = 2`（已充满） | **未留证** | 只见过 0 / 1；`Full` 目前靠"未充电 + 100%"收尾规则给出 |
+| 能力声明覆盖面 | **仅 `3837:1018`** | 三项 `supported` 挂在传输通道上；四颗未验证 dongle 与四条本体 PID 都不声明（不从协议族外推） |
+| 有线（本体 PID 直连）路径 | **未验证** | 全部样本都是 2.4G 接收器 |
+| `0x0600` 的 `payload[0]` bit0（DPI 档位） | **已定位未解析** | 留给 M2-4 |
 
 ## 4. MCHOSE Gmouse 主动查询（G3 V2，接收器 VID_3837&PID_4245）—— 贡献者真机验证
 
@@ -349,9 +404,9 @@ AA 30 xx xx xx xx xx xx [电量] [充电] …
 - 迈从官方 M HUB 网页端 `/gmouse` 打包 JS
 - 真机 G3 V2（3837:4245）验证读到电量（如 89% 未充电）
 
-### 4.4 与 K7 / V2 的差异（别搞混）
+### 4.4 与 0x4D / V2 的差异（别搞混）
 
-| | Gmouse（本节） | K7（§3） | V2 被动 E2（§1.6） |
+| | Gmouse（本节） | 0x4D（§3） | V2 被动 E2（§1.6） |
 |---|---|---|---|
 | 命令通道 usage | `0xFF01/0x0010` | `0xFF01/0x0001` | ≥60 字节厂商接口 |
 | PID | `0x4245` | `0x1018` | `0x100A` 等 |
@@ -410,7 +465,7 @@ AULA 侧 `Probe` 见到迈从型号直接返回 null。判据只放宽到这条�
 
 ## 6. A5 V2 Ultra 鼠标（接收器 `3837:100C`）—— 贡献者声明，本机未复测
 
-与同品牌 E2 状态帧、QHW、K7、gmouse 都是**不同链路**：A5 走厂商 Feature 通道（`0xFF01/0x0001`），
+与同品牌 E2 状态帧、0x4D、gmouse 都是**不同链路**：A5 走厂商 Feature 通道（`0xFF01/0x0001`），
 一条反码查询 + 一次读回。插件是独立的 `MchoseA5Plugin`，但 `Name` 同为 `Mchose`、共用品牌开关，
 设置页按 Name 去重后只出一行（`AGENTS.md` §9）。
 

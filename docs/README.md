@@ -37,7 +37,7 @@
 - [akg.md](hardware/akg.md)：AKG N9 Hybrid 接收器查询、控制输入读取和验证边界。
 - [mchose-v9-pro.md](hardware/mchose-v9-pro.md)：MCHOSE V9 Pro 耳机的查询帧与未复测边界。
 - [mchose-x9.md](hardware/mchose-x9.md)：X9 耳机（`3837:6045`）的 64 字节查询帧，与键鼠同号段的分流要点。
-- [mchose-catalog.md](hardware/mchose-catalog.md)：迈从设备全景（键盘 BY/CZ 两族、鼠标、耳机共 97 条记录）、QHW 鼠标命令表与 DPI/回报率取数口径。
+- [mchose-catalog.md](hardware/mchose-catalog.md)：迈从设备全景（键盘 BY/CZ 两族、鼠标、耳机共 97 条记录）、鼠标 0x4D 命令表与 DPI/回报率取数口径。
 - [rapoo.md](hardware/rapoo.md)：雷柏 V2 世代 status-report7 心跳（电量、DPI、回报率的唯一来源）、离线判定与有线模式坑。
 - [rapoo-catalog.md](hardware/rapoo-catalog.md)：雷柏设备目录（109 台 / 195 个 VID:PID / 12 套协议族）、设备图 URL 与 DPI/回报率档位。
 - [vgn.md](hardware/vgn.md)：VGN 蜻蜓 F1 V5（kc2 配置帧）与 F2 大师+（y2 查询），含插线双接口按序列号去重。

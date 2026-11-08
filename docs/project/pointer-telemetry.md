@@ -37,7 +37,7 @@
 | 系统事件统计（只允许用在实测回报率上） | `Estimated` |
 | 没有可靠途径 | `Unknown` |
 
-例：雷柏 `[11]=1` → 1000Hz 是 `DeviceReported`（码表已真机校准）；迈从 QHW 的
+例：雷柏 `[11]=1` → 1000Hz 是 `DeviceReported`（码表已真机校准）；迈从 0x4D 的
 `usbRateIndex → Hz` 是 `Inferred`（型号表未验证）。
 
 ## 3. 字段语义

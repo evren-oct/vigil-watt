@@ -3,6 +3,12 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-08
+
+- **迈从 0x4D 接入连接方式与统一充电状态（M2-3）**：`0x0900` 的 `payload[10]` 一直是"解析后丢弃"，现在映射到 `ConnectionKind`（`1` 有线 / `2` 2.4G，其余 `Unknown`——官方只给了这两档语义）；`payload[11]` 的充电码表从插件搬进 `Mchose0x4DCodec`，与连接映射同处一个纯函数层，单测可直接钉住。连接方式**只刷徽标**：`Unknown` 不覆盖已知值、不参与在线判定、也不触发重新认领（认领只看 VID/PID 与接口描述符）。见 `hardware/mchose.md` §3.3。
+- **能力声明补两项、只给有真机证据的通道**：`DeviceCapability` 增加 `ConnectionRead` / `ChargingRead`（原六项表达不了这两件事），`mchose-catalog.json` 的 `transports[]` 支持 `capabilities`；只有 `3837:1018` 声明三项 `supported`，四颗未验证的共用 dongle 与四条本体 PID 一律不声明——不从协议族外推。见 `dev/protocol-json.md` §2.1。
+- **补测试**：`Mchose0x4DTelemetryTests`（连接/充电映射、未知值不落确定态、三字段索引隔离、能力声明与目录一致）+ `ConnectionTelemetryTests`（连接变化不碰在线状态/电量、失败轮询不重置遥测、不触发重新认领）。
+
 ## 2026-11-07
 
 - **设备卡片展示 DPI / 档位 / 回报率（PR-D）**：模型与解析在 PR-A/PR-B 就绪，界面此前一处都没展示。新增 `PointerTelemetryFormatter`（Core 纯函数）产出分段与单行文案，设备页只多一个 TextBlock；`DeviceStatus.Capabilities` 在认领落地时由插件写入，用来区分"能读但还没读到（未获取）"与"不支持（该字段不出现）"。离线与过期一律不渲染，实测回报率带 `≈` 与来源标记。见 `project/pointer-telemetry.md` §8。

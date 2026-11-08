@@ -26,6 +26,12 @@ public enum DeviceCapability
 
     /// <summary>写回报率。</summary>
     RateWrite,
+
+    /// <summary>读当前数据链路（有线 / 2.4G）。M2-3 新增：0x4D 的 <c>payload[10]</c> 已真机读到。</summary>
+    ConnectionRead,
+
+    /// <summary>读充电状态（未充 / 充电中 / 已充满）。M2-3 新增：0x4D 的 <c>payload[11]</c> 已真机读到。</summary>
+    ChargingRead,
 }
 
 /// <summary>

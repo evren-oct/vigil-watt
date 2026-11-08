@@ -4,8 +4,10 @@
 > `configCenter/custom/cardList.json`。**除注明外全部是静态分析，本机未真机验证**——
 > 本机只有 G87 V1（`41E4:2001`），没有鼠标、CZ 族键盘和耳机。
 > 协议实现细节见 [mchose.md](mchose.md)；本文只放**设备清单、协议族判定、取数口径**。
-> **已落地**：本体 63 条收进 `Plugins/Mchose/mchose-catalog.json`（内嵌资源）；共用 dongle 不收录，
-> 由 `Probe` 的「先试 0x4D 再试 V2」兜住。
+> **已落地**：本体 63 条进 `Plugins/Mchose/mchose-catalog.json` 的 `devices[]`；**共用 dongle 不进 `devices[]`**
+> （会被当成型号），另记在 `transports[]`——只描述"这颗 PID 是哪种通道、承载哪个协议"，不带型号。
+> 2026-11-08 起 `transports[]` 还承载能力声明：只有 `3837:1018` 写了 `batteryRead / connectionRead /
+> chargingRead = supported`，其余通道一律不写（= `Unverified`）。认领仍走 `Probe` 的「先试 0x4D 再试 V2」。
 
 ## 1. 设备全景
 

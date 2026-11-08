@@ -5,6 +5,8 @@
 
 ## 2026-11-08
 
+- **迈从 0x4D 协议合并（M2-2）**：`qhw` 与 `mouse-k7` 原本是两套并行实现，帧构造、校验范围、应答定位各写一遍，且 QHW 那套的 `0x0904` 命令与 `flags=0x03` + 求和校验都是错的（设备只回显、不执行）。合并为唯一执行器 `Mchose0x4DCodec`，协议名统一 `mchose-0x4d`，删掉 `MchoseK7Codec` 及其测试；分类器 `MouseK7` 改名 `Mouse0x4D`，并为目录登记的通用 dongle（`0x1014/0x1016/0x101C/0x101D`）加「厂商页 + 双向 64 字节」的宽松判据，`0x1018` 仍只认精确指纹。见 `hardware/mchose.md` §2、§3。
+- **迈从 `0x0900` 自报身份**：`payload[0..3]` 是配对**本体**的 VID/PID（不是 dongle 的），新增 `MchoseDeviceIdentity` 把 USB 身份与协议身份分开存，只用于显示名、**不参与认领**——dongle PID 被多款共用，不能反推型号。真机样本自报 `0x4026`（A5 V3 Ultra+），与当时记录的 K7 V2 Ultra+ 不符，型号身份仍未闭环（`hardware/mchose.md` §3.8）。
 - **迈从 0x4D 接入连接方式与统一充电状态（M2-3）**：`0x0900` 的 `payload[10]` 一直是"解析后丢弃"，现在映射到 `ConnectionKind`（`1` 有线 / `2` 2.4G，其余 `Unknown`——官方只给了这两档语义）；`payload[11]` 的充电码表从插件搬进 `Mchose0x4DCodec`，与连接映射同处一个纯函数层，单测可直接钉住。连接方式**只刷徽标**：`Unknown` 不覆盖已知值、不参与在线判定、也不触发重新认领（认领只看 VID/PID 与接口描述符）。见 `hardware/mchose.md` §3.3。
 - **能力声明补两项、只给有真机证据的通道**：`DeviceCapability` 增加 `ConnectionRead` / `ChargingRead`（原六项表达不了这两件事），`mchose-catalog.json` 的 `transports[]` 支持 `capabilities`；只有 `3837:1018` 声明三项 `supported`，四颗未验证的共用 dongle 与四条本体 PID 一律不声明——不从协议族外推。见 `dev/protocol-json.md` §2.1。
 - **补测试**：`Mchose0x4DTelemetryTests`（连接/充电映射、未知值不落确定态、三字段索引隔离、能力声明与目录一致）+ `ConnectionTelemetryTests`（连接变化不碰在线状态/电量、失败轮询不重置遥测、不触发重新认领）。

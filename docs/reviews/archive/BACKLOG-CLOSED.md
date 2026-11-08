@@ -100,3 +100,4 @@
 | CR-146 | **原判断有误，撤回**：目录优先下 `0x2E3C:0x5745` 是会被查到的，`implementation: "none"` 正确地拒绝认领；`vendors` 白名单只影响"未收录设备"的形态回落，不影响已收录条目 |
 | CR-147 | `"qhw-push"` 不再进设备协议名：协议名统一记 `qhw`，"只拿到被动推送"另记在 `_pushOnly`（按路径）。`PollDevice` / `TryParsePassiveInput` 改查显式状态，UI 副标题也不会再显示内部标记 |
 | CR-148 | `capabilities` 写在设备 `override` 里会被静默丢弃：它先深合并进协议对象，再在 `ProtocolDto` 反序列化时丢掉（`ProtocolDto` 没有该字段）。已在 `ReadDevices` 合并前拒绝，报错带 `VID:PID` 与完整字段路径（含嵌套对象与数组元素），`map` / `mapValue` 的取值表不参与扫描；设备条目顶层 `capabilities` 与现有 7 条 `passive.fields` override 不受影响。回归见 `ProtocolSpecLoaderTests.LoadFromJson_Override*`，规则见 `dev/protocol-json.md` §2.1 |
+| CR-143 | 2026-11-08 复核：**合并 `qhw` / `mouse-k7` 后问题已消失**。`Claim0x4D` 恒返回协议名 `mchose-0x4d`，插件里已没有任何路径产出 `qhw`，而 `ResolveKind` 把 `mchose-0x4d` 映射到 `DeviceKind.Mouse`；只剩 `cz-block` 落 `Keyboard`，那批是 CZ 族键盘，本就正确。**无需再缓存 `DeviceKind`** |

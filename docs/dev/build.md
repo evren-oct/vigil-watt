@@ -143,7 +143,7 @@ xUnit 项目（`net8.0`、AnyCPU），用 `<Compile Include>` 直接链接 `src/
 powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 ```
 
-脚本做的事：taskkill 运行中实例 → `dotnet publish`（Release x64，同 §4）→ 读发布 exe 的 FileVersion 当包版本（截成 3 段，vpk 不收 4 段）→ `vpk pack`。产物在 `dist/`：
+脚本做的事：taskkill 运行中实例 → `dotnet publish`（Release x64，同 §4）→ 读取项目 Version 作为包版本（保留 beta 后缀）→ `vpk pack`。产物在 `dist/`：
 
 - `VigilWattApp-win-Setup.exe`：安装包（**仅当前用户**、无 UAC、装到 `%LocalAppData%\VigilWattApp`，自动建桌面+开始菜单快捷方式、写卸载条目）
 - `VigilWattApp-win-Portable.zip`：绿色免安装版（vpk 顺带生成）
@@ -171,7 +171,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 - `Program.cs`：自定义入口（csproj `DISABLE_XAML_GENERATED_MAIN` 关掉了 XAML 生成的 Main）。`VelopackApp.Build().Run()` 必须最先跑——安装/更新/卸载钩子进程带 `--veloapp-*` 参数被拉起，在这里被消费后直接退出，所以 `App.OnLaunched` 的单实例互斥不会误杀钩子进程，也不用改。
 - 卸载清理：`OnBeforeUninstallFastCallback` 里调 `AutostartService.SetEnabled(false)` 删 HKCU Run 自启动残留。
 - `Services/UpdateService.cs` + 关于页"软件更新"区：更新源是 Velopack **内置的 `GithubSource` / `GiteaSource`**，不是自写适配器——Gitee 的 `/api/v1` 与 `/api/v5` 返回一致（2026-10-14 实测：同仓库同键同值），而 `GiteaSource` 的 API 基址正是硬编码的 `{host}/api/v1/`，所以直接可用。**GitHub 优先，8 秒内没结果或抛错就回退 Gitee**（`ProbeTimeout`）；检查成功后源固定，delta 包必须从给出清单的那个源继续下载。两个仓库 URL 是常量，`publish-gitee.ps1` 必须与 `UpdateService` 里的 Gitee 地址指向同一个仓库，且两边的 Release 资产要一致。启动时检查一次，关于页保留手动检查。运行副本未安装时不执行安装更新。
-- 版本号唯一来源：`VigilWatt.App.csproj` 的 `<Version>`，exe FileVersion、设置页显示、安装包版本都从它来。
+- 版本号唯一来源：`VigilWatt.App.csproj` 的 `<Version>`，关于页和 Velopack 安装包使用含预发行后缀的项目版本。
 
 ### 更新说明（release notes）
 
@@ -229,3 +229,17 @@ powershell -ExecutionPolicy Bypass -File scripts\publish-gitee.ps1
 ```
 
 `publish-gitee.ps1` 自动从 csproj 读版本号，拒绝覆盖已存在的 Release，并把 `dist/` 下全部文件上传到该版本 Release。Release 必须包含 `releases.win.json` 及其引用的全部 `.nupkg`。客户端启动时检查一次；新版本会提示用户确认，启动到托盘时先显示托盘通知，用户打开窗口后再显示安装确认框。
+
+## Win10 原生动态磁贴的 MSIX 构建
+
+通过 Windows 开始菜单固定 MSIX 版 VigilWatt 即可使用。开始菜单打开时，本体请求一次现有设备轮询，并按 15 秒电量、15 秒默认图标交替显示。应用需要在当前用户会话中运行。Windows 11 上使用静态应用图标。
+
+从解决方案构建 x64 MSIX：
+
+```powershell
+dotnet build VigilWatt.sln -c Release -p:Platform=x64 -p:WindowsPackageType=MSIX -p:GenerateAppxPackageOnBuild=true -p:AppxPackageSigningEnabled=false -p:AppxBundle=Never
+```
+
+应用 beta 版本为 `1.4.0-beta.1`，对应 MSIX 数字版本 `1.3.99.1`。后续 beta 递增末段，正式 `1.4.0.0` 可以正常升级。正式发布前确定稳定的包标识和签名发布者。使用与清单 Publisher 一致的证书签名，后续沿用包身份并递增四段式清单版本。MSIX 通过安装新版签名包升级。原来的 EXE/便携发布流程继续走现有脚本。
+
+切换到 MSIX 版前退出旧版，并在 Windows 启动应用中关闭旧版自启。MSIX 首次启动会从旧版默认数据目录复制设置和 SQLite 历史快照，之后使用自己的 LocalState。旧数据不会被迁移过程删除，MSIX 里已有的文件也不会被覆盖。可从原有设置项重新启用 MSIX 的登录自启。

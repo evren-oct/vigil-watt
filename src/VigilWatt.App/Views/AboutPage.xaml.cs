@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using VigilWatt.App.Services;
 using VigilWatt.Core.Utils;
 using Microsoft.UI.Xaml;
@@ -17,6 +18,10 @@ public sealed partial class AboutPage : Page
     private const string ReleasesUrl = "https://github.com/evren-oct/vigil-watt/releases";
     private const string GitHubUrl = "https://github.com/evren-oct/vigil-watt";
 
+    private static string? AppVersion => typeof(AboutPage).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
+        ?? typeof(AboutPage).Assembly.GetName().Version?.ToString(3);
+
     private bool _notesRendered;
 
     public AboutPage()
@@ -31,7 +36,7 @@ public sealed partial class AboutPage : Page
 
     private void OnPageLoaded(object sender, RoutedEventArgs e)
     {
-        VersionText.Text = GetType().Assembly.GetName().Version?.ToString(3) ?? "—";
+        VersionText.Text = AppVersion ?? "—";
         UpdateStatusText.Text = string.IsNullOrEmpty(App.UpdateStatusMessage)
             ? "检查更新"
             : App.UpdateStatusMessage;
@@ -44,7 +49,7 @@ public sealed partial class AboutPage : Page
         if (_notesRendered) return;
         _notesRendered = true;
 
-        var version = GetType().Assembly.GetName().Version?.ToString(3);
+        var version = AppVersion;
         var current = ReleaseNotes.ForVersion(version);
 
         if (current != null)
@@ -102,6 +107,12 @@ public sealed partial class AboutPage : Page
         UpdateStatusText.Text = App.UpdateStatusMessage;
         try
         {
+            if (TileIntegration.HasPackage)
+            {
+                App.UpdateStatusMessage = "MSIX 版通过签名安装包更新";
+                UpdateStatusText.Text = App.UpdateStatusMessage;
+                return;
+            }
             var svc = new UpdateService();
             if (!svc.IsInstalled)
             {

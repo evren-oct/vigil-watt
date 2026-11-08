@@ -75,6 +75,7 @@ public partial class App : Application
         }
     }
     private static Mutex? _singleInstanceMutex;
+    private static TileIntegration? _tile;
 
     /// <summary>全局异常熔断：窗口内累计次数（见构造里的 UnhandledException）。</summary>
     private static int _unhandledBurst;
@@ -143,12 +144,17 @@ public partial class App : Application
         Log.Shutdown();
     }
 
+    internal static void StopLiveTile() => Interlocked.Exchange(ref _tile, null)?.Dispose();
+
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         // 单实例：重复启动直接退出
-        _singleInstanceMutex = new Mutex(true, "VigilWatt_SingleInstance", out bool createdNew);
+        if (TileIntegration.HasPackage) _tile = new TileIntegration();
+        _singleInstanceMutex = new Mutex(true, TileIntegration.HasPackage
+            ? "VigilWatt_Msix_SingleInstance" : "VigilWatt_SingleInstance", out bool createdNew);
         if (!createdNew)
         {
+            _tile?.RequestShowWindow();
             Log.Info("检测到已有实例运行，退出");
             ShutdownLogging();
             Environment.Exit(0);
@@ -173,6 +179,8 @@ public partial class App : Application
     /// <summary>真正的启动流程。由 <see cref="OnLaunched"/> 的兜底包住，本身不做异常处理。</summary>
     private void StartCore(LaunchActivatedEventArgs args)
     {
+        if (TileIntegration.HasPackage) PackagedData.ImportLegacyFiles();
+
         // 日志写不进去时 Emit 会静默丢弃所有行，用户那边看到的就是"一行日志都没有"，
         // 进而没法判断到底卡在哪。先探一次，不行就明说，别让人对着一个哑巴应用猜。
         if (!Log.TryProbeWriter(out var logError))
@@ -198,7 +206,9 @@ public partial class App : Application
         Services.Tray.Initialize();
 
         Services.MainWindow.Activate();
-        if (Services.Settings.StartMinimized)
+        var startup = !TileIntegration.HasPackage || Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs().Kind
+            == Microsoft.Windows.AppLifecycle.ExtendedActivationKind.StartupTask;
+        if (startup && Services.Settings.StartMinimized)
         {
             Services.MainWindow.AppWindow.Hide();
         }
@@ -214,7 +224,13 @@ public partial class App : Application
             Services.TaskbarBattery = new TaskbarPillManager();
         }
 
-        _ = CheckForStartupUpdateAsync();
+        if (_tile != null)
+        {
+            _tile.Start(Services);
+            UpdateStatusMessage = "MSIX 版通过签名安装包更新";
+        }
+        else
+            _ = CheckForStartupUpdateAsync();
     }
 
     private static async Task CheckForStartupUpdateAsync()

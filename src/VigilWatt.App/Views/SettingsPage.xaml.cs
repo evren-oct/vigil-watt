@@ -45,7 +45,13 @@ public sealed partial class SettingsPage : Page
     }
 
     /// <summary>每次进页面都重读设置。搜索索引改为按需重建：折叠区展开后视觉树会变，缓存会过期。</summary>
-    private void OnPageLoaded(object sender, RoutedEventArgs e) => SyncFromSettings();
+    private async void OnPageLoaded(object sender, RoutedEventArgs e)
+    {
+        SyncFromSettings();
+        AutostartToggle.IsEnabled = false;
+        AutostartToggle.IsOn = await AutostartService.ReadEnabledAsync();
+        AutostartToggle.IsEnabled = true;
+    }
 
     /// <summary>只建一次：下拉框档位。缓存页复用同一实例，再建一遍会叠加出重复条目。</summary>
     private void BuildOptions()
@@ -78,7 +84,7 @@ public sealed partial class SettingsPage : Page
         SampleBox.Value = s.SampleIntervalMinutes;
         RetentionBox.Value = s.HistoryRetentionDays;
         StartMinimizedToggle.IsOn = s.StartMinimized;
-        AutostartToggle.IsOn = AutostartService.IsEnabled();
+
         WidgetToggle.IsOn = s.WidgetEnabled;
         SystemBatteryToggle.IsOn = s.MonitorSystemBattery;
 
@@ -787,7 +793,7 @@ public sealed partial class SettingsPage : Page
         public string SearchText => $"{Title} {Description} {Category} {Aliases}";
     }
 
-    private void Save_Click(object sender, RoutedEventArgs e)
+    private async void Save_Click(object sender, RoutedEventArgs e)
     {
         var s = App.Services.Settings;
         s.LowBatteryThreshold = (int)ThresholdBox.Value;
@@ -832,9 +838,11 @@ public sealed partial class SettingsPage : Page
 
         // 自启写失败不拦其他设置（注册表被拒 ≠ 设置无效），但必须说出来：否则用户以为设上了，
         // 下次开机才发现没起来。异常在这里就地收口，不能再逸出到熔断器（dev/runtime-pitfalls.md §20）。
-        var autostartError = AutostartService.TrySetEnabled(AutostartToggle.IsOn, out var autostartReason)
-            ? null
-            : autostartReason;
+        var saveButton = (Button)sender;
+        saveButton.IsEnabled = false;
+        string? autostartError;
+        try { autostartError = await AutostartService.SetEnabledAsync(AutostartToggle.IsOn); }
+        finally { saveButton.IsEnabled = true; }
         App.Services.Manager.ApplySettings();
 
         // 小组件开关即时生效

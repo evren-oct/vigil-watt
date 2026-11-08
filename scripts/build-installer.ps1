@@ -1,4 +1,4 @@
-﻿# 打安装包：dotnet publish（self-contained）+ vpk pack（Velopack），产物在 dist\。
+# 打安装包：dotnet publish（self-contained）+ vpk pack（Velopack），产物在 dist\。
 # 产物：VigilWattApp-win-Setup.exe（仅当前用户安装、无 UAC、自动建开始菜单+桌面快捷方式）
 #       releases.win.json + RELEASES + *.nupkg（Velopack 更新清单与全量/增量包）
 # 用法：powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 [-Version 1.0.1]
@@ -18,12 +18,11 @@ $csproj = Join-Path $root "src\VigilWatt.App\VigilWatt.App.csproj"
 dotnet publish $csproj -c Release -p:Platform=x64 -o $publishDir
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish 失败" }
 
-# 3) 版本号：默认从发布 exe 的 FileVersion 读（单一来源是 csproj 的 <Version>）。
-#    FileVersion 是 4 段（1.0.0.0），vpk 只收 3 段 SemVer2，截掉第 4 段。
-$exe = Join-Path $publishDir "VigilWatt.App.exe"
-if ($Version -eq "") { $Version = (Get-Item $exe).VersionInfo.FileVersion }
-$parts = $Version.Split('.')
-if ($parts.Length -gt 3) { $Version = ($parts[0..2] -join '.') }
+# 3) 直接使用项目版本，保留 SemVer 预发行后缀。
+if ($Version -eq "") {
+    [xml]$project = Get-Content -LiteralPath $csproj -Raw
+    $Version = $project.SelectSingleNode("/Project/PropertyGroup/Version").InnerText
+}
 Write-Host "==> 打包版本: $Version"
 
 # 4) 更新说明：截 docs\project\release-notes.md 里当前版本那一段（格式契约见该文件头）。

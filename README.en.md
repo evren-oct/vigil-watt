@@ -6,6 +6,22 @@ English | [简体中文](README.md)
 
 ![Platform](https://img.shields.io/badge/Windows-10%2F11-0078d4) ![.NET](https://img.shields.io/badge/.NET-8-512bd4) ![License](https://img.shields.io/badge/license-MIT-green) [![Release](https://img.shields.io/github/v/release/evren-oct/vigil-watt?label=release&color=blue)](https://github.com/evren-oct/vigil-watt/releases)
 
+## Windows 10 Live Tile (beta)
+
+![VigilWatt Live Tiles: one-device battery ring and two-device battery bars](assets/screenshot-live-tiles.png)
+
+*Left: single-device battery ring. Right: two-device battery bars. Sample readings.*
+
+Install and run the MSIX build, then pin **VigilWatt** to Start. Right-click the tile to choose medium, wide, or large.
+
+- One online device gets a battery ring. Two or more online devices get up to two battery bars, with distinct low, charging, and unknown states.
+- Opening Start refreshes device readings and begins a 15-second battery view followed by 15 seconds of the original icon. Selecting the tile opens or restores VigilWatt.
+- The EXE installer and portable build retain the existing tray experience. The Windows 10 Live Tile uses the MSIX entry. See the [build and migration guide](docs/dev/build.md#win10-原生动态磁贴的-msix-构建).
+
+### Development verification
+
+Tested on Windows 10 22H2. The packaged app owns the tile and restarts the battery view when Start opens. A migration check verified that the SQLite backup includes WAL records and preserves existing destination files.
+
 ## Screenshots
 
 Device list and battery levels:
@@ -163,3 +179,5 @@ Detailed project documentation is primarily in Chinese.
 ## Repository and license
 
 [GitHub repository](https://github.com/evren-oct/vigil-watt) · [Gitee mirror](https://gitee.com/YGWG-LX/vigil-watt) · [MIT License](LICENSE) © 2026 evren
+
+The Live Tile contribution is covered by the MIT license. Include the original copyright and [license text](LICENSE) when redistributing. MSIX signing is separate from the source license.

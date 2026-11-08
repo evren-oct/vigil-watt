@@ -9,8 +9,8 @@
     <WindowsSdkPackageVersion>10.0.19041.38</WindowsSdkPackageVersion>
     <RootNamespace>VigilWatt.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- 版本号单一来源：打包脚本 scripts/build-installer.ps1 从发布 exe 的 FileVersion 读取 -->
-    <Version>1.3.1</Version>
+    <!-- 版本号单一来源：打包脚本 scripts/build-installer.ps1 从项目 Version 读取 -->
+    <Version>1.4.0-beta.1</Version>
     <Authors>evren-oct</Authors>
     <Company>evren-oct</Company>
     <Product>VigilWatt</Product>
@@ -27,7 +27,7 @@
          含 unsafe 代码，不开此项会 CS0227 + XamlCompiler MSB3073；Debug 不启用该生成器故不报错 -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- 非打包部署：直接跑 exe，无需 MSIX -->
-    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsPackageType Condition="'$(WindowsPackageType)' == ''">None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <EnableMsixTooling>true</EnableMsixTooling>
     <!-- 关掉 XAML 自动生成的 Main：Program.cs 里自定义入口要先跑 VelopackApp.Build().Run()（安装/更新/卸载钩子），必须早于一切 UI -->

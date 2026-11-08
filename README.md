@@ -2,9 +2,25 @@
 
 [English](README.en.md) | 简体中文
 
-> Windows 无线设备电量一览：蓝牙设备、2.4G 键鼠手柄和可选的本机电池，都能在托盘与历史记录中查看。
+> Windows 无线设备电量监控。支持蓝牙、已适配的 2.4 GHz 外设和可选的本机电池。
 
 ![Platform](https://img.shields.io/badge/Windows-10%2F11-0078d4) ![.NET](https://img.shields.io/badge/.NET-8-512bd4) ![License](https://img.shields.io/badge/license-MIT-green) [![Release](https://img.shields.io/github/v/release/evren-oct/vigil-watt?label=release&color=blue)](https://github.com/evren-oct/vigil-watt/releases)
+
+## Windows 10 动态磁贴（Beta）
+
+![VigilWatt 动态磁贴：单设备电量环和双设备电量横条](assets/screenshot-live-tiles.png)
+
+*左：单设备电量环。右：双设备横条。图中为示例读数。*
+
+安装并运行 VigilWatt 的 MSIX 版，然后在开始菜单将 **VigilWatt** 固定到开始屏幕。右键磁贴可选中、宽或大尺寸。
+
+- 一台设备在线时显示彩色电量环，两台及以上在线时显示最多两条电量横条。低电量、充电与未知读数有独立标识。
+- 打开开始菜单时刷新设备电量，按 15 秒电量、15 秒原图标轮替。点击磁贴会打开或唤起 VigilWatt。
+- EXE 安装版和便携版沿用现有托盘功能。动态磁贴使用 Windows 10 的 MSIX 应用入口。构建和迁移说明见 [开发文档](docs/dev/build.md#win10-原生动态磁贴的-msix-构建)。
+
+### 开发验证
+
+本功能已在 Windows 10 22H2 验证。MSIX 本体负责启动和发布磁贴，打开开始菜单时会重新开始电量段。SQLite 迁移测试验证了 WAL 中的记录可导入，已有目标文件会保留。
 
 ## 界面预览
 
@@ -161,3 +177,5 @@ scripts/                # 构建、打包及临时调试脚本
 ## 仓库与许可
 
 [GitHub 主仓库](https://github.com/evren-oct/vigil-watt) · [Gitee 镜像](https://gitee.com/YGWG-LX/vigil-watt) · [MIT License](LICENSE) © 2026 evren
+
+动态磁贴代码沿用 MIT 许可。再分发时请随附原版权声明和 [LICENSE](LICENSE)。MSIX 安装包的签名与源码许可独立。

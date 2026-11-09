@@ -86,6 +86,8 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Cherry\CherryCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Pulsar\PulsarCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Hecate\HecateCodec.cs" />
+    <!-- 查询每轮预算（CR-100）是零依赖纯逻辑：关机时一轮问几次、一次等多久，改错就是又堵住整轮 Poll -->
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Hecate\HecateQueryBudget.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Delux\DeluxCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Delux\DockChargeFilter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerCodec.cs" />

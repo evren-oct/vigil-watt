@@ -8,6 +8,8 @@
 > （会被当成型号），另记在 `transports[]`——只描述"这颗 PID 是哪种通道、承载哪个协议"，不带型号。
 > 2026-11-08 起 `transports[]` 还承载能力声明：只有 `3837:1018` 写了 `batteryRead / connectionRead /
 > chargingRead = supported`，其余通道一律不写（= `Unverified`）。认领仍走 `Probe` 的「先试 0x4D 再试 V2」。
+> 回报率的 `rateTables`（1k / 8k 两张表）与 `rateProfiles`（本体 PID → {USB PID → 表名}）也在这份 JSON 里，
+> 结构照抄官方 `rateMap` / `mouseDiffConfig`，见 [mchose.md](mchose.md) §3.4.2。
 
 ## 1. 设备全景
 

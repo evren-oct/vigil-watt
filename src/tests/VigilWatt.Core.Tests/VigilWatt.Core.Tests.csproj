@@ -67,6 +67,8 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceCatalog.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceIdentity.cs" />
+    <!-- 回报率"该不该发布"的判定是纯函数，四条边界（不一致/无表/越界/正常）必须能单测 -->
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseRatePolicy.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseSpecs.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Lingbao\LingbaoCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Compx\CompxSessionAck.cs" />

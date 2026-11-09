@@ -314,6 +314,49 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 
 事件**一次只带一个字段**，插件里缺的那项沿用上一次的值，不能冲成 `Unknown`。
 
+**长度按实际带的字段判，不按最长那条**：纯档位事件只有 3 字节（`payload[0..2]`），
+电源事件才到 `payload[12]`。M2-4B1 之前一律要求 ≥13 字节，纯档位事件会被整条丢掉。
+
+**档位事件（bit0）**：`payload[2]` 是**活动档位索引（0 基）**，不是档位数、也不是 DPI 值。
+VigilWatt 只把它落到 `PointerTelemetry.DpiLevel`（存协议原值，不 +1），且**不据此推算当前 DPI**——
+`ActiveDpi = dpiX[usbDpiIndex]` 只有在"读的配置档确实是活动档"时才成立，而活动档来源仍未确认。
+`payload[6]`（配置索引）仍**不采信**为 `profileIndex`（只有 B 级证据）。
+
+### 3.4.1 命令 `0x0003`：读 DPI 配置（M2-4B1 起实现，未发布）
+
+请求 `payload = [profileIndex, direction]`（0 = X / 1 = Y，读两轴要发两次）；
+应答 `[2]=dpiSum、[3]=usbDpiIndex、[4]=dpiHasY、[5..16]=6 档小端 16 位`。
+
+- 解析在 `Mchose0x4DCodec.TryParseDpi`，换算关系在 `TryGetActiveDpi`（profile 对不上就返回 false）。
+- 插件**最多试 3 轮**（每轮主轮询一次），先读 X；只有 X 解析成功且 `dpiHasY==1` 才再读一条 Y，
+  Y 失败只丢 Y、不影响 X。两项都成功即收工——睡着的设备不会因为第一次没应答就永远拿不到样本。
+- **不写进 `DeviceStatus`**：没有可靠的活动档来源，读到的档位不能当"当前 DPI"。能力声明也没有因此改成 supported。
+- 字段表、证据等级、官方代码定位与未确认项见 [mchose-dpi-report-rate-audit.md](mchose-dpi-report-rate-audit.md)。
+
+### 3.4.2 命令 `0x0002`：读性能配置（M2-4B2 起接入回报率）
+
+请求无参数；应答 `[0]=profileIndex`、`[1]` 高半字节 `usbRateIndex` / 低半字节 DPI 档位、
+`[2]` 高半字节 `gRateIndex`。**协议只给 index，没有 Hz**，换算靠两张官方表：
+
+| 表 | 档位 |
+|---|---|
+| `1k` | 125 / 500 / 1000 |
+| `8k` | 125 / 500 / 1000 / 2000 / 4000 / 8000 |
+
+选表（官方 `getReportRateList`）：先认型号，再按 **USB 枚举 PID** 在该型号的槽位里选表；本体直连用槽 0。
+槽位在 `mchose-catalog.json` 的 `rateProfiles`（本体 PID → {USB PID → 表名}），表值在 `rateTables`。
+
+- 线上 index 是"设置值 + 1"（写侧 `index>0 ? index+1 : index`），读侧 `v>1 ? v-1 : v`。
+- **两个 index 不一致就不发布**：官方只在改档位时同步写两套，样本里不一致说明我们还不知道哪套在生效；
+  这时保持 Unknown，**不拿另一个顶替**、也不清已有值（`MchoseRatePolicy` 是唯一判定点）。
+- 发布 `ReportRateSettingHz`，来源 `Inferred`（表来自官方静态数据，本机未验证）。
+- `ReportRateMeasuredHz` **永远不填**：协议里没有实测吞吐。
+- 型号不明 / 槽位缺失 / index 越界 → 保持 Unknown，**不默认 125Hz**。
+- `gRateIndex` 只记日志：官方改档时两个 index 一起写，全仓唯一的下标使用点是 `usbRateIndex`。
+
+**取证日志**（默认 Info 级别就能看全）：认领后各一条 `迈从 0x4D 回报率:` / `DPI(X):` / `DPI(Y):`，
+都带原始帧与解析值；读失败在**最后一轮**记 Info、中间轮记 Debug；`0x0600` 档位事件也记 Info 带原始帧。
+
 ### 3.5 ⚠ `0xFF` 是"鼠标在睡"，不是失败
 
 真机常态应答是 `4D 01 01 01 00 09 00 00 FF`（payload 只有 1 字节）。官方 `hgt()` 遇它也是重试 + 容忍无读数。
@@ -359,8 +402,24 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 | `connectStatus = 1`（有线） | **未留证** | 全部样本都是 2.4G 接收器，`Wired` 映射只有官方枚举支撑 |
 | `chargeStatus = 2`（已充满） | **未留证** | 只见过 0 / 1；`Full` 目前靠"未充电 + 100%"收尾规则给出 |
 | 能力声明覆盖面 | **仅 `3837:1018`** | 三项 `supported` 挂在传输通道上；四颗未验证 dongle 与四条本体 PID 都不声明（不从协议族外推） |
+| 回报率表与 1K 四款 | **未真机验证** | `rateTables` / `rateProfiles` 来自官方静态数据；V7 / V7 Pro / G3 V3 / G3 S 的 1K 表尤其没验证过，且这四款还需 `AA 55` 握手 |
 | 有线（本体 PID 直连）路径 | **未验证** | 全部样本都是 2.4G 接收器 |
-| `0x0600` 的 `payload[0]` bit0（DPI 档位） | **已定位未解析** | 留给 M2-4 |
+| `0x0600` 的 `payload[0]` bit0（DPI 档位） | **已解析、未真机验证** | M2-4B1 起落到 `DpiLevel`；档位事件本身零样本，`payload[2]` 的取值范围按 0..5 校验 |
+
+### 3.9 M2-4 归档状态（DPI / 回报率只读遥测）
+
+| 类别 | 状态 |
+|---|---|
+| 官方源码支持 | **已审计**——`mchose-dpi-report-rate-audit.md`，逐条标 A/B/C/Unknown 与字节偏移 |
+| VigilWatt 代码实现 | **已完成**——`0x0003` DPI、`0x0600` bit0 档位事件、`0x0002` 回报率，全部只读 |
+| 自动化测试 | **已完成**——合成帧钉住偏移、半字节、表选择与拒绝分支；**没有真机帧** |
+| 真机验证 | **Unverified — 当前无可验证的 MCHOSE 0x4D 鼠标** |
+| 能力声明开放 | **未完成**——`DpiRead` / `DpiLevelRead` / `RateRead` 在 `3837:1018` 上仍是 `Unverified` |
+
+- 本机只有 G87 键盘（`41E4:2001`，`keyboard-v1`）与 `3837:3033`（`cz-block`），两者都不走 0x4D，
+  **不能作为 0x4D 鼠标协议的验证证据**。
+- 数值已写进 `DeviceStatus`，但能力未声明，UI 不会显示 DPI / 档位 / 回报率三行。
+- 真机验证作为独立后续任务（M2-5）保留，不随本阶段结束。
 
 ## 4. MCHOSE Gmouse 主动查询（G3 V2，接收器 VID_3837&PID_4245）—— 贡献者真机验证
 

@@ -2,8 +2,25 @@ using VigilWatt.Core.Models;
 
 namespace VigilWatt.Core.Plugins.Mchose;
 
-/// <summary><c>0x0600</c> 状态事件的解析结果：设备一次只报一个字段，故两项各自可空。</summary>
-public readonly record struct Mchose0x4DStatusEvent(int? Percent, byte? ChargeStatus);
+/// <summary><c>0x0600</c> 状态事件的解析结果：设备一次只报一个字段，故三项各自可空。</summary>
+public readonly record struct Mchose0x4DStatusEvent(int? Percent, byte? ChargeStatus, byte? DpiIndex);
+
+/// <summary>
+/// 一次 <c>0x0002</c> 的解析结果：只有**配置索引**，没有 Hz。两个 index 分开存，别混成一个值。
+/// <c>UsbRateIndex</c> 是有线/本体那套设置，<c>GRateIndex</c> 是另一套（官方改档时两者一起写）。
+/// </summary>
+public readonly record struct MchoseRateIndices(byte ProfileIndex, byte UsbRateIndex, byte GRateIndex, byte DpiIndex);
+
+/// <summary>
+/// 一次 <c>0x0003</c> 的解析结果：**某个配置档、某个方向**上的 6 档 DPI。
+/// 它只是"配置读数"，不是当前生效 DPI；换算关系见 <see cref="Mchose0x4DCodec.TryGetActiveDpi"/>。
+/// </summary>
+public readonly record struct MchoseDpiReading(
+    byte ProfileIndex, byte Direction, byte DpiSum, byte ActiveIndex, bool HasY, IReadOnlyList<int> Values)
+{
+    /// <summary>某个档位的配置值；索引越界返回 0（调用方应先看 <see cref="Mchose0x4DCodec.DpiStageCount"/>）。</summary>
+    public int this[int stage] => stage >= 0 && stage < Values.Count ? Values[stage] : 0;
+}
 
 /// <summary>
 /// 功 能： 迈从 0x4D 协议的**唯一**编解码实现（帧构造 / 应答定位 / 公共字段解析），不碰句柄、不写日志。
@@ -43,17 +60,33 @@ public static class Mchose0x4DCodec
     /// <summary>命令：读设备信息（应答里带 VID/PID、连接状态、充电状态、电量、游戏模式）。</summary>
     public const ushort CmdDeviceInfo = 0x0900;
 
+    /// <summary>命令：读性能配置（回报率 index / DPI 档位 / 睡眠等，请求无参数）。</summary>
+    public const ushort CmdPerformance = 0x0002;
+
+    /// <summary>命令：读某个配置档的 DPI 表（请求带 <c>profileIndex</c> + 方向，读两轴要发两次）。</summary>
+    public const ushort CmdDpi = 0x0003;
+
     /// <summary>命令：电源/状态事件（设备**主动**上报，电量与充电状态都走这一条）。</summary>
     public const ushort CmdStatusEvent = 0x0600;
+
+    /// <summary>每档配置里的 DPI 档位数（官方固定读 6 档）。</summary>
+    public const int DpiStageCount = 6;
+
+    /// <summary>方向：0 = X 轴，1 = Y 轴。官方按方向分两次请求，不是一帧带两轴。</summary>
+    public const byte DirectionX = 0;
+    public const byte DirectionY = 1;
 
     /// <summary>设备信息应答的最小 payload 长度（要读到 <c>payload[13]</c>）。</summary>
     private const int DeviceInfoPayloadLength = 14;
 
+    /// <summary>DPI 应答的最小 payload 长度：5 个字段 + 6 档 × 2 字节。</summary>
+    private const int DpiPayloadLength = 5 + DpiStageCount * 2;
+
+    /// <summary>性能应答的最小 payload 长度：要读到 <c>[2]</c> 的高半字节。</summary>
+    private const int PerformancePayloadLength = 3;
+
     /// <summary>身份字段的最小 payload 长度：只要 <c>payload[0..3]</c> 的 VID/PID。</summary>
     private const int IdentityPayloadLength = 4;
-
-    /// <summary>状态事件的最小 payload 长度（充电状态在 <c>payload[12]</c>）。</summary>
-    private const int StatusEventPayloadLength = 13;
 
     /// <summary>业务码与序号：官方恒 0，不要自增（自增会让设备的应答匹配错位）。</summary>
     private const byte BizCode = 0x00;
@@ -87,6 +120,17 @@ public static class Mchose0x4DCodec
 
     /// <summary>读设备信息（电量 / 充电状态 / 连接状态 / 配对身份）的请求帧。</summary>
     public static byte[] BuildDeviceInfoQuery() => BuildFrame(CmdDeviceInfo);
+
+    /// <summary>
+    /// 读某个配置档的 DPI 表：payload = <c>[profileIndex, direction]</c>（官方 <c>readDpiInfo</c> 原样）。
+    /// 方向只接受 0/1，别的一律抛——发出去只会换来一条无意义应答。
+    /// </summary>
+    public static byte[] BuildDpiQuery(byte profileIndex, byte direction)
+    {
+        if (direction > DirectionY)
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, "方向只能是 0（X）或 1（Y）");
+        return BuildFrame(CmdDpi, profileIndex, direction);
+    }
 
     /// <summary>
     /// 构造 0x4D 帧：<c>4D 01 01 len cmdLo cmdHi 00 00 payload… chk</c>，补零到 64 字节。
@@ -160,31 +204,109 @@ public static class Mchose0x4DCodec
     }
 
     /// <summary>
-    /// 解析 <c>0x0600</c> 状态事件。<b><c>payload[0]</c> 与 <c>payload[1]</c> 是"本次带了哪些字段"的位图</b>：
-    /// <c>[0]</c> bit1 → 电量（值在 <c>[3]</c>）、<c>[1]</c> bit1 → 充电状态（值在 <c>[12]</c>）。
-    /// 两条都不带就返回 false（设备还发过别的 0x0600 子类型）。
+    /// 解析 <c>0x0003</c>：<c>[2]=dpiSum、[3]=usbDpiIndex、[4]=dpiHasY、[5..16]=6 档小端</c>（官方 <c>dpiToObj</c>，审计 §2.2）。
+    /// 索引越界 / 长度不足 / 当前档位为 0 一律拒绝——宁可没有读数，也不报一个错的值。
+    /// </summary>
+    public static bool TryParseDpi(byte[] frame, out MchoseDpiReading reading)
+    {
+        reading = default;
+
+        if (!TryLocate(frame, CmdDpi, out int p, out int len)) return false;
+        if (len < DpiPayloadLength) return false;
+
+        byte direction = frame[p + 1];
+        if (direction > DirectionY) return false;
+
+        byte active = frame[p + 3];
+        if (active >= DpiStageCount) return false;
+
+        byte hasY = frame[p + 4];
+        if (hasY > 1) return false;
+
+        var values = new int[DpiStageCount];
+        for (int i = 0; i < DpiStageCount; i++)
+            values[i] = frame[p + 5 + i * 2] | frame[p + 6 + i * 2] << 8;
+
+        // 当前档位的值必须是个真 DPI：0 表示这一档没配置，拿它当"当前 DPI"只会误导。
+        // 其余档位的 0 保留原值——dpiSum 小于 6 时后面几档本来就是空的。
+        if (values[active] == 0) return false;
+
+        reading = new MchoseDpiReading(frame[p], direction, frame[p + 2], active, hasY == 1, values);
+        return true;
+    }
+
+    /// <summary>
+    /// <c>ActiveDpi = Values[ActiveIndex]</c>（官方取法）。只有调用方能证明该档就是当前活动档时才许用：
+    /// 读到的是"某个配置档"，拿它冒充当前 DPI 比没有值更糟。
+    /// </summary>
+    public static bool TryGetActiveDpi(MchoseDpiReading reading, byte activeProfileIndex, out int dpi)
+    {
+        dpi = 0;
+        if (reading.ProfileIndex != activeProfileIndex) return false;
+        if (reading.ActiveIndex >= reading.Values.Count) return false;
+
+        dpi = reading.Values[reading.ActiveIndex];
+        return dpi > 0;
+    }
+
+    /// <summary>读性能配置的请求帧（官方 <c>readPerformanceInfo</c>：<c>commandId 0x0002</c>，不带参数）。</summary>
+    public static byte[] BuildPerformanceQuery() => BuildFrame(CmdPerformance);
+
+    /// <summary>
+    /// 解析 <c>0x0002</c>：<c>[0]=profileIndex、[1] 高半字节=usbRateIndex、低半字节=DPI 档位、
+    /// [2] 高半字节=gRateIndex</c>（官方 <c>allInfoToObj</c>，审计 §4.2）。**只给 index，没有 Hz。**
+    /// </summary>
+    public static bool TryParsePerformance(byte[] frame, out MchoseRateIndices indices)
+    {
+        indices = default;
+
+        if (!TryLocate(frame, CmdPerformance, out int p, out int len)) return false;
+        if (len < PerformancePayloadLength) return false;
+
+        indices = new MchoseRateIndices(
+            ProfileIndex: frame[p],
+            UsbRateIndex: WireRateIndex(frame[p + 1] >> 4),
+            GRateIndex: WireRateIndex(frame[p + 2] >> 4),
+            DpiIndex: (byte)(frame[p + 1] & 0x0F));
+        return true;
+    }
+
+    /// <summary>线上编码是"index+1"（写侧 <c>index&gt;0 ? index+1 : index</c>），读侧反过来减 1；0/1 都表示 0。</summary>
+    private static byte WireRateIndex(int wire) => wire > 1 ? (byte)(wire - 1) : (byte)wire;
+
+    /// <summary>
+    /// X 读完之后要不要再发一条 Y 请求：**只有 X 解析成功且设备声明有独立 Y 轴**才读。
+    /// 官方同样只在 <c>dpiHasY==1</c> 时才发第二次。
+    /// </summary>
+    public static bool ShouldReadYAxis(bool xParsed, bool hasY) => xParsed && hasY;
+
+    /// <summary>
+    /// 解析 <c>0x0600</c> 位图事件：<c>[0]</c> bit0 档位(<c>[2]</c>)、bit1 电量(<c>[3]</c>)；<c>[1]</c> bit1 充电(<c>[12]</c>)。
+    /// 长度按**实际带的字段**判——纯档位事件只有 3 字节，比电源事件短。
     /// </summary>
     public static bool TryParseStatusEvent(byte[] frame, out Mchose0x4DStatusEvent evt)
     {
         evt = default;
         if (!TryLocate(frame, CmdStatusEvent, out int p, out int len)) return false;
-        if (len < StatusEventPayloadLength) return false;
+        if (len < 2) return false;
 
         byte flagsLo = frame[p];
         byte flagsHi = frame[p + 1];
 
+        // 带了电量位但值不可信（0 = 设备还没算出来）就当没带，别把 0% 报出去
         int? percent = null;
-        if ((flagsLo & 0x02) != 0)
-        {
-            // 带了电量位但值不可信（0 = 设备还没算出来）就当没带，别把 0% 报出去
-            int value = frame[p + 3];
-            if (IsPlausiblePercent(value)) percent = value;
-        }
+        if ((flagsLo & 0x02) != 0 && len > 3 && IsPlausiblePercent(frame[p + 3]))
+            percent = frame[p + 3];
 
-        byte? chargeStatus = (flagsHi & 0x02) != 0 ? frame[p + 12] : null;
+        // 档位索引越界按"没带"处理：位图说带了、值却不合法时，宁可丢这一项也不猜
+        byte? dpiIndex = null;
+        if ((flagsLo & 0x01) != 0 && len > 2 && frame[p + 2] < DpiStageCount)
+            dpiIndex = frame[p + 2];
 
-        if (percent == null && chargeStatus == null) return false;
-        evt = new Mchose0x4DStatusEvent(percent, chargeStatus);
+        byte? chargeStatus = (flagsHi & 0x02) != 0 && len > 12 ? frame[p + 12] : null;
+
+        if (percent == null && chargeStatus == null && dpiIndex == null) return false;
+        evt = new Mchose0x4DStatusEvent(percent, chargeStatus, dpiIndex);
         return true;
     }
 

@@ -218,12 +218,13 @@ public sealed class MchosePlugin : BatteryPluginBase
             PruneIdentities(alive);
             PruneFlags(_pushOnly, alive);
             PruneConnections(alive);
+            PruneFlags(PointerProbeAttempts, alive);
             Engine.Prune(availableDevices);
         }
         return await base.AttachAsync(availableDevices, claims).ConfigureAwait(false);
     }
 
-    private static void PruneFlags(ConcurrentDictionary<string, bool> map, HashSet<string> alive)
+    private static void PruneFlags<T>(ConcurrentDictionary<string, T> map, HashSet<string> alive)
     {
         foreach (var key in map.Keys.Where(k => !alive.Contains(k)).ToList())
             map.TryRemove(key, out _);
@@ -254,6 +255,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         KnownModelByPath.Clear();
         KnownIdentityByPath.Clear();
         KnownProbeConnection.Clear();
+        PointerProbeAttempts.Clear();
         _pushOnly.Clear();
         Engine.Reset();
         base.Detach();
@@ -469,6 +471,10 @@ public sealed class MchosePlugin : BatteryPluginBase
             // 设备自报的 0x0600 电源事件优先（带的是设备真状态）；CZ 的 FA FB 07 推送只是 dongle 侧兜底。
             if (Mchose0x4DCodec.TryParseStatusEvent(input, out var evt))
             {
+                // 档位与电源是两类事件：先各自落地，纯档位事件不能因为缺电源字段被整条丢掉
+                if (evt.DpiIndex is { } stage) ApplyDpiStage(dev, stage, input);
+                if (evt.Percent is null && evt.ChargeStatus is null) return null;   // 纯档位事件不碰电量/充电
+
                 // 事件一次只带一个字段（电量帧 / 充电帧是两条不同的帧），缺的那个沿用当前值，
                 // 否则会把另一项冲成 Unknown。连历史电量都没有就没什么可报的，等下一帧。
                 int? percent = evt.Percent ?? dev.Status.BatteryPercent;
@@ -478,7 +484,8 @@ public sealed class MchosePlugin : BatteryPluginBase
                     : dev.Status.Charging;
 
                 Log.Debug($"迈从 0x4D 状态事件: 电量={evt.Percent?.ToString() ?? "(未带)"} " +
-                          $"充电={evt.ChargeStatus?.ToString() ?? "(未带)"} 原始={Log.Hex(input)}");
+                          $"充电={evt.ChargeStatus?.ToString() ?? "(未带)"} " +
+                          $"档位={evt.DpiIndex?.ToString() ?? "(未带)"} 原始={Log.Hex(input)}");
                 return (percent, charging, Offline: false);
             }
 
@@ -721,6 +728,7 @@ public sealed class MchosePlugin : BatteryPluginBase
                     RememberIdentity(handle, input);
                     // 连接方式只刷新徽标：Unknown 不覆盖已知值，也不参与在线判定（在线仍只看有无应答）
                     SetConnection(dev, Mchose0x4DCodec.ToConnectionKind(connect));
+                    ReadPointerOnce(dev);   // 回报率发布一次；DPI 配置只记日志
                     return (percent, Mchose0x4DCodec.ToChargingState(charge, percent));
                 }
             }
@@ -762,6 +770,166 @@ public sealed class MchosePlugin : BatteryPluginBase
             : "(未登记)";
         Log.Info($"迈从身份: 自报={vid:X4}:{pid:X4} 型号={(model.Length == 0 ? "(目录未收录)" : model)} " +
                  $"通道={transport} 枚举={handle.Info.VidPid}");
+    }
+
+    /// <summary>
+    /// 把 <c>0x0600</c> bit0 的活动档位落到指针遥测。**存协议原值（0 基）**——官方 UI 显示 index+1 是它的展示选择。
+    /// </summary>
+    private void ApplyDpiStage(TrackedDevice dev, byte stage, byte[] raw)
+    {
+        Log.Info($"迈从 0x4D 档位事件: stage={stage} 设备={dev.Info.VidPid} 原始={Log.Hex(raw)}");
+        SetPointerTelemetry(dev, new PointerTelemetry
+        {
+            DpiLevel = TelemetryValue<int>.Reported(stage, DateTimeOffset.Now),
+        });
+    }
+
+    /// <summary>接口路径 → 取证状态：≥0 是已尝试轮数，<see cref="PointerProbeDone"/> 表示已成功收工。</summary>
+    private readonly ConcurrentDictionary<string, int> PointerProbeAttempts = new(StringComparer.OrdinalIgnoreCase);
+
+    private const int PointerProbeDone = -1;
+    private const int PointerProbeMaxAttempts = 3;
+
+    /// <summary>
+    /// 认领后读回报率与 DPI 配置。**最多 3 轮**、两项都成功才收工——睡着的设备不该因为第一次没应答就永久放弃。
+    /// </summary>
+    private void ReadPointerOnce(TrackedDevice dev)
+    {
+        var handle = dev.Handle;
+        var path = handle.Info.DevicePath;
+
+        int attempts = PointerProbeAttempts.GetOrAdd(path, 0);
+        if (attempts < 0 || attempts >= PointerProbeMaxAttempts) return;
+        PointerProbeAttempts[path] = attempts + 1;
+        bool lastChance = attempts + 1 >= PointerProbeMaxAttempts;
+
+        bool rateOk = TryReadPerformance(handle, out var rate, out var rateRaw);
+        if (rateOk) ReportRate(dev, rate, rateRaw);
+        else LogProbeFailure(lastChance,
+            $"迈从 0x4D 性能配置读取无应答（命令 0x0002，设备 {handle.Info.VidPid}）: {path}");
+
+        bool dpiOk = TryReadDpi(handle, 0, Mchose0x4DCodec.DirectionX, out var xAxis, out var xRaw);
+        if (!dpiOk)
+        {
+            LogProbeFailure(lastChance,
+                $"迈从 0x4D DPI 读取无应答（命令 0x0003 档 0 方向 X，设备 {handle.Info.VidPid}）: {path}");
+        }
+        else
+        {
+            Log.Info($"迈从 0x4D DPI(X): 设备={handle.Info.VidPid} 档={xAxis.ProfileIndex} " +
+                     $"档数={xAxis.DpiSum} 当前档={xAxis.ActiveIndex} 有Y={xAxis.HasY} " +
+                     $"值=[{string.Join(",", xAxis.Values)}] 原始={Log.Hex(xRaw)}");
+
+            // 只有 X 解析成功且设备声明有独立 Y 轴才发第二条；Y 失败只丢 Y，不影响 X
+            if (Mchose0x4DCodec.ShouldReadYAxis(xParsed: true, xAxis.HasY))
+            {
+                if (TryReadDpi(handle, xAxis.ProfileIndex, Mchose0x4DCodec.DirectionY, out var yAxis, out var yRaw))
+                    Log.Info($"迈从 0x4D DPI(Y): 设备={handle.Info.VidPid} 档={yAxis.ProfileIndex} " +
+                             $"值=[{string.Join(",", yAxis.Values)}] 原始={Log.Hex(yRaw)}");
+                else
+                    Log.Debug($"迈从 0x4D DPI(Y) 读取无应答，X 结果保留: {path}");
+            }
+        }
+
+        if (rateOk && dpiOk) PointerProbeAttempts[path] = PointerProbeDone;
+    }
+
+    /// <summary>失败日志：最后一轮记 Info（取证要看得见），中间轮记 Debug（别刷屏）。</summary>
+    private static void LogProbeFailure(bool lastChance, string message)
+    {
+        if (lastChance) Log.Info(message);
+        else Log.Debug(message);
+    }
+
+    /// <summary>
+    /// 记 <c>0x0002</c> 取证行并按判定发布；不发布时已有值原样保留，<c>ReportRateMeasuredHz</c> 永远不填。
+    /// </summary>
+    private void ReportRate(TrackedDevice dev, MchoseRateIndices indices, byte[] raw)
+    {
+        var identity = KnownIdentityByPath.TryGetValue(dev.Info.DevicePath, out var known) ? known : default;
+
+        if (!identity.HasReported)
+        {
+            Log.Info($"迈从 0x4D 回报率: 设备={dev.Info.VidPid} 自报=(未知) 命令=0x0002 " +
+                     $"profile={indices.ProfileIndex} usb={indices.UsbRateIndex} g={indices.GRateIndex} " +
+                     $"dpi={indices.DpiIndex} 不发布=型号不明 原始={Log.Hex(raw)}");
+            return;
+        }
+
+        var decision = MchoseRatePolicy.Decide(identity.ReportedProductId!.Value, dev.Info.ProductId,
+            indices.UsbRateIndex, indices.GRateIndex, out int hz, out string table);
+
+        string outcome = decision switch
+        {
+            MchoseRateDecision.Publish => $"发布={hz}Hz 表={table}",
+            MchoseRateDecision.IndicesDiffer => "不发布=两个 index 不一致（语义未确认）",
+            MchoseRateDecision.NoTable => "不发布=目录里没有这张表",
+            _ => $"不发布=index {indices.UsbRateIndex} 超出表 {table} 范围",
+        };
+
+        Log.Info($"迈从 0x4D 回报率: 设备={dev.Info.VidPid} 自报={identity.ReportedProductId:X4} 命令=0x0002 " +
+                 $"profile={indices.ProfileIndex} usb={indices.UsbRateIndex} g={indices.GRateIndex} " +
+                 $"dpi={indices.DpiIndex} {outcome} 原始={Log.Hex(raw)}");
+
+        if (decision != MchoseRateDecision.Publish) return;
+
+        SetPointerTelemetry(dev, new PointerTelemetry
+        {
+            ReportRateSettingHz = TelemetryValue<int>.Inferred(hz, DateTimeOffset.Now),
+        });
+    }
+
+    /// <summary>发一条 <c>0x0002</c> 并等应答。**只读**，且只认这个命令的应答。</summary>
+    private static bool TryReadPerformance(HidDeviceHandle handle, out MchoseRateIndices indices, out byte[] raw)
+    {
+        indices = default;
+        raw = [];
+        if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return false;
+
+        var query = Mchose0x4DCodec.BuildPerformanceQuery();
+        if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true)) return false;
+
+        var deadline = DateTime.UtcNow + ReplyWindow;
+        while (DateTime.UtcNow < deadline)
+        {
+            var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
+            if (input == null) continue;
+            if (input.AsSpan().SequenceEqual(query)) continue;   // 写回显，不是应答
+
+            if (Mchose0x4DCodec.TryParsePerformance(input, out indices))
+            {
+                raw = input;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>发一条 <c>0x0003</c> 并等应答。**只读**：绝不发 <c>0x01xx</c> 写方向。</summary>
+    private static bool TryReadDpi(HidDeviceHandle handle, byte profile, byte direction,
+        out MchoseDpiReading reading, out byte[] raw)
+    {
+        reading = default;
+        raw = [];
+        if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return false;
+
+        var query = Mchose0x4DCodec.BuildDpiQuery(profile, direction);
+        if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true)) return false;
+
+        var deadline = DateTime.UtcNow + ReplyWindow;
+        while (DateTime.UtcNow < deadline)
+        {
+            var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
+            if (input == null) continue;
+            if (input.AsSpan().SequenceEqual(query)) continue;   // 写回显，不是应答
+
+            if (Mchose0x4DCodec.TryParseDpi(input, out reading))
+            {
+                raw = input;
+                return true;
+            }
+        }
+        return false;
     }
 
     // Gmouse / V9 / X9 三套主动查询的帧模板、窗口与重试次数都在 specs/mchose.protocols.json，

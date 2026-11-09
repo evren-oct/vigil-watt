@@ -31,6 +31,8 @@ internal static class MchoseDeviceCatalog
     private static readonly Lazy<CatalogDto> Catalog = new(LoadDto);
     private static readonly Lazy<Dictionary<(ushort, ushort), Entry>> Data = new(BuildDevices);
     private static readonly Lazy<Dictionary<(ushort, ushort), TransportEntry>> Transports = new(BuildTransports);
+    private static readonly Lazy<Dictionary<string, int[]>> RateTables = new(BuildRateTables);
+    private static readonly Lazy<Dictionary<ushort, Dictionary<ushort, string>>> RateProfiles = new(BuildRateProfiles);
 
     /// <summary>按本体 VID/PID 查型号与协议族；未收录返回 false，由调用方回落接口形态判定。</summary>
     public static bool TryGet(ushort vendorId, ushort productId, out Entry entry)
@@ -69,6 +71,62 @@ internal static class MchoseDeviceCatalog
             if (!TryParseHex(d.Vid, out var vid) || !TryParseHex(d.Pid, out var pid)) continue;
             if (string.IsNullOrWhiteSpace(d.Protocol)) continue;
             map[(vid, pid)] = new Entry(d.Model?.Trim() ?? "", d.Protocol.Trim());
+        }
+        return map;
+    }
+
+    /// <summary>
+    /// 回报率表：先按**本体型号 PID** 找槽位表，再用**USB 枚举 PID** 选槽，最后按表名取 Hz。
+    /// 两个 PID 不能混——dongle 的 PID 反推不出型号（官方也是先认型号、再按 PID 选槽）。
+    /// </summary>
+    public static bool TryGetRateTable(ushort modelPid, ushort usbPid, out IReadOnlyList<int> hz)
+        => TryGetRateTable(modelPid, usbPid, out _, out hz);
+
+    /// <summary>同上，并给出表名（日志取证用）。</summary>
+    public static bool TryGetRateTable(ushort modelPid, ushort usbPid,
+        out string tableName, out IReadOnlyList<int> hz)
+    {
+        tableName = "";
+        hz = [];
+        if (!RateProfiles.Value.TryGetValue(modelPid, out var slots)) return false;
+        if (!slots.TryGetValue(usbPid, out var name)) return false;
+        if (!RateTables.Value.TryGetValue(name, out var table)) return false;
+
+        tableName = name;
+        hz = table;
+        return true;
+    }
+
+    /// <summary>index → Hz。表查不到或 index 超出该表范围都返回 false——**不默认成 125Hz**。</summary>
+    public static bool TryGetSettingHz(ushort modelPid, ushort usbPid, int index, out int hz)
+    {
+        hz = 0;
+        if (!TryGetRateTable(modelPid, usbPid, out var table)) return false;
+        if (index < 0 || index >= table.Count) return false;
+
+        hz = table[index];
+        return true;
+    }
+
+    private static Dictionary<string, int[]> BuildRateTables()
+    {
+        var map = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, values) in Catalog.Value.RateTables ?? [])
+            if (values is { Length: > 0 }) map[name.Trim()] = values;
+        return map;
+    }
+
+    private static Dictionary<ushort, Dictionary<ushort, string>> BuildRateProfiles()
+    {
+        var map = new Dictionary<ushort, Dictionary<ushort, string>>();
+        foreach (var (modelText, slots) in Catalog.Value.RateProfiles ?? [])
+        {
+            if (!TryParseHex(modelText, out var model) || slots is null) continue;
+            var byPid = new Dictionary<ushort, string>();
+            foreach (var (pidText, table) in slots)
+                if (TryParseHex(pidText, out var pid) && !string.IsNullOrWhiteSpace(table))
+                    byPid[pid] = table.Trim();
+            if (byPid.Count > 0) map[model] = byPid;
         }
         return map;
     }
@@ -132,6 +190,8 @@ internal static class MchoseDeviceCatalog
     {
         [JsonPropertyName("devices")] public List<DeviceDto>? Devices { get; set; }
         [JsonPropertyName("transports")] public List<TransportDto>? Transports { get; set; }
+        [JsonPropertyName("rateTables")] public Dictionary<string, int[]>? RateTables { get; set; }
+        [JsonPropertyName("rateProfiles")] public Dictionary<string, Dictionary<string, string>>? RateProfiles { get; set; }
     }
 
     private sealed class DeviceDto

@@ -3,6 +3,11 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-09
+
+- **迈从 0x4D 取证准备修正（M2-4C-P1）**：两个 rate index **不一致时不发布**（语义未确认，不顶替也不清旧值，判定集中在 `MchoseRatePolicy`）；`0x0002`/`0x0003` 从"试一次就永久放弃"改为**最多 3 轮**重试，两项都成功才收工；DPI 在 `dpiHasY==1` 时补读 Y 轴（Y 失败不影响 X）；三条取证日志升到 Info 并带原始帧。仍无真机样本，DPI / Rate 能力保持 `Unverified`。见 `hardware/mchose.md` §3.4.1、§3.4.2。
+- **M2-4 归档**：DPI / 回报率只读遥测阶段收尾，官方审计、代码实现、自动化测试三项完成，真机验证与能力开放转 M2-5。归档状态表见 `hardware/mchose.md` §3.9。
+
 ## 2026-11-08
 
 - **迈从 0x4D 协议合并（M2-2）**：`qhw` 与 `mouse-k7` 原本是两套并行实现，帧构造、校验范围、应答定位各写一遍，且 QHW 那套的 `0x0904` 命令与 `flags=0x03` + 求和校验都是错的（设备只回显、不执行）。合并为唯一执行器 `Mchose0x4DCodec`，协议名统一 `mchose-0x4d`，删掉 `MchoseK7Codec` 及其测试；分类器 `MouseK7` 改名 `Mouse0x4D`，并为目录登记的通用 dongle（`0x1014/0x1016/0x101C/0x101D`）加「厂商页 + 双向 64 字节」的宽松判据，`0x1018` 仍只认精确指纹。见 `hardware/mchose.md` §2、§3。
@@ -10,6 +15,8 @@
 - **迈从 0x4D 接入连接方式与统一充电状态（M2-3）**：`0x0900` 的 `payload[10]` 一直是"解析后丢弃"，现在映射到 `ConnectionKind`（`1` 有线 / `2` 2.4G，其余 `Unknown`——官方只给了这两档语义）；`payload[11]` 的充电码表从插件搬进 `Mchose0x4DCodec`，与连接映射同处一个纯函数层，单测可直接钉住。连接方式**只刷徽标**：`Unknown` 不覆盖已知值、不参与在线判定、也不触发重新认领（认领只看 VID/PID 与接口描述符）。见 `hardware/mchose.md` §3.3。
 - **能力声明补两项、只给有真机证据的通道**：`DeviceCapability` 增加 `ConnectionRead` / `ChargingRead`（原六项表达不了这两件事），`mchose-catalog.json` 的 `transports[]` 支持 `capabilities`；只有 `3837:1018` 声明三项 `supported`，四颗未验证的共用 dongle 与四条本体 PID 一律不声明——不从协议族外推。见 `dev/protocol-json.md` §2.1。
 - **补测试**：`Mchose0x4DTelemetryTests`（连接/充电映射、未知值不落确定态、三字段索引隔离、能力声明与目录一致）+ `ConnectionTelemetryTests`（连接变化不碰在线状态/电量、失败轮询不重置遥测、不触发重新认领）。
+- **迈从 0x4D 解析 DPI 档位事件与 `0x0003` 配置读取（M2-4B1）**：`TryParseStatusEvent` 原先要求 payload ≥13 字节，纯档位事件（3 字节）会被整条丢掉；改为**按实际带的字段判长度**，并把档位事件落到 `PointerTelemetry.DpiLevel`（存协议原值，不 +1）。新增 `TryParseDpi` / `TryGetActiveDpi`：`ActiveDpi = dpiX[usbDpiIndex]` 只在"读的配置档确实是活动档"时成立，而活动档来源（`0x0600` 的 `payload[6]`）只有 B 级证据，所以**不发布任何 DPI 值**，插件只在认领后读一次 profile 0 留样本。能力声明未改（仍无真机）。见 `hardware/mchose.md` §3.4.1、`hardware/mchose-dpi-report-rate-audit.md`。
+- **迈从 0x4D 接入回报率只读遥测（M2-4B2）**：`0x0002` 只回 index（`[1]` 高半字节 USB / `[2]` 高半字节 2.4G），Hz 靠官方两张表换算，表与槽位进了 `mchose-catalog.json` 的 `rateTables` / `rateProfiles`（按"型号 + USB 枚举 PID"选槽，本体直连用槽 0）。发布 `ReportRateSettingHz` 并标 `Inferred`；`ReportRateMeasuredHz` 不填；型号不明 / 槽位缺失 / index 越界一律保持 Unknown，不默认 125Hz。见 `hardware/mchose.md` §3.4.2。
 
 ## 2026-11-07
 

@@ -1,4 +1,5 @@
 using VigilWatt.Core.Hid;
+using VigilWatt.Core.Models;
 
 namespace VigilWatt.Core.Plugins.Mchose;
 
@@ -52,4 +53,11 @@ public readonly record struct MchoseDeviceIdentity(
                 ? MchoseIdentityStatus.ReportedUnresolved
                 : MchoseIdentityStatus.ReportedResolved,
         };
+
+    /// <summary>转成统一快照；没拿到自报身份时返回 null——**不许拿 USB 身份冒充自报身份**。</summary>
+    public ReportedIdentity? ToReportedIdentity()
+        => HasReported
+            ? new ReportedIdentity(ReportedVendorId!.Value, ReportedProductId!.Value,
+                string.IsNullOrWhiteSpace(Model) ? null : Model)
+            : null;
 }

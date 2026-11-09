@@ -504,7 +504,10 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 IsOnline = percent.HasValue || !NullPercentMeansOffline,
                 Capabilities = CapabilitiesOf(o.Info),
                 Connection = ConnectionOfProbe(o.Info),
+                // 认领这一刻就把接口身份记下：之后只剩句柄，HidDeviceInfo 不再重新枚举
+                Usb = UsbIdentityOf(o.Info),
             };
+            FillIdentitySnapshot(status, o.Info);
             var dev = new TrackedDevice
             {
                 Info = o.Info, Handle = o.Handle!, Status = status, Protocol = protocol,
@@ -1001,6 +1004,9 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>本设备声明过的只读能力（默认空 = 全 Unverified）。纯配置查询，不许开句柄或发帧。</summary>
     protected virtual CapabilitySet CapabilitiesOf(HidDeviceInfo info) => CapabilitySet.Empty;
 
+    /// <summary>认领落地时补填身份快照（默认不填）。只给 Probe 已拿到自报身份的插件覆写，同样不许发帧。</summary>
+    protected virtual void FillIdentitySnapshot(DeviceStatus status, HidDeviceInfo info) { }
+
     /// <summary>
     /// 认领落地时的连接方式（默认 Unknown）。能拿到就该在这里给：否则徽标会先按来源显示成 2.4G，
     /// 要等第一条被动帧才纠正——插线设备会短暂显示错标签。
@@ -1021,4 +1027,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>默认显示名：产品字符串，空则用品牌名 + VID/PID。</summary>
     protected virtual string BuildDisplayName(HidDeviceInfo info)
         => string.IsNullOrEmpty(info.Product) ? $"{DisplayName} ({info.VidPid})" : info.Product;
+
+    /// <summary>接口枚举身份：只记 VID/PID/SN，不记型号——认领到的可能是接收器，反推型号必错。</summary>
+    private static UsbIdentity UsbIdentityOf(HidDeviceInfo info)
+        => new(info.VendorId, info.ProductId, string.IsNullOrEmpty(info.SerialNumber) ? null : info.SerialNumber);
 }

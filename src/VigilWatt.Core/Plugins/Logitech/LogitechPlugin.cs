@@ -441,6 +441,9 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             Source = DeviceSource.Hid24G,
             Kind = kind,
             Protocol = protocolMajor >= 2 ? "Logitech HID++ 2.0" : "Logitech HID++ 1.0",
+            // 认领到的是接收器接口（直连时才是本体）；两种都只表达"被认领接口"的身份
+            Usb = new UsbIdentity(session.Info.VendorId, session.Info.ProductId,
+                string.IsNullOrEmpty(session.Info.SerialNumber) ? null : session.Info.SerialNumber),
         };
         var entry = new DevEntry
         {

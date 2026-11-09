@@ -141,6 +141,36 @@ public sealed class MchosePlugin : BatteryPluginBase
         return transport.IsEmpty ? Engine.CapabilitiesOf(info) : transport;
     }
 
+    /// <summary>认领时补身份快照：自报身份来自 Probe 阶段的 0x0900，通道身份来自目录登记的 dongle 角色。</summary>
+    protected override void FillIdentitySnapshot(DeviceStatus status, HidDeviceInfo info) => ApplyIdentity(status, info);
+
+    /// <summary>把已学到的自报身份与通道身份合进快照；没有信息就保持原值（Merge 不会用 null 清洗）。</summary>
+    private bool ApplyIdentity(DeviceStatus status, HidDeviceInfo info)
+    {
+        bool changed = false;
+
+        if (KnownIdentityByPath.TryGetValue(info.DevicePath, out var identity))
+        {
+            var merged = ReportedIdentity.Merge(status.Reported, identity.ToReportedIdentity());
+            if (merged != status.Reported) { status.Reported = merged; changed = true; }
+        }
+
+        if (ReceiverIdentityOf(info) is { } receiver)
+        {
+            var merged = ReceiverIdentity.Merge(status.Receiver, receiver);
+            if (merged != status.Receiver) { status.Receiver = merged; changed = true; }
+        }
+
+        return changed;
+    }
+
+    /// <summary>传输通道身份：只有目录登记过的 dongle PID 才有；本体接口返回 null，它本来就不是接收器。</summary>
+    private static ReceiverIdentity? ReceiverIdentityOf(HidDeviceInfo info)
+        => MchoseDeviceCatalog.TryGetTransport(info.VendorId, info.ProductId, out var t)
+           && !string.IsNullOrWhiteSpace(t.Role)
+            ? new ReceiverIdentity(t.Role, Family: null)
+            : null;
+
     /// <summary>显示名：接收器产品名常是泛化的「MCHOSE 2.4G Wireless」，识别出型号时用型号替换；
     /// 加「迈从」前缀方便设备列表一眼认品牌。型号来源见 <see cref="KnownModelByPath"/>。</summary>
     protected override string BuildDisplayName(HidDeviceInfo info)
@@ -726,6 +756,8 @@ public sealed class MchosePlugin : BatteryPluginBase
                     ReportPollAnswered(dev);
                     Log.Info($"迈从 0x4D 轮询: 电量={percent} 充电状态={charge} 连接状态={connect}");
                     RememberIdentity(handle, input);
+                    // 自报身份可能这一拍才拿到（认领时设备在睡），拿到就立刻落进状态
+                    if (ApplyIdentity(dev.Status, handle.Info)) RaiseStatusPushed(dev.Status);
                     // 连接方式只刷新徽标：Unknown 不覆盖已知值，也不参与在线判定（在线仍只看有无应答）
                     SetConnection(dev, Mchose0x4DCodec.ToConnectionKind(connect));
                     ReadPointerOnce(dev);   // 回报率发布一次；DPI 配置只记日志

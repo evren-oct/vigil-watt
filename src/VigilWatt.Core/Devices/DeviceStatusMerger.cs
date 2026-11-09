@@ -27,5 +27,9 @@ public static class DeviceStatusMerger
         if (incoming.Connection != ConnectionKind.Unknown) status.Connection = incoming.Connection;
         // 能力是认领期常量：离线墓碑等来源没有能力，空集不能把已声明的覆盖成 Unverified
         if (!incoming.Capabilities.IsEmpty) status.Capabilities = incoming.Capabilities;
+        // 身份同理：轮询应答与离线墓碑都不带身份，null 必须保留已有值，否则详情页身份会被洗空
+        status.Usb = UsbIdentity.Merge(status.Usb, incoming.Usb);
+        status.Reported = ReportedIdentity.Merge(status.Reported, incoming.Reported);
+        status.Receiver = ReceiverIdentity.Merge(status.Receiver, incoming.Receiver);
     }
 }

@@ -55,6 +55,15 @@ public class DeviceStatus
     /// <summary>本设备声明过的只读能力。默认空 = 全 Unverified，UI 据此决定能不能说"未获取"。</summary>
     public CapabilitySet Capabilities { get; set; } = CapabilitySet.Empty;
 
+    /// <summary>被认领接口的枚举身份，认领期常量。认领到接收器时它就是接收器，见 <see cref="UsbIdentity"/>。</summary>
+    public UsbIdentity? Usb { get; set; }
+
+    /// <summary>协议自报身份。只有实现过自报的插件才有值，其余保持 null（null ≠ 没有型号）。</summary>
+    public ReportedIdentity? Reported { get; set; }
+
+    /// <summary>接收器/传输通道身份。只有目录登记过通道的才有值，本体接口恒 null。</summary>
+    public ReceiverIdentity? Receiver { get; set; }
+
     /// <summary>参与统计曲线时用于图例显示的短名；BLE 端点解析不出名字时给可读兜底，别把裸设备 ID 摆到界面上。</summary>
     public string DisplayName => !string.IsNullOrEmpty(Name) ? Name
         : Source == DeviceSource.Ble ? "BLE 设备"
@@ -75,6 +84,10 @@ public class DeviceStatus
         Pointer = Pointer,
         Connection = Connection,
         Capabilities = Capabilities,
+        // 三种身份都是 readonly record struct（字段只有 ushort/string），赋值即深拷贝
+        Usb = Usb,
+        Reported = Reported,
+        Receiver = Receiver,
     };
 
     public override string ToString() => $"{DisplayName} {BatteryPercent?.ToString() ?? "?"}%";

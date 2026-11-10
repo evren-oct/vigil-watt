@@ -30,6 +30,8 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 
 **接收器身份（M4-3B-2B1）**：`AddDevice` 只在非 Direct 路径、且 `HidppCatalog.Family()` 为 Bolt 时填 `ReceiverIdentity(Role: null, Family: "bolt")`。当前目录只有 `C548` 为 Bolt，因此首版仅开放 C548；`C52B/C532`、LIGHTSPEED、Nano、Legacy27Mhz 与未收录 PID 全部保持 `null`。`ReceiverIdentity` 描述接收器/传输通道，不是鼠标本体；本次不填 `Connection`，Slot Ping 成功也不写成 `DeviceReported`。`DirectDevice`、认领、去重、`SlotId` 与配对读取逻辑未改。
 
+**接收器槽位连接推断（M4-3B-2B2）**：`AddDevice` 只在非 Direct、Ping 已成功且槽位在 `1..MaxSlots` 时填 `Inferred(Wireless24G)`；Direct `0xFF`、空槽、越界槽位和未确认设备保持 `Unknown`。这里表达的是“设备通过该接收器槽位应答”的结构证据，不升级为 `DeviceReported`；接收器身份仍按 M4-3B-2B1 的 C548/Bolt 门控。
+
 **HID++ 报文层（字节级；实现见 `Plugins/Logitech/HidppIO.cs` / `HidppCodec.cs`）：**
 
 | 报文 | 布局 |

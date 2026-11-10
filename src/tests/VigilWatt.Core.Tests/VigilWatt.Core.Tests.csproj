@@ -119,6 +119,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\HyperX\Cf2Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\LogitechConnectionPolicy.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\LogitechReceiverIdentityPolicy.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppNotificationQueue.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\CenturionCodec.cs" />

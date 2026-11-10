@@ -445,6 +445,8 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             Usb = new UsbIdentity(session.Info.VendorId, session.Info.ProductId,
                 string.IsNullOrEmpty(session.Info.SerialNumber) ? null : session.Info.SerialNumber),
             Receiver = LogitechReceiverIdentityPolicy.For(session.DirectDevice, session.Info.ProductId),
+            Connection = LogitechConnectionPolicy.For(
+                session.DirectDevice, idx, HidppCatalog.MaxSlots(session.Info.ProductId), DateTimeOffset.Now),
         };
         var entry = new DevEntry
         {
@@ -468,7 +470,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             }
         }
         session.Devices[idx] = entry;
-        Log.Info($"发现罗技设备 devIdx={idx} proto={protocolMajor} kind={kind} wpid={(wpid is { } w ? w.ToString("X4") : "-")} name={name}");
+        Log.Info($"发现罗技设备 devIdx={idx} proto={protocolMajor} kind={kind} wpid={(wpid is { } w ? w.ToString("X4") : "-")} name={name} conn={status.Connection.Value?.ToString() ?? "Unknown"}/{status.Connection.Source}");
     }
 
     /// <summary>后台只读泵：零写入，收 Unified Battery 插拔电自发通知（与 Logi Battery Dashboard 同源）。</summary>

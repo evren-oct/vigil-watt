@@ -112,10 +112,10 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     /// <summary>只有离线设备能删：在线设备删掉等于藏起来，插件下一轮又会报回来。</summary>
     public bool IsOnline { get => _isOnline; private set => Set(ref _isOnline, value); }
 
-    /// <summary>来源徽标文字色（蓝牙蓝 / 2.4G 紫 / 本机青）。</summary>
+    /// <summary>连接徽标文字色（有线钢蓝 / 2.4G 紫 / 蓝牙蓝 / 本机青 / 未知灰）。</summary>
     public Brush SourceBrush { get => _sourceBrush; private set => Set(ref _sourceBrush, value); }
 
-    /// <summary>来源徽标胶囊底色（同色压淡）。</summary>
+    /// <summary>连接徽标胶囊底色（同色压淡）。</summary>
     public Brush SourceBackgroundBrush { get => _sourceBackgroundBrush; private set => Set(ref _sourceBackgroundBrush, value); }
 
     /// <summary>电量条着色：充电蓝 / 低电红 / 中等橙 / 正常绿 / 离线灰。</summary>
@@ -147,7 +147,7 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         // 无读数用 "----"：与 "100%" 同宽，右对齐时不会和相邻行差半个字
         PercentText = DeviceStatusFormatter.PercentText(percent, "----");
         Progress = percent ?? 0;
-        SourceText = DeviceSourceInfo.BadgeLabel(d.Connection, d.Source);
+        SourceText = DeviceConnectionInfo.Label(d.Connection, d.Source);
         SubText = $"{d.Protocol}{state}{(remainingTime.IsAvailable ? $" · 约{RemainingTimeEstimator.Format(remainingTime.Remaining!.Value)}剩余" : $" · {remainingTime.Explain()}")} · 更新于 {d.LastUpdated:HH:mm:ss}";
         IsCharging = charging;
         IsOnline = d.IsOnline;

@@ -129,6 +129,8 @@
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceSourceInfo.cs" />
     <!-- 连接方式（有线/2.4G）是纯枚举，徽标文案与合并规则都要能在单测里钉住 -->
     <Compile Include="..\..\VigilWatt.Core\Models\ConnectionKind.cs" />
+    <!-- 连接展示的唯一口径（有值按链路、无值只许蓝牙/本机兜底）：两个 UI 面共用，必须能单测 -->
+    <Compile Include="..\..\VigilWatt.Core\Models\DeviceConnectionInfo.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatus.cs" />
     <!-- 身份快照（USB / 协议自报 / 接收器）是纯 record struct，零 WinRT，合并规则必须能在单测里钉住 -->
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceIdentity.cs" />

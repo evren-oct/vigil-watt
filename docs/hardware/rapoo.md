@@ -40,6 +40,12 @@ dongle 每 ~3 秒自发推送 **input report 0x07（19 字节，hidraw 含 ID �
 | [17] | `sensorMode` | sensor 模式预设（官方枚举 0..5） | `2` = `firepower` |
 | [18] | `rfConnected` / `rfRssi` | bit7=RF 已连接，bit0..6=RSSI | `1` / 69~87 |
 
+`[1]` 低 4 位（`conProtocol`）是连接方式的**唯一来源**：`0` → `ConnectionKind.Wireless24G`、`2` → `Wired`，
+其余值 `Unknown`（官方只给了这两档语义）。M4-3B-1 起 `DeviceStatus.Connection` 是
+`TelemetryValue<ConnectionKind>`，该字段记 `TelemetrySource.DeviceReported`；`status-report7` 之外的协议
+（`telink-8273` / `gcome-ap` / `telink-keyboard` / `ch585m` / `ohid` / `ch315`）没有这个字段，
+连接方式保持"未知"，**不从来源推断**（见 `project/architecture.md` §6）。
+
 ### 1.1 实测校准（2026-11-01，VT3 `24AE:1412` 2.4G）
 
 样板帧（`FF00:0002`，19 字节）：

@@ -19,9 +19,13 @@ public static class DeviceChangeDetector
     public static bool HasPointerChanged(DeviceStatus stored, DeviceStatus incoming)
         => PointerTelemetry.ValueDiffers(stored.Pointer, incoming.Pointer);
 
-    /// <summary>连接方式是否变了。**同样不并进 HasChanged**：插拔线不该产生电量采样，只该刷新徽标。</summary>
+    /// <summary>
+    /// 连接方式是否变了。**同样不并进 HasChanged**：插拔线不该产生电量采样，只该刷新徽标；Unknown 不算值，来源与时刻也不参与。
+    /// </summary>
     public static bool HasConnectionChanged(DeviceStatus stored, DeviceStatus incoming)
-        => incoming.Connection != ConnectionKind.Unknown && stored.Connection != incoming.Connection;
+        => incoming.Connection.HasValue
+           && incoming.Connection.Value.GetValueOrDefault() != ConnectionKind.Unknown
+           && stored.Connection.Value != incoming.Connection.Value;
 
     /// <summary>降幅超过 <paramref name="maxDropPoints"/> 视为不可信（休眠/关机的伪读数），先不提醒、等下次读数确认。</summary>
     public static bool IsImplausibleDrop(int? previousPercent, int currentPercent, int maxDropPoints) =>

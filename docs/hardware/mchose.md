@@ -5,6 +5,10 @@
 
 ## 1. 迈从键盘 G87（dongle VID_41E4&PID_2001）—— ✅ 已打通，应用在用
 
+> `41E4:2001` 是这颗键盘的**接收器**，已在 `mchose-catalog.json` 的 `transports` 里登记为 `dongle-wireless`。
+> 认领到它就把链路推断为 2.4G（`Inferred`，不是设备上报）：主机读的是接收器通道，有线数据不经过 dongle。
+> 键盘本体 PID 未登记，插线时保持"未知"——不拿接收器在位去猜本体链路。
+
 ### 1.1 接口地图
 
 | 接口 | 用途 |
@@ -288,7 +292,10 @@ AA 05 00 xx size offLo offHi 00 <data…>     data 从下标 9 起（含 report 
 | `[12]` batteryLevel | 1..100 | `BatteryPercent` | 真机 100%；`0` 视为"还没算出来"，不报 0% |
 
 连接方式**只刷徽标**：`Unknown` 不覆盖已知值、不参与在线判定、也不触发重新认领（认领只看 VID/PID 与接口描述符）。
-`0x0600` 事件里没有连接字段，所以连接方式只能来自 `0x0900`。
+`0x0600` 事件里没有连接字段，所以连接方式只能来自 `0x0900`。M4-3B-1 起 `DeviceStatus.Connection` 是
+`TelemetryValue<ConnectionKind>`，这条帧记 `TelemetrySource.DeviceReported`（`0x0900` 是唯一来源）；
+其它协议族（`keyboard-v1` / `cz-block` / `gmouse` / `mouse-v2` / `mouse-a5` / 耳机）没有该字段，保持"未知"
+（见 `project/architecture.md` §6）。
 
 **身份字段（M2-1 起解析，只用于显示名，不参与认领）**：样本前 4 字节解出 VID `0x3837` / PID `0x4026`，
 按官方型号表 `0x4026` 是 **A5 V3 Ultra+**，不是 K7 V2 Ultra+（`0x4028`）——见 §3.8。

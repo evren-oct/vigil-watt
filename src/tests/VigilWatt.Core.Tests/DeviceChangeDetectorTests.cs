@@ -28,13 +28,41 @@ public class DeviceChangeDetectorTests
     {
         var stored = Device(80);
         var incoming = Device(80);
-        incoming.Connection = ConnectionKind.Wired;
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, DateTimeOffset.Now);
 
         Assert.True(DeviceChangeDetector.HasConnectionChanged(stored, incoming));
         Assert.False(DeviceChangeDetector.HasChanged(stored, incoming));   // 插拔线不该写历史
 
-        // Unknown 是"这轮没带信息"，不是变化——否则轮询会每拍都触发刷新
+        // 无值是"这轮没带信息"，不是变化——否则轮询会每拍都触发刷新
         Assert.False(DeviceChangeDetector.HasConnectionChanged(stored, Device(80)));
+    }
+
+    [Fact]
+    public void C15_只有来源升级不制造设备变化事件()
+    {
+        var stored = Device(80);
+        stored.Connection = TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wireless24G, DateTimeOffset.Now);
+
+        var incoming = Device(80);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wireless24G, DateTimeOffset.Now);
+
+        // 值一样、只是证据变强：展示不变，不该让列表/小组件重画一次
+        Assert.False(DeviceChangeDetector.HasConnectionChanged(stored, incoming));
+        Assert.False(DeviceChangeDetector.HasChanged(stored, incoming));
+    }
+
+    [Fact]
+    public void C16_带来源的Unknown不触发连接变化()
+    {
+        var stored = Device(80);
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, DateTimeOffset.Now);
+
+        var incoming = Device(80);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Unknown, DateTimeOffset.Now);
+
+        // Unknown 不是一条链路：既不该刷新徽标，也不该写历史
+        Assert.False(DeviceChangeDetector.HasConnectionChanged(stored, incoming));
+        Assert.False(DeviceChangeDetector.HasChanged(stored, incoming));
     }
 
     [Fact]

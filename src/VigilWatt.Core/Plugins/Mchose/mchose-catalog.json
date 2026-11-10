@@ -55,6 +55,13 @@
    "role": "dongle-cz",
    "protocol": "cz-block",
    "note": "官方通用 2.4G dongle（G87 V2 / G75 V2 / K87S / K99 V3），走 CZ 分块读，见 mchose.md §2.4"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2001",
+   "role": "dongle-wireless",
+   "protocol": "keyboard-v1",
+   "note": "G87 V1 的 dongle（本机真机，mchose.md §1：不开会话就对一切查询静音）。认领到这颗 PID 说明主机读的是接收器通道，有线数据不会经过接收器，故链路可推断为 2.4G（Inferred，不是设备上报）；键盘本体 PID 未登记，插线时保持未知"
   }
  ],
  "rateTables": {

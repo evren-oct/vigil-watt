@@ -163,19 +163,113 @@ public class DeviceStatusMergerTests
     }
 
     [Fact]
-    public void M8_连接方式未知不覆盖已知()
+    public void M8_连接方式无值不覆盖已知()
     {
         var stored = WithPointer(default);
-        stored.Connection = ConnectionKind.Wired;
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, T0);
 
-        // 轮询 / 离线墓碑都不带这个字段（默认 Unknown），不能把已知的「有线」洗回未知
+        // 轮询应答与离线墓碑都不带这个字段（默认空遥测），不能把已知的「有线」洗回未知
         DeviceStatusMerger.Apply(stored, WithPointer(default));
-        Assert.Equal(ConnectionKind.Wired, stored.Connection);
+        Assert.Equal(ConnectionKind.Wired, stored.Connection.Value);
 
         var incoming = WithPointer(default);
-        incoming.Connection = ConnectionKind.Wireless24G;
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wireless24G, T0 + TimeSpan.FromSeconds(1));
         DeviceStatusMerger.Apply(stored, incoming);
-        Assert.Equal(ConnectionKind.Wireless24G, stored.Connection);
+        Assert.Equal(ConnectionKind.Wireless24G, stored.Connection.Value);
+    }
+
+    [Fact]
+    public void M9_设备上报压过推断()
+    {
+        var stored = WithPointer(default);
+        stored.Connection = TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wireless24G, T0);
+
+        var incoming = WithPointer(default);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, T0 + TimeSpan.FromSeconds(1));
+
+        DeviceStatusMerger.Apply(stored, incoming);
+        Assert.Equal(ConnectionKind.Wired, stored.Connection.Value);
+        Assert.Equal(TelemetrySource.DeviceReported, stored.Connection.Source);
+    }
+
+    [Fact]
+    public void M10_推断不得覆盖设备上报()
+    {
+        var stored = WithPointer(default);
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, T0);
+
+        var incoming = WithPointer(default);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wireless24G, T0 + TimeSpan.FromSeconds(9));
+
+        DeviceStatusMerger.Apply(stored, incoming);
+        Assert.Equal(ConnectionKind.Wired, stored.Connection.Value);
+        Assert.Equal(TelemetrySource.DeviceReported, stored.Connection.Source);
+    }
+
+    [Fact]
+    public void M11_同来源的新观测照常更新()
+    {
+        var stored = WithPointer(default);
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, T0);
+
+        var incoming = WithPointer(default);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wireless24G, T0 + TimeSpan.FromSeconds(2));
+
+        DeviceStatusMerger.Apply(stored, incoming);
+        Assert.Equal(ConnectionKind.Wireless24G, stored.Connection.Value);
+        Assert.Equal(T0 + TimeSpan.FromSeconds(2), stored.Connection.ObservedAt);
+    }
+
+    [Fact]
+    public void M12_离线墓碑不清除最后已知连接()
+    {
+        var stored = WithPointer(default);
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, T0);
+
+        DeviceStatusMerger.Apply(stored, Tombstone());
+
+        Assert.False(stored.IsOnline);
+        Assert.Equal(ConnectionKind.Wired, stored.Connection.Value);   // 展示层负责说"离线 · 最后已知"
+    }
+
+    [Fact]
+    public void M13_带来源的Unknown不覆盖已知连接()
+    {
+        var stored = WithPointer(default);
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, T0);
+
+        // 有人把"没测到"包成 DeviceReported(Unknown)：HasValue 为真，但语义上仍不是链路
+        var incoming = WithPointer(default);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Unknown, T0 + TimeSpan.FromSeconds(1));
+
+        DeviceStatusMerger.Apply(stored, incoming);
+        Assert.Equal(ConnectionKind.Wired, stored.Connection.Value);
+        Assert.Equal(TelemetrySource.DeviceReported, stored.Connection.Source);
+    }
+
+    [Fact]
+    public void M14_推断出来的Unknown也不覆盖上报值()
+    {
+        var stored = WithPointer(default);
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Bluetooth, T0);
+
+        var incoming = WithPointer(default);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Unknown, T0 + TimeSpan.FromSeconds(1));
+
+        DeviceStatusMerger.Apply(stored, incoming);
+        Assert.Equal(ConnectionKind.Bluetooth, stored.Connection.Value);
+    }
+
+    [Fact]
+    public void M15_Unknown不会把空值变成有效遥测()
+    {
+        var stored = WithPointer(default);          // 从来没有有效链路
+        var incoming = WithPointer(default);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Unknown, T0);
+
+        DeviceStatusMerger.Apply(stored, incoming);
+
+        Assert.False(stored.Connection.HasValue);   // 展示层据此说"未知"，而不是"Unknown 这个链路"
     }
 
     [Fact]

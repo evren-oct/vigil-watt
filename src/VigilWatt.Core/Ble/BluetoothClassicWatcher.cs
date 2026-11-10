@@ -135,6 +135,8 @@ public sealed class BluetoothClassicWatcher : IDisposable
 
         status.IsOnline = true;
         status.LastUpdated = DateTimeOffset.Now;
+        // 经典蓝牙节点只会通过蓝牙被看到：链路是事实，不是推断
+        status.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Bluetooth, DateTimeOffset.Now);
         if (percent.HasValue) status.BatteryPercent = percent;
 
         if (shouldNotify)

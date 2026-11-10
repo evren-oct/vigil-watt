@@ -258,9 +258,9 @@ public sealed partial class WidgetWindow : Window
         foreach (var d in devices)
         {
             // 充电行比放电行多一列 ⚡（列宽 + 该列两侧间距）；放电行的 ⚡ 列放空串，只占列间距。
-            // 徽标（蓝牙/2.4G/有线/本机）所有行恒定存在。
+            // 徽标（有线/2.4G/蓝牙/本机/未知）所有行恒定存在。
             double chargeW = DeviceStatusFormatter.IsCharging(d.Charging) ? ChargeMarkWidth : 0;
-            double w = IconSize + IconGap + nameW + 10 + TagWidth(DeviceSourceInfo.BadgeLabel(d.Connection, d.Source)) + 10 + chargeW + 10 + PercentWidth(d);
+            double w = IconSize + IconGap + nameW + 10 + TagWidth(DeviceConnectionInfo.Label(d.Connection, d.Source)) + 10 + chargeW + 10 + PercentWidth(d);
             if (w > rowW) rowW = w;
         }
 
@@ -294,7 +294,7 @@ public sealed partial class WidgetWindow : Window
               .Append(',').Append(d.DisplayName)
               .Append(',').Append((int)d.Kind)
               .Append(',').Append((int)d.Source)
-              .Append(',').Append((int)d.Connection)
+              .Append(',').Append((int)(d.Connection.Value ?? ConnectionKind.Unknown))
               .Append(',').Append((int)d.Charging)
               .Append(',').Append(d.BatteryPercent?.ToString() ?? "-")
               .Append(',').Append(PointerTelemetryFormatter.Summary(d, now) ?? "-");
@@ -512,7 +512,7 @@ public sealed partial class WidgetWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
             Child = new TextBlock
             {
-                Text = DeviceSourceInfo.BadgeLabel(device.Connection, device.Source),
+                Text = DeviceConnectionInfo.Label(device.Connection, device.Source),
                 FontSize = TagFontSize,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Foreground = new SolidColorBrush(color),

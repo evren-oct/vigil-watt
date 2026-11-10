@@ -49,8 +49,8 @@ public class DeviceStatus
     /// <summary>指针类遥测（DPI / 回报率）。默认全未知，未适配设备天然就是它。</summary>
     public PointerTelemetry Pointer { get; set; }
 
-    /// <summary>当前数据链路（有线 / 2.4G）。未知时界面回落到来源标签，见 <see cref="DeviceSourceInfo.BadgeLabel"/>。</summary>
-    public ConnectionKind Connection { get; set; } = ConnectionKind.Unknown;
+    /// <summary>当前数据链路（有线 / 2.4G / 蓝牙），带来源与观测时刻；无值时只允许蓝牙/本机按来源兜底，见 <see cref="DeviceConnectionInfo"/>。</summary>
+    public TelemetryValue<ConnectionKind> Connection { get; set; } = TelemetryValue<ConnectionKind>.Unknown;
 
     /// <summary>本设备声明过的只读能力。默认空 = 全 Unverified，UI 据此决定能不能说"未获取"。</summary>
     public CapabilitySet Capabilities { get; set; } = CapabilitySet.Empty;

@@ -123,13 +123,17 @@ public sealed class MchosePlugin : BatteryPluginBase
         };
 
     /// <summary>
-    /// 认领落地用探测窗口那一帧的连接方式（否则徽标先按来源显示成 2.4G）。
-    /// 只影响徽标：不参与认领判据，也不参与在线判定。
+    /// 认领落地用探测窗口那一帧的连接方式（否则徽标先显示未知）。没有该字段的族（键盘/CZ/gmouse/A5/耳机）
+    /// 若认领到的是**登记过的 dongle**，链路可推定为 2.4G：有线数据不会经过接收器。
     /// </summary>
-    protected override ConnectionKind ConnectionOfProbe(HidDeviceInfo info)
-        => KnownProbeConnection.TryGetValue(info.DevicePath, out var connection)
-            ? connection
-            : ConnectionKind.Unknown;
+    protected override TelemetryValue<ConnectionKind> ConnectionOfProbe(HidDeviceInfo info)
+    {
+        if (KnownProbeConnection.TryGetValue(info.DevicePath, out var probed))
+            return ProbeReported(probed);
+        return MchoseDeviceCatalog.TryGetTransport(info.VendorId, info.ProductId, out _)
+            ? TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wireless24G, DateTimeOffset.Now)
+            : TelemetryValue<ConnectionKind>.Unknown;
+    }
 
     /// <summary>
     /// 能力只来自目录里写过的传输通道（当前仅 `3837:1018` 有真机读数）；其余一律 Unverified，

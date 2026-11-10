@@ -1,9 +1,9 @@
 namespace VigilWatt.Core.Models;
 
 /// <summary>
-/// 功 能： 设备来源的展示元数据（设备列表徽标 / 桌面小组件共用，纯逻辑可单测）。
+/// 功 能： 设备**来源**（接入栈）的展示元数据；连接方式不在这里，见 <see cref="DeviceConnectionInfo"/>。
 /// 2026/10/09 13:37:44 xliu
-/// 标签是**唯一事实来源**：两个 UI 面都调这里，避免各写一份 switch 而慢慢分叉。
+/// 来源只回答"数据从哪条接入栈进来"，BLE/经典蓝牙/本机三类同时也是传输事实，其余不是。
 /// </summary>
 public static class DeviceSourceInfo
 {
@@ -15,22 +15,11 @@ public static class DeviceSourceInfo
         : id.StartsWith("sys:", StringComparison.Ordinal) ? DeviceSource.System
         : DeviceSource.Hid24G;
 
-    /// <summary>来源徽标短标签：蓝牙 / 2.4G / 本机。</summary>
+    /// <summary>来源徽标短标签：蓝牙 / 2.4G / 本机。**只有前两者与"本机"能当链路用**，Hid24G 是接入栈。</summary>
     public static string ShortLabel(DeviceSource source) => source switch
     {
         DeviceSource.Ble or DeviceSource.BluetoothClassic => "蓝牙",
         DeviceSource.System => "本机",
         _ => "2.4G",
-    };
-
-    /// <summary>
-    /// 徽标文案：**连接方式优先，未知才回落来源**。2.4G 插件的设备来源恒为 <see cref="DeviceSource.Hid24G"/>，
-    /// 拿来源当连接方式会把插线的设备也写成 2.4G，所以有线必须有独立文案。
-    /// </summary>
-    public static string BadgeLabel(ConnectionKind connection, DeviceSource source) => connection switch
-    {
-        ConnectionKind.Wired => "有线",
-        ConnectionKind.Wireless24G => "2.4G",
-        _ => ShortLabel(source),
     };
 }

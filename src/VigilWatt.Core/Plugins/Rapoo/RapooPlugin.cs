@@ -119,8 +119,9 @@ public sealed class RapooPlugin : BatteryPluginBase
     /// <summary>能力来自设备目录的 `capabilities`；纯配置查询，不开句柄不发帧（接口边界见 dev/protocol-json.md §2.1）。</summary>
     protected override CapabilitySet CapabilitiesOf(HidDeviceInfo info) => _engine.CapabilitiesOf(info);
 
-    /// <summary>认领时直接用探测窗口里那一帧的连接方式，插线设备不会先显示成 2.4G。</summary>
-    protected override ConnectionKind ConnectionOfProbe(HidDeviceInfo info) => _engine.ProbeConnectionOf(info);
+    /// <summary>认领时直接用探测窗口里那一帧的连接方式，插线设备不会先显示成未知。</summary>
+    protected override TelemetryValue<ConnectionKind> ConnectionOfProbe(HidDeviceInfo info)
+        => ProbeReported(_engine.ProbeConnectionOf(info));
 
     /// <summary>
     /// 显示名：目录命中用官方型号（"雷柏 VT3"）；未收录才退回产品串 + 兄弟接口判鼠标。

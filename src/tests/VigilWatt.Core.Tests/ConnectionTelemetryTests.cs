@@ -118,8 +118,71 @@ public sealed class ConnectionTelemetryTests
         BatteryPercent = 80,
         Charging = ChargingState.Discharging,
         IsOnline = true,
-        Connection = connection,
+        Connection = connection == ConnectionKind.Unknown
+            ? TelemetryValue<ConnectionKind>.Unknown
+            : TelemetryValue<ConnectionKind>.Reported(connection, DateTimeOffset.Now),
     };
+
+    /// <summary>Clone 必须把值、来源、观测时刻一起带走——否则入库快照会把来源洗成 Unknown。</summary>
+    [Fact]
+    public void CloneKeepsConnectionTelemetry()
+    {
+        var at = new DateTimeOffset(2026, 11, 9, 21, 0, 0, TimeSpan.FromHours(8));
+        var source = Status(ConnectionKind.Wired);
+        source.Connection = TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wired, at);
+
+        var copy = source.Clone();
+
+        Assert.Equal(ConnectionKind.Wired, copy.Connection.Value);
+        Assert.Equal(TelemetrySource.Inferred, copy.Connection.Source);
+        Assert.Equal(at, copy.Connection.ObservedAt);
+    }
+
+    /// <summary>认领落地就写快照，来源是设备上报——迈从 0x0900 / 雷柏 linkMode 走的正是这条路。</summary>
+    [Fact]
+    public async Task ClaimSeedsReportedConnection()
+    {
+        using var plugin = new TelemetryFakePlugin
+        {
+            ProbeValue = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, DateTimeOffset.Now),
+        };
+        await plugin.AttachAsync([Info("dev")], new DeviceClaimRegistry());
+        plugin.Poll();                      // 第 1 轮被 FreshlyClaimed 跳过
+        plugin.Poll();
+
+        Assert.True(plugin.ConnectionHasValue);
+        Assert.Equal(ConnectionKind.Wired, plugin.Connection);
+        Assert.Equal(TelemetrySource.DeviceReported, plugin.ConnectionSource);
+    }
+
+    /// <summary>推断值经认领落地后来源仍是 Inferred——基类不许把它洗成"设备上报"。</summary>
+    [Fact]
+    public async Task ClaimKeepsInferredSource()
+    {
+        using var plugin = new TelemetryFakePlugin
+        {
+            ProbeValue = TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wireless24G, DateTimeOffset.Now),
+        };
+        await plugin.AttachAsync([Info("dev")], new DeviceClaimRegistry());
+        plugin.Poll();
+        plugin.Poll();
+
+        Assert.Equal(ConnectionKind.Wireless24G, plugin.Connection);
+        Assert.Equal(TelemetrySource.Inferred, plugin.ConnectionSource);
+    }
+
+    /// <summary>探测没拿到链路时必须是空遥测，不能落成"Unknown 这个链路"。</summary>
+    [Fact]
+    public async Task ClaimWithoutProbeConnectionLeavesNoValue()
+    {
+        using var plugin = new TelemetryFakePlugin();
+        await plugin.AttachAsync([Info("dev")], new DeviceClaimRegistry());
+        plugin.Poll();
+        plugin.Poll();
+
+        Assert.False(plugin.ConnectionHasValue);
+        Assert.Equal(ConnectionKind.Unknown, plugin.Connection);
+    }
 
     /// <summary>最小插件：只实现"轮询读一次，顺手报连接方式"，其余交给基类。</summary>
     private sealed class TelemetryFakePlugin : BatteryPluginBase, IDisposable
@@ -133,10 +196,15 @@ public sealed class ConnectionTelemetryTests
 
         public int ProbeCount { get; private set; }
         public ConnectionKind NextConnection { get; set; } = ConnectionKind.Unknown;
+
+        /// <summary>模拟"探测窗口就拿到了链路"（迈从 0x0900 / 雷柏 linkMode）或"结构推断"的插件。</summary>
+        public TelemetryValue<ConnectionKind> ProbeValue { get; set; }
         public (int? Percent, ChargingState Charging)? Reading { get; set; } = (70, ChargingState.Discharging);
 
         // TrackedDevice 是 protected 嵌套类型，测试类不是派生类，只能由插件自己翻译成简单值
-        public ConnectionKind Connection => Dev!.Status.Connection;
+        public ConnectionKind Connection => Dev!.Status.Connection.Value ?? ConnectionKind.Unknown;
+        public TelemetrySource ConnectionSource => Dev!.Status.Connection.Source;
+        public bool ConnectionHasValue => Dev!.Status.Connection.HasValue;
         public bool Online => Dev!.Status.IsOnline;
         public int? Percent => Dev!.Status.BatteryPercent;
         public ChargingState Charging => Dev!.Status.Charging;
@@ -159,6 +227,8 @@ public sealed class ConnectionTelemetryTests
             ProbeCount++;
             return ("test", 70, ChargingState.Discharging);
         }
+
+        protected override TelemetryValue<ConnectionKind> ConnectionOfProbe(HidDeviceInfo info) => ProbeValue;
 
         protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
         {

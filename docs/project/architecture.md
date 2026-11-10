@@ -144,6 +144,15 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
   离线墓碑先于插件建条目，`Kind` 只能按历史名猜（真机名一个关键字都没有 → 全 `Unknown`）；
   设备真正上线后插件声明的 `Kind`/`Protocol` **必须能覆盖**墓碑的猜测，否则图标在进程内**冻结**到永远。
   反向不成立——`Unknown` / 空串视为"本次未声明"，不得把已知类型洗掉。
+- **连接方式（`ConnectionKind`）与来源（`DeviceSource`）是两件事**：`DeviceStatus.Connection` 是
+  `TelemetryValue<ConnectionKind>`，带 `TelemetrySource` 与观测时刻；合并走 `MergePreferTrusted`
+  （设备上报 > 厂商 SDK > 推断，反向不覆盖，无值不清洗），**`Unknown` 值即便带了来源也不算链路**
+  （`DeviceStatusMerger.MergeConnection` 先归成空遥测），`Unknown` 与空遥测都表示"没有证据"。
+  `DeviceSource.Hid24G` 只是接入栈（哪个插件认领的），**不能推断成 2.4G**——只有 BLE / 经典蓝牙 /
+  本机三类来源本身就是传输事实。展示统一走 `Models/DeviceConnectionInfo`（标签 / 离线最后已知 / 取色档），
+  UI 不再各自拼文案。接收器体系（Unifying / Bolt / LIGHTSPEED）不是链路，属于 `ReceiverIdentity`。
+  **接收器"在位"不能推断链路**（设备可能只是插线充电）；但**正在读接收器的配置通道**时可以推断为 2.4G
+  ——有线数据不经过 dongle，这类推断记 `Inferred`，等设备自己上报再升级成 `DeviceReported`。
 - UI 侧 XAML 事件处理器开头判空（dev/runtime-pitfalls.md §4）；新增 XAML 属性先确认控件真有（dev/build.md §1）。
 - **新"非插件"数据源清单**（本机电量就是这么加的）：数据源不是 HID 接口、
   没有东西可"认领"时，不要硬塞进 `IBatteryPlugin`——照 `BluetoothClassicWatcher` /

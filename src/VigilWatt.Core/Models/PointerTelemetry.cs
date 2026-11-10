@@ -65,6 +65,26 @@ public readonly record struct TelemetryValue<T> where T : struct
     public static TelemetryValue<T> Merge(TelemetryValue<T> stored, TelemetryValue<T> incoming)
         => incoming.HasValue ? incoming : stored;
 
+    /// <summary>
+    /// 按来源可信度合并：高可信可覆盖低可信，反向不覆盖；同来源按"新观测胜"。与 <see cref="Merge"/> 的区别是它不看先后、只看证据强度。
+    /// </summary>
+    public static TelemetryValue<T> MergePreferTrusted(TelemetryValue<T> stored, TelemetryValue<T> incoming)
+    {
+        if (!incoming.HasValue) return stored;
+        if (!stored.HasValue) return incoming;
+        return Trust(incoming.Source) >= Trust(stored.Source) ? incoming : stored;
+    }
+
+    /// <summary>可信度排序：设备上报 &gt; 厂商 SDK &gt; 推断 &gt; 估算。Unknown 由 HasValue 挡在门外，这里给最低值只为完备。</summary>
+    private static int Trust(TelemetrySource source) => source switch
+    {
+        TelemetrySource.DeviceReported => 4,
+        TelemetrySource.VendorSdk => 3,
+        TelemetrySource.Inferred => 2,
+        TelemetrySource.Estimated => 1,
+        _ => 0,
+    };
+
     /// <summary>换一个观测时刻（值与来源不变）。解析层不带时钟，由调用方在边界处统一盖时间。</summary>
     public TelemetryValue<T> WithObservedAt(DateTimeOffset observedAt)
         => HasValue ? new(Value, Source, observedAt) : this;

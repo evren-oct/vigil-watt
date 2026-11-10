@@ -3,8 +3,17 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-10
+
+- **迈从键盘显示真实链路**：`41E4:2001` 是 G87 的 dongle（`mchose.md` §1），登记进目录 `transports` 后，认领到它即把链路推断为 2.4G，来源记 `Inferred`——主机读的是接收器通道，有线数据不会经过 dongle。键盘本体 PID 未登记，插线场景仍显示未知。`ConnectionOfProbe` 改为返回遥测值，来源由插件自报（探测帧 `DeviceReported` / 结构推断 `Inferred`），基类不再一律当成设备上报。
+- **连接遥测的 Unknown 加固（M4-3B-1R）**：`TelemetryValue.HasValue` 只校验"有没有来源"，所以 `Reported(Unknown)` 也算有效，合并时能压掉已知链路。连接专用合并与徽标判据统一改成"Unknown 值不算链路"（`DeviceStatusMerger.MergeConnection`、`DeviceConnectionInfo.IsKnown`），`HasConnectionChanged` 同样忽略它。现有写入点（`SetConnection` / `SeedConnection` / 两个蓝牙 watcher）本来就有守卫，这次是堵住模型层可被误用的口子，未改通用 `TelemetryValue.Merge`，Battery / Pointer 行为不变。测试 +7（`M13`~`M15`、`C16`、`D8`、认领落地两条）。
+
 ## 2026-11-09
 
+- **设备身份快照（M4-2，补记）**：`DeviceStatus` 增加 `Usb` / `Reported` / `Receiver` 三个可选身份，分别表达"被认领的 HID 接口""协议自报的本体""接收器或传输通道"。三者都是 `readonly record struct`，`Clone` 按值复制，`DeviceStatusMerger` 按"空值不清洗"合并（轮询应答与离线墓碑都不带身份）；合并时先判身份再补子字段，VID+PID 变了就整体替换，不继承旧序列号 / 型号。填充边界：基类在认领构造处统一填 `Usb`（34 个子类零改动），迈从额外用 0x0900 自报身份填 `Reported`、用目录 `transports` 的 role 填 `Receiver`，罗技在 `AddDevice` 里补 `Usb`（会话型插件走不到基类路径）；罗技的 `Receiver` 仍为空，`HidppCatalog.Family()` 未接入。身份不参与认领、去重、设备 ID 与历史，也不进 `HasChanged`。
+- **连接方式改成带来源与时刻的遥测（M4-3B-1）**：`DeviceStatus.Connection` 从裸枚举改为 `TelemetryValue<ConnectionKind>`，来源复用 `TelemetrySource`，新增 `MergePreferTrusted` 按证据强度合并（设备上报压过推断、反向不覆盖、无值不清洗）；`ConnectionKind` 补 `Bluetooth`，BLE 与经典蓝牙两个 watcher 直接声明链路，不再依赖来源兜底。见 `project/architecture.md` §6。
+- **修徽标把接入栈当链路**：删掉 `BadgeLabel` 的 `Hid24G + Unknown → 2.4G` 回落（M4-3A 审计 P1/P3），改由新的 `DeviceConnectionInfo` 统一出文案与取色档——只有 BLE / 经典蓝牙 / 本机允许按来源兜底，未知单独一档用中性灰、不再借 2.4G 紫；离线设备显示"离线 · 最后已知：X"或"离线 · 未知"。设备列表、桌面小组件、删除确认框三处共用同一出口。
+- **测试**：新增 `DeviceConnectionInfoTests`（7 例）与合并优先级 / 来源升级不触发变化 / Clone 保留遥测 / 离线保留最后已知用例，`DeviceSourceInfoTests.S4` 改为钉"来源不再冒充连接方式"；全量 1821 通过 / 1 跳过。
 - **迈从 0x4D 取证准备修正（M2-4C-P1）**：两个 rate index **不一致时不发布**（语义未确认，不顶替也不清旧值，判定集中在 `MchoseRatePolicy`）；`0x0002`/`0x0003` 从"试一次就永久放弃"改为**最多 3 轮**重试，两项都成功才收工；DPI 在 `dpiHasY==1` 时补读 Y 轴（Y 失败不影响 X）；三条取证日志升到 Info 并带原始帧。仍无真机样本，DPI / Rate 能力保持 `Unverified`。见 `hardware/mchose.md` §3.4.1、§3.4.2。
 - **M2-4 归档**：DPI / 回报率只读遥测阶段收尾，官方审计、代码实现、自动化测试三项完成，真机验证与能力开放转 M2-5。归档状态表见 `hardware/mchose.md` §3.9。
 

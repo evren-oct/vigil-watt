@@ -206,8 +206,18 @@ public class DeviceIdentityTests
         Assert.True(MchoseDeviceCatalog.TryGetTransport(0x3837, 0x1018, out var dongle));
         Assert.False(string.IsNullOrWhiteSpace(dongle.Role));
 
-        // 本体 PID 不是传输通道：调用方据此留 null，不会把鼠标本体说成接收器
-        Assert.False(MchoseDeviceCatalog.TryGetTransport(0x41E4, 0x2001, out _));
+        // 本体 PID 不是传输通道：调用方据此留 null，不会把鼠标本体说成接收器。
+        // 0x41E4:0x2001 是 G87 的 dongle（mchose.md §1），本体例改用 A5 的 0x1101。
+        Assert.False(MchoseDeviceCatalog.TryGetTransport(0x41E4, 0x1101, out _));
+    }
+
+    [Fact]
+    public void I26_G87的dongle已登记为传输通道()
+    {
+        // 主机读的是接收器通道 ⇒ 数据只能经 2.4G 到达；这颗 PID 不登记的话徽标只能显示未知
+        Assert.True(MchoseDeviceCatalog.TryGetTransport(0x41E4, 0x2001, out var dongle));
+        Assert.Equal("dongle-wireless", dongle.Role);
+        Assert.Equal("keyboard-v1", dongle.Protocol);
     }
 
     [Fact]

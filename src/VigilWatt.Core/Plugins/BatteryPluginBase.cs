@@ -75,13 +75,18 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         return valueChanged;
     }
 
-    /// <summary>合并帧里解析出的连接方式（有线/2.4G）。Unknown 是"这帧没带信息"，不覆盖已知值。</summary>
+    /// <summary>
+    /// 合并帧里解析出的连接方式（有线/2.4G/蓝牙），来源记 DeviceReported。Unknown 是"这帧没带信息"，不覆盖已知值；
+    /// 值没变只更新观测时刻、不推事件（避免每帧一次无意义的设备变化）。
+    /// </summary>
     protected bool SetConnection(TrackedDevice dev, ConnectionKind connection)
     {
-        if (connection == ConnectionKind.Unknown || dev.Status.Connection == connection) return false;
-        dev.Status.Connection = connection;
-        RaiseStatusPushed(dev.Status);
-        return true;
+        if (connection == ConnectionKind.Unknown) return false;
+        var next = TelemetryValue<ConnectionKind>.Reported(connection, DateTimeOffset.Now);
+        bool changed = dev.Status.Connection.Value != next.Value;
+        dev.Status.Connection = next;
+        if (changed) RaiseStatusPushed(dev.Status);
+        return changed;
     }
 
     /// <summary>认领时没有读数是否标离线。默认 true，避免只剩 dongle 时假装在线。</summary>
@@ -1008,10 +1013,17 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     protected virtual void FillIdentitySnapshot(DeviceStatus status, HidDeviceInfo info) { }
 
     /// <summary>
-    /// 认领落地时的连接方式（默认 Unknown）。能拿到就该在这里给：否则徽标会先按来源显示成 2.4G，
-    /// 要等第一条被动帧才纠正——插线设备会短暂显示错标签。
+    /// 认领落地时的连接方式（默认空）。能拿到就该在这里给：否则徽标会先显示"未知"，要等第一条帧才纠正。
+    /// 返回值自带来源——探测帧读到的用 <see cref="ProbeReported"/>，结构推断用 <see cref="TelemetryValue{T}.Inferred"/>。
     /// </summary>
-    protected virtual ConnectionKind ConnectionOfProbe(HidDeviceInfo info) => ConnectionKind.Unknown;
+    protected virtual TelemetryValue<ConnectionKind> ConnectionOfProbe(HidDeviceInfo info)
+        => TelemetryValue<ConnectionKind>.Unknown;
+
+    /// <summary>探测窗口读到的链路：有值即设备上报；Unknown 表示"没读到"，必须是空值而不是 Unknown 值。</summary>
+    protected static TelemetryValue<ConnectionKind> ProbeReported(ConnectionKind probed)
+        => probed == ConnectionKind.Unknown
+            ? TelemetryValue<ConnectionKind>.Unknown
+            : TelemetryValue<ConnectionKind>.Reported(probed, DateTimeOffset.Now);
 
     /// <summary>接口是否属于本插件（按 VID/usage/报告长度严格过滤——多滤不会漏设备，少滤可能碰别家硬件）。</summary>
     protected abstract bool IsCandidate(HidDeviceInfo info);

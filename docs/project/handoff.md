@@ -15,7 +15,7 @@
 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），不是 WinUI 覆盖窗；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。**拖动走 16ms 轮询，不靠鼠标捕获**——捕获对非前台窗口无效（`dev/runtime-pitfalls.md` §16、§16.5.1；§17 只对小组件）。选屏由 `Services/TaskbarPillManager.cs` 每秒按 `monitorDevicePath` 匹配，配置的屏不在就降级贴主屏，设置页显示真实屏幕名——`\\.\DISPLAYn` 是配置序号不是身份，见 `dev/monitor-identity.md`。
 
 页面已缓存（`NavigationCacheMode = Required`），订阅跟 `Loaded`/`Unloaded`。设置页可搜索。日志按日：`logs\app-日期.log`。插件开关即写入授权，没有第二套「写入许可」。
-
+罗技 ReceiverIdentity 首版已接：C548 接收器槽位填 `ReceiverIdentity(null, "bolt")`；C52B/C532 等其它接收器保持 null，Connection 仍 Unknown。
 设备列表支持：右键自定义名称与图标（按设备 ID 持久化，历史页用当前名、已有采样不改写）；**右键「忽略此设备」在线也能用**——只从列表/托盘/贴片/小组件隐藏、不再写历史，插件照常轮询，恢复入口在底部「已忽略 N 台设备」；**右键删除离线设备**——同时清掉该设备历史（VACUUM），勾「永久移除」写本地黑名单、插件认领阶段即跳过，恢复入口同为底部那行（三份名单见 `code-flow.md` §5.2，真机验收清单见 §4 第 9 条）；剩余时间估算（至少 3 个不同时间点且有净下降才显示，否则说明原因，见 `code-flow.md` §5）。**贴片可指定只显示哪几台设备**（设置页勾选，按**显示名**匹配——不用设备 ID，ID 由路径哈希而来、插线/换口会变；一个都不勾则显示全部在线设备）。
 
 **开发版数据目录在 `bin\x64\Debug\...\win-x64\data\`**（`AppPaths` 用 `#if DEBUG` 分流，Release 才用 `%LOCALAPPDATA%\VigilWatt`），所以从 `bin` 双击即可运行、不碰用户目录；`VIGILWATT_DATA_DIR` 可覆盖。为什么必须这么改见 `dev/runtime-pitfalls.md` §20，用法见 `dev/build.md` §3.1。

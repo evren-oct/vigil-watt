@@ -7,6 +7,7 @@
 
 - **迈从键盘显示真实链路**：`41E4:2001` 是 G87 的 dongle（`mchose.md` §1），登记进目录 `transports` 后，认领到它即把链路推断为 2.4G，来源记 `Inferred`——主机读的是接收器通道，有线数据不会经过 dongle。键盘本体 PID 未登记，插线场景仍显示未知。`ConnectionOfProbe` 改为返回遥测值，来源由插件自报（探测帧 `DeviceReported` / 结构推断 `Inferred`），基类不再一律当成设备上报。
 - **连接遥测的 Unknown 加固（M4-3B-1R）**：`TelemetryValue.HasValue` 只校验"有没有来源"，所以 `Reported(Unknown)` 也算有效，合并时能压掉已知链路。连接专用合并与徽标判据统一改成"Unknown 值不算链路"（`DeviceStatusMerger.MergeConnection`、`DeviceConnectionInfo.IsKnown`），`HasConnectionChanged` 同样忽略它。现有写入点（`SetConnection` / `SeedConnection` / 两个蓝牙 watcher）本来就有守卫，这次是堵住模型层可被误用的口子，未改通用 `TelemetryValue.Merge`，Battery / Pointer 行为不变。测试 +7（`M13`~`M15`、`C16`、`D8`、认领落地两条）。
+- **罗技 C548 ReceiverIdentity（M4-3B-2B1）**：`AddDevice` 只在非 Direct、目录 Family 为 Bolt 时填 `ReceiverIdentity(null, "bolt")`；当前目录只有 C548 为 Bolt，C52B/C532 等其它接收器保持 null。`Connection`、DirectDevice、认领/去重与配对读取均未改；新增纯策略与身份回归测试 9 例。
 
 ## 2026-11-09
 

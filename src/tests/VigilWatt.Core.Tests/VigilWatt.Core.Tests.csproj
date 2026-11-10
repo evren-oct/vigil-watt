@@ -118,6 +118,8 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkViaCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\HyperX\Cf2Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\LogitechReceiverIdentityPolicy.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppNotificationQueue.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\CenturionCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Ble\ClassicDeviceName.cs" />
@@ -216,6 +218,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Mchose\specs\mchose.protocols.json">
       <LogicalName>VigilWatt.Core.Plugins.Mchose.specs.mchose.protocols.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Logitech\logitech-hidpp.json">
+      <LogicalName>VigilWatt.Core.Plugins.Logitech.logitech-hidpp.json</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

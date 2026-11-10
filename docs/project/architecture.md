@@ -151,6 +151,7 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
   `DeviceSource.Hid24G` 只是接入栈（哪个插件认领的），**不能推断成 2.4G**——只有 BLE / 经典蓝牙 /
   本机三类来源本身就是传输事实。展示统一走 `Models/DeviceConnectionInfo`（标签 / 离线最后已知 / 取色档），
   UI 不再各自拼文案。接收器体系（Unifying / Bolt / LIGHTSPEED）不是链路，属于 `ReceiverIdentity`。
+  罗技首版只在非 Direct、目录 Family 为 Bolt（当前仅 C548）时填 `ReceiverIdentity(null, "bolt")`；C52B/C532 等其它接收器保持 null，`Connection` 仍 Unknown，Slot Ping 不升级成 DeviceReported。
   **接收器"在位"不能推断链路**（设备可能只是插线充电）；但**正在读接收器的配置通道**时可以推断为 2.4G
   ——有线数据不经过 dongle，这类推断记 `Inferred`，等设备自己上报再升级成 `DeviceReported`。
 - UI 侧 XAML 事件处理器开头判空（dev/runtime-pitfalls.md §4）；新增 XAML 属性先确认控件真有（dev/build.md §1）。

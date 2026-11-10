@@ -351,4 +351,21 @@ public class DeviceIdentityTests
         Assert.Equal("dongle-wireless", stored.Receiver!.Value.Role);
         Assert.Equal("bolt", stored.Receiver.Value.Family);
     }
+
+    [Fact]
+    public void I27_接收器身份不影响Connection和另外两种身份()
+    {
+        var stored = Device(Dongle, Body, Transport);
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(
+            ConnectionKind.Wireless24G, new DateTimeOffset(2026, 11, 10, 12, 0, 0, TimeSpan.Zero));
+
+        DeviceStatusMerger.Apply(stored, Device(receiver: new ReceiverIdentity(null, "bolt")));
+
+        Assert.Equal("bolt", stored.Receiver!.Value.Family);
+        Assert.Null(stored.Receiver.Value.Role);
+        Assert.Equal(Dongle, stored.Usb!.Value);
+        Assert.Equal(Body, stored.Reported!.Value);
+        Assert.Equal(ConnectionKind.Wireless24G, stored.Connection.Value);
+        Assert.Equal(TelemetrySource.DeviceReported, stored.Connection.Source);
+    }
 }

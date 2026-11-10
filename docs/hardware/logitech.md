@@ -28,6 +28,8 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 - **实时充电**：插拔电时设备会发 HID++ 自发通知（`sw` 低 4 位=0，payload 与 GetStatus 同布局）。插件后台 `PumpNotifications` 只读不写，经 `StatusPushed` 即时 Upsert——不必等 60 秒轮询（与 Logi Battery Dashboard 同源）。未知 `devIdx` 的通知会当场补 ping 发现。
 - 每次 `Attach` 按目录槽位数补扫尚未发现的索引（接收器上第二台不必等重启）。
 
+**接收器身份（M4-3B-2B1）**：`AddDevice` 只在非 Direct 路径、且 `HidppCatalog.Family()` 为 Bolt 时填 `ReceiverIdentity(Role: null, Family: "bolt")`。当前目录只有 `C548` 为 Bolt，因此首版仅开放 C548；`C52B/C532`、LIGHTSPEED、Nano、Legacy27Mhz 与未收录 PID 全部保持 `null`。`ReceiverIdentity` 描述接收器/传输通道，不是鼠标本体；本次不填 `Connection`，Slot Ping 成功也不写成 `DeviceReported`。`DirectDevice`、认领、去重、`SlotId` 与配对读取逻辑未改。
+
 **HID++ 报文层（字节级；实现见 `Plugins/Logitech/HidppIO.cs` / `HidppCodec.cs`）：**
 
 | 报文 | 布局 |

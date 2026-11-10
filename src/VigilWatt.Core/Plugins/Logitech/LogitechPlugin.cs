@@ -30,6 +30,15 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
     /// <summary>空槽 Ping 超时后的负缓存：冷却期内不再写、不等（CR-62）。</summary>
     private static readonly TimeSpan EmptySlotCooldown = TimeSpan.FromMinutes(5);
 
+    /// <summary>DPI / 回报率刷新间隔：只有用户按 DPI 键才会变，没必要跟着电量节拍发请求。</summary>
+    private static readonly TimeSpan PointerRefreshInterval = TimeSpan.FromMinutes(2);
+
+    /// <summary>指针 feature 探测超时：不支持的 feature 要等满超时，压短以免拖慢整轮轮询（电量读仍是 3 秒）。</summary>
+    private static readonly TimeSpan PointerProbeTimeout = TimeSpan.FromMilliseconds(600);
+
+    /// <summary>指针 feature 的重试预算：休眠时首次探测会假阴性，探不到先重试，超预算才认定不支持。</summary>
+    private const int PointerProbeAttempts = 5;
+
     /// <summary>插件开关的键，与 <c>AppSettings.PluginEnabled</c> 对应（插件开关即写入开关，见 <see cref="WritesEnabled"/>）。</summary>
     public const string SettingsKey = "Logitech";
 
@@ -99,6 +108,13 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         public byte? UnifiedWorkingFunc;    // 已验证可用的 Unified Battery func（0 或 1）
         public int? RegisterBattery;        // 1.0: 0x07 或 0x0D
         public ushort? WirelessPid;         // 配对寄存器 WPID，供电压曲线覆盖
+        public byte? DpiIdx;                // 0x2201 / 0x2202 的 feature index；0 = 已确认不支持
+        public bool DpiExtended;            // true = 走 0x2202（长报文）
+        public byte? ReportRateIdx;         // 0x8060 / 0x8061 的 feature index；0 = 已确认不支持
+        public bool ReportRateExtended;     // true = 走 0x8061（码表下标）
+        public int DpiProbeMisses;          // DPI feature 探测失败次数（到预算才放弃）
+        public int ReportRateProbeMisses;   // 回报率 feature 探测失败次数
+        public DateTimeOffset NextPointerAt; // 下一次指针遥测刷新时刻（低频，独立于电量节拍）
         public int ConsecutiveFailures;
         public bool WritesDisabled;         // 熔断停写中
         public DateTimeOffset WritesDisabledAt;
@@ -600,6 +616,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
                         updated.Add(dev.Status);
                         dev.ConsecutiveFailures = 0;
                         dev.BreakerTrips = 0;
+                        RefreshPointer(session, idx, dev);
                     }
                     else
                     {
@@ -761,6 +778,110 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         return false;
     }
 
+    /// <summary>低频读 DPI / 回报率。只读、失败不影响在线判定；不支持的 feature 记 0 后不再重探。</summary>
+    private void RefreshPointer(ReceiverSession session, byte idx, DevEntry dev)
+    {
+        if (dev.ProtocolMajor < 2) return;
+        var now = DateTimeOffset.Now;
+        if (now < dev.NextPointerAt) return;
+        dev.NextPointerAt = now + PointerRefreshInterval;
+
+        var io = session.Io!;
+        var patch = new PointerTelemetry();
+
+        if (TryReadDpi(io, idx, dev, out int dpi))
+            patch = patch with { DpiX = TelemetryValue<int>.Reported(dpi, now) };
+
+        if (TryReadReportRate(io, idx, dev, out int hertz))
+            patch = patch with { ReportRateSettingHz = TelemetryValue<int>.Reported(hertz, now) };
+
+        if (!patch.HasAny) return;
+
+        bool changed = PointerTelemetry.ValueDiffers(dev.Status.Pointer, patch);
+        dev.Status.Pointer = PointerTelemetry.Merge(dev.Status.Pointer, patch);
+        if (changed)
+        {
+            Log.Info($"罗技指针遥测更新: {dev.Status.DisplayName} dpi={dev.Status.Pointer.DpiX.Value?.ToString() ?? "-"} rate={dev.Status.Pointer.ReportRateSettingHz.Value?.ToString() ?? "-"}Hz");
+            RaiseStatusPushed(dev.Status);
+        }
+    }
+
+    /// <summary>0x2201 优先（短响应），不支持且接口是长报文时退回 0x2202（func 5，长响应）。</summary>
+    private static bool TryReadDpi(HidppIO io, byte idx, DevEntry dev, out int dpi)
+    {
+        dpi = 0;
+        if (!EnsureDpiFeature(io, idx, dev)) return false;
+
+        byte func = dev.DpiExtended ? HidppPointerCodec.FuncGetDpiParameters : HidppPointerCodec.FuncGetSensorDpi;
+        var resp = io.Request(idx, HidppCodec.FeatureFunc(dev.DpiIdx.GetValueOrDefault(), func), new byte[] { 0, 0, 0 },
+            timeout: PointerProbeTimeout);
+        if (resp == null) return false;
+        return dev.DpiExtended
+            ? HidppPointerCodec.TryParseExtendedDpi(resp, out dpi)
+            : HidppPointerCodec.TryParseDpi(resp, out dpi);
+    }
+
+    /// <summary>0x8060 优先（毫秒），不支持时退回 0x8061（码表下标）。</summary>
+    private static bool TryReadReportRate(HidppIO io, byte idx, DevEntry dev, out int hertz)
+    {
+        hertz = 0;
+        if (!EnsureReportRateFeature(io, idx, dev)) return false;
+
+        byte func = dev.ReportRateExtended
+            ? HidppPointerCodec.FuncGetExtendedReportRate
+            : HidppPointerCodec.FuncGetReportRate;
+        var resp = io.Request(idx, HidppCodec.FeatureFunc(dev.ReportRateIdx.GetValueOrDefault(), func), new byte[] { 0, 0, 0 },
+            timeout: PointerProbeTimeout);
+        if (resp == null) return false;
+
+        if (dev.ReportRateExtended)
+            return HidppPointerCodec.TryParseExtendedReportRateHz(resp, out hertz);
+
+        if (!HidppPointerCodec.TryParseReportRateMs(resp, out int ms)) return false;
+        hertz = HidppPointerCodec.HertzFromMilliseconds(ms);
+        return hertz > 0;
+    }
+
+    /// <summary>解析 DPI feature 下标。查不到不永久拉黑：前几次给重试，过了预算才认定不支持（休眠时首次探测会假阴性）。</summary>
+    private static bool EnsureDpiFeature(HidppIO io, byte idx, DevEntry dev)
+    {
+        if (dev.DpiIdx is { } cached && (cached != 0 || dev.DpiProbeMisses >= PointerProbeAttempts))
+            return cached != 0;
+
+        byte index = ResolveFeature(io, idx, HidppPointerCodec.FeatureAdjustableDpi, PointerProbeTimeout);
+        bool extended = false;
+        if (index == 0 && io.IsLongMessage)
+        {
+            index = ResolveFeature(io, idx, HidppPointerCodec.FeatureExtendedAdjustableDpi, PointerProbeTimeout);
+            extended = index != 0;
+        }
+
+        dev.DpiIdx = index;
+        dev.DpiExtended = extended;
+        dev.DpiProbeMisses = index != 0 ? 0 : dev.DpiProbeMisses + 1;
+        return index != 0;
+    }
+
+    /// <summary>解析回报率 feature 下标；重试预算与 DPI 相同。</summary>
+    private static bool EnsureReportRateFeature(HidppIO io, byte idx, DevEntry dev)
+    {
+        if (dev.ReportRateIdx is { } cached && (cached != 0 || dev.ReportRateProbeMisses >= PointerProbeAttempts))
+            return cached != 0;
+
+        byte index = ResolveFeature(io, idx, HidppPointerCodec.FeatureReportRate, PointerProbeTimeout);
+        bool extended = false;
+        if (index == 0)
+        {
+            index = ResolveFeature(io, idx, HidppPointerCodec.FeatureExtendedReportRate, PointerProbeTimeout);
+            extended = index != 0;
+        }
+
+        dev.ReportRateIdx = index;
+        dev.ReportRateExtended = extended;
+        dev.ReportRateProbeMisses = index != 0 ? 0 : dev.ReportRateProbeMisses + 1;
+        return index != 0;
+    }
+
     private static void ApplyBattery(DeviceStatus status, int percent, ChargingState charging)
     {
         bool pctChanged = status.BatteryPercent != percent;
@@ -821,10 +942,10 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
     }
 
     /// <summary>Root.GetFeature：查询特性 ID 对应的 feature index，0 = 不支持。</summary>
-    private static byte ResolveFeature(HidppIO io, byte devIdx, ushort featureId)
+    private static byte ResolveFeature(HidppIO io, byte devIdx, ushort featureId, TimeSpan? timeout = null)
     {
         Span<byte> args = stackalloc byte[2] { (byte)(featureId >> 8), (byte)featureId };
-        var resp = io.Request(devIdx, 0x0000, args);
+        var resp = io.Request(devIdx, 0x0000, args, timeout: timeout);
         return resp != null ? HidppCodec.ParseFeatureIndex(resp) : (byte)0;
     }
 

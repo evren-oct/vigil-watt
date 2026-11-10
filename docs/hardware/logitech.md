@@ -98,3 +98,27 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 **空槽冷却**：`TryDiscoverSlot` 过去先 `EmptySlotUntil.Remove` 再 `Ping`，等于通知路径完全绕过 5 分钟负缓存——每来一条通知就重探一次，是递归的放大器。现在对所有调用方一律先查冷却。
 
 **未修**：G102 那条接口本身写不进去是另一个问题（疑似该走 `SetOutputReport` 而非 `WriteOutput`），并入 `reviews/BACKLOG.md` 的 CR-88 一起查，要设备才能验。
+
+## 4. 指针遥测（DPI / 回报率，只读）
+
+**范围**：HID++ 2.0 鼠标，接收器槽位与直连共用同一套查询。只发 `Root.GetFeature` 与"读当前值"的 func，不写任何配置（`hardware/safety.md` §1）。
+
+| 用途 | Feature | func | 响应（参数区，即 `resp[2]` 起） |
+|---|---|---|---|
+| 当前 DPI | `0x2201` AdjustableDpi | 2 = getSensorDpi | `[0]`=传感器回显、`[1..2]`=DPI 大端 |
+| 当前 DPI（扩展） | `0x2202` ExtendedAdjustableDpi | 5 = getSensorDpiParameters（长报文） | `[1..2]`=dpi_x、`[3..4]`=默认 dpi_x、`[5..6]`=dpi_y |
+| 回报率（毫秒） | `0x8060` ReportRate | 1 = getReportRate | `[0]`=间隔毫秒（1..8） |
+| 回报率（码表） | `0x8061` ExtendedAdjustableReportRate | 2 = getExtendedReportRate | `[0]`=下标 0..6 → 125/250/500/1000/2000/4000/8000 Hz |
+
+**证据等级**
+- **Confirmed（源码互证）**：OpenLogi `crates/openlogi-hidpp/src/feature/adjustable_dpi.rs`（`get_sensor_dpi` 取 `payload[1..2]` 大端）、`extended_dpi.rs`（func 5 长报文，`dpi_x` 在 `payload[1..2]`）、`report_rate.rs`（func 1 返回 1..8 毫秒）；Solaar `lib/logitech_receiver/settings_templates.py` 的 `AdjustableDpi`（read_fnid `0x20`）、`ExtendedAdjustableDpi`（`0x50`）、`ReportRate`（`0x10`）、`ExtendedReportRate`（`0x20`）与之一致。两者都是公开实现，不是罗技官方规范，属互证而非官方保证。
+- **Confirmed（真机）**：`046D:C548` + MX Master 3S 读回 `DPI=1000`（2026-11-10，日志「罗技指针遥测更新」）。
+- **Unknown（真机）**：同一台鼠标对 `0x8060` / `0x8061` 都不应答，回报率保持空白。**不能**因为 MX 系列标称 125Hz 就补 125。
+
+**实现要点**（`LogitechPlugin.RefreshPointer` / `HidppPointerCodec`）
+- 只在电量读取成功之后跑，间隔 2 分钟：DPI 只有按 DPI 键才变，不跟 60 秒电量节拍。
+- feature 下标首次查询后缓存，查不到记 0 且**不再重探**（不支持的 feature 每次都要等满超时）。
+- 探测超时 600ms（电量读仍是 3s），不拖慢整轮轮询。
+- `0x2201` 优先；只有接口是长报文（`HidppIO.IsLongMessage`）才退回 `0x2202`。
+- 解析全在 `HidppPointerCodec`（纯函数）：DPI 只取 X 轴，`DpiY` 留空——单传感器设备两轴相同，不复制 X 冒充双轴。
+- 来源记 `DeviceReported`（设备直接回答的当前值），不是 `Inferred`；读不到就保持 `Unknown`。

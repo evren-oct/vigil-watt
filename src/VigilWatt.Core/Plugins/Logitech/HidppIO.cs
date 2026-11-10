@@ -32,6 +32,9 @@ internal sealed class HidppIO : IDisposable
     /// <summary>本接口实际使用的 report ID（0x10 或 0x11）。</summary>
     public byte ReportId => _reportId;
 
+    /// <summary>本接口是否走长报文（20 字节）。0x2202 这类长响应 feature 只能在这里读。</summary>
+    public bool IsLongMessage => _longMessage;
+
     /// <summary>设备自发通知：参数为 (devIdx, data)，data 从 feature 字节起（与 <see cref="Request"/> 返回值同布局）。
     /// 在请求等待与空闲 Pump 时都会触发；派发已在 I/O 锁外进行，处理器仍应尽快返回，别做长耗时 I/O。</summary>
     public Action<byte, byte[]>? NotificationReceived;

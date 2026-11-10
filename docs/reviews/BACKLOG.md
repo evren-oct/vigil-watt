@@ -91,6 +91,7 @@
 | **CR-152** | **迈从 0x4D 的 DPI 原始值是否需换算未确认**：`dpiMagicNum` / `dpiSlider` 只在官方 `mouseDiffConfig` 里有定义，11-07 与 11-01 两个打包文件里都找不到消费方（DPI 面板在未下载的 lazy chunk）；若官方 UI 用它把原始值换算成显示值，直接展示 `dpiX[i]` 会与 M HUB 不一致。另 `0x0002` 的 `gRateIndex` 语义未确认（当前只进日志、不发布）。两项都阻塞 M2-5 的数值发布 | `Plugins/Mchose/Mchose0x4DCodec.cs`、`hardware/mchose-dpi-report-rate-audit.md` §9.1、§9.5 | `open` |
 | **CR-153** | **C52B/C532 的 Unifying 配对布局未裁决**：VigilWatt 用 `0x20+n-1` / `resp[5..6]` 大端 / `resp[9]` kind，OpenLogi 快照用 `0xB5/0x5N` / `response[2..3]` 小端；OpenLogi 自身两处注释也不一致。首版只开 C548，C52B/C532 继续 null，需真机抓包 | `Plugins/Logitech/HidppCodec.cs:TryParseUnifyingPairing`、`Plugins/Logitech/LogitechPlugin.cs:TryReadPairingInfo`、`hardware/logitech.md` §1 | `open` |
 | **CR-154** | **Direct 0xFF 可能把接收器 secondary interface 认成外设**：当前只要求 Root.Ping 成功，没有 OpenLogi 的 Feature walk / `is_peripheral` 守卫；`Connection` 仍 Unknown，未改 `DirectDevice` | `Plugins/Logitech/LogitechPlugin.cs:Ping`、`DiscoverDevices`、`hardware/logitech.md` §1 | `open` |
+| **CR-155** | **罗技回报率读不到**：MX Master 3S 对 `0x8060` / `0x8061` 都不应答，回报率只能留空。需要 G 系（有 ReportRate 的型号）真机确认布局与取值；在此之前不许按型号补 125Hz | `Plugins/Logitech/HidppPointerCodec.cs`、`LogitechPlugin.RefreshPointer`、`hardware/logitech.md` §4 | `open` |
 
 ## 重构候选（未做）
 

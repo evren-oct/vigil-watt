@@ -271,4 +271,79 @@ public class PointerTelemetryFormatterTests
 
         Assert.Empty(PointerTelemetryFormatter.Metrics(device, Now));
     }
+
+    // ── 详情页口径（DetailMetrics）──────────────────────────────
+    // 与列表口径的唯一差别：离线仍展示最后已知值，但必须标注时刻与"最后已知"。
+
+    [Fact]
+    public void DM1_在线有值带来源与时刻()
+    {
+        var device = Device(Vt3Frame(), (DeviceCapability.DpiRead, CapabilityState.Supported));
+        var dpi = PointerTelemetryFormatter.DetailMetrics(device, Now)[0];
+
+        Assert.True(dpi.IsKnown);
+        Assert.Equal("1600", dpi.Value);
+        Assert.Equal("设备上报 · 12:00:00", dpi.Note);
+    }
+
+    [Fact]
+    public void DM2_离线仍展示最后已知值但标明时刻()
+    {
+        var device = Device(Vt3Frame(), (DeviceCapability.DpiRead, CapabilityState.Supported));
+        device.IsOnline = false;
+
+        var dpi = PointerTelemetryFormatter.DetailMetrics(device, Now)[0];
+
+        Assert.True(dpi.IsKnown);
+        Assert.Equal("1600", dpi.Value);
+        Assert.Equal("最后已知 · 11-07 12:00", dpi.Note);
+    }
+
+    [Fact]
+    public void DM3_在线但已过期时标注已过期()
+    {
+        var device = Device(Vt3Frame(), (DeviceCapability.DpiRead, CapabilityState.Supported));
+
+        // DefaultMaxAge = 5 分钟，这里推到 10 分钟
+        var dpi = PointerTelemetryFormatter.DetailMetrics(device, T0.AddMinutes(10))[0];
+
+        Assert.True(dpi.IsKnown);
+        Assert.Equal("已过期 · 11-07 12:00", dpi.Note);
+    }
+
+    [Fact]
+    public void DM4_能力已支持但没读到时不写最后已知()
+    {
+        var device = Device(PointerTelemetry.Empty, (DeviceCapability.RateRead, CapabilityState.Supported));
+        var rate = PointerTelemetryFormatter.DetailMetrics(device, Now)[0];
+
+        Assert.False(rate.IsKnown);
+        Assert.Equal(PointerTelemetryFormatter.UnknownText, rate.Value);
+        Assert.Equal("该设备未返回此项数据", rate.Note);
+    }
+
+    [Fact]
+    public void DM5_离线且没读到时说明是离线而不是设备不配合()
+    {
+        var device = Device(PointerTelemetry.Empty, (DeviceCapability.RateRead, CapabilityState.Supported));
+        device.IsOnline = false;
+
+        Assert.Equal("设备离线，未读到该值", PointerTelemetryFormatter.DetailMetrics(device, Now)[0].Note);
+    }
+
+    [Fact]
+    public void DM6_没声明能力的项整项不出现()
+    {
+        // 罗技 MX Master 3S：只有 DPI 有值，档位与回报率能力未声明 → 详情页只有一项
+        var pointer = new PointerTelemetry
+        {
+            DpiX = TelemetryValue<int>.Reported(1000, T0),
+            DpiY = TelemetryValue<int>.Reported(1000, T0),
+        };
+        var device = Device(pointer, (DeviceCapability.DpiRead, CapabilityState.Supported));
+
+        var metric = Assert.Single(PointerTelemetryFormatter.DetailMetrics(device, Now));
+        Assert.Equal(PointerMetricKind.Dpi, metric.Kind);
+        Assert.Equal("1000", metric.Value);
+    }
 }

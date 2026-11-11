@@ -5,6 +5,9 @@
 
 ## 2026-11-11
 
+- **设备列表收窄为摘要**：删掉 DPI/档位/回报率那行与「协议 · 状态 · 剩余时间 · 更新于」那行，行高 98→58（800×600 一屏从 5 台变 8 台），这两类信息移交详情页；`DeviceRowModel` 随之删 7 个属性与 `ApplyMetrics`，`Update` 不再要 `remainingTime`。`PointerTelemetryFormatter` / `GetRemainingTimeEstimate` / `ChargeSuffix` **没有删**——贴片悬停提示、桌面小组件与详情页还在用。
+- **新增设备详情页（M4-4）**：Hero（设备牌 + 22 号设备名 + 电量环 + 状态行）加性能 / 连接 / 身份三卡；列表单击整卡或右键「查看详情」进入，`Esc` / 「← 设备电量」返回。离线仍展示最后已知值并逐项标注时刻，为此新增 `PointerTelemetryFormatter.DetailMetrics`（列表口径 `Metrics` 不动）。新增 `Controls/BatteryRing`（ArcSegment 自绘，不用 ProgressRing）、`DeviceIconFactory.Hero`（独立名义框，避免 34px 下描边过粗）、`Models/DeviceKindInfo`。身份卡没有「品牌」——`DeviceStatus` 无此字段，协议串里才带品牌名，按前缀截取等于猜，改用「协议 + 设备 ID」。
+- **修详情页缓存复用残留**：页面 `NavigationCacheMode=Required`，`ApplyMetrics` 用「指标指纹」跳过重建，而空指标列表的指纹是空串、正好等于 `OnNavigatedTo` 复位后的值，于是新设备没有指标时提前返回，上一台设备（雷柏）的 DPI/回报率单元格留在屏幕上（用户发现：迈从还没连上却显示着雷柏的 DPI）。改为空列表走显式分支 `ResetMetrics()`（清子元素 + 收起卡片），换设备时先清空再重绑。
 - **C548 真机验证**：`0xB5/0x03`、`0x51`、`0x61` 均无回包，确认设备不提供该寄存器读；容量走目录 6 槽，连接仍 `Inferred(Wireless24G)`，DPI=1000、回报率 Unknown。证据与原始响应见 `hardware/logitech.md` §1.1。
 - **设备列表离线徽标**：离线改用 `DeviceConnectionInfo.Badge`（最后 X / 离线）并统一灰色，不再把历史链路显示成当前连接；新增 2 条展示测试。
 - **修 BACKLOG 表格渲染断裂**：`CR-124` 起有四条记录前面各夹了一个空行，空行会终止 Markdown 表格，导致后 4 段没有表头、在页面上渲染成普通段落；「重构候选」表则是表头加到 4 列、**分隔行还留在 3 列**，列数以分隔行为准，最后一列被吞掉（两处均由用户发现）。删掉 4 处空行、补上分隔行后，主表恢复为一个连续块。同一轮给 `check-doc-links.py` 加表格完整性检查（被空行截断的残段、分隔行列数、数据行列数），扫出 `review-standard.md` 的 R 清单被一段 R2 例外引用块截断，已把那 8 行引用块搬到表格之后。检查跳过围栏代码块、并认 `\|` 转义，否则 `|| a.includes()` 与单元格内的管道会误报。

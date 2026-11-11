@@ -126,6 +126,15 @@ public sealed class RemainingTimeEstimatorTests
     public void Format_UsesReadableChineseUnits(int minutes, string expected)
         => Assert.Equal(expected, RemainingTimeEstimator.Format(TimeSpan.FromMinutes(minutes)));
 
+    [Theory]
+    [InlineData(45, "45分钟")]              // 不足一天：不补括号
+    [InlineData(120, "2小时")]
+    [InlineData(1440, "1天（24小时）")]
+    [InlineData(1500, "1天1小时（25小时）")]
+    [InlineData(3250, "2天6小时（54小时）")]  // 分钟被截掉，总数也按 54 算，两个数字一致
+    public void FormatWithTotalHours_AppendsHoursOnlyBeyondOneDay(int minutes, string expected)
+        => Assert.Equal(expected, RemainingTimeEstimator.FormatWithTotalHours(TimeSpan.FromMinutes(minutes)));
+
     private static HistorySample Sample(int percent, DateTimeOffset timestamp, bool charging = false)
         => new(0, "device", "device", DeviceKind.Mouse, percent, charging, timestamp);
 }

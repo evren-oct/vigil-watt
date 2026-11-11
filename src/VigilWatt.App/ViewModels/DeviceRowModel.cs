@@ -13,35 +13,18 @@ namespace VigilWatt.App.ViewModels;
 /// <summary>
 /// 功 能： 设备列表行（可变 + 属性通知，原地更新；Brush 在 UI 线程的刷新路径里创建）。
 /// 2026/10/06 15:53:36 xliu
-/// 不重建对象：替换 ObservableCollection 元素会让 ListView 回收容器，整行闪一下（docs/dev/runtime-pitfalls.md §25）。
+/// 不重建对象：替换集合元素会让 ListView 回收容器、整行闪一下（runtime-pitfalls.md §25）；只留扫读四项，DPI/剩余时间在详情页。
 /// </summary>
 public sealed class DeviceRowModel : INotifyPropertyChanged
 {
     /// <summary>不可能被算出来的颜色，只用来表示"这一项还没赋过值"。透明色不会被任何状态色命中。</summary>
     private static readonly Color Unset = Color.FromArgb(0, 0, 0, 0);
 
-    // 指标标签色只可能在"三色 + 灰"之间切换，按索引存一份就不必每次比 Brush 引用
-    private readonly Color[] _labelColors = [Unset, Unset, Unset];
-    private readonly Brush[] _labelBrushes = new Brush[3];
-
-    // 数值色：已获取 = 主题前景色，未获取 = 灰（与标签同步）。Unset 是透明色，天然当"未算过"的哨兵
-    private readonly Color[] _valueColors = new Color[3];
-    private readonly Brush[] _valueBrushes = new Brush[3];
-
     private string _name = "";
-    private string _percentText = "--%";
+    private string _percentText = "----";
     private string _sourceText = "";
     private string _receiverText = "";
     private string? _receiverIconKey;
-    private string _subText = "";
-    private string _dpiLabel = "";
-    private string _dpiValue = "";
-    private string _levelSeparator = "";
-    private string _levelLabel = "";
-    private string _levelValue = "";
-    private string _rateSeparator = "";
-    private string _rateLabel = "";
-    private string _rateValue = "";
     private DeviceKind _iconKind;
     private Color _iconColor;
     private Color _sourceColor = Unset;
@@ -51,7 +34,6 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     // 刷子会停在构造函数里那个灰色，百分比一直是灰的（2026-11-07 回归，见 runtime-pitfalls §25）
     private Color? _percentColor = Unset;
     private double _progress;
-    private bool _hasPointer;
     private bool _hasReceiver;
     private bool _isCharging;
     private bool _isOnline = true;
@@ -60,15 +42,6 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     private Brush _receiverBackgroundBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _progressBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _percentBrush = UiPalette.Brush(UiPalette.Offline);
-
-    public DeviceRowModel()
-    {
-        for (int i = 0; i < _labelBrushes.Length; i++)
-        {
-            _labelBrushes[i] = UiPalette.Brush(UiPalette.Offline);
-            _valueBrushes[i] = UiPalette.Brush(UiPalette.Offline);
-        }
-    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -99,30 +72,6 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
 
     public bool HasReceiver { get => _hasReceiver; private set => Set(ref _hasReceiver, value); }
 
-    public string SubText { get => _subText; private set => Set(ref _subText, value); }
-
-    /// <summary>指针遥测整行是否有内容；false 时整行折叠（键盘/耳机/本机电量不该多出一条空行）。</summary>
-    public bool HasPointer { get => _hasPointer; private set => Set(ref _hasPointer, value); }
-
-    public string DpiLabel { get => _dpiLabel; private set => Set(ref _dpiLabel, value); }
-    public string DpiValue { get => _dpiValue; private set => Set(ref _dpiValue, value); }
-    public string LevelSeparator { get => _levelSeparator; private set => Set(ref _levelSeparator, value); }
-    public string LevelLabel { get => _levelLabel; private set => Set(ref _levelLabel, value); }
-    public string LevelValue { get => _levelValue; private set => Set(ref _levelValue, value); }
-    public string RateSeparator { get => _rateSeparator; private set => Set(ref _rateSeparator, value); }
-    public string RateLabel { get => _rateLabel; private set => Set(ref _rateLabel, value); }
-    public string RateValue { get => _rateValue; private set => Set(ref _rateValue, value); }
-
-    /// <summary>指标标签色：已获取用类别色，未获取统一灰。数值一律用主题前景色，不参与上色。</summary>
-    public Brush DpiLabelBrush => _labelBrushes[0];
-    public Brush LevelLabelBrush => _labelBrushes[1];
-    public Brush RateLabelBrush => _labelBrushes[2];
-
-    /// <summary>指标数值色：已获取 = 主题前景色，未获取 = 灰（"未获取"不该比真值还显眼）。</summary>
-    public Brush DpiValueBrush => _valueBrushes[0];
-    public Brush LevelValueBrush => _valueBrushes[1];
-    public Brush RateValueBrush => _valueBrushes[2];
-
     public bool IsCharging { get => _isCharging; private set => Set(ref _isCharging, value); }
 
     /// <summary>只有离线设备能删：在线设备删掉等于藏起来，插件下一轮又会报回来。</summary>
@@ -146,18 +95,14 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
 
     /// <summary>
     /// 把一台设备的当前状态写进本行。只对真正变了的字段发通知——轮询每拍都会调它，
-    /// 值没变就不该产生任何布局开销（时间戳变化除外，它本来就该刷新）。
+    /// 值没变就不该产生任何布局开销。
     /// </summary>
-    public void Update(
-        DeviceStatus source, AppSettings settings, RemainingTimeEstimateResult remainingTime, DateTimeOffset now)
+    public void Update(DeviceStatus source, AppSettings settings)
     {
         // 插件没声明类型的按名字猜图标；贴片走同一个方法，两处图标不会再分叉
         var d = DevicePresentation.WithIconKind(DevicePresentation.Apply(source, settings), settings);
         var percent = d.BatteryPercent;
         bool charging = DeviceStatusFormatter.IsCharging(d.Charging);
-
-        string state = DeviceStatusFormatter.ChargeSuffix(d.Charging);
-        if (!d.IsOnline) state = " · 离线";
 
         Id = d.Id;
         Name = d.DisplayName;
@@ -174,57 +119,15 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         ReceiverText = DeviceConnectionInfo.ReceiverLabel(d.Receiver) ?? "";
         ReceiverIconKey = DeviceConnectionInfo.ReceiverIconKey(d.Receiver);
         HasReceiver = ReceiverText.Length > 0;
-        SubText = $"{d.Protocol}{state}{(remainingTime.IsAvailable ? $" · 约{RemainingTimeEstimator.Format(remainingTime.Remaining!.Value)}剩余" : $" · {remainingTime.Explain()}")} · 更新于 {d.LastUpdated:HH:mm:ss}";
         IsCharging = charging;
-        IsOnline = d.IsOnline;
+        IsOnline = online;
 
-        SetProgressColor(d.IsOnline ? UiPalette.BatteryLevel(percent, charging) : UiPalette.Offline);
+        SetProgressColor(online ? UiPalette.BatteryLevel(percent, charging) : UiPalette.Offline);
         // null = 用主题前景色（正常态），非空才换 UiPalette 的固定色
-        SetPercentColor(!d.IsOnline ? UiPalette.Offline
+        SetPercentColor(!online ? UiPalette.Offline
             : charging ? UiPalette.Charging
             : percent is <= 20 ? UiPalette.Low
             : null);
-
-        ApplyMetrics(PointerTelemetryFormatter.Metrics(d, now));
-    }
-
-    /// <summary>三个指标各自可能缺项：缺的那段写成空串，XAML 里就没有多余的分隔点。</summary>
-    private void ApplyMetrics(IReadOnlyList<PointerMetric> metrics)
-    {
-        bool hasDpi = TryMetric(metrics, PointerMetricKind.Dpi, out var dpi);
-        bool hasLevel = TryMetric(metrics, PointerMetricKind.Level, out var level);
-        bool hasRate = TryMetric(metrics, PointerMetricKind.Rate, out var rate);
-
-        HasPointer = metrics.Count > 0;
-        DpiLabel = hasDpi ? dpi.Label : "";
-        DpiValue = hasDpi ? dpi.Value : "";
-        LevelSeparator = hasLevel && hasDpi ? " · " : "";
-        LevelLabel = hasLevel ? level.Label : "";
-        LevelValue = hasLevel ? level.Value : "";
-        RateSeparator = hasRate && (hasDpi || hasLevel) ? " · " : "";
-        RateLabel = hasRate ? rate.Label : "";
-        RateValue = hasRate ? rate.Value : "";
-
-        SetLabelBrush(0, dpi.IsKnown);
-        SetLabelBrush(1, level.IsKnown);
-        SetLabelBrush(2, rate.IsKnown);
-        SetValueBrush(0, dpi.IsKnown);
-        SetValueBrush(1, level.IsKnown);
-        SetValueBrush(2, rate.IsKnown);
-    }
-
-    /// <summary>按类别取指标：三项顺序固定但可能缺项（未声明能力的字段不出现）。</summary>
-    private static bool TryMetric(
-        IReadOnlyList<PointerMetric> metrics, PointerMetricKind kind, out PointerMetric metric)
-    {
-        for (int i = 0; i < metrics.Count; i++)
-        {
-            if (metrics[i].Kind != kind) continue;
-            metric = metrics[i];
-            return true;
-        }
-        metric = default;
-        return false;
     }
 
     private void SetSourceColor(Color color)
@@ -250,36 +153,6 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         if (Nullable.Equals(_percentColor, color)) return;
         _percentColor = color;
         PercentBrush = color is { } value ? UiPalette.Brush(value) : PrimaryBrush;
-    }
-
-    private void SetLabelBrush(int index, bool known)
-    {
-        var color = known ? UiPalette.Metric((PointerMetricKind)index) : UiPalette.Offline;
-        if (_labelColors[index] == color) return;
-        _labelColors[index] = color;
-        _labelBrushes[index] = UiPalette.Brush(color);
-        Raise(index switch
-        {
-            0 => nameof(DpiLabelBrush),
-            1 => nameof(LevelLabelBrush),
-            _ => nameof(RateLabelBrush),
-        });
-    }
-
-    /// <summary>比 Color 不比 Brush：<see cref="UiPalette.Brush"/> 每次都 new，比引用永远不等。
-    /// 每次重算主题前景色，系统切主题后下一拍就能跟上。</summary>
-    private void SetValueBrush(int index, bool known)
-    {
-        var color = known ? PrimaryColor : UiPalette.Offline;
-        if (_valueColors[index] == color) return;
-        _valueColors[index] = color;
-        _valueBrushes[index] = UiPalette.Brush(color);
-        Raise(index switch
-        {
-            0 => nameof(DpiValueBrush),
-            1 => nameof(LevelValueBrush),
-            _ => nameof(RateValueBrush),
-        });
     }
 
     private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)

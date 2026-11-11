@@ -43,6 +43,25 @@ public static class DeviceIconFactory
             },
         };
 
+    /// <summary>
+    /// 详情页 Hero 牌里的图形：名义框放到 20×20 再缩放。
+    /// 2026/11/11 22:18:00 20211
+    /// 直接复用 <see cref="Scaled"/> 会按 14×13 整体放大，34px 下描边变成 3px 以上、显得笨重。
+    /// </summary>
+    public static FrameworkElement Hero(DeviceKind kind, Color stroke, double size) =>
+        new Viewbox
+        {
+            Width = size,
+            Height = size,
+            Stretch = Stretch.Uniform,
+            Child = new Grid
+            {
+                Width = 20,
+                Height = 20,
+                Children = { Glyph(kind, stroke) },
+            },
+        };
+
     /// <summary>设备图形本身（无底），任务栏贴片直接用它。</summary>
     public static UIElement Glyph(DeviceKind kind, Color stroke)
     {

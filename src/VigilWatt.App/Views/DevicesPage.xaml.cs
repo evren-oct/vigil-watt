@@ -100,7 +100,6 @@ public sealed partial class DevicesPage : Page
     {
         var devices = App.Services.Manager.Devices;
         var settings = App.Services.Settings;
-        var now = DateTimeOffset.Now;
 
         // 按 Id 取旧行原地 Update：集合元素不替换，ListView 就不会回收容器（替换会让整行闪一下）
         var existing = new Dictionary<string, DeviceRowModel>(_rows.Count);
@@ -110,7 +109,7 @@ public sealed partial class DevicesPage : Page
         foreach (var d in devices)
         {
             if (!existing.Remove(d.Id, out var row)) row = new DeviceRowModel();
-            row.Update(d, settings, App.Services.Manager.GetRemainingTimeEstimate(d), now);
+            row.Update(d, settings);
             fresh.Add(row);
         }
 
@@ -364,6 +363,36 @@ public sealed partial class DevicesPage : Page
         Refresh();
     }
 
+    /// <summary>单击整卡进详情：行内不设第二个热点，避免"点这里跳、点那里没反应"。</summary>
+    private void DeviceRow_Click(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not DeviceRowModel model) return;
+        Frame.Navigate(typeof(DeviceDetailPage), model.Id);
+    }
+
+    private void OpenDetail_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuFlyoutItem item || item.Tag is not string id) return;
+        Frame.Navigate(typeof(DeviceDetailPage), id);
+    }
+
+    /// <summary>悬停只换描边：卡片自带底色，ListViewItem 的悬停底被盖住，不换描边就看不出可点。</summary>
+    private void DeviceRow_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Border border && HoverStroke is { } brush) border.BorderBrush = brush;
+    }
+
+    private void DeviceRow_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        // 清掉本地值才会回落到样式里的 CardStrokeColorDefaultBrush，主题切换也能跟着变
+        if (sender is Border border) border.ClearValue(Border.BorderBrushProperty);
+    }
+
+    private static Brush? HoverStroke =>
+        Application.Current.Resources.TryGetValue("ControlStrokeColorDefaultBrush", out var value)
+            ? value as Brush
+            : null;
+
     private void DeviceRow_RightTapped(object sender, RightTappedRoutedEventArgs e)
     {
         if (sender is not FrameworkElement row || row.DataContext is not DeviceRowModel model) return;
@@ -371,6 +400,15 @@ public sealed partial class DevicesPage : Page
         if (device == null || device.Source == DeviceSource.System) return;
 
         var menu = new MenuFlyout();
+        // 详情放第一项：它是唯一无损的动作，其余三项都会改状态
+        var detail = new MenuFlyoutItem
+        {
+            Text = "查看详情",
+            Tag = model.Id,
+        };
+        detail.Click += OpenDetail_Click;
+        menu.Items.Add(detail);
+
         var customize = new MenuFlyoutItem
         {
             Text = "自定义名称和图标",

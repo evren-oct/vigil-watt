@@ -3,6 +3,10 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-11
+
+- **罗技连接推断边界收紧（M4-3B-2B2-R）**：`LogitechConnectionPolicy` 改收 `HidppCatalog.FindReceiver` 的目录记录，只有 Bolt（当前仅 C548）+ 目录记录内有效槽位才 `Inferred(Wireless24G)`；Unifying / LIGHTSPEED / Nano / Legacy27Mhz / 未知族 / 未收录 PID / PID 缺失一律 Unknown，未知 PID 不再借默认 6 槽当证据。Direct 路径不推断 Wired。门控测试重写为 14 条（含不覆盖 `DeviceReported` 回归）。
+
 ## 2026-11-10
 
 - **迈从键盘显示真实链路**：`41E4:2001` 是 G87 的 dongle（`mchose.md` §1），登记进目录 `transports` 后，认领到它即把链路推断为 2.4G，来源记 `Inferred`——主机读的是接收器通道，有线数据不会经过 dongle。键盘本体 PID 未登记，插线场景仍显示未知。`ConnectionOfProbe` 改为返回遥测值，来源由插件自报（探测帧 `DeviceReported` / 结构推断 `Inferred`），基类不再一律当成设备上报。

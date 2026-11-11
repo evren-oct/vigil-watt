@@ -462,7 +462,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
                 string.IsNullOrEmpty(session.Info.SerialNumber) ? null : session.Info.SerialNumber),
             Receiver = LogitechReceiverIdentityPolicy.For(session.DirectDevice, session.Info.ProductId),
             Connection = LogitechConnectionPolicy.For(
-                session.DirectDevice, idx, HidppCatalog.MaxSlots(session.Info.ProductId), DateTimeOffset.Now),
+                session.DirectDevice, HidppCatalog.FindReceiver(session.Info.ProductId), idx, DateTimeOffset.Now),
         };
         var entry = new DevEntry
         {

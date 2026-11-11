@@ -30,7 +30,7 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 
 **接收器身份（M4-3B-2B1）**：`AddDevice` 只在非 Direct 路径、且 `HidppCatalog.Family()` 为 Bolt 时填 `ReceiverIdentity(Role: null, Family: "bolt")`。当前目录只有 `C548` 为 Bolt，因此首版仅开放 C548；`C52B/C532`、LIGHTSPEED、Nano、Legacy27Mhz 与未收录 PID 全部保持 `null`。`ReceiverIdentity` 描述接收器/传输通道，不是鼠标本体；本次不填 `Connection`，Slot Ping 成功也不写成 `DeviceReported`。`DirectDevice`、认领、去重、`SlotId` 与配对读取逻辑未改。
 
-**接收器槽位连接推断（M4-3B-2B2）**：`AddDevice` 只在非 Direct、Ping 已成功且槽位在 `1..MaxSlots` 时填 `Inferred(Wireless24G)`；Direct `0xFF`、空槽、越界槽位和未确认设备保持 `Unknown`。这里表达的是“设备通过该接收器槽位应答”的结构证据，不升级为 `DeviceReported`；接收器身份仍按 M4-3B-2B1 的 C548/Bolt 门控。
+**接收器槽位连接推断（M4-3B-2B2，M4-3B-2B2-R 收紧边界）**：`AddDevice` 只在**非 Direct、接收器 PID 经 `HidppCatalog.FindReceiver` 确认为 Bolt（当前目录仅 C548）、且槽位在该目录记录的 `1..MaxSlots` 内**时填 `Inferred(Wireless24G)`——MaxSlots 必须来自目录记录本身，未知 PID 的默认 6 槽不算证据。Direct `0xFF`、空槽、越界槽位、Unifying（C52B/C532）、LIGHTSPEED、Nano、Legacy27Mhz、Unknown 族、未收录 PID 与 PID 缺失一律保持 `Unknown`。Slot Ping 只证明该槽位路径有 HID++ Root 响应，不证明设备在线、电量可读或真实链路已直接确认，推断结果来源固定为 `Inferred`，不升级为 `DeviceReported`；接收器身份仍按 M4-3B-2B1 的 C548/Bolt 门控。其它协议族的开放条件见 `docs/reviews/BACKLOG.md` CR-156。
 
 **HID++ 报文层（字节级；实现见 `Plugins/Logitech/HidppIO.cs` / `HidppCodec.cs`）：**
 

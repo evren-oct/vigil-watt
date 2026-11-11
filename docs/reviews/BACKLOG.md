@@ -92,6 +92,7 @@
 | **CR-153** | **C52B/C532 的 Unifying 配对布局未裁决**：VigilWatt 用 `0x20+n-1` / `resp[5..6]` 大端 / `resp[9]` kind，OpenLogi 快照用 `0xB5/0x5N` / `response[2..3]` 小端；OpenLogi 自身两处注释也不一致。首版只开 C548，C52B/C532 继续 null，需真机抓包 | `Plugins/Logitech/HidppCodec.cs:TryParseUnifyingPairing`、`Plugins/Logitech/LogitechPlugin.cs:TryReadPairingInfo`、`hardware/logitech.md` §1 | `open` |
 | **CR-154** | **Direct 0xFF 可能把接收器 secondary interface 认成外设**：当前只要求 Root.Ping 成功，没有 OpenLogi 的 Feature walk / `is_peripheral` 守卫；`Connection` 仍 Unknown，未改 `DirectDevice` | `Plugins/Logitech/LogitechPlugin.cs:Ping`、`DiscoverDevices`、`hardware/logitech.md` §1 | `open` |
 | **CR-155** | **罗技回报率读不到**：MX Master 3S 对 `0x8060` / `0x8061` 都不应答，回报率只能留空。需要 G 系（有 ReportRate 的型号）真机确认布局与取值；在此之前不许按型号补 125Hz | `Plugins/Logitech/HidppPointerCodec.cs`、`LogitechPlugin.RefreshPointer`、`hardware/logitech.md` §4 | `open` |
+| **CR-156** | **罗技 Unifying / LIGHTSPEED / Nano / Legacy27Mhz 的槽位连接推断未开放**：M4-3B-2B2-R 起只有目录确认为 Bolt（当前仅 C548）的接收器才允许 `Inferred(Wireless24G)`，其它族与未收录 PID 一律 Unknown；要开放需真机确认各族槽位语义与配对布局（与 CR-153 同源） | `Plugins/Logitech/LogitechConnectionPolicy.cs`、`hardware/logitech.md` §1 | `open` |
 
 ## 重构候选（未做）
 

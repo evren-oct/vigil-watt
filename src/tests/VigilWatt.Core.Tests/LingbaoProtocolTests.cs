@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 凌豹 K98 0x13 会话/推送帧回归，以及 3554:FA09 公版接收器的型号码分流。
 /// 2026/10/20 17:20:00 Bamlax
-/// 真机样本见 docs/hardware/lingbao.md §1；AULA 样本见 docs/hardware/aula.md §1。
+/// 真机样本见 docs/hardware/brands/lingbao.md §1；AULA 样本见 docs/hardware/brands/aula.md §1。
 /// </summary>
 public class LingbaoProtocolTests
 {

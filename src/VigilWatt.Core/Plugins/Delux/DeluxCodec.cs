@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Delux;
 /// <summary>
 /// 功 能： DELUX M900 Pro 5 字节状态帧的纯解析（report 0x03：30 40 &lt;flag&gt; &lt;percent&gt;）。
 /// 2026/10/19 15:10:00 xliu
-/// 帧样本见 docs/hardware/delux.md §1。0x01 在此品牌表示放电。
+/// 帧样本见 docs/hardware/brands/delux.md §1。0x01 在此品牌表示放电。
 /// </summary>
 internal static class DeluxCodec
 {

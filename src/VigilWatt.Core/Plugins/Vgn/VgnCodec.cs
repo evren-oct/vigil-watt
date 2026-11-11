@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Vgn;
 /// <summary>
 /// 功 能： VGN 蜻蜓 F1 V5（kc2）私有协议的纯帧编解码：配置帧 0x06 带回电量，零 I/O。
 /// 2026/10/19 00:00:00
-/// 帧结构、来源与真机样本见 docs/hardware/vgn.md。
+/// 帧结构、来源与真机样本见 docs/hardware/brands/vgn.md。
 /// </summary>
 internal static class VgnCodec
 {

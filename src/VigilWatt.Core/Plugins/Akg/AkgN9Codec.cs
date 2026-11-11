@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Akg;
 /// <summary>
 /// 功 能： 校验 N9 Hybrid 接口和电量消息，构造固定查询。
 /// 2026/10/23 21:07:10 30149
-/// 协议来源与真机样本见 docs/hardware/akg.md §1。
+/// 协议来源与真机样本见 docs/hardware/devices/akg.md §1。
 /// </summary>
 internal static class AkgN9Codec
 {

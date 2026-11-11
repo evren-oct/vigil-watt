@@ -10,7 +10,7 @@ namespace VigilWatt.Core.Plugins.Atk;
 /// 功 能： ATK/VXE 无线鼠标电量插件——主动查询 FF02 口的 17 字节命令-应答协议。
 /// 2026/10/20 22:14:00 Yang
 /// 2026/10/26 22:40:03 ranxue：接入 A9 Air 大师版+（接收器 0x1278 / 本体 0x1293），双连接改留本体
-/// 帧结构与实测依据见 docs/hardware/atk.md（§2.2 §3.3 §4）；编解码在 AtkCodec。
+/// 帧结构与实测依据见 docs/hardware/brands/atk.md（§2.2 §3.3 §4）；编解码在 AtkCodec。
 /// </summary>
 public sealed class AtkPlugin : BatteryPluginBase
 {

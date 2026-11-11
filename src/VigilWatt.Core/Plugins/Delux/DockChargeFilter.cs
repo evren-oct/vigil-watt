@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Delux;
 /// <summary>
 /// 功 能： 过滤 DELUX 底座充电时的装饰电量。
 /// 2026/10/19 15:10:00 xliu
-/// 充电期保持最后可信值，切回放电后丢 8 秒。见 docs/hardware/delux.md §1。
+/// 充电期保持最后可信值，切回放电后丢 8 秒。见 docs/hardware/brands/delux.md §1。
 /// </summary>
 internal sealed class DockChargeFilter
 {

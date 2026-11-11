@@ -13,4 +13,4 @@ R1/R2：默认关闭，继承 BatteryPluginBase，写入受 WritesEnabled / CanW
 充电状态保持 Unknown，其他固件及有线/蓝牙模式未验证。开关机查询实机证据见硬件文档。
 
 ## 5. 结论去向
-无新增未修代码缺陷；协议与边界见 `docs/hardware/ak870-ml903.md`。
+无新增未修代码缺陷；协议与边界见 `docs/hardware/devices/ak870-ml903.md`。

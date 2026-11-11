@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Langtu;
 /// <summary>
 /// 功 能： 狼途 T98 键盘插件——零写入，只听 2.4G 接收器主动推的状态帧。
 /// 2026/10/31 20:32:00 20211
-/// 帧与休眠实测见 docs/hardware/langtu.md §1；编解码在 LangtuT98Codec。
+/// 帧与休眠实测见 docs/hardware/devices/langtu.md §1；编解码在 LangtuT98Codec。
 /// </summary>
 public sealed class LangtuT98Plugin : BatteryPluginBase
 {

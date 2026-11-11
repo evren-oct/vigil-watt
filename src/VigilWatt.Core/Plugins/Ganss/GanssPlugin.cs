@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Plugins.Ganss;
 /// <summary>
 /// 功 能： 0x05AC:024F 键盘族的 2.4G 电量查询插件（GANSS GS3104T-Pro + 狼蛛 F108 Pro）。
 /// 2026/10/19 19:45:00 xliu；2026/10/21 扩展 F108 Pro——两者 HID 层同指纹，只能按产品名分品牌。
-/// 协议与验证范围见 docs/hardware/ganss.md；共用号段的陷阱见 docs/hardware/protocols.md §2。
+/// 协议与验证范围见 docs/hardware/brands/ganss.md；共用号段的陷阱见 docs/hardware/protocols.md §2。
 /// </summary>
 public sealed class GanssPlugin : BatteryPluginBase
 {

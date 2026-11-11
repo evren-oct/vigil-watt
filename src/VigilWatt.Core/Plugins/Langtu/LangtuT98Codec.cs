@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Langtu;
 /// <summary>
 /// 功 能： 解析狼途 T98 的 65 字节被动状态帧（`00 AA 55 CC 33 0E &lt;pct&gt; 01`）。
 /// 2026/10/31 20:32:00 20211
-/// 帧布局、0xFF 哨兵与休眠静音实测见 docs/hardware/langtu.md §1。
+/// 帧布局、0xFF 哨兵与休眠静音实测见 docs/hardware/devices/langtu.md §1。
 /// </summary>
 internal static class LangtuT98Codec
 {

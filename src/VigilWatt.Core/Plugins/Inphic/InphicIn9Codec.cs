@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Inphic;
 /// <summary>
 /// 功 能： 英菲克 IN9 的 feature 0x0C 快照帧解析与刷新请求帧（纯逻辑，零 Win32）。
 /// 2026/10/29 22:35:11 bitbad
-/// 帧布局与"写请求 → 读快照"机制见 docs/hardware/inphic.md §2，改字节偏移前先读那一节。
+/// 帧布局与"写请求 → 读快照"机制见 docs/hardware/brands/inphic.md §2，改字节偏移前先读那一节。
 /// </summary>
 internal static class InphicIn9Codec
 {

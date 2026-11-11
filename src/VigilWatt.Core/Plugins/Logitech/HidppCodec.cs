@@ -21,7 +21,7 @@ internal enum HidppReportPreference
 /// <summary>
 /// 功 能： HID++ 响应解析（纯逻辑，零 I/O，可单测）。
 /// 2026/10/08 11:27:03 xliu
-/// 报文层与各特征编码见 docs/hardware/logitech.md。
+/// 报文层与各特征编码见 docs/hardware/brands/logitech.md。
 /// </summary>
 internal static class HidppCodec
 {

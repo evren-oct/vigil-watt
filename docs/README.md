@@ -2,6 +2,22 @@
 
 按当前问题进入对应专题。协议事实、安全边界与排查步骤以专题文档为准；项目当前状态见 [handoff.md](project/handoff.md)。
 
+## 新开发者从这里开始
+
+不必读完 70 份文档，按这个顺序四份就够上手：
+
+1. [architecture.md](project/architecture.md)：模块边界、线程模型、数据存储，改代码前必看 §6「约定」。
+2. [build.md](dev/build.md)：怎么构建、怎么跑、发布与打包。
+3. [review-standard.md](dev/review-standard.md)：提交前的 R 清单（红线区域逐条自查）。
+4. [../AGENTS.md](../AGENTS.md)：硬约束——git 红线、注释配额、只读原则。
+
+改界面加读 [ui-style.md](dev/ui-style.md)；碰硬件协议加读 [hardware/README.md](hardware/README.md)。
+
+## 面向使用者
+
+- [user-guide.md](user/user-guide.md)：逐页、逐开关说明——设备列表各元素含义、四个页面的用法、托盘与小组件交互、诊断采集四步、数据存在哪。
+- [release-notes.md](project/release-notes.md)：用户向更新日志，随安装包分发。
+
 ## 项目与运行机制
 
 - [handoff.md](project/handoff.md)：当前状态、设备验证情况和待办；新会话先读。
@@ -21,30 +37,29 @@
 - [monitor-identity.md](dev/monitor-identity.md)：显示器身份与名称（贴片选屏），三套 API 实测对照与降级链。
 - [logging.md](dev/logging.md)：日志级别、文件位置、保留和排障用法。
 - [comment-style.md](dev/comment-style.md)：代码注释规范。
+- [ui-style.md](dev/ui-style.md)：界面视觉规则——状态色、来源徽标、图标、字号与卡片；颜色只表达电量状态。
 - [review-standard.md](dev/review-standard.md)：审查标准、红线和闭环流程。
 
 ## 硬件协议与安全
 
+**先看 [hardware/README.md](hardware/README.md)**：这一层按文档职责分了三层，写新设备文档前先确认放哪。
+
+规则层（不属于任何品牌）：
+
 - [sources.md](hardware/sources.md)：协议、功能方案的依据、外部参考和验证范围；追溯来源先看这里。
-- [protocols.md](hardware/protocols.md)：设备协议帧、已验证行为和已证伪路径。
-- [asus-rog.md](hardware/asus-rog.md)：Scope II 96 / Omni 配对身份与电量；DELTA II 耳机的 `0xCC` 电量帧。
-- [razer-headset.md](hardware/razer-headset.md)：BlackShark V2 Pro 2023 的 PA 协议与会话释放。
-- [razer-kraken.md](hardware/razer-kraken.md)：Kraken V4 接收器的 64 字节 `0x02` 协议，电量与充电两条命令按轮交替。
-- [razer-viper-se.md](hardware/razer-viper-se.md)：Viper V3 Pro SE 无线电量、Windows Feature 接口与验证范围。
-- [dualsense.md](hardware/dualsense.md)：DualSense 蓝牙电量的帧、CRC 和未复测边界。
-- [haute42.md](hardware/haute42.md)：Haute42 Adapter 4DS——借 DualSense 号段的适配器，靠固件串认领、按芯片 ID 当设备身份。
-- [ganss.md](hardware/ganss.md)：GANSS GS3104T-Pro 的查询帧、认领判据风险与验证清单。
-- [akg.md](hardware/akg.md)：AKG N9 Hybrid 接收器查询、控制输入读取和验证边界。
-- [mchose-v9-pro.md](hardware/mchose-v9-pro.md)：MCHOSE V9 Pro 耳机的查询帧与未复测边界。
-- [mchose-x9.md](hardware/mchose-x9.md)：X9 耳机（`3837:6045`）的 64 字节查询帧，与键鼠同号段的分流要点。
-- [mchose-catalog.md](hardware/mchose-catalog.md)：迈从设备全景（键盘 BY/CZ 两族、鼠标、耳机共 97 条记录）、鼠标 0x4D 命令表与 DPI/回报率取数口径。
-- [rapoo.md](hardware/rapoo.md)：雷柏 V2 世代 status-report7 心跳（电量、DPI、回报率的唯一来源）、离线判定与有线模式坑。
-- [rapoo-catalog.md](hardware/rapoo-catalog.md)：雷柏设备目录（109 台 / 195 个 VID:PID / 12 套协议族）、设备图 URL 与 DPI/回报率档位。
-- [vgn.md](hardware/vgn.md)：VGN 蜻蜓 F1 V5（kc2 配置帧）与 F2 大师+（y2 查询），含插线双接口按序列号去重。
-- [lingbao.md](hardware/lingbao.md)：凌豹 M5PRO Max 的官方驱动同款 `F7` 查询，与 K98 的 Compx `0x13` 会话及型号码分流。
-- [mojhon.md](hardware/mojhon.md)：墨将烈风2 手柄（`E2B7:122C`）的 `A5` 读帧、电量与充电标志，2.4G 接收器与有线直连同 PID。
+- [protocols.md](hardware/protocols.md)：**索引**——品牌 / 型号 / VID:PID 对照表、共用号段陷阱、官方资料地图。
 - [safety.md](hardware/safety.md)：硬件写入规则与事故复盘；任何写入改动前必读。
 - [debugging.md](hardware/debugging.md)：官方软件抓包、HID 观测和协议验证步骤。
+
+设备文档（39 份，按职责分三层）：
+
+| 目录 | 份数 | 内容 |
+|---|---|---|
+| [hardware/brands/](hardware/brands/) | 23 | 一品牌一份，品牌内多套协议同份分节 |
+| [hardware/devices/](hardware/devices/) | 13 | 单型号深挖（耳机、适配器、单型号鼠标） |
+| [hardware/reference/](hardware/reference/) | 3 | 厂商软件逆向出的型号表 / 命令表 / 档位表 |
+
+按设备找文档，直接查 [protocols.md](hardware/protocols.md) 的 VID:PID 对照表，比翻目录快。
 
 ## 审查跟踪
 

@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： HECATE Wireless Receiver（35BB:D3FB）两条真机应答经 PulsarCodec 的校验与解析。
 /// 2026/10/23 20:22:34 22469
-/// 样本为本机 2026-10-23 的 STATUS/POWER 应答；充电位未验证，见 docs/hardware/hecate.md §2。
+/// 样本为本机 2026-10-23 的 STATUS/POWER 应答；充电位未验证，见 docs/hardware/brands/hecate.md §2。
 /// </summary>
 public class HecateWirelessFrameTests
 {

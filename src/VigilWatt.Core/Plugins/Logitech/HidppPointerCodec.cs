@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Logitech;
 /// <summary>
 /// 功 能： HID++ 指针遥测的纯解析：DPI（0x2201 / 0x2202）与回报率（0x8060 / 0x8061）。
 /// 2026/11/10 22:40:00 20211
-/// 字节布局依据 OpenLogi 的 openlogi-hidpp feature 实现与 Solaar settings_templates.py，见 docs/hardware/logitech.md §4。
+/// 字节布局依据 OpenLogi 的 openlogi-hidpp feature 实现与 Solaar settings_templates.py，见 docs/hardware/brands/logitech.md §4。
 /// </summary>
 internal static class HidppPointerCodec
 {

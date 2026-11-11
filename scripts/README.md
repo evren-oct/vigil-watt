@@ -13,6 +13,7 @@
 | `publish-gitee.ps1` | 将 `dist/` 全部打包产物作为当前版本的 Gitee Release 附件发布；需要已推送的 `v<版本>` 标签与 Gitee 写权限令牌（`-Token` 或 `GITEE_TOKEN`，**脚本不读令牌文件**；本机令牌在仓库根 `.vpk-gitee-token`，需人工读进环境变量）。完整发版序列与三个 Gitee 特有坑见 `docs/dev/build.md` §8 |
 | `get-release-notes.ps1` | 发布流水线共用函数：按版本号从 `docs/project/release-notes.md` 截出当前版本段（`Get-ReleaseNotes`），并以 UTF-8 无 BOM 落临时文件（`Write-ReleaseNotesFile`）。`build-installer.ps1` 与 `publish-gitee.ps1` 都 dot-source 它；格式契约见该 md 文件头 |
 | `code-fingerprint.py` | **代码指纹校验器**（纯标准库）：剥掉注释与空白后对代码 token 序列算 sha256，用来**证明"只改了注释、逻辑一行没动"**。`snapshot <out.json>` 记基线 / `verify <in.json>` 比对（`-xaml` 后缀对 `.xaml` 生效，剥 `<!-- -->` 后比空白归一化文本）。做注释精简、批量重排这类"只该动注释"的改动前先 `snapshot`，改完 `verify` 必须输出 `[OK]` |
+| `check-doc-links.py` | **文档链接与表格校验器**（纯标准库）：四类检查——Markdown 相对链接是否存在、代码/脚本/文档里以 `docs/` 开头的 md 路径是否存在、`§2.4` 这类小节锚点在目标文档里是否真有对应标题、**表格是否被空行截断，或分隔行 / 数据行的列数与表头不符**。**Markdown 坏链不报错，C# 注释里的死路径也不报错，表格断了只在页面上看得出来**，所以改目录结构、批量改文件名、拆文档、往表里插行前后各跑一次；退出码 1 表示有问题。表格检查会跳过围栏代码块、并认 `\|` 转义（否则 `\|\| a.includes()` 和单元格内的管道会误报）。`docs/reviews/archive/` 只查文件存在性、不查小节号（冻结的历史记录，旧编号已随协议文档拆分消失） |
 | `make-app-icon.py` | **程序图标生成器**（纯标准库，无需 Pillow）：解析式绘制绿色圆角方块 + 白色闪电，超采样抗锯齿，输出 `src/VigilWatt.App/Assets/VigilWatt.ico`（16~256 共 9 档）。`--preview x.png` 出一张放大预览图便于肉眼比对。**改图标配色/字形改这个脚本后重跑即可，不要手改 .ico** |
 | `probe-devnode-battery.py` | **PnP 设备节点电量探针**（纯 ctypes + SetupAPI）：枚举全机节点读 `DEVPKEY_Device_BatteryLevel`。经典蓝牙耳机电量就是这么找到的（EDIFIER W820NB 挂在 HFP 网关节点上）；`--all --match X` 可 dump 匹配节点的全部属性，查任何"Windows 能看到但代码读不到"的设备属性都用它 |
 | `probe-process-memory.py` | **进程内存分层采样**（纯 ctypes、只读）：按 `VirtualQueryEx` 的 `Type` 分层统计 **PRIVATE / MAPPED / IMAGE**，并附工作集、提交大小、句柄数。位置参数：`<进程名或PID> [秒数] [输出文件] [间隔秒]`。用来区分**"私有提交泄漏"（真泄漏，PRIVATE 单调涨）**与**"工作集可回收驻留"（高水位，回收后 PRIVATE 不动）**——判据见 `docs/reviews/archive/memory-growth-2026-10-12.md` §6。**注意：已提交虚拟内存总量 ≠ 任务管理器「提交大小」**，IMAGE 与文件后备 MAPPED 不计入进程提交量 |
@@ -21,7 +22,7 @@
 | `probe-classic-kind.py` | **经典蓝牙设备类型信号探针**（纯 ctypes + SetupAPI）：枚举 `BTHENUM\*` 节点，打印服务 UUID（实例 ID 前缀）、`DEVPKEY_DeviceDisplay_Category`（如 `Input.Mouse`）与 ClassGuid。用来回答"这台经典蓝牙设备到底是耳机还是鼠标"，`--all` dump 全属性 |
 | `test-rapou7.ps1` | 雷柏 dongle（VID_24AE）HID P/Invoke 直测。也是 build.md §7"PowerShell 5.1" 的范例：本机 Add-Type 不支持字符串插值/内联 out/可空注解，要用老式语法 |
 | `probe-hid-caps.py` | **HID 接口能力探针**（纯 ctypes，只读）：`HidP_GetCaps` + `HidP_GetButtonCaps` 打出 UsagePage、IN/OUT/FEATURE 报告长度与逐条 button caps。回答"这个接口到底有没有主机→设备通道"——`OUT=0 / FEATURE=0` 即物理上无法主动查询（弱水时砂 dongle 的判据）。用法 `python probe-hid-caps.py 38FF`（参数为设备路径里的大小写无关片段，可省） |
-| `probe-atk-battery.py` | **ATK / VXE（`373B`）电量通道体检**：按 PID 分组列出各接口的 usage page 与 IN/OUT/FEATURE 长度，再对 `0xFF02` 电量口只发 `docs/hardware/atk.md` §2 记载的那一条查询帧 `08 04 00×14 49`（`--caps` 一帧不发，`--listen` 纯被动收帧）。用于新增机型适配：确认 PID / 产品串 / 接口形状 / 应答结构是否与老机型一致。实测 A9 Air 大师版+ 的 GEM 接收器 `0x1278` 与本体 `0x1293` 均为 17/17 且应答一致，见 atk.md §2.2 |
+| `probe-atk-battery.py` | **ATK / VXE（`373B`）电量通道体检**：按 PID 分组列出各接口的 usage page 与 IN/OUT/FEATURE 长度，再对 `0xFF02` 电量口只发 `docs/hardware/brands/atk.md` §2 记载的那一条查询帧 `08 04 00×14 49`（`--caps` 一帧不发，`--listen` 纯被动收帧）。用于新增机型适配：确认 PID / 产品串 / 接口形状 / 应答结构是否与老机型一致。实测 A9 Air 大师版+ 的 GEM 接收器 `0x1278` 与本体 `0x1293` 均为 17/17 且应答一致，见 atk.md §2.2 |
 | `probe-bolt-battery.py` | **罗技 Bolt 电量探针**（`pip install hidapi`）：在 `046D:C548` 的 `0xFF00/0x02` 长接口上发 HID++ 请求，优先 `0x1004` Unified Battery、回退 `0x1000` Battery Status，打印百分比与充电状态。用来核对插件读数是否与官方 HUB 一致 |
 | `probe-bolt-ping.py` | **罗技 Bolt 连通性探针**：同一接口发 `Root.Ping`，只看有没有回应——用来区分"设备没连、被别的进程占了会话、还是协议读错" |
 | `test-rose-dongle-interactive.py` | ROSE dongle（38FF:0001）交互式被动监听 5 分钟，零写入——耳机按键操作会经 dongle 出现在这里，可当"耳机已连接"探针 |
@@ -29,10 +30,10 @@
 | `test-rose-dongle-endpoint.py` | ROSE dongle 接口 3 **绕过 HID 栈直读物理端点**（pyusb/libusb），只读不写。前提是 MI_03 已用 Zadig 换成 WinUSB——HID 驱动下 libusb 打不开设备，且 HID 栈只按描述符的 3 字节取包，端点上的长帧会被它丢掉。`--info` 打印配置/接口/端点，默认监听 0x82 300 秒 |
 | `test-rose-headset-getinfo.py` | FIRST ANGEL USB 直连官方 GET_INFO 查询（report 0xAB，帧格式来自官方升级工具反编译），纯只读 |
 | `test-rose-headset-passive.py` | FIRST ANGEL USB 直连 MI_03 被动监听 60 秒，零写入——看耳机是否自发推 0xAB 帧 |
-| `probe-mojhon-battery.py` | **墨将 E2B7 电量寄存器只读探针**：只重放实录里官方助手用过的读帧 `A5 04 <reg> <cks>`（寄存器 0x04 电量+充电标志 / 0x0B / 0xFA），不做命令枚举。解出 `payload[0]`=电量%、`payload[1]`=充电标志（0x00 放电 / 0x01 充电，见 `docs/hardware/mojhon.md` §6.8）。`python probe-mojhon-battery.py [轮数] [间隔秒]`。**注意写入须 65 字节、首字节 0x00**，见 §6.6 |
-| `decode-frames.py` | **厂商通道帧解码器**（纯标准库）：读 USBPcap 导出脚本产出的 jsonl，按 `A5/A4/5A` 帧格式切包、逐条校验 checksum，打印「请求 → 应答」对照表。用来把抓包转成人能读的寄存器流水，见 `docs/hardware/mojhon.md` §6.4 |
+| `probe-mojhon-battery.py` | **墨将 E2B7 电量寄存器只读探针**：只重放实录里官方助手用过的读帧 `A5 04 <reg> <cks>`（寄存器 0x04 电量+充电标志 / 0x0B / 0xFA），不做命令枚举。解出 `payload[0]`=电量%、`payload[1]`=充电标志（0x00 放电 / 0x01 充电，见 `docs/hardware/brands/mojhon.md` §6.8）。`python probe-mojhon-battery.py [轮数] [间隔秒]`。**注意写入须 65 字节、首字节 0x00**，见 §6.6 |
+| `decode-frames.py` | **厂商通道帧解码器**（纯标准库）：读 USBPcap 导出脚本产出的 jsonl，按 `A5/A4/5A` 帧格式切包、逐条校验 checksum，打印「请求 → 应答」对照表。用来把抓包转成人能读的寄存器流水，见 `docs/hardware/brands/mojhon.md` §6.4 |
 | `probe-vendor-passive.py` | **通用厂商页 HID 被动监听，零写入**：只打开 `usage page >= 0xFF00` 的可读接口收 input report，不发任何字节。`python probe-vendor-passive.py <VID十六进制> [秒数]`。用于判断某设备的厂商通道是否自发上报（墨将为零自发帧，据此判定为查询型协议） |
-| `probe-mojhon-wired.py` | **墨将 E2B7 双形态（2.4G / 有线）体检**：按 PID 分组列出所有接口的 usage page 与 IN/OUT/FEATURE 报文长度、报告描述符，再对厂商通道逐个发 `A5 04 04`（电量）与 `A5 04 E2`（型号标识）。`--caps` 只列能力、一帧不发。用来区分「接收器形态」与「有线直连形态」——实测两者同为 `122C`，见 `docs/hardware/mojhon.md` §7.4 |
+| `probe-mojhon-wired.py` | **墨将 E2B7 双形态（2.4G / 有线）体检**：按 PID 分组列出所有接口的 usage page 与 IN/OUT/FEATURE 报文长度、报告描述符，再对厂商通道逐个发 `A5 04 04`（电量）与 `A5 04 E2`（型号标识）。`--caps` 只列能力、一帧不发。用来区分「接收器形态」与「有线直连形态」——实测两者同为 `122C`，见 `docs/hardware/brands/mojhon.md` §7.4 |
 | `probe-mojhon-jitter.py` | **墨将 E2B7 链路抖动测量**（只读）：10Hz 连发 `A5 04 04`，统计丢包率、往返延迟中位/最大、最长连续应答间隔、读数变化序列。`python probe-mojhon-jitter.py [秒数] [毫秒间隔]`。实测有线 241/241 全中、往返 3ms，见 §7.4 |
 | `probe-mojhon-linkwatch.py` | **墨将 E2B7 联合监控**（只读）：250ms 采一次 HID 接口集合 + 每轮一帧 `A5 04 04`，输出「USB 层 / 协议层」合并时间线。用于把"手柄断连重连"定位到具体层：接口集合变化=USB 重枚举，集合不变但无应答=仅协议掉线。实测插接收器会让有线设备断 0.5 秒，见 §7.5 |
 

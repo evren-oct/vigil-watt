@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Aula;
 /// <summary>
 /// 功 能： HERO 68 Air 的 Bytech 查询、8K 分片与应答校验。
 /// 2026/10/23 20:05:00 30149
-/// 官方来源和真机帧见 docs/hardware/aula.md §2。
+/// 官方来源和真机帧见 docs/hardware/brands/aula.md §2。
 /// </summary>
 internal static class AulaHero68Codec
 {

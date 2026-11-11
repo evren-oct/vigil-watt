@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Models;
 /// <summary>
 /// 功 能： 插件当前认领的 USB/HID 接口枚举身份；**不保证是设备本体**，认领到接收器时它就是接收器。
 /// 2026/11/09 21:10:00 20211
-/// 禁止用它推断型号：一颗 dongle 常被多款设备共用，见 docs/hardware/mchose-catalog.md §1.3。
+/// 禁止用它推断型号：一颗 dongle 常被多款设备共用，见 docs/hardware/reference/mchose-catalog.md §1.3。
 /// </summary>
 public readonly record struct UsbIdentity(ushort VendorId, ushort ProductId, string? SerialNumber)
 {

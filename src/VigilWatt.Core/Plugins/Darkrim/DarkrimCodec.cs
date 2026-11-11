@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Darkrim;
 /// <summary>
 /// 功 能： 寸渊影弑 (DARKRIM) 杰理 dongle 的帧编解码——纯函数，不碰句柄，便于单测。
 /// 2026/10/19 19:40:00 zc165
-/// 帧结构与 CRC 依据见 docs/hardware/darkrim.md §1。
+/// 帧结构与 CRC 依据见 docs/hardware/brands/darkrim.md §1。
 /// </summary>
 internal static class DarkrimCodec
 {

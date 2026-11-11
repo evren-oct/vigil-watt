@@ -6,7 +6,7 @@
 2. 电量口（usage_page 0xFF02）的 in/out 报告长度是否仍为 17 / 17？
 3. `08 04 00×14 49` 这条**已知查询帧**在这个 PID 上还回不回电量？
 
-安全性：只发送 docs/hardware/atk.md §2 记载、且已在 F1 Pro Max / F1 V3 / 两个
+安全性：只发送 docs/hardware/brands/atk.md §2 记载、且已在 F1 Pro Max / F1 V3 / 两个
 接收器上实测通过的那一条只读查询帧。命令字、字节、校验全部照抄，
 不做命令枚举、不扫 report ID、不改任何配置。
 
@@ -74,7 +74,7 @@ def report_lengths(path: bytes):
     finally:
         _k32.CloseHandle(wintypes.HANDLE(h))
 
-# docs/hardware/atk.md §2：report ID 0x08 + 命令字 0x04 + 14 个 0 + 校验
+# docs/hardware/brands/atk.md §2：report ID 0x08 + 命令字 0x04 + 14 个 0 + 校验
 # 校验 = (0x55 − 前 16 字节之和) & 0xFF
 def build_query() -> bytes:
     frame = bytearray(17)

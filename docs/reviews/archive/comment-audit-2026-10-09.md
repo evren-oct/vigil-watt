@@ -472,7 +472,7 @@
 - `docs/project/code-flow.md`（§5 +§5.1 小节；§7 StatsPage bullet 扩写）
 - `docs/project/architecture.md`（§6 +1 bullet）
 - `docs/project/handoff.md`（:684 指针修正）
-- `docs/reviews/comment-audit-2026-10-09.md`（本记录）
+- `docs/reviews/archive/comment-audit-2026-10-09.md`（本记录）
 
 > 未新建集中归档文件，全部按既定策略补进现有 docs 对应章节。
 

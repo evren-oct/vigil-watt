@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： IlovbeeCodec —— ilovbee b98 的 20 字节被动状态帧解析。
 /// 2026/11/01 17:32:05 20211
-/// 样本逐帧取自 issue #68 的采集包，字节含义见 docs/hardware/ilovbee.md §1。
+/// 样本逐帧取自 issue #68 的采集包，字节含义见 docs/hardware/devices/ilovbee.md §1。
 /// </summary>
 public class IlovbeeCodecTests
 {

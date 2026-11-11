@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： BetopDeviceIdentity —— 鲲鹏20 dongle/有线本体的同型号组身份归一。
 /// 2026/10/25 17:45:16 lym18
-/// 归一动机与缺点见 docs/hardware/betop.md §1.8.2。
+/// 归一动机与缺点见 docs/hardware/brands/betop.md §1.8.2。
 /// </summary>
 public class BetopDeviceIdentityTests
 {

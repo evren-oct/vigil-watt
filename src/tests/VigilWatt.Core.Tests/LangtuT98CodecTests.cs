@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： LangtuT98Codec —— 狼途 T98 的 65 字节被动状态帧解析。
 /// 2026/10/31 20:34:00 20211
-/// 样本与字节含义见 docs/hardware/langtu.md §1、issue #40。
+/// 样本与字节含义见 docs/hardware/devices/langtu.md §1、issue #40。
 /// </summary>
 public class LangtuT98CodecTests
 {

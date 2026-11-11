@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Plugins.Flydigi;
 /// <summary>
 /// 功 能： 飞智 APEX5 2.4G 接收器电量插件（NewXInput 心跳）。
 /// 2026/10/22 21:50:00 xliu
-/// 字节表、证据链与未验证项见 docs/hardware/flydigi.md。
+/// 字节表、证据链与未验证项见 docs/hardware/brands/flydigi.md。
 /// </summary>
 public sealed class FlydigiPlugin : BatteryPluginBase
 {

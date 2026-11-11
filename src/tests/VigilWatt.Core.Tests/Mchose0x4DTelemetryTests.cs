@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 迈从 0x4D 三项遥测（连接 / 充电 / 电量）的映射与能力声明回归。
 /// 2026/11/08 21:10:00 xliu
-/// 官方枚举（`1=有线 / 2=无线`、`0=未充 / 1=充电中 / 2=充满`）见 docs/hardware/mchose.md §3.3；
+/// 官方枚举（`1=有线 / 2=无线`、`0=未充 / 1=充电中 / 2=充满`）见 docs/hardware/brands/mchose.md §3.3；
 /// 真机帧见 <see cref="Mchose0x4DCodecTests"/>，两份样本同源（2026-10-21 本机 3837:1018）。
 /// </summary>
 public sealed class Mchose0x4DTelemetryTests

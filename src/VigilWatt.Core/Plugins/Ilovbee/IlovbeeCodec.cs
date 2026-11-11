@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Ilovbee;
 /// <summary>
 /// 功 能： 解析 ilovbee b98 的 20 字节被动状态帧（`13 0A 01 00 04 &lt;事件&gt; &lt;电量&gt; &lt;标志&gt; … &lt;和校验&gt;`）。
 /// 2026/11/01 17:32:05 20211
-/// 帧布局、事件字与校验范围见 docs/hardware/ilovbee.md §1；样本出自 issue #68。
+/// 帧布局、事件字与校验范围见 docs/hardware/devices/ilovbee.md §1；样本出自 issue #68。
 /// </summary>
 internal static class IlovbeeCodec
 {

@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Flydigi;
 /// <summary>
 /// 功 能： 飞智 NewXInput 心跳帧的构造与解析（APEX5 2.4G 接收器）。
 /// 2026/10/22 21:50:00 xliu
-/// 字节表、证据链与未验证项见 docs/hardware/flydigi.md。
+/// 字节表、证据链与未验证项见 docs/hardware/brands/flydigi.md。
 /// </summary>
 public static class FlydigiCodec
 {

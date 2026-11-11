@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： LingbaoCodec —— 凌豹 M5PRO Max 的状态帧（命令字节、电量与充电位）。
 /// 2026/10/25 14:25:00 L
-/// 帧来自官方驱动抓包与本机插拔充电线实测，见 docs/hardware/lingbao.md §1。
+/// 帧来自官方驱动抓包与本机插拔充电线实测，见 docs/hardware/brands/lingbao.md §1。
 /// </summary>
 public class LingbaoCodecTests
 {

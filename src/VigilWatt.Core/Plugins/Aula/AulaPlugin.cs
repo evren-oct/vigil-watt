@@ -10,7 +10,7 @@ namespace VigilWatt.Core.Plugins.Aula;
 /// <summary>
 /// 功 能： 狼蛛 2.4G 插件：F99 / F99 Pro / HERO 68 键盘（会话）与 L9 Ultra 鼠标（查询）；G9 耳机是独立的被动插件。
 /// 2026/10/19 15:10:00 xliu；2026/10/23 扩展 HERO 68 Air；2026/10/25 并入 L9 Ultra。
-/// 协议与验证范围见 docs/hardware/aula.md；与迈从 G75 / 凌豹 K98 共用 3554:FA09，靠会话 ACK 型号分流（§1.1）。
+/// 协议与验证范围见 docs/hardware/brands/aula.md；与迈从 G75 / 凌豹 K98 共用 3554:FA09，靠会话 ACK 型号分流（§1.1）。
 /// </summary>
 public sealed class AulaPlugin : BatteryPluginBase
 {
@@ -28,7 +28,7 @@ public sealed class AulaPlugin : BatteryPluginBase
     /// <summary>F99 Pro 会话 ACK 的型号码；凌豹 K98 是 0x0212，靠它避免抢错同 VID/PID 的接口。</summary>
     public const ushort F99ProModelCode = 0x0158;
 
-    /// <summary>F99（非 Pro）的型号码，见 docs/hardware/aula.md §1.2。</summary>
+    /// <summary>F99（非 Pro）的型号码，见 docs/hardware/brands/aula.md §1.2。</summary>
     public const ushort F99ModelCode = 0x00A4;
 
     private const string SettingsKey = "Aula";

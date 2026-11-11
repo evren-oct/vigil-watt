@@ -96,7 +96,7 @@ public class AppSettings
         ["Delux"] = false,    // 与英菲克同为 1D57:FA65，只读 0x000A；本机尚未扫到该接收器，默认关
         ["Aula"] = false,     // 狼蛛键盘电量查询需要发帧，默认关闭
         ["Akg"] = false,      // AKG 接收器电量查询需要发帧，默认关闭
-        ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/dualsense.md）
+        ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/devices/dualsense.md）
         ["Ganss"] = false,   // GANSS GS3104T-Pro / 狼蛛 F108 Pro（同硅方案）：发固定查询帧才能读电量（会写），默认关闭
         ["Cherry"] = false,   // CHERRY PIXIU75：64 字节块通道读块 0x1A，要写帧，默认关闭
         ["Pulsar"] = false,   // 派世 X2 V2：17 字节 STATUS/POWER 查询，要写帧，默认关闭

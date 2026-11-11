@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Pulsar;
 /// <summary>
 /// 功 能： 派世 (Pulsar) 17 字节厂商帧（report 0x08）的纯编解码，不碰句柄、不写日志，便于单测。
 /// 2026/10/18 17:24:10 sheng
-/// 校验与命令表来自 Linux `hid-pulsar` 驱动，见 docs/hardware/pulsar.md §1。
+/// 校验与命令表来自 Linux `hid-pulsar` 驱动，见 docs/hardware/brands/pulsar.md §1。
 /// </summary>
 internal static class PulsarCodec
 {

@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Akg;
 /// <summary>
 /// 功 能： 经 AKG N9 Hybrid 接收器查询耳机电量。
 /// 2026/10/23 21:07:10 30149
-/// 充电状态未验证，保留 Unknown；边界见 docs/hardware/akg.md §2。
+/// 充电状态未验证，保留 Unknown；边界见 docs/hardware/devices/akg.md §2。
 /// </summary>
 public sealed class AkgPlugin : BatteryPluginBase
 {

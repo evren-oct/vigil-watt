@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Plugins.Logitech;
 /// <summary>
 /// 功 能： HID++ 底层 I/O：通过 vendor 接口写 output report 发请求、读 input report 匹配响应（报文格式对照 Solaar base.py）。
 /// 2026/10/06 15:53:36 xliu
-/// 通知只入队、出锁后才派发——在等包循环里同步回调会让"处理器再发请求"变成深递归（issue #55）。详见 docs/hardware/logitech.md。
+/// 通知只入队、出锁后才派发——在等包循环里同步回调会让"处理器再发请求"变成深递归（issue #55）。详见 docs/hardware/brands/logitech.md。
 /// </summary>
 internal sealed class HidppIO : IDisposable
 {

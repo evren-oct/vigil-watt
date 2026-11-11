@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Lingbao;
 /// <summary>
 /// 功 能： 凌豹 M5PRO Max 的状态查询帧编解码（64 字节 payload，report ID 0）。
 /// 2026/10/24 17:42:00 L
-/// 帧来自官方驱动运行时抓包与本机实测，见 docs/hardware/lingbao.md §1。
+/// 帧来自官方驱动运行时抓包与本机实测，见 docs/hardware/brands/lingbao.md §1。
 /// </summary>
 public static class LingbaoCodec
 {

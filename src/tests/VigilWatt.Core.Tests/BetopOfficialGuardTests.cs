@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 北通官方软件观测的回归——只记状态变化，不参与认领判定。
 /// 2026/10/25 19:42:30 xliu
-/// 为什么先观测不拦认领见 docs/hardware/betop.md §1.9。
+/// 为什么先观测不拦认领见 docs/hardware/brands/betop.md §1.9。
 /// </summary>
 public class BetopOfficialGuardTests : IDisposable
 {

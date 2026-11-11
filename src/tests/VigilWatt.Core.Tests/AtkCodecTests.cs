@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： AtkCodec —— ATK 鼠标 17 字节电量查询协议（report 0x08 / cmd 0x04）帧编解码。
 /// 2026/10/20 22:26:00 Yang
-/// 帧结构与实测依据见 docs/hardware/atk.md。
+/// 帧结构与实测依据见 docs/hardware/brands/atk.md。
 /// </summary>
 public class AtkCodecTests
 {

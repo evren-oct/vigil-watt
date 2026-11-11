@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Logitech;
 /// <summary>
 /// 功 能： 构造和解析 PRO X 2 LIGHTSPEED 的只读电池报文。
 /// 2026/10/23 20:58:09 nyamu
-/// 协议依据见 docs/hardware/logitech.md §2。
+/// 协议依据见 docs/hardware/brands/logitech.md §2。
 /// </summary>
 internal static class CenturionCodec
 {

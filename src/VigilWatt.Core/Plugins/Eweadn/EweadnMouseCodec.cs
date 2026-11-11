@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Eweadn;
 /// <summary>
 /// 功 能： 前行者 S9 鼠标（贝盈 beiyin_uuid 协议）的 feature report 电量帧编解码——纯函数，便于单测。
 /// 2026/10/18 13:40:00 Admin
-/// 帧结构、CRC 与字段偏移见 docs/hardware/eweadn.md §1.2。
+/// 帧结构、CRC 与字段偏移见 docs/hardware/brands/eweadn.md §1.2。
 /// </summary>
 internal static class EweadnMouseCodec
 {

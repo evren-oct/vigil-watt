@@ -80,7 +80,7 @@
 - 其余未知字段仍按现有 JSON 反序列化策略忽略：**拼写错误（如 `capabilites`）不会被识别或报告**，别指望加载器兜住。
 - **不继承**：`extends`、设备 `override`、共享协议引用都不会把能力带过去，每条设备各自声明。
 - 与旧 `caps` 的区别：`caps` 是历史验证记录（只在雷柏目录、代码不读），`capabilities` 才是当前正式声明，
-  两者**不自动映射**，见 [hardware/rapoo-catalog.md](../hardware/rapoo-catalog.md) §6。
+  两者**不自动映射**，见 [hardware/rapoo-catalog.md](../hardware/reference/rapoo-catalog.md) §6。
 - 查询入口 `ProtocolEngine.CapabilityOf(info, capability)`：纯配置查询——不开句柄、不发帧、不动解析状态；
   非法枚举值抛异常而不是回落到默认值。整块取用 `CapabilitiesOf(info)`（PR-D 起由插件在**认领落地时**
   写进 `DeviceStatus.Capabilities`，UI 靠它区分"能读但还没读到"与"不支持"）。

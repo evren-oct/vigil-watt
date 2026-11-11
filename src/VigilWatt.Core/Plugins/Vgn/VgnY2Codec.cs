@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Vgn;
 /// <summary>
 /// 功 能： VGN 蜻蜓 F2 大师+（y2）私有协议的纯帧编解码：电量查询与应答解析，零 I/O。
 /// 2026/10/21 00:00:00
-/// 帧结构、来源与真机样本见 docs/hardware/vgn.md。
+/// 帧结构、来源与真机样本见 docs/hardware/brands/vgn.md。
 /// </summary>
 internal static class VgnY2Codec
 {

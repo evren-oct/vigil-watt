@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Rapoo;
 /// <summary>
 /// 功 能： 雷柏未收录设备的显示名启发式——产品串不带键鼠信息时靠兄弟接口补 Mouse。
 /// 2026/11/01 23:20:00 xliu
-/// 只是展示逻辑（不是协议数据），所以留代码；已收录设备走目录里的官方型号。见 docs/hardware/rapoo.md §4.2。
+/// 只是展示逻辑（不是协议数据），所以留代码；已收录设备走目录里的官方型号。见 docs/hardware/brands/rapoo.md §4.2。
 /// </summary>
 internal static class RapooDisplayName
 {

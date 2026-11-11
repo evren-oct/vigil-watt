@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Mchose;
 /// <summary>
 /// 功 能： 迈从 A5 V2 Ultra 鼠标插件（反码 Feature `0x11` 查询），与键鼠插件共用一个品牌开关。
 /// 2026/10/19 20:38:41 kaniu
-/// 帧与真机样本见 docs/hardware/mchose.md §6；会写帧，故默认关闭。
+/// 帧与真机样本见 docs/hardware/brands/mchose.md §6；会写帧，故默认关闭。
 /// </summary>
 public sealed class MchoseA5Plugin : BatteryPluginBase
 {

@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Asus;
 /// <summary>
 /// 功 能： 华硕 ROG 无线耳机 0xCC 帧的构造与解析（group 0x12 读，数据从 [5] 起）。
 /// 2026/10/24 01:30:00 Leejangho
-/// 帧与字段见 docs/hardware/asus-rog.md 耳机一节；本机 ROG DELTA II 实测。
+/// 帧与字段见 docs/hardware/brands/asus-rog.md 耳机一节；本机 ROG DELTA II 实测。
 /// </summary>
 public static class AsusHeadsetCodec
 {

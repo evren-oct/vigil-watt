@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Ilovbee;
 /// <summary>
 /// 功 能： ilovbee b98 键盘插件——零写入，只听 2.4G 接收器主动推的 20 字节状态帧。
 /// 2026/11/01 17:32:05 20211
-/// 帧与校验见 docs/hardware/ilovbee.md §1；编解码在 IlovbeeCodec。
+/// 帧与校验见 docs/hardware/devices/ilovbee.md §1；编解码在 IlovbeeCodec。
 /// </summary>
 public sealed class IlovbeePlugin : BatteryPluginBase
 {

@@ -5,7 +5,7 @@ using VigilWatt.Core.Models;
 /// <summary>
 /// 功 能： ATK/VXE 鼠标电量查询帧的纯编解码——不碰句柄、不写日志，便于单测。
 /// 2026/10/20 22:06:00 Yang
-/// 帧结构、校验算法、休眠占位帧实测依据见 docs/hardware/atk.md。
+/// 帧结构、校验算法、休眠占位帧实测依据见 docs/hardware/brands/atk.md。
 /// </summary>
 internal static class AtkCodec
 {

@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： AsusHeadsetCodec —— 华硕 ROG 耳机 0xCC 帧的构造、回显校验与 POWER/CHARGING 解析。
 /// 2026/10/24 01:30:00 Leejangho
-/// 样本帧取自本机 ROG DELTA II（0B05:1AFA），见 docs/hardware/asus-rog.md §2。
+/// 样本帧取自本机 ROG DELTA II（0B05:1AFA），见 docs/hardware/brands/asus-rog.md §2。
 /// </summary>
 public class AsusHeadsetCodecTests
 {

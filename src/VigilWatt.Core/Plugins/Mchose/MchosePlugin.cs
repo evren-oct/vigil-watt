@@ -9,7 +9,7 @@ namespace VigilWatt.Core.Plugins.Mchose;
 /// <summary>
 /// 功 能： 迈从 (MCHOSE) 2.4G 插件。
 /// 2026/10/06 15:53:36 xliu
-/// 帧结构见 <see cref="MchoseV1Codec"/> 与 docs/hardware/mchose.md §1。
+/// 帧结构见 <see cref="MchoseV1Codec"/> 与 docs/hardware/brands/mchose.md §1。
 /// </summary>
 public sealed class MchosePlugin : BatteryPluginBase
 {
@@ -91,7 +91,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     {
         // 判据全在分类器里：它是**正向 VID 白名单**（0x291D / 0x3837 / 0x41E4），别家 VID 必然判 None。
         // 原来这里逐个排除罗技/雷柏/北通/英菲克/HECATE/AULA，与白名单等价、纯冗余，且让本插件硬依赖 6 个别家命名空间。
-        // 与 AULA 共用指纹的例外见 docs/hardware/aula.md §1.1。
+        // 与 AULA 共用指纹的例外见 docs/hardware/brands/aula.md §1.1。
         if (Classify(info) is var kind and not MchoseInterfaceKind.None)
             // A5 的 Feature 通道归 MchoseA5Plugin（同品牌另一个插件类），主插件不认领
             return kind != MchoseInterfaceKind.MouseA5;
@@ -974,7 +974,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>
     /// 键盘 V1 协议（本机 dongle 41E4:2001 实测打通，G87 V2 接收器 3837:201B 同协议；与官方 M HUB WEB 抓包一致）。
     /// 帧格式与解析全部在 <see cref="MchoseV1Codec"/>（纯函数，有单测）；帧结构见
-    /// docs/hardware/mchose.md §1。会话必须先开，否则 dongle 不响应；被崩溃进程占住会话时
+    /// docs/hardware/brands/mchose.md §1。会话必须先开，否则 dongle 不响应；被崩溃进程占住会话时
     /// 所有人都会静音，需重新插拔释放。
     ///
     /// "无响应"只在状态变化时记日志：发现节拍每 15 秒重探一次，键盘睡着时逐次记录会把 app.log

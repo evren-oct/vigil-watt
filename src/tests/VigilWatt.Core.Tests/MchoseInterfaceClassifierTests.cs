@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 迈从家族接口分流的回归测试（键盘 / 鼠标 / 耳机三条链路不能互相抢）。
 /// 2026/10/19 21:10:00 xliu
-/// 指纹来源见 docs/hardware/mchose.md §1、§1.6，以及 docs/hardware/mchose-v9-pro.md。
+/// 指纹来源见 docs/hardware/brands/mchose.md §1、§1.6，以及 docs/hardware/devices/mchose-v9-pro.md。
 /// </summary>
 public sealed class MchoseInterfaceClassifierTests
 {

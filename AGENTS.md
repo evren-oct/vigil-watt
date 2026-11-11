@@ -5,6 +5,17 @@
 
 VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用）。不做游戏内显示、HTTP API、账号体系。
 
+## 0. 先读什么（新会话按此顺序）
+
+1. **本文件**——红线与约束。
+2. `docs/project/handoff.md` §1 现状 / §4 这一轮要人做的事。
+3. `docs/project/architecture.md`——模块边界、线程模型、数据存储；改代码前必看 §6「约定」。
+4. 碰硬件协议：`docs/hardware/README.md`（分层规则与"放哪"判据）→ `docs/hardware/protocols.md`（VID:PID 对照表）。
+5. 改界面：`docs/dev/ui-style.md`（颜色只表达电量状态）。
+6. 全量入口 `docs/README.md`，症状速查也在那里；面向使用者的说明在 `docs/user/user-guide.md`。
+
+代码分三层：`VigilWatt.Core`（设备发现、BLE/HID、协议插件、历史存储、日志）、`VigilWatt.App`（WinUI 3 界面、托盘、小组件、任务栏贴片）、`tests`。品牌协议一律走 `IBatteryPlugin`——新品牌 = 新插件文件，不改核心。
+
 ## 1. git 与远程红线（最硬，无例外）
 
 ### 1.0 一句话里只认字面授权（2026-10-15 事故后加硬）

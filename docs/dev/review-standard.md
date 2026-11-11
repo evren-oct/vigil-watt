@@ -33,6 +33,12 @@
 |---|---|---|---|
 | **R1** | 任何 `WriteOutput` / `SetFeature` 调用点必须能被一个开关挡住，且新插件默认关闭 | 硬件写入是用户两次事故换来的最高优先级约束（`docs/hardware/safety.md`） | 全仓 grep 写入调用点，逐个确认有闸门 |
 | **R2** | 插件必须继承 `BatteryPluginBase`，禁止直接实现 `IBatteryPlugin` | 基类承载熔断、退避、认领释放；绕过它 = 绕过全部安全机制。历史上唯一一次"无闸门写入"就是绕过基类造成的 | grep `: IBatteryPlugin` |
+| **R3** | 跨线程共享的可变对象：要么快照传递，要么全程加锁 | `ConcurrentDictionary` 只保证字典安全，**不保证它存的字段安全**；且共享实例会让"变化判定"恒为假（见 BACKLOG CR-03） | 搜 `GetOrAdd` / `_devices[...]` 的赋值，看存进去的是副本还是调用方本体 |
+| **R4** | 退出路径必须释放 HID 句柄 / Timer / DB 写队列 / 事件订阅 | 句柄不释放会把 dongle 会话占死，之后必须重新插拔（`docs/hardware/safety.md` §2 事故二） | 找 `Environment.Exit` 的调用点，确认它之前走了 `Dispose` |
+| **R5** | 异常不得静默：`catch` 必须留痕（日志 + 计数）；UI 全局兜底不得无限 `Handled = true` | 静默失败会让应用"看起来在跑、实际什么都没做"，是最难排查的一类 | grep 空 `catch`；看全局兜底有没有计数熔断 |
+| **R6** | 注释配额（类头 ≤5 行 / 方法 ≤2 行 / 字段 ≤1 行）+ `docs/x.md §y` 指针必须真实存在 | 注释与行为不符时，它就从文档退化成误导。详见 `docs/dev/comment-style.md` | 读改动附近的注释，逐条对着代码验 |
+| **R7** | 改帧解析 / 读数过滤 / 历史库 / 离线判定，必须带回归单测 | 这几处全是纯逻辑、有现成测试类，不测没有理由 | 看测试项目里对应类有没有新用例 |
+| **R8** | 新增的纯逻辑必须零 WinRT 依赖，能被测试项目 `<Compile Include>` 链进去 | 这条治本：`DeviceManager`(499 行) 至今测不了是因为碰了 WinRT；但**别把"测不了"一律归因于 WinRT**——`BatteryPluginBase` 实测只依赖纯 P/Invoke 的 `Hid` 层、并不碰 WinRT，它测不了是因为**决策逻辑与真实 HID I/O 耦合**（正确解法是把纯决策抽成自由函数，如 `DeviceChangeDetector` / `DeviceStatusFormatter` / `WatcherProps`） | 新文件能否加进 `src/tests/VigilWatt.Core.Tests/VigilWatt.Core.Tests.csproj` |
 
 > **R2 的例外：混合型插件（2026-10-10 立，2026-10-23 修订）**：一个类里既有走基类的设备、又有必须自建会话的设备时，
 > 允许 `: BatteryPluginBase, IBatteryPlugin` 两种形态并存，但**自建的那部分必须逐条补齐**基类提供的东西，并在类头写明为什么不能复用。
@@ -42,12 +48,6 @@
 > 两条附带约束：① HID++ 分支**不受基类后续加固的保护**，改基类安全机制时要同步检查这个文件（CR-01 就是这么来的）；
 > ② 基类的 `AttachAsync` / `Poll` / `ReconcileRemovals` 是 public 非 virtual，这个类用 `new` 隐藏它们，
 > 靠"类重新声明 `IBatteryPlugin`"做接口重实现才生效——**不要以 `BatteryPluginBase` 静态类型持有并调用**，否则 HID++ 分支被静默跳过（CR-93）。
-| **R3** | 跨线程共享的可变对象：要么快照传递，要么全程加锁 | `ConcurrentDictionary` 只保证字典安全，**不保证它存的字段安全**；且共享实例会让"变化判定"恒为假（见 BACKLOG CR-03） | 搜 `GetOrAdd` / `_devices[...]` 的赋值，看存进去的是副本还是调用方本体 |
-| **R4** | 退出路径必须释放 HID 句柄 / Timer / DB 写队列 / 事件订阅 | 句柄不释放会把 dongle 会话占死，之后必须重新插拔（`docs/hardware/safety.md` §2 事故二） | 找 `Environment.Exit` 的调用点，确认它之前走了 `Dispose` |
-| **R5** | 异常不得静默：`catch` 必须留痕（日志 + 计数）；UI 全局兜底不得无限 `Handled = true` | 静默失败会让应用"看起来在跑、实际什么都没做"，是最难排查的一类 | grep 空 `catch`；看全局兜底有没有计数熔断 |
-| **R6** | 注释配额（类头 ≤5 行 / 方法 ≤2 行 / 字段 ≤1 行）+ `docs/x.md §y` 指针必须真实存在 | 注释与行为不符时，它就从文档退化成误导。详见 `docs/dev/comment-style.md` | 读改动附近的注释，逐条对着代码验 |
-| **R7** | 改帧解析 / 读数过滤 / 历史库 / 离线判定，必须带回归单测 | 这几处全是纯逻辑、有现成测试类，不测没有理由 | 看测试项目里对应类有没有新用例 |
-| **R8** | 新增的纯逻辑必须零 WinRT 依赖，能被测试项目 `<Compile Include>` 链进去 | 这条治本：`DeviceManager`(499 行) 至今测不了是因为碰了 WinRT；但**别把"测不了"一律归因于 WinRT**——`BatteryPluginBase` 实测只依赖纯 P/Invoke 的 `Hid` 层、并不碰 WinRT，它测不了是因为**决策逻辑与真实 HID I/O 耦合**（正确解法是把纯决策抽成自由函数，如 `DeviceChangeDetector` / `DeviceStatusFormatter` / `WatcherProps`） | 新文件能否加进 `src/tests/VigilWatt.Core.Tests/VigilWatt.Core.Tests.csproj` |
 
 R8 是前置约束而非事后补测。**写代码时就把逻辑和 WinRT 调用分开**，比写完再想"怎么测"便宜得多。
 

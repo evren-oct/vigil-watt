@@ -64,7 +64,7 @@
 | 插件 | 写入开关（= 插件开关） | 默认 | 说明 |
 |---|---|---|---|
 | 雷蛇 | `PluginEnabled["Razer"]` | **false** | 鼠标/毒蝰 SE 走 feature 查询、耳机走 PA 或 64 字节 `0x02` 报告；Kraken V4 电量与充电两条命令每轮交替发一条，共用一个开关，见 `razer*.md` |
-| 华硕 | `PluginEnabled["Asus"]` | **false** | Omni 只读配对身份核实与 Scope II 96 的 12/01 查询；耳机 `0x1AFA` 每轮 2 帧（`12 07` 电量 + `12 08` 充电位，2026-10-27 用户批准），见 [asus-rog.md](asus-rog.md) |
+| 华硕 | `PluginEnabled["Asus"]` | **false** | Omni 只读配对身份核实与 Scope II 96 的 12/01 查询；耳机 `0x1AFA` 每轮 2 帧（`12 07` 电量 + `12 08` 充电位，2026-10-27 用户批准），见 [asus-rog.md](brands/asus-rog.md) |
 | 迈从（含 X9 耳机） | `PluginEnabled["Mchose"]` | **false** | dongle 协议未破解，探测写入可能干扰设备，故默认关；开插件即授权写帧。**一个开关管键盘、鼠标、V9 Pro / X9 耳机、K7 鼠标、G3 V2（gmouse）、A5 V2 Ultra（反码 Feature）七类设备**（品牌级，`AGENTS.md` §9） |
 | 北通 | `PluginEnabled["Betop"]` | **true** | 鲲鹏20 的 2.4G 广播通道**纯听零写入**，只有有线静默接口才发 `02 15` 查询； 查询是官方客户端同款只读命令（cmd=0x5），风险低，故默认开 |
 | 罗技 | `PluginEnabled["Logitech"]` | **false** | Centurion 新路径继承 `BatteryPluginBase`，复用公共写入闸门、读数过滤和熔断退避；HID++ 历史路径保留 `HidppIO.WritesAllowed` 与专用会话处理 |
@@ -73,7 +73,7 @@
 | 雷神 | `PluginEnabled["Thunderobot"]` | **false** | 369B:0234 官方 02 设备信息查询；见 `ak870-ml903.md` |
 | 樱桃 | `PluginEnabled["Cherry"]` | **false** | 046A 块通道读 `0x1A` 必须发帧；`SupportsDiscoveryProbe` + `ProbeCooldown` 10s；见 `cherry.md` §1.7 |
 | 派世 | `PluginEnabled["Pulsar"]` | **false** | 3554:F508 的 STATUS/POWER 两帧查询；同上节拍；见 `pulsar.md` §1.6 |
-| 英菲克 | `PluginEnabled["Inphic"]` | **false** | ZHEN（`1D57:FA65`）纯被动读 report `0x03`、零写入（`WritesEnabled => false` + `ProbeWrites => false`）；IN9（`248A:5B2F`）每轮先发刷新帧（序号自增，首条被当重复请求时换号重试一次，单轮最多 2 条）再 GetFeature。两型共用一行开关，按"会写帧"默认关，见 [inphic.md](inphic.md) §2 |
+| 英菲克 | `PluginEnabled["Inphic"]` | **false** | ZHEN（`1D57:FA65`）纯被动读 report `0x03`、零写入（`WritesEnabled => false` + `ProbeWrites => false`）；IN9（`248A:5B2F`）每轮先发刷新帧（序号自增，首条被当重复请求时换号重试一次，单轮最多 2 条）再 GetFeature。两型共用一行开关，按"会写帧"默认关，见 [inphic.md](brands/inphic.md) §2 |
 | HECATE（查询型） | `PluginEnabled["HecateWireless"]` | **false** | 35BB:D3FB 只发 STATUS `08 03` / POWER `08 04` 两条只读查询；走 15 秒发现节拍，见 `hecate.md` §2 |
 | HECATE | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；仅读 `35BB:D00B` 的 report `0x04` |
 | DELUX | 无（纯被动） | **false** | 与英菲克同 VID/PID，只读 `0x000A`；本机未扫到接收器，故默认关 |
@@ -88,8 +88,8 @@
 | HyperX | 无（纯被动） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；dongle 固件只实现 interrupt OUT，写帧一律 `ERROR_INVALID_FUNCTION`，只读 `FF90` 推送帧 |
 | 墨将 | `PluginEnabled["Mojhon"]` | **false** | `E2B7:122C` 厂商页 `0xFFAB` 只发官方助手实录里的只读帧 `A5 04 04`（电量+充电标志）与认领时一次的 `A5 04 E2`（型号标识）；`SupportsDiscoveryProbe` + `ProbeCooldown` 10s，见 `mojhon.md` §7 |
 | 飞智 | `PluginEnabled["Flydigi"]` | **false** | `37D7:2501` 厂商口 `0xFFA0/0x0001` 发官方同款心跳（帧出自官方 `service_log`）；见 `flydigi.md` §2 |
-| 狼途 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读 `1A2C:8FFF` 的 `0xFF02` 状态推送帧，`0xFF` 哨兵必丢，见 [langtu.md](langtu.md) §1 |
-| ilovbee | 无（纯被动） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；只读 `258A:01BB` 的 `0xFF02` 20 字节 `0x13` 推送帧，校验和不过即丢，见 [ilovbee.md](ilovbee.md) §1 |
+| 狼途 | 无（纯被动） | — | `WritesEnabled => false` + `ProbeWrites => false`；只读 `1A2C:8FFF` 的 `0xFF02` 状态推送帧，`0xFF` 哨兵必丢，见 [langtu.md](devices/langtu.md) §1 |
+| ilovbee | 无（纯被动） | **true** | `WritesEnabled => false` + `ProbeWrites => false`；只读 `258A:01BB` 的 `0xFF02` 20 字节 `0x13` 推送帧，校验和不过即丢，见 [ilovbee.md](devices/ilovbee.md) §1 |
 
 三条硬约束：
 

@@ -4,7 +4,7 @@
 
 只重放 USBPcap 实录里官方助手用过的读请求帧 `A5 04 <reg> <cks>`，
 不做命令枚举、不改字节、不写任何配置寄存器。
-帧格式与出处见 docs/hardware/mojhon.md §6。
+帧格式与出处见 docs/hardware/brands/mojhon.md §6。
 
 用法: python probe-mojhon-battery.py [轮数] [间隔秒]
 例:   python probe-mojhon-battery.py 3 1
@@ -18,7 +18,7 @@ VID = 0xE2B7
 VENDOR_PAGE = 0xFFAB
 FRAME_LEN = 64
 
-# 寄存器 → 说明（数值来自 2026-10-26 实测，见 docs/hardware/mojhon.md §6.7 / §6.8）
+# 寄存器 → 说明（数值来自 2026-10-26 实测，见 docs/hardware/brands/mojhon.md §6.7 / §6.8）
 REGS = {
     0x04: "电量寄存器：payload[0]=百分比，payload[1]=充电标志",
     0x0B: "非电量（恒 0x61=97，电量变化时不变，已排除）",

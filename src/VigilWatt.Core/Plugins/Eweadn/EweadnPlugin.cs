@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Plugins.Eweadn;
 /// 功 能： 前行者 (EWEADN) 2.4G 外设插件——X87 键盘发 33 字节查询帧，S9 鼠标走 feature 0x03 邮箱读写。
 /// 2026/10/18 13:40:00 Admin
 /// 2026/10/21 由 EweadnKeyboardPlugin / EweadnMousePlugin 合并为单插件，品牌只占一行开关（AGENTS.md §9）。
-/// 两套帧的实测依据见 docs/hardware/eweadn.md §1.1 / §1.2。
+/// 两套帧的实测依据见 docs/hardware/brands/eweadn.md §1.1 / §1.2。
 /// </summary>
 public sealed class EweadnPlugin : BatteryPluginBase
 {

@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 英菲克 IN9 feature 0x0C 快照帧的解析回归（真机帧字面量，含全 0 与截断边界）。
 /// 2026/10/29 22:35:11 bitbad
-/// 帧来源见 docs/hardware/inphic.md §2.2。
+/// 帧来源见 docs/hardware/brands/inphic.md §2.2。
 /// </summary>
 public class InphicIn9CodecTests
 {

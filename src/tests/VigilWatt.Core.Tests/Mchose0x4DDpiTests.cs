@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 迈从 0x4D 的 DPI 只读解析（`0x0003`）与档位事件（`0x0600` bit0）回归。
 /// 2026/11/08 21:40:00 xliu
-/// 字段表来自官方 `dpiToObj` / `mcMonitor`，见 docs/hardware/mchose-dpi-report-rate-audit.md §2、§3。
+/// 字段表来自官方 `dpiToObj` / `mcMonitor`，见 docs/hardware/reference/mchose-dpi-report-rate-audit.md §2、§3。
 /// 合成帧只钉解析口径，**不代表任何型号的真机验证**。
 /// </summary>
 public sealed class Mchose0x4DDpiTests

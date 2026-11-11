@@ -41,7 +41,7 @@
 
 ## 设备诊断：给未适配的设备采证据
 
-手里有台读不到电量的设备，不用会抓包也能帮它被支持——主窗口第 5 项「设备诊断」采一包原始证据发给维护者就行。
+手里有台读不到电量的设备，不用会抓包也能帮它被支持——主窗口第 4 项「设备诊断」采一包原始证据发给维护者就行。
 
 1. **选任务**：「未知设备调查（找新协议）」列出系统里全部 HID 设备，未适配的排前面；「已支持设备诊断（排查读数）」只列插件正在认领的设备。设备按物理设备聚合，不会把一台接收器的十个接口平铺成十行。
 2. **选接口**：每个接口都标出有没有输入通道，已适配的设备直接推荐插件实际认领的那个；选中即自动预检，右栏只列需要你注意的项。
@@ -75,16 +75,16 @@
 
 | 设备 / 协议 | 当前状态 |
 |---|---|
-| 华硕 ROG Strix Scope II 96 Wireless · Omni 接收器 | 本机 95%、未充电已验证；默认关闭，见 [asus-rog.md](docs/hardware/asus-rog.md) |
-| 雷蛇 BlackShark V2 Pro (2023) · 1532:0555 | 本机 79%、未充电已验证；与鼠标共用雷蛇开关，见 [razer-headset.md](docs/hardware/razer-headset.md) |
+| 华硕 ROG Strix Scope II 96 Wireless · Omni 接收器 | 本机 95%、未充电已验证；默认关闭，见 [asus-rog.md](docs/hardware/brands/asus-rog.md) |
+| 雷蛇 BlackShark V2 Pro (2023) · 1532:0555 | 本机 79%、未充电已验证；与鼠标共用雷蛇开关，见 [razer-headset.md](docs/hardware/devices/razer-headset.md) |
 | 雷蛇 Kraken V4 耳机（接收器 `1532:056C`）· 64 字节 `0x02` 查询 | 已实现，默认关闭；会写帧，与鼠标共用雷蛇开关。贡献者声明，维护者未复测 |
-| 雷蛇 Viper V3 Pro SE · 无线接收器 `1532:00DF` | 本机电量查询已验证；默认关闭，见 [razer-viper-se.md](docs/hardware/razer-viper-se.md) |
+| 雷蛇 Viper V3 Pro SE · 无线接收器 `1532:00DF` | 本机电量查询已验证；默认关闭，见 [razer-viper-se.md](docs/hardware/devices/razer-viper-se.md) |
 | 迈从 G87 · 2.4G `0x13` | 本机验证 |
 | 迈从新代 dongle · QHW（如 `3837:3033`） | 已实现，待对应设备验证 |
 | 迈从 G87 V2 / A7 V2 Pro · 鼠标 V2 被动帧 | 已实现，默认关闭；贡献者真机，本机只复测 G87 V1 不回归 |
 | 迈从 K7 V2 Ultra+ · `0x0900` 查询 + `0x0600` 事件 | 贡献者真机验证；与迈从键盘共用开关 |
 | 迈从 G3 V2 · Gmouse 主动查询（`3837:4245`） | 贡献者真机验证；与迈从键盘共用开关 |
-| 迈从 G75 Pro · `3554:FA09`，与狼蛛 F99 Pro 同指纹，靠会话 ACK 型号分流 | 已实现，默认关闭；会写帧。贡献者真机 36%，维护者未复测，见 [mchose.md](docs/hardware/mchose.md) |
+| 迈从 G75 Pro · `3554:FA09`，与狼蛛 F99 Pro 同指纹，靠会话 ACK 型号分流 | 已实现，默认关闭；会写帧。贡献者真机 36%，维护者未复测，见 [mchose.md](docs/hardware/brands/mchose.md) |
 | 北通 T9 / 鲲鹏20（2.4G 广播 + 有线查询）· 厂商接口被动流 | T9 真机验证；鲲鹏20 两通道贡献者真机，维护者未复测 |
 | 罗技 Bolt（C548 + MX Master 3S）· HID++ | 真机验证通过 |
 | 雷蛇毒蝰 V4 Pro（接收器）· 经典 90 字节 feature 协议 | 本机验证，默认关闭；会写帧 |
@@ -111,11 +111,11 @@
 | 黑爵 AK870 · feature `F7` 状态查询 | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
 | 雷神 ML903 NearLink Se · `0xA0` 设备信息 TLV | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
 | ATK / VXE 无线鼠标 / A98 Pro 键盘 · 17 字节查询帧 / VIA | 已实现，默认关闭；会写帧。鼠标两条型号真机验证，键盘为贡献者声明 |
-| VXE R1 Nearlink · 接收器 `373B:10C9` | 本机无线与有线本体 `10C7` 充电均已验证；共用 ATK 开关，默认关闭，见 [atk.md §9](docs/hardware/atk.md) |
+| VXE R1 Nearlink · 接收器 `373B:10C9` | 本机无线与有线本体 `10C7` 充电均已验证；共用 ATK 开关，默认关闭，见 [atk.md §9](docs/hardware/brands/atk.md) |
 | HyperX Cloud Flight 2 · 2.4G 被动推送帧 | 已实现，默认开启；零写入。CF2 飓风炫彩版真机验证 |
 | 墨将 烈风2 GALE2（2.4G 接收器 / 有线，同为 `E2B7:122C`）· 厂商通道 `A5` 读帧 | 已实现，默认关闭；会写帧。2.4G 与有线两种形态均已真机验证，充放电标志经插拔 A/B 对照 |
 | 飞智 APEX5 · NewXInput 心跳（档位 20%） | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
-| 狼途 LANGTU T98 键盘 · 2.4G 被动状态帧（`1A2C:8FFF`） | 已实现，默认开启；零写入。贡献者真机，维护者未复测，见 [langtu.md](docs/hardware/langtu.md) |
+| 狼途 LANGTU T98 键盘 · 2.4G 被动状态帧（`1A2C:8FFF`） | 已实现，默认开启；零写入。贡献者真机，维护者未复测，见 [langtu.md](docs/hardware/devices/langtu.md) |
 | ATK A9 Ultra Max 2.0 · 接收器 `373B:11FE` | 只登记 PID，协议与既有 ATK 同构、零改动。贡献者提供实测帧，维护者未复测 |
 | 经典蓝牙 · HFP 网关节点属性 | EDIFIER W820NB 已验证 |
 | 本机电池 · `GetSystemPowerStatus` | 已接入，可选开启 |

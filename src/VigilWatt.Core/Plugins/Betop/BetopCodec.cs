@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Betop;
 /// <summary>
 /// 功 能： 北通 (BETOP) 手柄状态报告的纯帧编解码——不碰句柄、不写日志，便于单测。
 /// 2026/10/06 15:53:36 xliu
-/// 帧结构、T9 被动流、占位帧判定与实测依据见 docs/hardware/betop.md §1。
+/// 帧结构、T9 被动流、占位帧判定与实测依据见 docs/hardware/brands/betop.md §1。
 /// </summary>
 internal static class BetopCodec
 {

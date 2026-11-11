@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 雷柏未收录设备的显示名启发式——产品串不带键鼠信息时靠兄弟接口补 Mouse。
 /// 2026/11/01 23:20:00 xliu
-/// 已收录设备走目录里的官方型号，这条路径只兜未收录机型，见 docs/hardware/rapoo.md §4.2。
+/// 已收录设备走目录里的官方型号，这条路径只兜未收录机型，见 docs/hardware/brands/rapoo.md §4.2。
 /// </summary>
 public sealed class RapooDisplayNameTests
 {

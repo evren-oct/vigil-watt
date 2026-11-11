@@ -9,7 +9,7 @@ namespace VigilWatt.Core.Plugins.Rapoo;
 /// <summary>
 /// 功 能： 雷柏 (Rapoo) 插件——纯被动零写入，协议细节全部来自内嵌 JSON，本类只管认领与转交。
 /// 2026/10/06 15:53:36 xliu
-/// 帧布局、充电编码与离线两条腿见 docs/hardware/rapoo.md §1；协议与目录见 docs/hardware/rapoo-catalog.md §2。
+/// 帧布局、充电编码与离线两条腿见 docs/hardware/brands/rapoo.md §1；协议与目录见 docs/hardware/reference/rapoo-catalog.md §2。
 /// </summary>
 public sealed class RapooPlugin : BatteryPluginBase
 {
@@ -25,7 +25,7 @@ public sealed class RapooPlugin : BatteryPluginBase
 
     /// <summary>
     /// 声明 Unknown：雷柏的电量帧挂在键盘集合上，按名字猜会猜错；具体图标由 <see cref="ResolveKind"/> 按协议给。
-    /// 见 docs/hardware/rapoo.md §4.2。
+    /// 见 docs/hardware/brands/rapoo.md §4.2。
     /// </summary>
     public override DeviceKind Kind => DeviceKind.Unknown;
 
@@ -125,7 +125,7 @@ public sealed class RapooPlugin : BatteryPluginBase
 
     /// <summary>
     /// 显示名：目录命中用官方型号（"雷柏 VT3"）；未收录才退回产品串 + 兄弟接口判鼠标。
-    /// 目录来源见 docs/hardware/rapoo-catalog.md §3。
+    /// 目录来源见 docs/hardware/reference/rapoo-catalog.md §3。
     /// </summary>
     protected override string BuildDisplayName(HidDeviceInfo info)
         => _engine.DisplayNameOf(info) ?? RapooDisplayName.For(info.Product, SiblingIsMouse(info), info.VidPid);

@@ -11,7 +11,7 @@ namespace VigilWatt.Core.Plugins.Logitech;
 /// 功 能： 罗技品牌插件：PRO X 2 使用基类 Centurion 流程；其它设备保留既有 HID++ 流程。
 /// 2026/10/06 15:53:36 xliu
 /// 2026/10/23 20:58:09 nyamu
-/// 电量读取级联：Unified Battery 0x1004 → Battery Status 0x1000 → Battery Voltage 0x1001 → ADC Measurement 0x1F20 → HID++ 1.0 寄存器 0x07/0x0D（协议细节见 docs/hardware/logitech.md）。
+/// 电量读取级联：Unified Battery 0x1004 → Battery Status 0x1000 → Battery Voltage 0x1001 → ADC Measurement 0x1F20 → HID++ 1.0 寄存器 0x07/0x0D（协议细节见 docs/hardware/brands/logitech.md）。
 /// </summary>
 public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 {

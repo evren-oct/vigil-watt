@@ -19,7 +19,7 @@ public enum MchoseRateDecision
 /// <summary>
 /// 功 能： 回报率"该不该发布"的唯一判定点（纯函数，可单测）。
 /// 2026/11/09 19:40:00 xliu
-/// 三条都是"不猜"：不一致不猜、查不到表不猜、越界不猜。规则见 docs/hardware/mchose.md §3.4.2。
+/// 三条都是"不猜"：不一致不猜、查不到表不猜、越界不猜。规则见 docs/hardware/brands/mchose.md §3.4.2。
 /// </summary>
 public static class MchoseRatePolicy
 {

@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Compx;
 /// <summary>
 /// 功 能： Compx 20 字节会话 ACK 的型号码解析（0x3554:FA09 这类公版接收器靠它区分品牌/型号）。
 /// 2026/10/20 17:20:00 Bamlax
-/// ACK 帧 `13 05 01 00 0A 03 00 00 00 &lt;modelHi&gt; &lt;modelLo&gt; 01 …`；见 docs/hardware/lingbao.md §1。
+/// ACK 帧 `13 05 01 00 0A 03 00 00 00 &lt;modelHi&gt; &lt;modelLo&gt; 01 …`；见 docs/hardware/brands/lingbao.md §1。
 /// </summary>
 internal static class CompxSessionAck
 {

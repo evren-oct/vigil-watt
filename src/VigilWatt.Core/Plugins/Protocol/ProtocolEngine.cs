@@ -198,7 +198,7 @@ internal sealed class ProtocolEngine
             ? overridden
             : SpecOf(protocol);
 
-    /// <summary>充电去抖：连续两帧都是"充电中"才判充电，满电一律判充满（见 docs/hardware/rapoo.md §5.2）。</summary>
+    /// <summary>充电去抖：连续两帧都是"充电中"才判充电，满电一律判充满（见 docs/hardware/brands/rapoo.md §5.2）。</summary>
     private ChargingState ApplyDebounce(ProtocolSpec spec, DeviceRef dev, FrameReading reading)
     {
         if (!spec.ChargeDebounce || reading.Percent is null) return reading.Charging;

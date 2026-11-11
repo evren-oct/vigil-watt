@@ -75,16 +75,16 @@ The table distinguishes devices verified on hardware from protocols implemented 
 
 | Device / protocol | Status |
 |---|---|
-| ASUS ROG Strix Scope II 96 Wireless / Omni (`0B05:1ACE`) | Contributor-verified at 95%, discharging; off by default. See [protocol notes](docs/hardware/asus-rog.md) |
-| Razer BlackShark V2 Pro (2023) (`1532:0555`) | Contributor-verified at 79%, discharging; shares the Razer switch. See [protocol notes](docs/hardware/razer-headset.md) |
-| Razer Viper V3 Pro SE wireless (`1532:00DF`) | Contributor-verified battery/charging queries; off by default. See [protocol notes](docs/hardware/razer-viper-se.md) |
-| Razer Kraken V4 headset (receiver `1532:056C`) · 64-byte `0x02` query | Implemented, off by default; writes frames, shares the Razer switch. Contributor claim only. See [protocol notes](docs/hardware/razer-kraken.md) |
+| ASUS ROG Strix Scope II 96 Wireless / Omni (`0B05:1ACE`) | Contributor-verified at 95%, discharging; off by default. See [protocol notes](docs/hardware/brands/asus-rog.md) |
+| Razer BlackShark V2 Pro (2023) (`1532:0555`) | Contributor-verified at 79%, discharging; shares the Razer switch. See [protocol notes](docs/hardware/devices/razer-headset.md) |
+| Razer Viper V3 Pro SE wireless (`1532:00DF`) | Contributor-verified battery/charging queries; off by default. See [protocol notes](docs/hardware/devices/razer-viper-se.md) |
+| Razer Kraken V4 headset (receiver `1532:056C`) · 64-byte `0x02` query | Implemented, off by default; writes frames, shares the Razer switch. Contributor claim only. See [protocol notes](docs/hardware/devices/razer-kraken.md) |
 | MCHOSE G87 · 2.4 GHz `0x13` | Verified on the developer's device |
 | New-generation MCHOSE dongles · QHW (e.g. `3837:3033`) | Implemented; awaiting matching hardware validation |
 | MCHOSE G87 V2 / A7 V2 Pro · mouse V2 passive frames | Implemented, off by default; contributor hardware only, only G87 V1 retested here |
 | MCHOSE K7 V2 Ultra+ · `0x0900` query + `0x0600` events | Contributor-verified on real hardware; shares the MCHOSE plugin switch |
 | MCHOSE G3 V2 · Gmouse active query (`3837:4245`) | Contributor-verified on real hardware; shares the MCHOSE plugin switch |
-| MCHOSE G75 Pro (`3554:FA09`) · same fingerprint as AULA F99 Pro, split by session ACK model code | Implemented, off by default; writes frames. Contributor verified 36%, not retested here. See [protocol notes](docs/hardware/mchose.md) |
+| MCHOSE G75 Pro (`3554:FA09`) · same fingerprint as AULA F99 Pro, split by session ACK model code | Implemented, off by default; writes frames. Contributor verified 36%, not retested here. See [protocol notes](docs/hardware/brands/mchose.md) |
 | Betop T9 / Kunpeng 20 (2.4G broadcast + wired query) · passive vendor-interface stream | T9 verified on hardware; Kunpeng 20 contributor-verified only |
 | Logitech Bolt receiver (C548 + MX Master 3S) · HID++ | Verified on hardware |
 | Razer Viper V4 Pro (receiver) · classic 90-byte feature protocol | Verified on the developer's device; off by default, writes reports |
@@ -111,11 +111,11 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | AJAZZ AK870 · feature `F7` status query | Implemented, off by default; writes frames. Contributor hardware only |
 | Thunderobot ML903 NearLink Se · `0xA0` device-info TLV | Implemented, off by default; writes frames. Contributor hardware only |
 | ATK / VXE wireless mouse / A98 Pro keyboard · 17-byte query frame / VIA | Implemented, off by default; writes frames. Verified on F1 Pro Max and F1 V3 ULTIMATE+ |
-| VXE R1 Nearlink · receiver `373B:10C9` | Verified locally over wireless and wired charging (`10C7`); uses the ATK switch, off by default. See [atk.md §9](docs/hardware/atk.md) |
+| VXE R1 Nearlink · receiver `373B:10C9` | Verified locally over wireless and wired charging (`10C7`); uses the ATK switch, off by default. See [atk.md §9](docs/hardware/brands/atk.md) |
 | HyperX Cloud Flight 2 · passive 2.4 GHz push frames | Implemented, on by default; zero writes. Verified on a CF2 |
 | MOJHON GALE2 (2.4G dongle / wired, both `E2B7:122C`) · vendor-channel `A5` read frame | Implemented, off by default; writes frames. Verified on hardware in both dongle and wired modes; charging flag confirmed by an A/B plug test |
 | FLYDIGI APEX5 · NewXInput heartbeat (20% steps) | Implemented, off by default; writes frames. Contributor hardware only |
-| LANGTU T98 keyboard · 2.4G passive status frame (`1A2C:8FFF`) | Implemented, on by default; zero writes. Contributor hardware, not re-tested by maintainer, see [langtu.md](docs/hardware/langtu.md) |
+| LANGTU T98 keyboard · 2.4G passive status frame (`1A2C:8FFF`) | Implemented, on by default; zero writes. Contributor hardware, not re-tested by maintainer, see [langtu.md](docs/hardware/devices/langtu.md) |
 | ATK A9 Ultra Max 2.0 · dongle `373B:11FE` | PID registration only, protocol identical to the existing ATK path. Frames from a contributor, not re-tested by maintainer |
 | Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |
 | System battery · `GetSystemPowerStatus` | Implemented; can be enabled optionally |

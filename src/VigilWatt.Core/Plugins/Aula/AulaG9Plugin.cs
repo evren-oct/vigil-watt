@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Aula;
 /// <summary>
 /// 功 能： 狼蛛 G9 耳机 2.4G 插件，只被动读 AB 47 4D 0x86 状态帧。
 /// 2026/10/19 23:50:00 contributor
-/// 零写入；与 AulaPlugin 共用一个品牌开关（Name 同为 Aula），设置页只出一行。见 docs/hardware/aula.md §3。
+/// 零写入；与 AulaPlugin 共用一个品牌开关（Name 同为 Aula），设置页只出一行。见 docs/hardware/brands/aula.md §3。
 /// </summary>
 public sealed class AulaG9Plugin : BatteryPluginBase
 {

@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Betop;
 /// <summary>
 /// 功 能： 北通鲲鹏20 同型号组的设备身份归一（2.4G dongle 与有线本体共用一个设备位）。
 /// 2026/10/25 17:45:16 lym18
-/// 取舍与缺点（同型号第二只手柄并行、旧曲线断档）见 docs/hardware/betop.md §1.8.2。
+/// 取舍与缺点（同型号第二只手柄并行、旧曲线断档）见 docs/hardware/brands/betop.md §1.8.2。
 /// </summary>
 internal static class BetopDeviceIdentity
 {

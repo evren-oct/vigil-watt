@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Vgn;
 /// <summary>
 /// 功 能： VGN 2.4G 插件：蜻蜓 F1 V5（kc2 配置帧）、F2 大师+（y2 查询）与 V98 Pro 键盘（0x1A 查询）。
 /// 2026/10/19 新增；2026/10/21 并入 F2 大师+；2026/10/25 并入 V98 Pro。
-/// 三套帧、接口判据与真机边界见 docs/hardware/vgn.md；会写帧，故默认关闭。
+/// 三套帧、接口判据与真机边界见 docs/hardware/brands/vgn.md；会写帧，故默认关闭。
 /// </summary>
 public sealed class VgnPlugin : BatteryPluginBase
 {

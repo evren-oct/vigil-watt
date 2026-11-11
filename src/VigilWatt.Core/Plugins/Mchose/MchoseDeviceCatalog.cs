@@ -10,7 +10,7 @@ namespace VigilWatt.Core.Plugins.Mchose;
 /// <summary>
 /// 功 能： 嵌入的迈从设备目录（本体 VID/PID → 型号 + 协议族，传输通道 PID → 角色），查不到回落接口形态。
 /// 2026/11/01 20:45:00 xliu
-/// 数据来自官方 M HUB WEB 的 cardList / Vb 表，见 docs/hardware/mchose-catalog.md §1；共用 dongle 不收录（靠形态判定）。
+/// 数据来自官方 M HUB WEB 的 cardList / Vb 表，见 docs/hardware/reference/mchose-catalog.md §1；共用 dongle 不收录（靠形态判定）。
 /// </summary>
 internal static class MchoseDeviceCatalog
 {

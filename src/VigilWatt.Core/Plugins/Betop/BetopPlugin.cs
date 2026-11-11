@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Plugins.Betop;
 /// <summary>
 /// 功 能： 北通 (BETOP) 手柄 2.4G 接收器插件。
 /// 2026/10/06 15:53:36 xliu
-/// 帧结构、电量编码、T9 被动流与"未连接占位帧"判定见 <see cref="BetopCodec"/> 及 docs/hardware/betop.md §1。
+/// 帧结构、电量编码、T9 被动流与"未连接占位帧"判定见 <see cref="BetopCodec"/> 及 docs/hardware/brands/betop.md §1。
 /// </summary>
 public sealed class BetopPlugin : BatteryPluginBase
 {

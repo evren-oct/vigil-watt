@@ -2,7 +2,7 @@
  "version": "2026-11-01",
  "brand": "雷柏",
  "source": "RAPOO HUB 网页驱动 AHUB 2.0 内嵌 manifest（hid.rapoo.cn/AHUB_WEB/dist/assets/js/index-BNoOd8Jm.js）",
- "capsRule": "caps 只写本机真机验证过的能力；官方 manifest 声明但未验证的不写，见 docs/hardware/rapoo-catalog.md §6",
+ "capsRule": "caps 只写本机真机验证过的能力；官方 manifest 声明但未验证的不写，见 docs/hardware/reference/rapoo-catalog.md §6",
  "devices": [
   {
    "brand": "rapoo",

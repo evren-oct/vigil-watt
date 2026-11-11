@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 寸渊影弑 (DARKRIM) 帧解析回归——用真机抓到的原始帧当用例。
 /// 2026/10/19 19:45:00 zc165
-/// 帧来源见 docs/hardware/darkrim.md §1.2。
+/// 帧来源见 docs/hardware/brands/darkrim.md §1.2。
 /// </summary>
 public class DarkrimCodecTests
 {

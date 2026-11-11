@@ -14,7 +14,7 @@ internal enum MouseV2PushKind
 /// <summary>
 /// 功 能： 迈从鼠标 V2 世代（接收器 0x3837）的纯帧编解码，不碰句柄、不写日志。
 /// 2026/10/19 10:45:30 wuzih
-/// 帧与型号密码表逆向自官方 M HUB WEB，见 docs/hardware/mchose.md §1.6。
+/// 帧与型号密码表逆向自官方 M HUB WEB，见 docs/hardware/brands/mchose.md §1.6。
 /// </summary>
 internal static class MchoseMouseCodec
 {

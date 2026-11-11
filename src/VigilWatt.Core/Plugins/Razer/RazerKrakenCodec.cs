@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Razer;
 /// <summary>
 /// 功 能： 雷蛇 Kraken V4 接收器（1532:056C）电量/充电查询帧的构造与应答解析。
 /// 2026/10/19 22:26:12 kaniu
-/// 帧格式、命令号与真机样本见 docs/hardware/razer-kraken.md。
+/// 帧格式、命令号与真机样本见 docs/hardware/devices/razer-kraken.md。
 /// </summary>
 public static class RazerKrakenCodec
 {
@@ -22,7 +22,7 @@ public static class RazerKrakenCodec
 
     public const string Protocol = "razer-kraken-v4-report2";
 
-    // 以下是官方协议常量，不是可调参数：换一个值设备就不应答（docs/hardware/razer-kraken.md）。
+    // 以下是官方协议常量，不是可调参数：换一个值设备就不应答（docs/hardware/devices/razer-kraken.md）。
     private const byte TransactionId = 0x60;
     private const byte RequestDirection = 0x00;
     private const byte ResponseDirection = 0x01;

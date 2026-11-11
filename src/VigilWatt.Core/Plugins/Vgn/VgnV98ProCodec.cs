@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Vgn;
 /// <summary>
 /// 功 能： VGN V98 Pro 键盘 0x1A 电量回包的构造与解析（纯函数，零 I/O）。
 /// 2026/10/19 23:50:00 contributor
-/// 帧布局与"JS 命令表不等于实际协议"的教训见 docs/hardware/vgn.md §3。
+/// 帧布局与"JS 命令表不等于实际协议"的教训见 docs/hardware/brands/vgn.md §3。
 /// </summary>
 internal static class VgnV98ProCodec
 {

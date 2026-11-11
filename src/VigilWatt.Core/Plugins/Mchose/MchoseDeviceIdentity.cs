@@ -19,7 +19,7 @@ public enum MchoseIdentityStatus
 /// <summary>
 /// 功 能： 一台迈从设备的身份快照——USB 枚举身份与协议自报身份分开存，互不覆盖。
 /// 2026/11/08 19:50:00 xliu
-/// 0x0900 的 [0..3] 是配对**本体**的 VID/PID（不是 dongle），见 docs/hardware/mchose.md §3.3。
+/// 0x0900 的 [0..3] 是配对**本体**的 VID/PID（不是 dongle），见 docs/hardware/brands/mchose.md §3.3。
 /// </summary>
 public readonly record struct MchoseDeviceIdentity(
     ushort UsbVendorId,

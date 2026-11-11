@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： AtkFf05Codec —— ATK 新固件 FF05 通道 64 字节寄存器读（report 0x08 / 寄存器 0x0107）。
 /// 2026/11/01 17:05 xliu
-/// 帧样本来自社区 373B:1216 实测（2026-10-31），本机无该设备；判据见 docs/hardware/atk.md 的 FF05 一节。
+/// 帧样本来自社区 373B:1216 实测（2026-10-31），本机无该设备；判据见 docs/hardware/brands/atk.md 的 FF05 一节。
 /// </summary>
 public class AtkFf05CodecTests
 {

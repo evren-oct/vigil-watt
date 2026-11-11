@@ -5,7 +5,7 @@ using VigilWatt.Core.Models;
 /// <summary>
 /// 功 能： ATK 新固件 FF05 通道的 64 字节寄存器读（373B:1216），与 FF02 的 17 字节 op 帧无共用字段。
 /// 2026/11/01 17:05 xliu
-/// 帧样本来自社区实测（2026-10-31），本机无该设备、未复测；帧格式与判据见 docs/hardware/atk.md 的 FF05 一节。
+/// 帧样本来自社区实测（2026-10-31），本机无该设备、未复测；帧格式与判据见 docs/hardware/brands/atk.md 的 FF05 一节。
 /// </summary>
 internal static class AtkFf05Codec
 {

@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： BetopCodec —— 北通 (BETOP) 手柄状态帧编解码与电量通道 usage page 判定。
 /// 2026/10/06 15:53:36 xliu
-/// 帧结构见 docs/hardware/betop.md §1。
+/// 帧结构见 docs/hardware/brands/betop.md §1。
 /// </summary>
 public class BetopCodecTests
 {
@@ -114,7 +114,7 @@ public class BetopCodecTests
 
     /// <summary>
     /// 手柄**没连上**时 dongle 推的占位帧：byte23 = 0x50 = 80。该值不是电量。
-    /// 真机对照见 docs/hardware/betop.md §1.4.1。
+    /// 真机对照见 docs/hardware/brands/betop.md §1.4.1。
     /// </summary>
     private static readonly byte[] T9StreamNotLinked =
         Hex("04 02 80 80 80 80 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 50");
@@ -297,7 +297,7 @@ public class BetopCodecTests
     }
 
     // ---------------------------------------------------------------- 电量接口判据（两代 VID × 两个页）
-    // 20DD 新批次 dongle 的判据见 docs/hardware/betop.md §1.8；旧判据把标准 VR 页 0x0003 也算广播页。
+    // 20DD 新批次 dongle 的判据见 docs/hardware/brands/betop.md §1.8；旧判据把标准 VR 页 0x0003 也算广播页。
 
     [Theory]
     [InlineData(0x20BC, 0xFF00, 0x0003, true)]    // 旧接收器（T9 / 鲲鹏20 老批次）

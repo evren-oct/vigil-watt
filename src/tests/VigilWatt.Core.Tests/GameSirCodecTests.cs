@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： GameSirCodec 的帧解析回归——字段偏移以官方 Connect 1.16.5 的解析代码为准。
 /// 2026/10/19 19:55:00 zc165
-/// 依据见 docs/hardware/gamesir.md §1.2。
+/// 依据见 docs/hardware/brands/gamesir.md §1.2。
 /// </summary>
 public class GameSirCodecTests
 {

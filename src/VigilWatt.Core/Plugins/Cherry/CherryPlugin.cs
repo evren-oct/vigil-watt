@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Cherry;
 /// <summary>
 /// 功 能： CHERRY PIXIU75 无线键盘（2.4G dongle 046A:01E4）插件 —— 读厂商块 0x1A 取电量，0x1D 仅补充设备信息。
 /// 2026/10/18 17:24:10 sheng
-/// 帧格式见 <see cref="CherryCodec"/>；电量 48% 与官方软件 UI 交叉验证过，见 docs/hardware/cherry.md §1。
+/// 帧格式见 <see cref="CherryCodec"/>；电量 48% 与官方软件 UI 交叉验证过，见 docs/hardware/brands/cherry.md §1。
 /// </summary>
 public sealed class CherryPlugin : BatteryPluginBase
 {

@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Logitech;
 /// <summary>
 /// 功 能： HID++ 通知的入队与派发——读报文的一方只入队，派发一律在 I/O 锁外进行。
 /// 2026/11/01 18:14:36 20211
-/// 派发期间重入只入队不递归，理由与栈溢出事故见 docs/hardware/logitech.md §3、issue #55。
+/// 派发期间重入只入队不递归，理由与栈溢出事故见 docs/hardware/brands/logitech.md §3、issue #55。
 /// </summary>
 internal sealed class HidppNotificationQueue
 {

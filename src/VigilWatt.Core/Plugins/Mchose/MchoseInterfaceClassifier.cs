@@ -35,7 +35,7 @@ public enum MchoseInterfaceKind
 /// 功 能： 按接口指纹判定一个 HID 接口属于迈从家族的哪条链路。
 /// 2026/10/19 21:10:00 xliu
 /// 纯函数、零 I/O：插件分流与单测共用同一份判据，避免"判据写在两处、改一处忘一处"。
-/// 帧与判据来源见 docs/hardware/mchose.md §1、§1.6，以及 docs/hardware/mchose-v9-pro.md。
+/// 帧与判据来源见 docs/hardware/brands/mchose.md §1、§1.6，以及 docs/hardware/devices/mchose-v9-pro.md。
 /// </summary>
 public static class MchoseInterfaceClassifier
 {

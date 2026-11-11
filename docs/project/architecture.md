@@ -167,6 +167,8 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
   （Bolt / Unifying / LightSpeed / Nano）、且槽位落在容量内**，满足即 `Inferred(Wireless24G)`。
   **容量优先取接收器自报值**（`0xB5/0x03` 参数区 `[6]`，`ProbeSlotCount` 每开一次句柄读一次），读不到才退回目录 `maxSlots`——
   目录是静态表、可能过时，自报值是这颗固件的事实（Solaar / OpenLogi 同判据）。两者都没有（未收录 PID）就只能 Unknown。
+   **C548 真机（2026-11-11）**：`0xB5/0x03` 三次读取均无回包（同会话 Root.Ping 0.61s 正常），`ReportedSlotCount` 保持 null、
+   `SlotCapacity` 取目录 6 槽；这是已验证的兜底路径，不是"尚未验证"。
   放开的依据是协议同源而非"放宽标准"：OpenLogi 的接收器注册表把 Nano / LightSpeed 一律记为 `ReceiverProtocol::Unifying`，
   槽位枚举与寻址是同一套 HID++ 1.0 寄存器流程，只有 C548 走 Bolt 变体。
   排除的两类是**没有证据**而非"没验证"：`Legacy27Mhz` 不在 2.4GHz 频段、`ConnectionKind` 也没有对应值；`Unknown` 族
@@ -175,6 +177,7 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
   Slot Ping 只证明该槽位路径有 HID++ Root 响应，不证明设备在线或链路已直接确认，故来源固定 `Inferred`，**永不写 `DeviceReported`**。
   罗技指针遥测走 HID++ `0x2201`（DPI）/ `0x8060`（回报率）只读查询，2 分钟一次，来源记 `DeviceReported`；
   feature 不支持或读不到就留空（`Unknown`），**不按型号补默认 DPI / 回报率**（细节见 `hardware/logitech.md` §4）。
+   设备列表离线徽标统一走 `DeviceConnectionInfo.Badge`（`最后 X` / `离线`）并置灰，历史链路不再显示成当前连接。
   **接收器"在位"不能推断链路**（设备可能只是插线充电）；但**正在读接收器的配置通道**时可以推断为 2.4G
   ——有线数据不经过 dongle，这类推断记 `Inferred`，等设备自己上报再升级成 `DeviceReported`。
 - UI 侧 XAML 事件处理器开头判空（dev/runtime-pitfalls.md §4）；新增 XAML 属性先确认控件真有（dev/build.md §1）。

@@ -111,4 +111,25 @@ public class DeviceConnectionInfoTests
         Assert.Null(DeviceConnectionInfo.ReceiverIconKey(new ReceiverIdentity(null, "bolt", null, "wireless")));
         Assert.Null(DeviceConnectionInfo.ReceiverIconKey(null));
     }
+
+    [Fact]
+    public void D11_离线徽标不把最后链路当成当前连接()
+    {
+        Assert.Equal("2.4G", DeviceConnectionInfo.Badge(Value(ConnectionKind.Wireless24G), DeviceSource.Hid24G, isOnline: true));
+        Assert.Equal("最后 2.4G", DeviceConnectionInfo.Badge(Value(ConnectionKind.Wireless24G), DeviceSource.Hid24G, isOnline: false));
+
+        // 没有链路证据时只报离线，不暗示曾经测到过
+        Assert.Equal("离线", DeviceConnectionInfo.Badge(default, DeviceSource.Hid24G, isOnline: false));
+        Assert.Equal("离线", DeviceConnectionInfo.Badge(Value(ConnectionKind.Unknown), DeviceSource.Hid24G, isOnline: false));
+    }
+
+    [Fact]
+    public void D12_体系身份与链路徽标互不替代()
+    {
+        var receiver = new ReceiverIdentity(null, "bolt", "Bolt", "bolt");
+
+        Assert.Equal("2.4G", DeviceConnectionInfo.Badge(Value(ConnectionKind.Wireless24G), DeviceSource.Hid24G, isOnline: true));
+        Assert.Equal("Bolt", DeviceConnectionInfo.ReceiverLabel(receiver));
+        Assert.Equal("bolt", DeviceConnectionInfo.ReceiverIconKey(receiver));
+    }
 }

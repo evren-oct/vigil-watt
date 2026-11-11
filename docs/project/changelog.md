@@ -5,6 +5,8 @@
 
 ## 2026-11-11
 
+- **C548 真机验证**：`0xB5/0x03`、`0x51`、`0x61` 均无回包，确认设备不提供该寄存器读；容量走目录 6 槽，连接仍 `Inferred(Wireless24G)`，DPI=1000、回报率 Unknown。证据与原始响应见 `hardware/logitech.md` §1.1。
+- **设备列表离线徽标**：离线改用 `DeviceConnectionInfo.Badge`（最后 X / 离线）并统一灰色，不再把历史链路显示成当前连接；新增 2 条展示测试。
 - **修 BACKLOG 表格渲染断裂**：`CR-124` 起有四条记录前面各夹了一个空行，空行会终止 Markdown 表格，导致后 4 段没有表头、在页面上渲染成普通段落；「重构候选」表则是表头加到 4 列、**分隔行还留在 3 列**，列数以分隔行为准，最后一列被吞掉（两处均由用户发现）。删掉 4 处空行、补上分隔行后，主表恢复为一个连续块。同一轮给 `check-doc-links.py` 加表格完整性检查（被空行截断的残段、分隔行列数、数据行列数），扫出 `review-standard.md` 的 R 清单被一段 R2 例外引用块截断，已把那 8 行引用块搬到表格之后。检查跳过围栏代码块、并认 `\|` 转义，否则 `|| a.includes()` 与单元格内的管道会误报。
 - **文档目录整理**：`docs/hardware/` 43 份平铺拆成 `brands/`(23) / `devices/`(13) / `reference/`(3)，规则层 4 份留在本层。判据是「文件名 = 品牌名 → `brands/`」而不是「型号数 ≥ 2」，这样品牌出第二个型号时只加章节、不搬文件。新增 `hardware/README.md` 承载放哪判据，`protocols.md` 品牌表补 4 份漏项（ilovbee / inzone-h9 / langtu / mojhon），`docs/README.md` 硬件段从 20 行清单改成指向三个子目录——原清单只列了 20/43 份，手写索引已经漂移。全库 706 处路径引用（含 141 处 C# 注释、152 处 hardware 内部相对链接、13 处脚本）用脚本机械改写，新增 `scripts/check-doc-links.py` 兜住「Markdown 坏链不报错」。
 - **补两份文档**：`docs/dev/ui-style.md` 把视觉规则从 `UiPalette.cs` 类头和口头约定里捞出来（颜色只表达电量状态、四档状态色与阈值、图标形状承载身份、字号与卡片）；`docs/user/user-guide.md` 是逐页逐开关的使用说明，此前 README 只覆盖了功能概览。`AGENTS.md` 加 §0「先读什么」，`docs/reviews/BACKLOG.md` 加优先级列（P0/P1/P2，按影响面不按工作量，首轮评估待维护者确认）。

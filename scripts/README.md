@@ -25,6 +25,7 @@
 | `probe-atk-battery.py` | **ATK / VXE（`373B`）电量通道体检**：按 PID 分组列出各接口的 usage page 与 IN/OUT/FEATURE 长度，再对 `0xFF02` 电量口只发 `docs/hardware/brands/atk.md` §2 记载的那一条查询帧 `08 04 00×14 49`（`--caps` 一帧不发，`--listen` 纯被动收帧）。用于新增机型适配：确认 PID / 产品串 / 接口形状 / 应答结构是否与老机型一致。实测 A9 Air 大师版+ 的 GEM 接收器 `0x1278` 与本体 `0x1293` 均为 17/17 且应答一致，见 atk.md §2.2 |
 | `probe-bolt-battery.py` | **罗技 Bolt 电量探针**（`pip install hidapi`）：在 `046D:C548` 的 `0xFF00/0x02` 长接口上发 HID++ 请求，优先 `0x1004` Unified Battery、回退 `0x1000` Battery Status，打印百分比与充电状态。用来核对插件读数是否与官方 HUB 一致 |
 | `probe-bolt-ping.py` | **罗技 Bolt 连通性探针**：同一接口发 `Root.Ping`，只看有没有回应——用来区分"设备没连、被别的进程占了会话、还是协议读错" |
+| `probe-bolt-receiver-info.py` | **罗技 Bolt 接收器信息 / 配对只读探针**：在 `046D:C548` 的 `0xFF00/0x02` 长接口上先发 `Root.Ping`，再发 `0xB5/0x03`（容量）、`0x5N`（Bolt 配对）与 `0x6N`（名称）读请求，打印原始回包。用于确认接收器是否实现 HID++ 1.0 `RECEIVER_INFO`——本机 C548 实测三次均无回包，容量走目录兜底（`docs/hardware/brands/logitech.md` §1.1） |
 | `test-rose-dongle-interactive.py` | ROSE dongle（38FF:0001）交互式被动监听 5 分钟，零写入——耳机按键操作会经 dongle 出现在这里，可当"耳机已连接"探针 |
 | `test-rose-dongle-passive.py` | ROSE dongle MI_03（consumer）被动监听 60 秒，零写入 |
 | `test-rose-dongle-endpoint.py` | ROSE dongle 接口 3 **绕过 HID 栈直读物理端点**（pyusb/libusb），只读不写。前提是 MI_03 已用 Zadig 换成 WinUSB——HID 驱动下 libusb 打不开设备，且 HID 栈只按描述符的 3 字节取包，端点上的长帧会被它丢掉。`--info` 打印配置/接口/端点，默认监听 0x82 300 秒 |

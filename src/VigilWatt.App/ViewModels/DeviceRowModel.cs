@@ -167,8 +167,10 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         PercentText = DeviceStatusFormatter.PercentText(percent, "----");
         Progress = percent ?? 0;
         // 颜色先就位：体系图标与文本同一拍更新，晚一拍会闪一下透明或旧色
-        SetSourceColor(UiPalette.ConnectionTag(d.Connection, d.Source));
-        SourceText = DeviceConnectionInfo.Label(d.Connection, d.Source);
+        // 离线徽标必须变灰并标"最后"，不能把历史链路显示成当前连接（M4-3B-2C-4）
+        bool online = d.IsOnline;
+        SetSourceColor(online ? UiPalette.ConnectionTag(d.Connection, d.Source) : UiPalette.Offline);
+        SourceText = DeviceConnectionInfo.Badge(d.Connection, d.Source, online);
         ReceiverText = DeviceConnectionInfo.ReceiverLabel(d.Receiver) ?? "";
         ReceiverIconKey = DeviceConnectionInfo.ReceiverIconKey(d.Receiver);
         HasReceiver = ReceiverText.Length > 0;

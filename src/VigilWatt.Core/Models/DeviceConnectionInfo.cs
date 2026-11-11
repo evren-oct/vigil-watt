@@ -55,6 +55,11 @@ public static class DeviceConnectionInfo
     public static string Label(TelemetryValue<ConnectionKind> connection, DeviceSource source)
         => IsKnown(connection) ? Label(connection.Value.GetValueOrDefault()) : Fallback(source);
 
+    /// <summary>列表徽标：在线按链路；离线只标"最后 X"或"离线"，不把历史链路写成当前连接。</summary>
+    public static string Badge(TelemetryValue<ConnectionKind> connection, DeviceSource source, bool isOnline)
+        => isOnline ? Label(connection, source)
+            : IsKnown(connection) ? $"最后 {Label(connection.Value.GetValueOrDefault())}" : "离线";
+
     /// <summary>
     /// 带在线状态的完整描述。离线且无值时不写"最后已知"——没有证据就不该暗示曾经测到过。
     /// </summary>

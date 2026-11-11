@@ -68,12 +68,17 @@ public readonly record struct ReportedIdentity(ushort VendorId, ushort ProductId
 /// <summary>
 /// 功 能： 已知的接收器/传输通道身份（目录登记的 dongle 角色）；它说明"这条接口是什么通道"，不证明当前链路。
 /// 2026/11/09 21:10:00 20211
+/// DisplayName 是目录里的展示名（Bolt / 2.4G 接收器），展示层只读它、不映射品牌。
+/// IconKey 同理：目录给语义 key（wireless / lightning / multi），App 只负责把 key 画成图形。
 /// 本体接口没有接收器身份，返回 null——不要把本体 PID 塞进来冒充接收器。
 /// </summary>
-public readonly record struct ReceiverIdentity(string? Role, string? Family)
+public readonly record struct ReceiverIdentity(
+    string? Role, string? Family, string? DisplayName = null, string? IconKey = null)
 {
-    /// <summary>两项都空 = 没有信息，合并时按"未提供"处理，不能拿它清掉已有身份。</summary>
-    public bool IsEmpty => string.IsNullOrWhiteSpace(Role) && string.IsNullOrWhiteSpace(Family);
+    /// <summary>四项都空 = 没有信息，合并时按"未提供"处理，不能拿它清掉已有身份。</summary>
+    public bool IsEmpty
+        => string.IsNullOrWhiteSpace(Role) && string.IsNullOrWhiteSpace(Family)
+           && string.IsNullOrWhiteSpace(DisplayName) && string.IsNullOrWhiteSpace(IconKey);
 
     /// <summary>
     /// 空结构不覆盖旧值；Role / Family 任一改变都整体替换——没有目录能证明两者的对应关系，
@@ -87,7 +92,11 @@ public readonly record struct ReceiverIdentity(string? Role, string? Family)
         // 只有"另一项没变"时才敢沿用旧值，否则新旧拼在一起可能是错的组合
         var role = next.Role ?? (Same(next.Family, prev.Family) ? prev.Role : null);
         var family = next.Family ?? (Same(next.Role, prev.Role) ? prev.Family : null);
-        return next with { Role = role, Family = family };
+        // 展示名与图标都是 Role/Family 的派生标签：身份没变才沿用，否则会把旧族的名字/图形挂到新族上
+        var sameIdentity = Same(family, prev.Family) && Same(role, prev.Role);
+        var display = next.DisplayName ?? (sameIdentity ? prev.DisplayName : null);
+        var icon = next.IconKey ?? (sameIdentity ? prev.IconKey : null);
+        return next with { Role = role, Family = family, DisplayName = display, IconKey = icon };
     }
 
     /// <summary>比较两个可选字段是否"没变"：两侧都空也算没变（空到空不携带信息）。</summary>

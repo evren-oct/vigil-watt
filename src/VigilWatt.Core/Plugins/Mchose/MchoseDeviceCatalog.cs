@@ -19,7 +19,8 @@ internal static class MchoseDeviceCatalog
 
     /// <summary>传输通道条目：说明这颗 PID 是哪种 dongle 以及它承载的协议，**不携带型号**（同 PID 多型号共用）。</summary>
     public readonly record struct TransportEntry(
-        string Role, string Protocol, string Note, CapabilitySet Capabilities);
+        string Role, string Protocol, string Note, CapabilitySet Capabilities,
+        string? DisplayName = null, string? IconKey = null);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -139,7 +140,9 @@ internal static class MchoseDeviceCatalog
             if (!TryParseHex(t.Vid, out var vid) || !TryParseHex(t.Pid, out var pid)) continue;
             if (string.IsNullOrWhiteSpace(t.Role)) continue;
             map[(vid, pid)] = new TransportEntry(t.Role.Trim(), t.Protocol?.Trim() ?? "", t.Note?.Trim() ?? "",
-                ReadCapabilities(t.Capabilities, vid, pid));
+                ReadCapabilities(t.Capabilities, vid, pid),
+                string.IsNullOrWhiteSpace(t.RoleDisplay) ? null : t.RoleDisplay!.Trim(),
+                string.IsNullOrWhiteSpace(t.RoleIcon) ? null : t.RoleIcon!.Trim());
         }
         return map;
     }
@@ -207,6 +210,8 @@ internal static class MchoseDeviceCatalog
         [JsonPropertyName("vid")] public string? Vid { get; set; }
         [JsonPropertyName("pid")] public string? Pid { get; set; }
         [JsonPropertyName("role")] public string? Role { get; set; }
+        [JsonPropertyName("roleDisplay")] public string? RoleDisplay { get; set; }
+        [JsonPropertyName("roleIcon")] public string? RoleIcon { get; set; }
         [JsonPropertyName("protocol")] public string? Protocol { get; set; }
         [JsonPropertyName("note")] public string? Note { get; set; }
         [JsonPropertyName("capabilities")] public Dictionary<string, string>? Capabilities { get; set; }

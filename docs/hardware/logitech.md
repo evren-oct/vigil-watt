@@ -9,6 +9,8 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 
 嵌入资源 [`logitech-hidpp.json`](../../src/VigilWatt.Core/Plugins/Logitech/logitech-hidpp.json) 提供接收器槽位/报文偏好与毫伏曲线；**目录是补充不是白名单**——未知 PID 仍打开 HID++ 接口（默认最多 6 槽、有长则跳短）。
 
+**槽位容量以接收器自报为准（2026-11-11）**：`0xB5` 子寄存器 `0x03` 返回接收器信息，**参数区 `[6]` = 配对槽位容量**（相对 feature 缓冲即 `resp[8]`，序列号在 `resp[3..6]`）。`LogitechPlugin.ProbeSlotCount` 每开一次句柄读一次，成功就覆盖目录 `maxSlots`，失败/越界才退回目录值——目录是静态表，自报值是这颗固件的事实。只接受 `1..6`，且校验 `resp[2]` 是子寄存器回显，偏移对不上时宁可读不到。判据同 Solaar `extract_max_devices`（读不到时退回 `product_info["max_devices"]`）与 OpenLogi `get_receiver_info`。**只对目录登记过的接收器 PID 探**：设备本体 PID 不在接收器表里，对 `0xFF` 读 `0xB5` 只会白等一个超时。**局限**：`PreferShort` 的接收器（Unifying / Nano）走短报文句柄，凑不出 9 字节响应，这两族实际仍以目录值为准——不是缺陷，目录对它们的登记本来就对；日志里会留一条 Debug 说明退回了。
+
 | 新设备类型 | 怎么扩展 |
 |---|---|
 | 新的 HID++ 鼠标 / 键盘 / 演示器（已有特征） | **零代码**——ping + GetFeature 自动发现 |
@@ -28,9 +30,9 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 - **实时充电**：插拔电时设备会发 HID++ 自发通知（`sw` 低 4 位=0，payload 与 GetStatus 同布局）。插件后台 `PumpNotifications` 只读不写，经 `StatusPushed` 即时 Upsert——不必等 60 秒轮询（与 Logi Battery Dashboard 同源）。未知 `devIdx` 的通知会当场补 ping 发现。
 - 每次 `Attach` 按目录槽位数补扫尚未发现的索引（接收器上第二台不必等重启）。
 
-**接收器身份（M4-3B-2B1）**：`AddDevice` 只在非 Direct 路径、且 `HidppCatalog.Family()` 为 Bolt 时填 `ReceiverIdentity(Role: null, Family: "bolt")`。当前目录只有 `C548` 为 Bolt，因此首版仅开放 C548；`C52B/C532`、LIGHTSPEED、Nano、Legacy27Mhz 与未收录 PID 全部保持 `null`。`ReceiverIdentity` 描述接收器/传输通道，不是鼠标本体；本次不填 `Connection`，Slot Ping 成功也不写成 `DeviceReported`。`DirectDevice`、认领、去重、`SlotId` 与配对读取逻辑未改。
+**接收器身份（M4-3B-2B1，2026-11-11 全量开放）**：`AddDevice` 在非 Direct 路径、且 `HidppCatalog.FindReceiver` 的记录带 `familyDisplay` 时填 `ReceiverIdentity(Role: null, Family: 枚举派生, DisplayName: 目录 familyDisplay, IconKey: 目录 familyIcon)`。目录登记的族（Bolt / Unifying / LIGHTSPEED / Nano / Legacy27Mhz）**一律填身份**，未收录 PID 与 Direct 路径保持 `null`。身份只是"这颗 PID 属于哪一族"的目录事实，**不蕴含链路结论**——`Connection` 由 `LogitechConnectionPolicy` 另一个策略单独门控（见下段），两者都只读目录、互不引用。`DisplayName` 来自 `logitech-hidpp.json` 的 `familyDisplay`（C548 = `Bolt`），图标来自 `familyIcon`（语义 key：`bolt` / `unifying` / `nano` / `lightning` / `multi` / `wireless`），插件代码不再写协议名字面量；设备列表用它们在链路徽标旁显示体系标签（`DeviceConnectionInfo.ReceiverLabel` / `ReceiverIconKey`）。族→图标当前一对一：Bolt `bolt`、Unifying `unifying`、Nano `nano`（小插头）、LIGHTSPEED `lightning`、Legacy27Mhz `wireless`；`bolt` / `unifying` 直接复用 OpenLogi（MIT / Apache-2.0）的官方 path，2026-11-11 用户授权，其余为自绘几何。`ReceiverIdentity` 描述接收器/传输通道，不是鼠标本体；`DirectDevice`、认领、去重、`SlotId` 与配对读取逻辑未改。
 
-**接收器槽位连接推断（M4-3B-2B2，M4-3B-2B2-R 收紧边界）**：`AddDevice` 只在**非 Direct、接收器 PID 经 `HidppCatalog.FindReceiver` 确认为 Bolt（当前目录仅 C548）、且槽位在该目录记录的 `1..MaxSlots` 内**时填 `Inferred(Wireless24G)`——MaxSlots 必须来自目录记录本身，未知 PID 的默认 6 槽不算证据。Direct `0xFF`、空槽、越界槽位、Unifying（C52B/C532）、LIGHTSPEED、Nano、Legacy27Mhz、Unknown 族、未收录 PID 与 PID 缺失一律保持 `Unknown`。Slot Ping 只证明该槽位路径有 HID++ Root 响应，不证明设备在线、电量可读或真实链路已直接确认，推断结果来源固定为 `Inferred`，不升级为 `DeviceReported`；接收器身份仍按 M4-3B-2B1 的 C548/Bolt 门控。其它协议族的开放条件见 `docs/reviews/BACKLOG.md` CR-156。
+**接收器槽位连接推断（M4-3B-2B2；2026-11-11 由"仅 Bolt"放开到全 2.4G 族）**：`AddDevice` 在**非 Direct、接收器 PID 经 `HidppCatalog.FindReceiver` 查到的记录属于 2.4G 族（Bolt / Unifying / LightSpeed / Nano）、且槽位落在容量内**时填 `Inferred(Wireless24G)`。**容量 = 接收器自报值优先、目录 `maxSlots` 兜底**（见上段 `0xB5/0x03`）：C518 目录只登记 1 槽，但若它自报 6，槽 2 也算有证据。未知 PID 既没有目录记录也没有自报值，不借默认 6 槽当证据，只能 Unknown。Direct `0xFF`、空槽、越界槽位、未收录 PID 与 PID 缺失一律保持 `Unknown`。**27MHz 与 Unknown 族不推断**：前者不在 2.4GHz 频段、`ConnectionKind` 无对应值；后者目录没定性。该门**不读 `0xB5` 配对寄存器**（`0x2N`/`0x5N`），与 CR-153 的配对布局无关——判据只有"目录族 + 槽位容量"两项，`0xB5/0x03` 读的是容量不是配对信息。**放开的依据**是这几族的协议同源：OpenLogi 的接收器注册表（`crates/openlogi-device-registry/src/receiver.rs`）把 Nano 与 LightSpeed 一律记为 `ReceiverProtocol::Unifying`，只有 C548 记为 `Bolt`，即槽位枚举与寻址是同一套 HID++ 1.0 寄存器流程，族名只影响展示。Slot Ping 只证明该槽位路径有 HID++ Root 响应，不证明设备在线、电量可读或真实链路已直接确认，来源固定 `Inferred`，不升级为 `DeviceReported`。**尚未真机验证的部分**：`0xB5/0x03` 的容量读取只有 Solaar / OpenLogi 两个参考实现支撑，本机（C548 + MX Master 3S）还没抓过一次真实应答；Unifying / LightSpeed / Nano 三族的槽位枚举也未实测，见 CR-156。
 
 **HID++ 报文层（字节级；实现见 `Plugins/Logitech/HidppIO.cs` / `HidppCodec.cs`）：**
 

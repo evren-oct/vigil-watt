@@ -151,9 +151,28 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
   `DeviceSource.Hid24G` 只是接入栈（哪个插件认领的），**不能推断成 2.4G**——只有 BLE / 经典蓝牙 /
   本机三类来源本身就是传输事实。展示统一走 `Models/DeviceConnectionInfo`（标签 / 离线最后已知 / 取色档），
   UI 不再各自拼文案。接收器体系（Unifying / Bolt / LIGHTSPEED）不是链路，属于 `ReceiverIdentity`。
-  罗技首版只在非 Direct、目录 Family 为 Bolt（当前仅 C548）时填 `ReceiverIdentity(null, "bolt")`；C52B/C532 等其它接收器保持 null，`Connection` 仍 Unknown，Slot Ping 不升级成 DeviceReported。
-  罗技接收器槽位（非 Direct、Ping 成功、目录确认为 Bolt 即当前仅 C548、槽位在目录记录的 `1..MaxSlots` 内）填 `Inferred(Wireless24G)`；
-  Direct `0xFF`、空槽、越界槽位、Unifying/LIGHTSPEED/Nano/Legacy27Mhz、未收录 PID 与 PID 缺失一律保持 Unknown，不写 `DeviceReported`。
+  体系标签是**第二个展示维度**：`DeviceConnectionInfo.ReceiverLabel` 只回目录登记的 `DisplayName`（Bolt / Unifying /
+  2.4G 接收器），返回 null 就不显示。**展示层不认识任何品牌**——新体系只在目录 JSON 加 `familyDisplay` / `roleDisplay`，
+  不改代码（`AGENTS.md` §10）。图标同理由目录声明：`ReceiverIconKey` 只回语义 key（`bolt` / `unifying` / `nano` /
+  `lightning` / `multi` / `wireless`），`App/Services/ReceiverIconFactory` 按 key 画内置几何，未知 key 回退 `wireless`。
+  `bolt` 与 `unifying` **直接复用 OpenLogi（MIT / Apache-2.0）`action-icons/` 下的官方 path 原文**，不做几何简化；
+  2026-11-11 用户明确授权推翻原先"不复刻厂商商标"的决定，理由是通用几何无法与 Nano / 27MHz 区分。WinUI 没有 WPF 的
+  `Geometry.Parse`，path 由工厂内一个只支持 M/L/H/V/C/Z 的私有解析器转成 `PathGeometry`（含 MIT 归属说明）。
+  范围仅限设备列表的小尺寸体系标签，不用于应用图标、安装包与宣传物料；`nano` / `lightning` / `multi` / `wireless` 仍是自绘几何。
+  设备列表在链路徽标右侧显示这枚次级标签，贴片与小组件暂不显示（空间按文案算）。
+  罗技**目录登记过的接收器族全量填身份**（Bolt / Unifying / LIGHTSPEED / Nano / Legacy27Mhz，条件是目录写了 `familyDisplay`）；
+  未收录 PID 与 Direct 路径保持 null。身份是"这颗 PID 属于哪一族"的目录事实，**不等于链路**——`LogitechReceiverIdentityPolicy`
+  与 `LogitechConnectionPolicy` 是两个独立策略，各自读目录记录，一个填体系标签、一个填 `Connection`。
+  链路门（`LogitechConnectionPolicy`，2026-11-11 由"仅 Bolt"放开到全 2.4G 族）的判据只有两项：**目录族属于 2.4G 体系
+  （Bolt / Unifying / LightSpeed / Nano）、且槽位落在容量内**，满足即 `Inferred(Wireless24G)`。
+  **容量优先取接收器自报值**（`0xB5/0x03` 参数区 `[6]`，`ProbeSlotCount` 每开一次句柄读一次），读不到才退回目录 `maxSlots`——
+  目录是静态表、可能过时，自报值是这颗固件的事实（Solaar / OpenLogi 同判据）。两者都没有（未收录 PID）就只能 Unknown。
+  放开的依据是协议同源而非"放宽标准"：OpenLogi 的接收器注册表把 Nano / LightSpeed 一律记为 `ReceiverProtocol::Unifying`，
+  槽位枚举与寻址是同一套 HID++ 1.0 寄存器流程，只有 C548 走 Bolt 变体。
+  排除的两类是**没有证据**而非"没验证"：`Legacy27Mhz` 不在 2.4GHz 频段、`ConnectionKind` 也没有对应值；`Unknown` 族
+  目录本身没定性。Direct `0xFF`、空槽、越界槽位、未收录 PID 与 PID 缺失同样保持 Unknown。
+  该策略**不读 `0xB5` 配对寄存器**——那是设备类型 / WPID 的事，与链路无关（CR-153 与本门无关，不要再混为一谈）。
+  Slot Ping 只证明该槽位路径有 HID++ Root 响应，不证明设备在线或链路已直接确认，故来源固定 `Inferred`，**永不写 `DeviceReported`**。
   罗技指针遥测走 HID++ `0x2201`（DPI）/ `0x8060`（回报率）只读查询，2 分钟一次，来源记 `DeviceReported`；
   feature 不支持或读不到就留空（`Unknown`），**不按型号补默认 DPI / 回报率**（细节见 `hardware/logitech.md` §4）。
   **接收器"在位"不能推断链路**（设备可能只是插线充电）；但**正在读接收器的配置通道**时可以推断为 2.4G

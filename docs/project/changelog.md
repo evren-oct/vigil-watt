@@ -5,7 +5,12 @@
 
 ## 2026-11-11
 
+- **槽位容量改读接收器自报值**：`0xB5/0x03`（RECEIVER_INFO）参数区 `[6]` 是配对槽位容量，`ProbeSlotCount` 每开一次句柄读一次，成功就覆盖目录 `maxSlots`、失败或越界（只收 `1..6`）才退回目录。起因是目录把 Nano / LightSpeed 多半登记成 1 槽，若真实接收器有更多槽位，靠目录就永远扫不到；目录是静态表、自报值是固件事实，判据同 Solaar `extract_max_devices` 与 OpenLogi `get_receiver_info`。只对目录登记过的接收器 PID 探（设备本体 PID 对 `0xFF` 读 `0xB5` 只会白等超时）。解析额外校验 `resp[2]` 是子寄存器回显，偏移不符时宁可读不到。测试 +6（解析 1 条、门控 C17~C19）。**局限**：`PreferShort` 的 Unifying / Nano 走短报文句柄、凑不出 9 字节响应，这两族实际仍以目录值为准；要改得换到长同伴接口上发，代价大于收益。
+- **连接推断放开到全 2.4G 族**：`LogitechConnectionPolicy` 不再只认 Bolt——Unifying / LightSpeed / Nano 与 Bolt 走同一套判据（非 Direct + 目录族属 2.4G 体系 + 槽位在该族目录 `MaxSlots` 内），满足即 `Inferred(Wireless24G)`。理由是这几族的证据完全同源：判据只有"目录族 + 槽位范围"两项，族本身不参与证据强度；原先"要真机确认配对布局才能开"把 `0xB5` 配对寄存器（设备类型 / WPID）误当成了链路前提，而这段代码从来没读过它。27MHz 与 Unknown 族仍排除——前者不在 2.4GHz 频段、`ConnectionKind` 无对应值，后者目录没定性。门控测试扩到 16 条（新增"越界不借别族容量"、"各族都不升级为 `DeviceReported`"）。仍缺 Unifying / LightSpeed / Nano 的真机槽位枚举，见 CR-156。
+- **接收器身份全量开放**：`LogitechReceiverIdentityPolicy` 不再只放行 Bolt——目录里带 `familyDisplay` 的接收器族（Unifying / LIGHTSPEED / Nano / Legacy27Mhz）都填体系名与图标，未收录 PID 与 Direct 路径仍为 null。身份是"这颗 PID 属于哪一族"的目录事实、不是链路结论，`LogitechConnectionPolicy` 是另一个独立策略、各自读目录（其门控同一天一并放开，见上条）。原判定「只有 C548 才配显示体系」把身份与链路混成了一件事。
 - **罗技连接推断边界收紧（M4-3B-2B2-R）**：`LogitechConnectionPolicy` 改收 `HidppCatalog.FindReceiver` 的目录记录，只有 Bolt（当前仅 C548）+ 目录记录内有效槽位才 `Inferred(Wireless24G)`；Unifying / LIGHTSPEED / Nano / Legacy27Mhz / 未知族 / 未收录 PID / PID 缺失一律 Unknown，未知 PID 不再借默认 6 槽当证据。Direct 路径不推断 Wired。门控测试重写为 14 条（含不覆盖 `DeviceReported` 回归）。
+- **设备列表显示接收器体系**：`ReceiverIdentity` 增加 `DisplayName` / `IconKey`（均来自目录 `familyDisplay` / `familyIcon`），设备列表在链路徽标右侧显示「Bolt」这类体系标签与对应图标，ToolTip 补「2.4G（Bolt）」。展示层只读目录给的展示名与语义 key、不做品牌映射——新体系只改 JSON；罗技插件代码里的 `"bolt"` 字面量随之收进目录。图标只用通用几何（信号弧 / 闪电 / 多设备），当时未做厂商标志，见下条。迈从通道暂无体系名（与「2.4G」重复），故不显示。
+- **接收器图标改用官方 path**：`bolt` / `unifying` 不再手绘近似，直接复用 OpenLogi（MIT / Apache-2.0）`action-icons/` 的 path 原文，工厂内加一个只支持 M/L/H/V/C/Z 的私有解析器（WinUI 没有 WPF 的 `Geometry.Parse`）。2026-11-11 用户明确授权推翻「不复刻厂商商标」的旧决定（`architecture.md` 连接章节已改写），范围限于设备列表的小尺寸体系标签。实测官方 Unifying 的星形镂空在 11px 会塌成「方块 + 白十字」，图标边长 11→14 才立得住。`nano` / `lightning` / `multi` / `wireless` 仍为自绘几何。
 
 ## 2026-11-10
 

@@ -8,6 +8,11 @@
 > （会被当成型号），另记在 `transports[]`——只描述"这颗 PID 是哪种通道、承载哪个协议"，不带型号。
 > 2026-11-08 起 `transports[]` 还承载能力声明：只有 `3837:1018` 写了 `batteryRead / connectionRead /
 > chargingRead = supported`，其余通道一律不写（= `Unverified`）。认领仍走 `Probe` 的「先试 0x4D 再试 V2」。
+> 2026-11-11 起 `transports[]` 支持可选 `roleDisplay`（体系展示名）与 `roleIcon`（图标语义 key：`bolt` / `unifying` /
+> `nano` / `lightning` / `multi` / `wireless`，全集见 `architecture.md` 连接章节），由 `MchosePlugin` 带进
+> `ReceiverIdentity.DisplayName` / `IconKey`，设备列表据此显示体系标签与图标。
+> **当前一条都没填**：迈从只有 `dongle-wireless` / `dongle-cz` 两种通道，写出来都是"2.4G 接收器"，与链路徽标「2.4G」重复、
+> 没有信息量；将来出现第二种无线体系（如 4K / 蓝牙 dongle 需要区分）再填，届时**只改 JSON**。
 > 回报率的 `rateTables`（1k / 8k 两张表）与 `rateProfiles`（本体 PID → {USB PID → 表名}）也在这份 JSON 里，
 > 结构照抄官方 `rateMap` / `mouseDiffConfig`，见 [mchose.md](mchose.md) §3.4.2。
 

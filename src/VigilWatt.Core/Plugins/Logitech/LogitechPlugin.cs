@@ -130,8 +130,13 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         public bool DirectDevice;                       // true = 设备本体直连，false = 接收器
         public bool InitialScanDone;                    // 首次全槽扫描已完成
         public int NotReadyScans;                       // 连续"整轮一个都没应答"的次数（接收器刚插上时会这样）
+        public int? ReportedSlotCount;                  // 接收器自报的配对槽位容量（0xB5/0x03）；null = 没读到
+        public bool SlotCountProbed;                    // 每开一次句柄只探一次，避免每轮都白等超时
         public readonly Dictionary<byte, DevEntry> Devices = new();
         public readonly Dictionary<byte, DateTimeOffset> EmptySlotUntil = new();
+
+        /// <summary>槽位扫描与链路推断共用的容量：自报值优先，读不到退回目录常量（CR-156）。</summary>
+        public int SlotCapacity => ReportedSlotCount ?? HidppCatalog.MaxSlots(Info.ProductId);
 
         /// <summary>通知里出现但还没认过的槽位。**只能登记、不能就地发现**——发现要发请求，
         /// 而通知回调就在等包循环里，就地发会把调用栈递归打穿（issue #55）。由监听线程下一拍处理。</summary>
@@ -196,6 +201,9 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
                 {
                     session.Io = new HidppIO(info.Open());
                     session.Io.WritesAllowed = () => WritesEnabled;
+                    // 新句柄 = 新会话：自报槽位可能来自另一个固件/接口，重新探一次
+                    session.SlotCountProbed = false;
+                    session.ReportedSlotCount = null;
                     Log.Info($"罗技 HID++ 接口打开: {info} report=0x{session.Io.ReportId:X2}");
                 }
                 catch (UnauthorizedAccessException ex)
@@ -301,6 +309,39 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         return gone;
     }
 
+    /// <summary>
+    /// 读接收器自报的配对槽位容量（HID++ 1.0 长寄存器 0xB5 子寄存器 0x03，参数区 [6]）。
+    /// 目录 `maxSlots` 是静态表、可能过时；自报值是这颗固件的事实，所以优先采用（Solaar / OpenLogi 同判据）。
+    /// 读不到就留 null，由目录兜底——不能因为读失败就少扫槽位。
+    /// 只对**目录登记过的接收器 PID** 探：设备本体 PID 不在接收器表里，对 0xFF 读 0xB5 只会白等一个超时。
+    /// 局限：短报文句柄（`PreferShort` 的 Unifying / Nano，`_longMessage == false`）凑不出 9 字节响应，
+    /// 这两族实际仍以目录值为准；要改得换到长同伴接口上发，代价大于收益（目录对这两族的登记本来就是对的）。
+    /// </summary>
+    private static void ProbeSlotCount(ReceiverSession session)
+    {
+        if (session.SlotCountProbed) return;
+        session.SlotCountProbed = true;
+
+        if (session.DirectDevice || session.Io is not { } io) return;
+        if (HidppCatalog.FindReceiver(session.Info.ProductId) == null) return;
+
+        Span<byte> args = stackalloc byte[1] { HidppCodec.ReceiverInfoSubRegister };
+        var resp = io.Request(0xFF, 0x83B5, args, patchSw: false,
+            timeout: TimeSpan.FromMilliseconds(800));
+
+        if (resp != null && HidppCodec.TryParseReceiverSlotCount(resp, out var slots))
+        {
+            session.ReportedSlotCount = slots;
+            Log.Info($"罗技接收器自报配对槽位={slots}（目录={HidppCatalog.MaxSlots(session.Info.ProductId)}）" +
+                     $" pid=0x{session.Info.ProductId:X4}");
+            return;
+        }
+
+        // 失败是正常分支（部分接收器不实现 0xB5/0x03，Solaar 也把 C534 单列）：只留 Debug，别刷 Info。
+        Log.Debug($"罗技接收器配对槽位读取失败，退回目录值 pid=0x{session.Info.ProductId:X4} " +
+                  $"resp={(resp == null ? "null" : Convert.ToHexString(resp))}");
+    }
+
     private void DiscoverDevices(ReceiverSession session)
     {
         var io = session.Io!;
@@ -316,7 +357,9 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
         if (!session.DirectDevice)
         {
-            int maxSlots = HidppCatalog.MaxSlots(session.Info.ProductId);
+            // 先问容量再扫槽：目录把某些族登记成 1~2 槽，若真实接收器有更多槽位，靠目录就永远扫不到
+            ProbeSlotCount(session);
+            int maxSlots = session.SlotCapacity;
             for (byte idx = 1; idx <= maxSlots; idx++)
             {
                 if (session.Devices.ContainsKey(idx)) continue;
@@ -391,7 +434,9 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         if (session.Io == null || session.DirectDevice) return;
         if (idx is 0 or 0xFF) return;
         if (session.Devices.ContainsKey(idx)) return;
-        int maxSlots = HidppCatalog.MaxSlots(session.Info.ProductId);
+        // 通知路径可能早于首轮扫描：容量还没探过就在这里补一次，否则 AddDevice 会拿不到自报值
+        ProbeSlotCount(session);
+        int maxSlots = session.SlotCapacity;
         if (idx > maxSlots) return;
         if (DeviceBlocklist.IsBlocked(SlotId(session, idx))) return;
         // 空槽冷却对**所有**调用方都生效：曾经在这里先 Remove 再 Ping，等于通知路径完全绕过冷却，
@@ -450,6 +495,8 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         if (kind == DeviceKind.Unknown) kind = pairedKind;
         if (kind == DeviceKind.Unknown) kind = DeviceKindGuesser.Guess(name);
 
+        // 身份与连接共用同一份目录记录：两次查同一 PID 没有意义，也可能在目录重载时出现两套证据
+        var receiver = HidppCatalog.FindReceiver(session.Info.ProductId);
         var status = new DeviceStatus
         {
             Id = SlotId(session, idx),
@@ -460,9 +507,9 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             // 认领到的是接收器接口（直连时才是本体）；两种都只表达"被认领接口"的身份
             Usb = new UsbIdentity(session.Info.VendorId, session.Info.ProductId,
                 string.IsNullOrEmpty(session.Info.SerialNumber) ? null : session.Info.SerialNumber),
-            Receiver = LogitechReceiverIdentityPolicy.For(session.DirectDevice, session.Info.ProductId),
+            Receiver = LogitechReceiverIdentityPolicy.For(session.DirectDevice, receiver),
             Connection = LogitechConnectionPolicy.For(
-                session.DirectDevice, HidppCatalog.FindReceiver(session.Info.ProductId), idx, DateTimeOffset.Now),
+                session.DirectDevice, receiver, idx, DateTimeOffset.Now, session.ReportedSlotCount),
         };
         var entry = new DevEntry
         {

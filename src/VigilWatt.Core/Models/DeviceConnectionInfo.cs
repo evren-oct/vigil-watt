@@ -30,6 +30,27 @@ public static class DeviceConnectionInfo
         _ => "未知",
     };
 
+    /// <summary>
+    /// 体系标签（Bolt / Unifying / 2.4G 接收器）：只回目录登记的展示名，null = 不显示。
+    /// 这里**不认识任何品牌**——新体系只改目录 JSON，不改代码。
+    /// </summary>
+    public static string? ReceiverLabel(ReceiverIdentity? receiver)
+        => receiver is { DisplayName: { } name } && !string.IsNullOrWhiteSpace(name) ? name.Trim() : null;
+
+    /// <summary>目录漏填图标时的兜底：图标不能因为少写一个字段就整块消失。</summary>
+    public const string DefaultReceiverIconKey = "wireless";
+
+    /// <summary>
+    /// 体系图标 key（bolt / unifying / nano / lightning / multi / wireless）：只回目录声明的语义标识，App 按 key 画图。
+    /// 没有展示名就没有标签，也就没有图标——两者同生同灭，不出现"有图标没文字"的孤立图形。
+    /// </summary>
+    public static string? ReceiverIconKey(ReceiverIdentity? receiver)
+        => ReceiverLabel(receiver) is null
+            ? null
+            : receiver is { IconKey: { } key } && !string.IsNullOrWhiteSpace(key)
+                ? key.Trim().ToLowerInvariant()
+                : DefaultReceiverIconKey;
+
     /// <summary>徽标短标签：有值按链路；无值只允许蓝牙/本机按来源兜底，其余（含 Hid24G）都是"未知"。</summary>
     public static string Label(TelemetryValue<ConnectionKind> connection, DeviceSource source)
         => IsKnown(connection) ? Label(connection.Value.GetValueOrDefault()) : Fallback(source);

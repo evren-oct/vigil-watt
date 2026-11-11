@@ -430,9 +430,13 @@ public sealed partial class DevicesPage : Page
         var critical = Application.Current.Resources["SystemFillColorCriticalBrush"] as Brush;
         // 连接信息统一走 DeviceConnectionInfo：离线设备只说"最后已知"或"未知"，不再拿来源冒充链路
         var body = new StackPanel { Spacing = 6, MinWidth = 380 };
+        // 体系名是链路之外的第二个维度（Bolt 走 2.4G），有目录记录才补，不猜品牌
+        var receiver = DeviceConnectionInfo.ReceiverLabel(device.Receiver);
         body.Children.Add(new TextBlock
         {
-            Text = $"连接：{DeviceConnectionInfo.Describe(device.Connection, device.Source, device.IsOnline)} · 最后更新 {device.LastUpdated:MM-dd HH:mm}",
+            Text = $"连接：{DeviceConnectionInfo.Describe(device.Connection, device.Source, device.IsOnline)}"
+                   + (receiver is null ? "" : $"（{receiver}）")
+                   + $" · 最后更新 {device.LastUpdated:MM-dd HH:mm}",
             FontSize = 12,
             Foreground = secondary,
         });

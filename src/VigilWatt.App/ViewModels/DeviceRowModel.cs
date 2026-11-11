@@ -31,6 +31,8 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     private string _name = "";
     private string _percentText = "--%";
     private string _sourceText = "";
+    private string _receiverText = "";
+    private string? _receiverIconKey;
     private string _subText = "";
     private string _dpiLabel = "";
     private string _dpiValue = "";
@@ -43,16 +45,19 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     private DeviceKind _iconKind;
     private Color _iconColor;
     private Color _sourceColor = Unset;
+    private Color _receiverIconColor = Unset;
     private Color _progressColor = Unset;
     // null 是合法值（正常态用主题前景色），所以初始必须给 Unset——否则首帧被判"没变化"，
     // 刷子会停在构造函数里那个灰色，百分比一直是灰的（2026-11-07 回归，见 runtime-pitfalls §25）
     private Color? _percentColor = Unset;
     private double _progress;
     private bool _hasPointer;
+    private bool _hasReceiver;
     private bool _isCharging;
     private bool _isOnline = true;
     private Brush _sourceBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _sourceBackgroundBrush = UiPalette.Brush(UiPalette.Offline);
+    private Brush _receiverBackgroundBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _progressBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _percentBrush = UiPalette.Brush(UiPalette.Offline);
 
@@ -82,6 +87,17 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     public double Progress { get => _progress; private set => Set(ref _progress, value); }
 
     public string SourceText { get => _sourceText; private set => Set(ref _sourceText, value); }
+
+    /// <summary>体系标签（Bolt / Unifying）：目录没登记展示名就是空串，行里不占位。</summary>
+    public string ReceiverText { get => _receiverText; private set => Set(ref _receiverText, value); }
+
+    /// <summary>体系图标 key：目录声明（wireless / lightning / multi），空值时不画图标。</summary>
+    public string? ReceiverIconKey { get => _receiverIconKey; private set => Set(ref _receiverIconKey, value); }
+
+    /// <summary>体系图标描边色：跟链路同色，不另起一套配色。</summary>
+    public Color ReceiverIconColor { get => _receiverIconColor; private set => Set(ref _receiverIconColor, value); }
+
+    public bool HasReceiver { get => _hasReceiver; private set => Set(ref _hasReceiver, value); }
 
     public string SubText { get => _subText; private set => Set(ref _subText, value); }
 
@@ -118,6 +134,9 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     /// <summary>连接徽标胶囊底色（同色压淡）。</summary>
     public Brush SourceBackgroundBrush { get => _sourceBackgroundBrush; private set => Set(ref _sourceBackgroundBrush, value); }
 
+    /// <summary>体系标签底色：与链路同色相、更淡一档——它是链路的从属信息，不另起色相。</summary>
+    public Brush ReceiverBackgroundBrush { get => _receiverBackgroundBrush; private set => Set(ref _receiverBackgroundBrush, value); }
+
     /// <summary>电量条着色：充电蓝 / 低电红 / 中等橙 / 正常绿 / 离线灰。</summary>
     public Brush ProgressBrush { get => _progressBrush; private set => Set(ref _progressBrush, value); }
 
@@ -147,12 +166,16 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         // 无读数用 "----"：与 "100%" 同宽，右对齐时不会和相邻行差半个字
         PercentText = DeviceStatusFormatter.PercentText(percent, "----");
         Progress = percent ?? 0;
+        // 颜色先就位：体系图标与文本同一拍更新，晚一拍会闪一下透明或旧色
+        SetSourceColor(UiPalette.ConnectionTag(d.Connection, d.Source));
         SourceText = DeviceConnectionInfo.Label(d.Connection, d.Source);
+        ReceiverText = DeviceConnectionInfo.ReceiverLabel(d.Receiver) ?? "";
+        ReceiverIconKey = DeviceConnectionInfo.ReceiverIconKey(d.Receiver);
+        HasReceiver = ReceiverText.Length > 0;
         SubText = $"{d.Protocol}{state}{(remainingTime.IsAvailable ? $" · 约{RemainingTimeEstimator.Format(remainingTime.Remaining!.Value)}剩余" : $" · {remainingTime.Explain()}")} · 更新于 {d.LastUpdated:HH:mm:ss}";
         IsCharging = charging;
         IsOnline = d.IsOnline;
 
-        SetSourceColor(UiPalette.ConnectionTag(d.Connection, d.Source));
         SetProgressColor(d.IsOnline ? UiPalette.BatteryLevel(percent, charging) : UiPalette.Offline);
         // null = 用主题前景色（正常态），非空才换 UiPalette 的固定色
         SetPercentColor(!d.IsOnline ? UiPalette.Offline
@@ -208,6 +231,9 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         _sourceColor = color;
         SourceBrush = UiPalette.Brush(color);
         SourceBackgroundBrush = UiPalette.Brush(UiPalette.Tint(color));
+        // 体系标签压在链路之下：同色相、约一半浓度，并排时不会抢徽标的注意力
+        ReceiverBackgroundBrush = UiPalette.Brush(UiPalette.Tint(color, 0x1A));
+        ReceiverIconColor = color;
     }
 
     private void SetProgressColor(Color color)

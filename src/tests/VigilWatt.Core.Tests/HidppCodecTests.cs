@@ -202,6 +202,34 @@ public class HidppCodecTests
         Assert.Equal(DeviceKind.Mouse, kind);
     }
 
+    /// <summary>0xB5/0x03 接收器信息：params[6] = 配对槽位容量 → resp[8]；1..6 之外视为"没读到"。</summary>
+    [Fact]
+    public void K4_接收器自报槽位容量()
+    {
+        // [0x83, 0xB5, sub, serial(4), ?, slots, ...]
+        byte[] six = { 0x83, 0xB5, 0x03, 0x12, 0x34, 0x56, 0x78, 0x00, 0x06, 0x00 };
+        Assert.True(HidppCodec.TryParseReceiverSlotCount(six, out var slots));
+        Assert.Equal(6, slots);
+
+        byte[] one = { 0x83, 0xB5, 0x03, 0, 0, 0, 0, 0, 0x01, 0 };
+        Assert.True(HidppCodec.TryParseReceiverSlotCount(one, out slots));
+        Assert.Equal(1, slots);
+
+        // 越界：0 与 7 都不是合法容量（Unifying / Bolt 上限 6），交给目录兜底
+        Assert.False(HidppCodec.TryParseReceiverSlotCount(
+            new byte[] { 0x83, 0xB5, 0x03, 0, 0, 0, 0, 0, 0x00, 0 }, out _));
+        Assert.False(HidppCodec.TryParseReceiverSlotCount(
+            new byte[] { 0x83, 0xB5, 0x03, 0, 0, 0, 0, 0, 0x07, 0 }, out _));
+
+        // 子寄存器回显不是 0x03：偏移与固件不符时宁可读不到，也不读出一位错位的容量
+        Assert.False(HidppCodec.TryParseReceiverSlotCount(
+            new byte[] { 0x83, 0xB5, 0x05, 0, 0, 0, 0, 0, 0x06, 0 }, out _));
+
+        // 短缓冲
+        Assert.False(HidppCodec.TryParseReceiverSlotCount(
+            new byte[] { 0x83, 0xB5, 0x03, 0, 0, 0, 0, 0 }, out _));
+    }
+
     /// <summary>0x0005 func 2 的营销类型枚举（键盘 0 / 小键盘 2 / 鼠标 3 / 触控板 4 / 轨迹球 5 / 耳机 8 / 手柄 12 / 音箱 14）。</summary>
     [Fact]
     public void K3_设备营销类型映射()

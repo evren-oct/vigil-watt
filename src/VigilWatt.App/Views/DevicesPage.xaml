@@ -43,7 +43,7 @@
                                                           Kind="{x:Bind IconKind, Mode=OneWay}"
                                                           IconColor="{x:Bind IconColor, Mode=OneWay}" />
                             <StackPanel Grid.Column="1" Spacing="6">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                                     <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontSize="15" FontWeight="SemiBold"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                     <Border Grid.Column="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
@@ -51,7 +51,22 @@
                                         <TextBlock Text="{x:Bind SourceText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold"
                                                    Foreground="{x:Bind SourceBrush, Mode=OneWay}" />
                                     </Border>
-                                    <TextBlock Grid.Column="2" Text="⚡" FontSize="13" VerticalAlignment="Center"
+                                    <!-- 体系标签（Bolt / Unifying）：链路徽标之后、⚡ 之前；目录没登记就整块不占位 -->
+                                    <Border Grid.Column="2" CornerRadius="4" Padding="5,1" VerticalAlignment="Center"
+                                            Background="{x:Bind ReceiverBackgroundBrush, Mode=OneWay}"
+                                            Visibility="{x:Bind HasReceiver, Mode=OneWay}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <!-- 图形由目录给的 key 决定（wireless / lightning / multi），这里不认品牌 -->
+                                            <controls:ReceiverIconPresenter
+                                                IconKey="{x:Bind ReceiverIconKey, Mode=OneWay}"
+                                                IconColor="{x:Bind ReceiverIconColor, Mode=OneWay}"
+                                                VerticalAlignment="Center" />
+                                            <TextBlock Text="{x:Bind ReceiverText, Mode=OneWay}" FontSize="10"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{x:Bind SourceBrush, Mode=OneWay}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Grid.Column="3" Text="⚡" FontSize="13" VerticalAlignment="Center"
                                                Foreground="{x:Bind ProgressBrush, Mode=OneWay}"
                                                Visibility="{x:Bind IsCharging, Mode=OneWay}" />
                                 </Grid>

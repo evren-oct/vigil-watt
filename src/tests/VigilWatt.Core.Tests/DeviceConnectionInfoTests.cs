@@ -87,4 +87,28 @@ public class DeviceConnectionInfoTests
         Assert.Equal(ConnectionTone.Unknown, DeviceConnectionInfo.Tone(reportedUnknown, DeviceSource.Hid24G));
         Assert.Equal("离线 · 未知", DeviceConnectionInfo.Describe(reportedUnknown, DeviceSource.Hid24G, isOnline: false));
     }
+
+    [Fact]
+    public void D9_体系标签只读目录展示名()
+    {
+        // 展示层不认识任何品牌：名字由目录给，给了就显示，没给就不显示
+        Assert.Equal("Bolt", DeviceConnectionInfo.ReceiverLabel(new ReceiverIdentity(null, "bolt", "Bolt")));
+        Assert.Null(DeviceConnectionInfo.ReceiverLabel(new ReceiverIdentity(null, "bolt")));
+        Assert.Null(DeviceConnectionInfo.ReceiverLabel(new ReceiverIdentity(null, "bolt", "   ")));
+        Assert.Null(DeviceConnectionInfo.ReceiverLabel(null));
+    }
+
+    [Fact]
+    public void D10_体系图标key只读目录声明_缺失回退wireless()
+    {
+        Assert.Equal("wireless", DeviceConnectionInfo.ReceiverIconKey(new ReceiverIdentity(null, "bolt", "Bolt", "wireless")));
+        // key 归一成小写：目录写 "LIGHTNING" 与 "lightning" 是同一张图
+        Assert.Equal("lightning", DeviceConnectionInfo.ReceiverIconKey(new ReceiverIdentity(null, "lightspeed", "LIGHTSPEED", "LIGHTNING")));
+        // 目录漏填图标时不能整块消失，回退信号弧
+        Assert.Equal(DeviceConnectionInfo.DefaultReceiverIconKey,
+            DeviceConnectionInfo.ReceiverIconKey(new ReceiverIdentity(null, "bolt", "Bolt")));
+        // 没有展示名就没有标签，也就不该有孤立图标
+        Assert.Null(DeviceConnectionInfo.ReceiverIconKey(new ReceiverIdentity(null, "bolt", null, "wireless")));
+        Assert.Null(DeviceConnectionInfo.ReceiverIconKey(null));
+    }
 }

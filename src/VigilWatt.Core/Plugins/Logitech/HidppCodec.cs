@@ -40,6 +40,9 @@ internal static class HidppCodec
     /// <summary>HID++ 2.0 ADC Measurement 特征（G 系耳机等）。</summary>
     public const ushort FeatureAdcMeasurement = 0x1F20;
 
+    /// <summary>HID++ 1.0 长寄存器 0xB5（RECEIVER_INFO）的"接收器信息"子寄存器：序列号 + 配对槽位容量。</summary>
+    public const byte ReceiverInfoSubRegister = 0x03;
+
     /// <summary>按接口元数据选 report ID：caps 的非 0 OutputReportId 优先；否则按输出长度推断（≥20 → 0x11，否则 0x10）。</summary>
     public static byte SelectReportId(ushort outputReportLength, byte? outputReportId)
     {
@@ -200,6 +203,22 @@ internal static class HidppCodec
         14 => DeviceKind.Speaker,
         _ => DeviceKind.Unknown,
     };
+
+    /// <summary>
+    /// 接收器信息（RECEIVER_INFO 子寄存器 0x03）：参数区 [1..4]=序列号、[6]=配对槽位容量；相对 feature 缓冲即 resp[3..6]、resp[8]。
+    /// 容量只接受 1..6（Unifying / Bolt 协议上限），越界当作"没读到"——由目录常量兜底，判据同 Solaar `extract_max_devices` 与 OpenLogi `get_receiver_info`。
+    /// 额外校验 resp[2] 是子寄存器回显：偏移若与固件不符（例如把参数区当成了整个缓冲）宁可读不到，也不要读出一位错位的容量。
+    /// </summary>
+    public static bool TryParseReceiverSlotCount(ReadOnlySpan<byte> resp, out byte slotCount)
+    {
+        slotCount = 0;
+        if (resp.Length < 9) return false;
+        if (resp[2] != ReceiverInfoSubRegister) return false;
+        byte value = resp[8];
+        if (value is < 1 or > 6) return false;
+        slotCount = value;
+        return true;
+    }
 
     /// <summary>Unifying 风格配对信息（RECEIVER_INFO 0x2N）：参数区 [3..4]=WPID，[7]=kind（相对 feature 缓冲即 resp[5..6]、resp[9]）。</summary>
     public static bool TryParseUnifyingPairing(

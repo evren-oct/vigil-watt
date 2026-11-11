@@ -368,4 +368,29 @@ public class DeviceIdentityTests
         Assert.Equal(ConnectionKind.Wireless24G, stored.Connection.Value);
         Assert.Equal(TelemetrySource.DeviceReported, stored.Connection.Source);
     }
+
+    [Fact]
+    public void I28_接收器Family不变时沿用旧展示名()
+    {
+        var stored = Device(receiver: new ReceiverIdentity(null, "bolt", "Bolt", "wireless"));
+
+        // 展示名与图标都是 Family 的派生标签：身份没变就可以沿用，不必每轮都从目录重读
+        DeviceStatusMerger.Apply(stored, Device(receiver: new ReceiverIdentity(null, "bolt")));
+
+        Assert.Equal("Bolt", stored.Receiver!.Value.DisplayName);
+        Assert.Equal("wireless", stored.Receiver.Value.IconKey);
+    }
+
+    [Fact]
+    public void I29_接收器Family改变不继承旧展示名()
+    {
+        var stored = Device(receiver: new ReceiverIdentity(null, "bolt", "Bolt", "wireless"));
+
+        // 换了族还留着 "Bolt" / 信号弧，就是把旧族的视觉挂到新族上
+        DeviceStatusMerger.Apply(stored, Device(receiver: new ReceiverIdentity(null, "lightspeed")));
+
+        Assert.Equal("lightspeed", stored.Receiver!.Value.Family);
+        Assert.Null(stored.Receiver.Value.DisplayName);
+        Assert.Null(stored.Receiver.Value.IconKey);
+    }
 }

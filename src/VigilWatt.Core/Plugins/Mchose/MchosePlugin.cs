@@ -172,7 +172,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     private static ReceiverIdentity? ReceiverIdentityOf(HidDeviceInfo info)
         => MchoseDeviceCatalog.TryGetTransport(info.VendorId, info.ProductId, out var t)
            && !string.IsNullOrWhiteSpace(t.Role)
-            ? new ReceiverIdentity(t.Role, Family: null)
+            ? new ReceiverIdentity(t.Role, Family: null, DisplayName: t.DisplayName, IconKey: t.IconKey)
             : null;
 
     /// <summary>显示名：接收器产品名常是泛化的「MCHOSE 2.4G Wireless」，识别出型号时用型号替换；

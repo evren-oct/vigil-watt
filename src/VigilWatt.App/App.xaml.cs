@@ -16,6 +16,7 @@ public sealed class AppServices : IDisposable
     public AppSettings Settings { get; }
     public HistoryStore History { get; }
     public DeviceManager Manager { get; }
+    public DeviceImageService DeviceImages { get; }
     public TrayService Tray { get; private set; } = null!;
     public WidgetWindow? Widget { get; set; }
     public TaskbarPillManager? TaskbarBattery { get; set; }
@@ -24,6 +25,7 @@ public sealed class AppServices : IDisposable
     public AppServices()
     {
         Settings = AppSettings.Load();
+        DeviceImages = new DeviceImageService();
         History = new HistoryStore();
         Manager = new DeviceManager(Settings, History);
     }

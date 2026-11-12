@@ -3,6 +3,12 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-12
+
+- **详情页 Hero 接入本地产品图**：新增 `DeviceImageCatalog` 读取 `device-images/<品牌>/<型号>/manifest.json`，按显示名或「自报型号 + VID/PID」匹配，不按设备 ID；无图/清单损坏回退 `DeviceIconFactory`。只改详情页，列表/托盘/贴片/小组件不动，格式见 `project/device-images.md`。
+- **迈从 G87 图片包**：从 MCHOSE HUB 的 `webIndexList.colorList` 与官方 CDN 整理 11 个配色的缩略图/整机图，放在本机数据目录；厂商图不入库、不随安装包分发。新增清单匹配、路径越界与配色覆盖单测。
+- **产品图配色可覆盖**：官方 HUB 只用 `checkIndex` 记录用户选择（本机默认 0 = 白），不从设备读颜色；因此详情页 Hero 悬停时显示调整按钮，选中的配色按设备 ID 存 `ImageKey`，详情页优先用户选择。新增配色覆盖与设置序列化单测。
+
 ## 2026-11-11
 
 - **设备列表收窄为摘要**：删掉 DPI/档位/回报率那行与「协议 · 状态 · 剩余时间 · 更新于」那行，行高 98→58（800×600 一屏从 5 台变 8 台），这两类信息移交详情页；`DeviceRowModel` 随之删 7 个属性与 `ApplyMetrics`，`Update` 不再要 `remainingTime`。`PointerTelemetryFormatter` / `GetRemainingTimeEstimate` / `ChargeSuffix` **没有删**——贴片悬停提示、桌面小组件与详情页还在用。

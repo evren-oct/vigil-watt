@@ -1,10 +1,12 @@
 using VigilWatt.App.Services;
 using VigilWatt.Core.Devices;
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Settings;
 using VigilWatt.Core.Utils;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.UI;
@@ -21,6 +23,7 @@ public sealed partial class DeviceDetailPage : Page
     private string _deviceId = "";
     private bool _hooked;
     private bool _refreshing;
+    private bool _pointerOverPlate;
 
     /// <summary>指标行的内容指纹：值没变就不重建元素，免得每分钟白闪一次。</summary>
     private string _metricsKey = "";
@@ -41,6 +44,8 @@ public sealed partial class DeviceDetailPage : Page
         if (e.Parameter is string id) _deviceId = id;
         // 页面是缓存复用的：上一台设备的指标单元格必须先清掉，否则新设备没有指标时旧数字会留在屏幕上
         ResetMetrics();
+        _pointerOverPlate = false;
+        AdjustImageButton.Visibility = Visibility.Collapsed;
         GoneText.Visibility = Visibility.Collapsed;
         Apply();
     }
@@ -106,14 +111,14 @@ public sealed partial class DeviceDetailPage : Page
         bool online = d.IsOnline;
         var color = online ? UiPalette.BatteryLevel(percent, charging) : UiPalette.Offline;
 
-        ApplyHero(d, charging, online, color);
+        ApplyHero(raw, d, charging, online, color);
         ApplyBattery(percent, charging, online, color);
         ApplyMetrics(d);
         ApplyConnection(d, online);
         ApplyIdentity(raw, d);
     }
 
-    private void ApplyHero(DeviceStatus d, bool charging, bool online, Color color)
+    private void ApplyHero(DeviceStatus raw, DeviceStatus d, bool charging, bool online, Color color)
     {
         NameText.Text = d.DisplayName;
         // 品牌没有独立字段（协议串里才有），这里只承诺"类型 + 协议"，不猜品牌
@@ -121,8 +126,7 @@ public sealed partial class DeviceDetailPage : Page
             ? DeviceKindInfo.Label(d.Kind)
             : $"{DeviceKindInfo.Label(d.Kind)} · {d.Protocol}";
 
-        HeroIconHost.Content = DeviceIconFactory.Hero(d.Kind, color, 34);
-        Plate.Background = UiPalette.Brush(UiPalette.Tint(color, 0x1F));
+        ApplyHeroArt(raw, d, color);
 
         OnlineText.Text = online ? "在线" : "离线";
 
@@ -147,6 +151,138 @@ public sealed partial class DeviceDetailPage : Page
 
         ChargeMark.Visibility = charging ? Visibility.Visible : Visibility.Collapsed;
         StateText.Text = StateLine(d, charging, online);
+    }
+
+    /// <summary>有本地产品图就用图，否则回退几何图标；两者共用同一块牌子，切换设备不会跳高度。</summary>
+    private void ApplyHeroArt(DeviceStatus raw, DeviceStatus d, Color color)
+    {
+        var settings = App.Services.Settings;
+        var imageKey = DeviceCustomizationResolver.ImageKey(raw.Id, settings.DeviceCustomizations);
+        if (App.Services.DeviceImages.TryResolve(raw, imageKey, out var asset))
+        {
+            try
+            {
+                HeroImage.Source = App.Services.DeviceImages.GetImage(asset, 224);
+                HeroImage.Visibility = Visibility.Visible;
+                HeroIconHost.Visibility = Visibility.Collapsed;
+                Plate.Padding = new Thickness(6);
+                Plate.Background = ThemeBrush("CardBackgroundFillColorDefaultBrush",
+                    UiPalette.Tint(UiPalette.Offline, 0x10));
+                Plate.BorderBrush = ThemeBrush("CardStrokeColorDefaultBrush",
+                    UiPalette.Tint(UiPalette.Offline, 0x30));
+                Plate.BorderThickness = new Thickness(1);
+                AdjustImageButton.IsEnabled = true;
+                AdjustImageButton.Visibility = _pointerOverPlate ? Visibility.Visible : Visibility.Collapsed;
+                return;
+            }
+            catch (Exception ex)
+            {
+                // 文件被删/解码失败不能把整页刷新带走，回退几何图标即可
+                Log.Warn($"设备图片加载失败 {asset.ImagePath}: {ex.Message}");
+            }
+        }
+
+        HeroImage.Source = null;
+        HeroImage.Visibility = Visibility.Collapsed;
+        HeroIconHost.Visibility = Visibility.Visible;
+        HeroIconHost.Content = DeviceIconFactory.Hero(d.Kind, color, 44);
+        Plate.Padding = new Thickness(0);
+        Plate.Background = UiPalette.Brush(UiPalette.Tint(color, 0x1F));
+        Plate.BorderThickness = new Thickness(0);
+        AdjustImageButton.IsEnabled = false;
+        AdjustImageButton.Visibility = Visibility.Collapsed;
+    }
+
+    private void Plate_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        _pointerOverPlate = true;
+        if (HeroImage.Visibility == Visibility.Visible) AdjustImageButton.Visibility = Visibility.Visible;
+    }
+
+    private void Plate_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        _pointerOverPlate = false;
+        AdjustImageButton.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>详情页 Hero 的调整入口：选配色后按设备 ID 写入自定义项，再重画当前页。</summary>
+    private async void AdjustImage_Click(object sender, RoutedEventArgs e)
+    {
+        if (_deviceId.Length == 0) return;
+        var device = App.Services.Manager.Find(_deviceId);
+        if (device is null) return;
+        var options = App.Services.DeviceImages.GetOptions(device);
+        if (options.Count == 0) return;
+
+        var settings = App.Services.Settings;
+        settings.DeviceCustomizations.TryGetValue(_deviceId, out var current);
+        var combo = new ComboBox
+        {
+            MinWidth = 360,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        combo.Items.Add(new ComboBoxItem { Content = "自动（按型号默认）", Tag = null });
+        foreach (var option in options)
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            row.Children.Add(new Image
+            {
+                Source = App.Services.DeviceImages.GetImage(option, 64),
+                Width = 48,
+                Height = 30,
+                Stretch = Stretch.Uniform,
+            });
+            row.Children.Add(new TextBlock
+            {
+                Text = option.Label ?? option.ColorKey,
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+            combo.Items.Add(new ComboBoxItem { Content = row, Tag = option.ColorKey });
+        }
+        combo.SelectedIndex = 0;
+        if (current?.ImageKey is { } selectedKey)
+        {
+            for (int i = 1; i < combo.Items.Count; i++)
+            {
+                if (combo.Items[i] is ComboBoxItem { Tag: string optionKey } &&
+                    string.Equals(optionKey, selectedKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    combo.SelectedIndex = i;
+                    break;
+                }
+            }
+        }
+
+        var body = new StackPanel { Spacing = 8 };
+        body.Children.Add(new TextBlock
+        {
+            Text = "官方 HUB 不读取设备配色；选错了随时可以在这里改。",
+            FontSize = 12,
+            Foreground = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush,
+        });
+        body.Children.Add(combo);
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "产品图",
+            Content = body,
+            PrimaryButtonText = "保存",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        var imageKey = combo.SelectedItem is ComboBoxItem { Tag: string key } ? key : null;
+        if (current is null) current = new DeviceCustomization();
+        current.ImageKey = imageKey;
+        if (string.IsNullOrWhiteSpace(current.Name) && current.IconKind is null &&
+            string.IsNullOrWhiteSpace(current.ImageKey))
+            settings.DeviceCustomizations.Remove(_deviceId);
+        else
+            settings.DeviceCustomizations[_deviceId] = current;
+
+        settings.Save();
+        Apply();
     }
 
     /// <summary>第三行：状态 · 剩余 · 时刻。离线时不写"更新于"，改成"最后已知"。</summary>
@@ -339,6 +475,11 @@ public sealed partial class DeviceDetailPage : Page
 
     private static Brush Tertiary =>
         Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush ?? UiPalette.Brush(UiPalette.Offline);
+
+    private static Brush ThemeBrush(string key, Color fallback) =>
+        Application.Current.Resources.TryGetValue(key, out var value) && value is Brush brush
+            ? brush
+            : UiPalette.Brush(fallback);
 
     private void Back_Click(object sender, RoutedEventArgs e) => GoBack();
 

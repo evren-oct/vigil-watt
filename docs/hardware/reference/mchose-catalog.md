@@ -229,6 +229,11 @@ hr = { 0.7:[0.7/1/2mm], 1:[1/2mm], 5:[0.7/0.9/1.2/1.4/1.7mm] }// LOD 选项
 **直接下载即可**，不需要逆向。BY 族键盘的配色表在 `purify.es.js` 里按型号硬编码（`G87`/`K99`/
 `G98`… 各一组 `pic`/`deviceImage`）。
 
+本机 HUB 的 `webIndexList[]` 还有 `checkIndex` / `lockIndex`：它们是**官方 UI 记录的用户选择索引**，
+不是设备回读的颜色。2026-11-12 本机 G87 是 `checkIndex: 0` / `lockIndex: null`，即默认白色；
+换过配色的用户才会把 `checkIndex` 指到 `colorList` 的另一项。VigilWatt 因此不按协议猜颜色，
+默认取清单 `defaultColor`，并允许用户在详情页 Hero 的调整按钮里覆盖。
+
 ## 5. 未验证边界（别当成已知）
 
 1. **全部静态分析**。本机只有 G87 V1，鼠标/CZ 键盘/耳机一台都没有。

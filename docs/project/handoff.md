@@ -19,6 +19,8 @@
 
 设备列表支持：右键自定义名称与图标（按设备 ID 持久化，历史页用当前名、已有采样不改写）；**右键「忽略此设备」在线也能用**——只从列表/托盘/贴片/小组件隐藏、不再写历史，插件照常轮询，恢复入口在底部「已忽略 N 台设备」；**右键删除离线设备**——同时清掉该设备历史（VACUUM），勾「永久移除」写本地黑名单、插件认领阶段即跳过，恢复入口同为底部那行（三份名单见 `code-flow.md` §5.2，真机验收清单见 §4 第 9 条）；剩余时间估算（至少 3 个不同时间点且有净下降才显示，否则说明原因，见 `code-flow.md` §5）。**贴片可指定只显示哪几台设备**（设置页勾选，按**显示名**匹配——不用设备 ID，ID 由路径哈希而来、插线/换口会变；一个都不勾则显示全部在线设备）。
 
+详情页 Hero 已接本地产品图：`<数据根>\device-images\<品牌>\<型号>\manifest.json`，按显示名或「自报型号 + VID/PID」匹配，无图回退几何图标；配色可在 Hero 悬停出现的调整按钮里覆盖（官方 HUB 不读设备颜色）。当前只有迈从 G87 的 11 个配色，列表/贴片/小组件仍不显示产品图（`device-images.md`）。
+
 **开发版数据目录在 `bin\x64\Debug\...\win-x64\data\`**（`AppPaths` 用 `#if DEBUG` 分流，Release 才用 `%LOCALAPPDATA%\VigilWatt`），所以从 `bin` 双击即可运行、不碰用户目录；`VIGILWATT_DATA_DIR` 可覆盖。为什么必须这么改见 `dev/runtime-pitfalls.md` §20，用法见 `dev/build.md` §3.1。
 
 设备接入已收六批，逐台状态见 §2 表；设备管理类改动（#14 双通道去重、#16 设备管理）、#15 的 BLE 大改、issue #12/#11 按 BACKLOG CR-68 ~ CR-72 排队。**设备诊断页（2026-10-24 新增，主窗口第 5 项）**= 未适配设备的 USB/HID 只读采集，流程与边界见 `capture.md`；审查标准见 `dev/review-standard.md`，未修项见 `reviews/BACKLOG.md`。会写帧的（HERO、N9、ATK、华硕、雷蛇、墨将）默认关；15 秒发现节拍按插件各自声明（`SupportsDiscoveryProbe`）——ATK、樱桃、派世、VGN、雷蛇、凌豹、HECATE 无线、迈从、前行者、索尼 H9 开了，HERO、N9、高斯、北通、墨将没开。**ATK 是唯一另开"熔断期半开探活"的插件**（`BreakerProbeInterval` 30s，`safety.md` §3 规则 3 ③；别的品牌要开按 `runtime-pitfalls.md` §23.1 逐个评估）。纯被动的 CF2 默认开。ATK 认领按「配对组」判、两只鼠标各自一条记录，响应须过运行时校验和；HyperX 充电态只认插拔事件帧；雷蛇 Viper V3 Pro SE 只开零权限 Feature 句柄。HECATE 自 #47 改主动查询、开关默认关。**#72 之后 ATK 双连接改留本体**（`SkipPathsForThisPass` 按组摘掉接收器，CR-115）。全部为贡献者真机、本机未复测。HERO 闲置静音见 CR-81，N9 未核对官方 App 见 CR-84，ATK 显示名与配对表见 CR-98 / CR-99，HECATE 查询阻塞见 CR-100；**1.3.0 的组合识别失效已修**（扫描器补读序列号，CR-112）——VGN 配对由此**首次真正生效**，待真机验蜻蜓 F2 / F1 V5 插线场景（`runtime-pitfalls.md` §24）；墨将的设备 ID 仍是路径哈希（CR-116 ~ CR-118）；协议与验证边界见 `hardware/aula.md` §2、`akg.md`、`atk.md`、`hyperx-cf2.md`、`asus-rog.md`、`razer*.md`、`hecate.md` §3、`mojhon.md`。
@@ -110,6 +112,7 @@
 | 任务栏贴片 | `Services/TaskbarPillWindow.cs`、`TaskbarPillRenderer.cs`、`TaskbarLayout.cs`。原理 runtime-pitfalls.md §16 |
 | 小组件透明 | `Services/TransparentWindowSurface.cs`。贴片不用它。见 §17 |
 | 设备图标 | `Services/DeviceIconFactory.cs`（不要用字体图标） |
+| 设备产品图 | `Core/Media/DeviceImageCatalog.cs`、`App/Services/DeviceImageService.cs`；格式见 `device-images.md` |
 | 程序图标 | `scripts/make-app-icon.py` → `Assets/VigilWatt.ico`；csproj `ApplicationIcon` 和 `MainWindow.ApplyWindowIcon` 都要 |
 | 历史库 | `Storage/HistoryStore.cs`；页面 `Views/HistoryPage`、`Views/StatsPage` |
 | 日志 | `Utils/Log.cs`；设置页「日志」；设计 `dev/logging.md` |

@@ -38,6 +38,7 @@ VigilWatt.sln
 │   │   └── Sony/                      # DualSense 蓝牙 HID 只读电量
 │   ├── Models/DeviceStatus            # 统一设备状态快照（Id/电量/充电/在线）
 │   ├── Models/PointerTelemetry        # 指针遥测（DPI/回报率）模型；见 project/pointer-telemetry.md
+│   ├── Media/DeviceImageCatalog       # 本地产品图清单（型号匹配；见 project/device-images.md）
 │   ├── Settings/AppSettings           # settings.json 读写
 │   ├── Storage/HistoryStore           # SQLite（Microsoft.Data.Sqlite）：写入/查询/按设备删除/VACUUM
 │   ├── Capture/                       # 设备诊断：USB/HID 只读采集（模型/分析/报告/打包/存储 + Hid 采集层）
@@ -57,6 +58,7 @@ VigilWatt.sln
     └── Services/
         ├── TrayService                # 托盘（纯 Win32 Shell_NotifyIcon）+ 全应用唯一退出通道
         ├── WidgetDisplayMode          # 小组件层级取值（Topmost/Normal/Desktop）+ 条数上限范围
+        ├── DeviceImageService         # 产品图包解析与位图缓存（只给详情页用）
         ├── LogLevelOptions            # 设置页日志级别下拉框的档位（关闭/详细/信息/警告/错误）
         ├── Native                     # App 侧 Win32 声明（托盘/菜单/光标/窗口属性/Z 序）
         └── AutostartService           # HKCU\...\Run 注册表自启
@@ -111,10 +113,11 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
 
 | 位置 | 内容 |
 |---|---|
-| `%LOCALAPPDATA%\VigilWatt\settings.json` | AppSettings（阈值/采样/保留天数/自启/小组件（开关/位置/显示方式/最多显示数）/插件开关（**即写入授权**）/MonitorSystemBattery/**LogLevel**/**LogRetentionDays**/按设备 ID 保存的名称与图标覆盖） |
+| `%LOCALAPPDATA%\VigilWatt\settings.json` | AppSettings（阈值/采样/保留天数/自启/小组件（开关/位置/显示方式/最多显示数）/插件开关（**即写入授权**）/MonitorSystemBattery/**LogLevel**/**LogRetentionDays**/按设备 ID 保存的名称、图标与产品图配色覆盖） |
 | `%LOCALAPPDATA%\VigilWatt\history.db` | SQLite `samples(device_id, name, percent, charging, ts)`，索引 (device_id, ts)。**ts = UTC 毫秒**（`DateTimeOffset.ToUnixTimeMilliseconds`） |
 | `%LOCALAPPDATA%\VigilWatt\logs\app-yyyy-MM-dd.log` | **按本地日期每天一个文件**的运行日志（协议原始报文也在）。行首为**本地时间**；文件首行是"时间基准"声明，用于与 history.db 的 UTC 时间对齐 |
 | `%LOCALAPPDATA%\VigilWatt\logs\log-error.txt` | 兜底文件：连续写日志失败时记录（带节流与上限），正常运行时不产生 |
+| `%LOCALAPPDATA%\VigilWatt\device-images\` | 本地产品图包（详情页 Hero 用；不联网、不入库；Debug 在 exe 旁 `data\device-images\`） |
 
 > 日志按日分文件，跨天自动切换；默认保留最近 **14 天**（`LogRetentionDays`，`0` = 不清理），超期文件在启动/跨天时清理。
 > 日志分级：`Debug < Info < Warn < Error`，外加 `Off`（全关）；默认 `Info`，在设置页选，**改后需重启应用生效**。

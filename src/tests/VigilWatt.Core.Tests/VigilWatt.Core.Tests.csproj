@@ -146,6 +146,8 @@
     <Compile Include="..\..\VigilWatt.Core\Settings\DeviceCustomization.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatusFormatter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ChargingStateMap.cs" />
+    <!-- 设备图片包清单是纯文件/JSON 逻辑（零 WinRT），型号匹配与路径越界必须能在单测里钉住 -->
+    <Compile Include="..\..\VigilWatt.Core\Media\DeviceImageCatalog.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceStatusMerger.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceChangeDetector.cs" />
     <!-- 删除设备后的"该不该收这条上报"判定：黑名单/删除标记四种组合，写错就是删了又复活 -->

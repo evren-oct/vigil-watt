@@ -41,10 +41,29 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <Border x:Name="Plate" Grid.Column="0" Width="60" Height="60" CornerRadius="15"
-                            VerticalAlignment="Center">
-                        <ContentControl x:Name="HeroIconHost" Padding="0"
-                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                    <Border x:Name="Plate" Grid.Column="0" Width="120" Height="92" CornerRadius="16"
+                            Padding="6" VerticalAlignment="Center"
+                            PointerEntered="Plate_PointerEntered" PointerExited="Plate_PointerExited">
+                        <Grid>
+                            <ContentControl x:Name="HeroIconHost" Padding="0"
+                                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                            <Image x:Name="HeroImage" Stretch="Uniform" Visibility="Collapsed" />
+                            <Button x:Name="AdjustImageButton" Width="24" Height="24" Padding="0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                    Margin="0,0,6,6" CornerRadius="12"
+                                    Background="#B3000000" Foreground="White" BorderThickness="0"
+                                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                    Visibility="Collapsed" Click="AdjustImage_Click"
+                                    ToolTipService.ToolTip="调整产品图">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E6000000" />
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF000000" />
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White" />
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White" />
+                                </Button.Resources>
+                                <FontIcon Glyph="&#xE70F;" FontSize="12" />
+                            </Button>
+                        </Grid>
                     </Border>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">

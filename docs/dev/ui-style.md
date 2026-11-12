@@ -58,6 +58,7 @@
 - **设备类型图标**按 `DeviceKind` 现画，名义框统一 `14×13` 再整体缩放到 22px，各类型视觉大小才一致（`DeviceIconFactory.Scaled`）。
 - **图标颜色跟随电量状态色**（`IconColor = PrimaryColor`），不是中性色——所以"形状 = 这台是什么，颜色 = 它还有多少电"。
 - **接收器体系标签**（Bolt / Unifying 等）用 `14px` 小尺寸，跟在链路徽标之后；目录没登记就整块不占位。
+- **详情页 Hero 可以用厂商产品图**：图只表达“这是什么设备”，不参与电量状态取色；没有图或解码失败时回退同一套几何图标。图片放在中性卡片底上，不按品牌加底色；悬停时右下角出现调整按钮，只改配色，不另开设置页（格式见 [../project/device-images.md](../project/device-images.md)）。
 - `bolt` / `unifying` 直接复用 **OpenLogi** 的官方 path 原文（MIT, Copyright (c) 2026 AprilNEA），不是手绘近似；其余体系（Nano / LIGHTSPEED / 27MHz）为自绘几何。**范围仅限设备列表的小尺寸体系标签**，不用于应用图标、安装包或宣传物料。
 - 画好的图标元素**不能存进行模型**：行复用会把同一个元素交给第二个容器（`runtime-pitfalls.md` §22）。每个行容器各持一个 presenter 实例。
 

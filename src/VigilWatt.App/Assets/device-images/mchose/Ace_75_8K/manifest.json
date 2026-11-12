@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 75 8K",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 75 8K",
+      "Ace 75 8K"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "303C",
+      "303D"
+    ]
+  },
+  "defaultColor": "color-ace75-white",
+  "colors": [
+    {
+      "key": "color-ace75-white",
+      "label": "ace75 white",
+      "thumbnail": "color-ace75-white_thumb.png",
+      "image": "color-ace75-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/20260512Bmxp4mwF.png"
+    },
+    {
+      "key": "color-ace75-pink",
+      "label": "ace75 pink",
+      "thumbnail": "color-ace75-pink_thumb.png",
+      "image": "color-ace75-pink_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/20260512DkplHiIk.png"
+    },
+    {
+      "key": "color-ace75-black",
+      "label": "ace75 black",
+      "thumbnail": "color-ace75-black_thumb.png",
+      "image": "color-ace75-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/20260512BazMkvNx.png"
+    },
+    {
+      "key": "color-ace75-black-gold",
+      "label": "ace75 black gold",
+      "thumbnail": "color-ace75-black-gold_thumb.png",
+      "image": "color-ace75-black-gold_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_75BlackGold_9kirmcb6ahoxy09k.png"
+    },
+    {
+      "key": "color-ace75-purple",
+      "label": "ace75 purple",
+      "thumbnail": "color-ace75-purple_thumb.png",
+      "image": "color-ace75-purple_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/20260512fdKRHJXR.png"
+    },
+    {
+      "key": "color-ace75-moonrock-gray",
+      "label": "ace75 moonrock gray",
+      "thumbnail": "color-ace75-moonrock-gray_thumb.png",
+      "image": "color-ace75-moonrock-gray_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_75MoonrockGray_8dg2pv1c44cvxn0j.png"
+    },
+    {
+      "key": "color-ace75-night-purple",
+      "label": "ace75 night purple",
+      "thumbnail": "color-ace75-night-purple_thumb.png",
+      "image": "color-ace75-night-purple_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_75NightPurple_pdtt1yb8h1u2kj4f.png"
+    },
+    {
+      "key": "color-ace75-navy-blue",
+      "label": "ace75 navy blue",
+      "thumbnail": "color-ace75-navy-blue_thumb.png",
+      "image": "color-ace75-navy-blue_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_75NavyBlue_bgos8oe6obkzf6m9.png"
+    },
+    {
+      "key": "color-ace75-mecha-green",
+      "label": "ace75 mecha green",
+      "thumbnail": "color-ace75-mecha-green_thumb.png",
+      "image": "color-ace75-mecha-green_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_75MechaGreen_jau0ndgh2ni5xal1.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

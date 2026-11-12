@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 60 Pro Nordic",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 60 Pro Nordic",
+      "Ace 60 Pro Nordic"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "3002",
+      "3022"
+    ]
+  },
+  "defaultColor": "color-black",
+  "colors": [
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace60Pro_white.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

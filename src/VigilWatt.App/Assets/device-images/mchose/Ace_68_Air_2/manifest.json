@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 68 Air 2",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 68 Air 2",
+      "Ace 68 Air 2"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "300A",
+      "300B"
+    ]
+  },
+  "defaultColor": "color-ace68air2-white",
+  "colors": [
+    {
+      "key": "color-ace68air2-white",
+      "label": "ace68air2 white",
+      "thumbnail": "color-ace68air2-white_thumb.png",
+      "image": "color-ace68air2-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/20260421sXwX5HRc.png"
+    },
+    {
+      "key": "color-ace68air2-pink",
+      "label": "ace68air2 pink",
+      "thumbnail": "color-ace68air2-pink_thumb.png",
+      "image": "color-ace68air2-pink_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/20260421CLfgL2Mu.png"
+    },
+    {
+      "key": "color-ace68air2-blue",
+      "label": "ace68air2 blue",
+      "thumbnail": "color-ace68air2-blue_thumb.png",
+      "image": "color-ace68air2-blue_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/20260421EITtr0Du.png"
+    },
+    {
+      "key": "color-red",
+      "label": "red",
+      "thumbnail": "color-red_thumb.png",
+      "image": "color-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/20260421Z7pkUWAa.png"
+    },
+    {
+      "key": "color-ace68air2-mint-ice",
+      "label": "ace68air2 mint ice",
+      "thumbnail": "color-ace68air2-mint-ice_thumb.png",
+      "image": "color-ace68air2-mint-ice_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_68_Air2MintIce_5vnkzkz9jk6b0nhp.png"
+    },
+    {
+      "key": "color-ace68air2-golden",
+      "label": "ace68air2 golden",
+      "thumbnail": "color-ace68air2-golden_thumb.png",
+      "image": "color-ace68air2-golden_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_68_Air2Golden_raaz81h2nc7jk2d3.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

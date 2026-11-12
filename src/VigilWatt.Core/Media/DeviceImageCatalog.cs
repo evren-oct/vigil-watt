@@ -207,8 +207,9 @@ public sealed class DeviceImageCatalog
             foreach (var color in dto.Colors)
             {
                 if (string.IsNullOrWhiteSpace(color.Key) || string.IsNullOrWhiteSpace(color.Image)) continue;
-                if (ResolveFile(dir, rootDir, color.Image) is not { } imagePath) continue;
                 var thumbnailPath = ResolveFile(dir, rootDir, color.Thumbnail);
+                var imagePath = ResolveFile(dir, rootDir, color.Image) ?? thumbnailPath;
+                if (imagePath is null) continue;
                 colors.Add(new DeviceImageAsset(
                     model, color.Key.Trim(), color.Label?.Trim(), imagePath, thumbnailPath,
                     color.Source?.Trim() ?? dto.Source?.Trim()));

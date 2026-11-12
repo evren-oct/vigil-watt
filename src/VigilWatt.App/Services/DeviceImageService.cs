@@ -13,21 +13,28 @@ namespace VigilWatt.App.Services;
 /// </summary>
 public sealed class DeviceImageService
 {
-    private readonly DeviceImageCatalog _catalog;
+    private readonly DeviceImageCatalog _builtIn;
+    private readonly DeviceImageCatalog _user;
     private readonly Dictionary<string, ImageSource> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     public DeviceImageService()
     {
-        var root = Path.Combine(AppPaths.RootDir, "device-images");
-        _catalog = DeviceImageCatalog.Load(root, message => Log.Warn(message));
-        if (_catalog.Count > 0) Log.Info($"设备图片包就绪: {_catalog.Count} 个型号（{root}）");
+        var builtInRoot = Path.Combine(AppContext.BaseDirectory, "Assets", "device-images");
+        var userRoot = Path.Combine(AppPaths.RootDir, "device-images");
+        _builtIn = DeviceImageCatalog.Load(builtInRoot, message => Log.Warn(message));
+        _user = DeviceImageCatalog.Load(userRoot, message => Log.Warn(message));
+        Log.Info($"设备图片包: 内置 {_builtIn.Count} 个型号 / 用户 {_user.Count} 个型号");
     }
 
     public bool TryResolve(DeviceStatus device, string? colorKey, out DeviceImageAsset asset)
-        => _catalog.TryResolve(device, colorKey, out asset);
+        => _user.TryResolve(device, colorKey, out asset)
+           || _builtIn.TryResolve(device, colorKey, out asset);
 
     public IReadOnlyList<DeviceImageAsset> GetOptions(DeviceStatus device)
-        => _catalog.TryGetOptions(device, out var options) ? options : [];
+    {
+        if (_user.TryGetOptions(device, out var options)) return options;
+        return _builtIn.TryGetOptions(device, out options) ? options : [];
+    }
 
     /// <summary>同一路径只解码一次；详情页在设备间来回切换时不会反复读盘。</summary>
     public ImageSource GetImage(DeviceImageAsset asset, int decodeWidth)

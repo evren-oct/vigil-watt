@@ -117,7 +117,8 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
 | `%LOCALAPPDATA%\VigilWatt\history.db` | SQLite `samples(device_id, name, percent, charging, ts)`，索引 (device_id, ts)。**ts = UTC 毫秒**（`DateTimeOffset.ToUnixTimeMilliseconds`） |
 | `%LOCALAPPDATA%\VigilWatt\logs\app-yyyy-MM-dd.log` | **按本地日期每天一个文件**的运行日志（协议原始报文也在）。行首为**本地时间**；文件首行是"时间基准"声明，用于与 history.db 的 UTC 时间对齐 |
 | `%LOCALAPPDATA%\VigilWatt\logs\log-error.txt` | 兜底文件：连续写日志失败时记录（带节流与上限），正常运行时不产生 |
-| `%LOCALAPPDATA%\VigilWatt\device-images\` | 本地产品图包（详情页 Hero 用；不联网、不入库；Debug 在 exe 旁 `data\device-images\`） |
+| `src/VigilWatt.App/Assets/device-images/` | 内置产品图缩略图（随包分发；详情页 Hero 用；不联网） |
+| `%LOCALAPPDATA%\VigilWatt\device-images\` | 用户产品图覆盖包（可选整机图；Debug 在 exe 旁 `data\device-images\`） |
 
 > 日志按日分文件，跨天自动切换；默认保留最近 **14 天**（`LogRetentionDays`，`0` = 不清理），超期文件在启动/跨天时清理。
 > 日志分级：`Debug < Info < Warn < Error`，外加 `Off`（全关）；默认 `Info`，在设置页选，**改后需重启应用生效**。

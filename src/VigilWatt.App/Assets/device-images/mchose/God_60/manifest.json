@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "God 60",
+  "match": {
+    "displayNames": [
+      "迈从 God 60",
+      "God 60"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "301A",
+      "3020"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/God_60OrderSilver_hqr0luvnwygtljux.png"
+    },
+    {
+      "key": "color-god60-chaos-silver",
+      "label": "god60 chaos silver",
+      "thumbnail": "color-god60-chaos-silver_thumb.png",
+      "image": "color-god60-chaos-silver_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/God_60ChaosSilver_xm34fe5ss2w950b5.png"
+    },
+    {
+      "key": "color-god60-silver",
+      "label": "god60 silver",
+      "thumbnail": "color-god60-silver_thumb.png",
+      "image": "color-god60-silver_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/God_60Sliver_tqb7olo1zo2ou2qk.png"
+    },
+    {
+      "key": "color-god60-pink",
+      "label": "god60 pink",
+      "thumbnail": "color-god60-pink_thumb.png",
+      "image": "color-god60-pink_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/God_60Pink_omda8tbq4bsby64u.png"
+    },
+    {
+      "key": "color-god60-black-gold",
+      "label": "god60 black gold",
+      "thumbnail": "color-god60-black-gold_thumb.png",
+      "image": "color-god60-black-gold_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/God_60BlackGold_a6f9u6et18mmrpxz.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/God_60_凡人联名款_7u0mv3lz6o374lk9.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

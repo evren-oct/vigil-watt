@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "K87S",
+  "match": {
+    "displayNames": [
+      "迈从 K87S",
+      "K87S"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "200E",
+      "200F",
+      "2010",
+      "3033"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K87S_white.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K87S_black.png"
+    },
+    {
+      "key": "color-peach-side",
+      "label": "peach side",
+      "thumbnail": "color-peach-side_thumb.png",
+      "image": "color-peach-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K87SPeachLine.png"
+    },
+    {
+      "key": "color-pink-side",
+      "label": "pink side",
+      "thumbnail": "color-pink-side_thumb.png",
+      "image": "color-pink-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K87S_pinkSide.png"
+    },
+    {
+      "key": "color-red",
+      "label": "red",
+      "thumbnail": "color-red_thumb.png",
+      "image": "color-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K87S_red.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

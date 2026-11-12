@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "G87 V2",
+  "match": {
+    "displayNames": [
+      "迈从 G87 V2",
+      "G87 V2"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "2010",
+      "2015",
+      "2019",
+      "3033"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87V2White.png"
+    },
+    {
+      "key": "color-white-line",
+      "label": "white line",
+      "thumbnail": "color-white-line_thumb.png",
+      "image": "color-white-line_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87V2WhiteLine.png"
+    },
+    {
+      "key": "color-white-copy",
+      "label": "white copy",
+      "thumbnail": "color-white-copy_thumb.png",
+      "image": "color-white-copy_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/G87_v2Whitening_duu8ffkyd48ezizz.png"
+    },
+    {
+      "key": "color-black-side",
+      "label": "black side",
+      "thumbnail": "color-black-side_thumb.png",
+      "image": "color-black-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87V2_blackSide.png"
+    },
+    {
+      "key": "color-peach-side",
+      "label": "peach side",
+      "thumbnail": "color-peach-side_thumb.png",
+      "image": "color-peach-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87V2_peachLine.png"
+    },
+    {
+      "key": "color-pink-side",
+      "label": "pink side",
+      "thumbnail": "color-pink-side_thumb.png",
+      "image": "color-pink-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87V2_pinkSide.png"
+    },
+    {
+      "key": "color-red",
+      "label": "red",
+      "thumbnail": "color-red_thumb.png",
+      "image": "color-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87V2_red.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

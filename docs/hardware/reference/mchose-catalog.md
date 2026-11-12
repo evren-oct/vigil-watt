@@ -234,6 +234,9 @@ hr = { 0.7:[0.7/1/2mm], 1:[1/2mm], 5:[0.7/0.9/1.2/1.4/1.7mm] }// LOD 选项
 换过配色的用户才会把 `checkIndex` 指到 `colorList` 的另一项。VigilWatt 因此不按协议猜颜色，
 默认取清单 `defaultColor`，并允许用户在详情页 Hero 的调整按钮里覆盖。
 
+2026-11-12 已按 `cardList.json` 批量导入 30 款键盘 / 159 个配色（另有 G87 V1 的 11 个配色），
+重抓脚本为 `scripts/import-mchose-images.py`；缩略图进项目 `Assets/device-images`，整机图可选写本机数据目录。
+
 ## 5. 未验证边界（别当成已知）
 
 1. **全部静态分析**。本机只有 G87 V1，鼠标/CZ 键盘/耳机一台都没有。

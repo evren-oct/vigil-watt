@@ -19,7 +19,7 @@
 
 设备列表支持：右键自定义名称与图标（按设备 ID 持久化，历史页用当前名、已有采样不改写）；**右键「忽略此设备」在线也能用**——只从列表/托盘/贴片/小组件隐藏、不再写历史，插件照常轮询，恢复入口在底部「已忽略 N 台设备」；**右键删除离线设备**——同时清掉该设备历史（VACUUM），勾「永久移除」写本地黑名单、插件认领阶段即跳过，恢复入口同为底部那行（三份名单见 `code-flow.md` §5.2，真机验收清单见 §4 第 9 条）；剩余时间估算（至少 3 个不同时间点且有净下降才显示，否则说明原因，见 `code-flow.md` §5）。**贴片可指定只显示哪几台设备**（设置页勾选，按**显示名**匹配——不用设备 ID，ID 由路径哈希而来、插线/换口会变；一个都不勾则显示全部在线设备）。
 
-详情页 Hero 已接本地产品图：`<数据根>\device-images\<品牌>\<型号>\manifest.json`，按显示名或「自报型号 + VID/PID」匹配，无图回退几何图标；配色可在 Hero 悬停出现的调整按钮里覆盖（官方 HUB 不读设备颜色）。当前只有迈从 G87 的 11 个配色，列表/贴片/小组件仍不显示产品图（`device-images.md`）。
+详情页 Hero 已接产品图：项目内置 `Assets/device-images` 缩略图（迈从键盘 31 款 / 170 色，压缩后约 4.5MB），用户数据目录可覆盖；按显示名或「自报型号 + VID/PID」匹配，无图回退几何图标。配色可在 Hero 悬停出现的调整按钮里覆盖（官方 HUB 不读设备颜色）。列表/贴片/小组件仍不显示产品图（`device-images.md`）。
 
 **开发版数据目录在 `bin\x64\Debug\...\win-x64\data\`**（`AppPaths` 用 `#if DEBUG` 分流，Release 才用 `%LOCALAPPDATA%\VigilWatt`），所以从 `bin` 双击即可运行、不碰用户目录；`VIGILWATT_DATA_DIR` 可覆盖。为什么必须这么改见 `dev/runtime-pitfalls.md` §20，用法见 `dev/build.md` §3.1。
 
@@ -112,7 +112,7 @@
 | 任务栏贴片 | `Services/TaskbarPillWindow.cs`、`TaskbarPillRenderer.cs`、`TaskbarLayout.cs`。原理 runtime-pitfalls.md §16 |
 | 小组件透明 | `Services/TransparentWindowSurface.cs`。贴片不用它。见 §17 |
 | 设备图标 | `Services/DeviceIconFactory.cs`（不要用字体图标） |
-| 设备产品图 | `Core/Media/DeviceImageCatalog.cs`、`App/Services/DeviceImageService.cs`；格式见 `device-images.md` |
+| 设备产品图 | `Core/Media/DeviceImageCatalog.cs`、`App/Services/DeviceImageService.cs`；**新品牌接入手册见 `device-images.md`** |
 | 程序图标 | `scripts/make-app-icon.py` → `Assets/VigilWatt.ico`；csproj `ApplicationIcon` 和 `MainWindow.ApplyWindowIcon` 都要 |
 | 历史库 | `Storage/HistoryStore.cs`；页面 `Views/HistoryPage`、`Views/StatsPage` |
 | 日志 | `Utils/Log.cs`；设置页「日志」；设计 `dev/logging.md` |

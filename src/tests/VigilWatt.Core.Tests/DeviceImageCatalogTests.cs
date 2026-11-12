@@ -141,6 +141,33 @@ public class DeviceImageCatalogTests
         }
     }
 
+    [Fact]
+    public void D7_只有缩略图时回退为图片()
+    {
+        const string manifest = """
+            {
+              "model": "G87",
+              "match": { "displayNames": ["迈从 G87"] },
+              "colors": [
+                { "key": "color-white", "thumbnail": "thumb.png", "image": "missing-full.png" }
+              ]
+            }
+            """;
+        var root = CreatePack(manifest, "thumb.png");
+        try
+        {
+            var catalog = DeviceImageCatalog.Load(root);
+
+            Assert.True(catalog.TryResolve(Device("迈从 G87"), null, out var asset));
+            Assert.EndsWith("thumb.png", asset.ImagePath);
+            Assert.EndsWith("thumb.png", asset.ThumbnailPath);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     private static DeviceStatus Device(string name) => new()
     {
         Id = "mchose:test",

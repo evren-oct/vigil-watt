@@ -6,8 +6,10 @@
 ## 2026-11-12
 
 - **详情页 Hero 接入本地产品图**：新增 `DeviceImageCatalog` 读取 `device-images/<品牌>/<型号>/manifest.json`，按显示名或「自报型号 + VID/PID」匹配，不按设备 ID；无图/清单损坏回退 `DeviceIconFactory`。只改详情页，列表/托盘/贴片/小组件不动，格式见 `project/device-images.md`。
-- **迈从 G87 图片包**：从 MCHOSE HUB 的 `webIndexList.colorList` 与官方 CDN 整理 11 个配色的缩略图/整机图，放在本机数据目录；厂商图不入库、不随安装包分发。新增清单匹配、路径越界与配色覆盖单测。
+- **迈从 G87 图片包**：从 MCHOSE HUB 的 `webIndexList.colorList` 与官方 CDN 整理 11 个配色的缩略图/整机图，最初放在本机数据目录；随后缩略图改为项目资源（见下条）。新增清单匹配、路径越界与配色覆盖单测。
 - **产品图配色可覆盖**：官方 HUB 只用 `checkIndex` 记录用户选择（本机默认 0 = 白），不从设备读颜色；因此详情页 Hero 悬停时显示调整按钮，选中的配色按设备 ID 存 `ImageKey`，详情页优先用户选择。新增配色覆盖与设置序列化单测。
+- **迈从键盘产品图铺全量**：新增 `scripts/import-mchose-images.py`，从官方 `cardList.json` 按型号/PID 分组下载缩略图，生成 30 款 / 159 个配色；加上原有 G87 V1，共 31 款 / 170 个缩略图（压缩后约 4.5MB）。缩略图作为项目 `Assets/device-images` 随包分发，整机图可选写本机数据目录。
+- **产品图接入手册**：`docs/project/device-images.md` 扩成完整流程（官方源、解包、分组、manifest、压缩、校验、已知坑），并新增 `scripts/check-device-images.py` 校验文件缺失与显示名冲突。未来接新品牌照此执行，不再从零设计。
 
 ## 2026-11-11
 

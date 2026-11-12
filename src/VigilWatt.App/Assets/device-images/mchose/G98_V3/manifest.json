@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "G98 V3",
+  "match": {
+    "displayNames": [
+      "迈从 G98 V3",
+      "G98 V3"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "1015",
+      "1017",
+      "2025",
+      "2026"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/G98_V3_Ash_Grey_edf260bcc5a2.png"
+    },
+    {
+      "key": "color-white-copy",
+      "label": "white copy",
+      "thumbnail": "color-white-copy_thumb.png",
+      "image": "color-white-copy_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/G98_V3_ZheyingWhite_nvs7kc54rfq18riy.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/G98_V3BlackGold_88ffwpc2e3pbn2k5.png"
+    },
+    {
+      "key": "color-star-blue",
+      "label": "star blue",
+      "thumbnail": "color-star-blue_thumb.png",
+      "image": "color-star-blue_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/G98_V3_Clear_Sky_Blue_48817a39a9f5.png"
+    },
+    {
+      "key": "color-peach-side",
+      "label": "peach side",
+      "thumbnail": "color-peach-side_thumb.png",
+      "image": "color-peach-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/G98_V3_Misty_Peach_Gradient_d041f4b4965b.png"
+    },
+    {
+      "key": "color-black-side",
+      "label": "black side",
+      "thumbnail": "color-black-side_thumb.png",
+      "image": "color-black-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/G98_V3_Mountain_Gradient_91336ea94bb0.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

@@ -96,6 +96,7 @@ public sealed class GanssCodecTests
     [InlineData("GANSS GS3104T-Pro", true)]
     [InlineData("ganss gs3104t-pro", true)]
     [InlineData("GS3104T", true)]
+    [InlineData("GS3108T", true)]
     [InlineData("2.4G Wireless Receiver", false)]
     [InlineData("", false)]
     public void ProductNameCanReplaceInterfaceIndex(string product, bool eligible)
@@ -113,6 +114,14 @@ public sealed class GanssCodecTests
         Assert.False(GanssCodec.IsSupportedInterface(0x05AC, 0x024F, VendorPath, Ganss, 0xFF60, 0x61, 33, 64, 0));
         Assert.False(GanssCodec.IsSupportedInterface(0x05AC, 0x024F, VendorPath, Ganss, 0xFF60, 0x61, 33, 33, 1));
     }
+
+    [Theory]
+    [InlineData("GS3104T-Pro", "GANSS GS3104T-Pro")]
+    [InlineData("GS3108T-Pro", "GANSS GS3104T-Pro")]
+    [InlineData("F108Pro Dongle", "狼蛛 F108 Pro")]
+    [InlineData("", "GANSS GS3104T-Pro")]
+    public void DisplayNameFollowsProductString(string product, string expected)
+        => Assert.Equal(expected, GanssCodec.DisplayNameFor(product));
 
     private static byte[] Response(int percent)
     {

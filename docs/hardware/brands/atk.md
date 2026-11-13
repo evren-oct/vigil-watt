@@ -1,4 +1,4 @@
-# ATK / VXE 2.4G 电量（接收器 VID_373B）
+# ATK / VXE 2.4G 电量（接收器 VID_373B / Compx VID_3554）
 
 鼠标走 16 字节 op 帧，键盘走 VIA，同一个 VID 下按 usage page 分流。鼠标部分：协议出处是公开逆向项目 [0x44oge-ATK](https://github.com/ReformedDoge/0x44oge-ATK)，本项目在其基础上做了真机复核与补强。
 
@@ -650,3 +650,29 @@ manufacturer 为 `Compx`；电量口 `MI_01&COL05`，usage `0xFF02`，进出均 
 - **本体 PID 未知**：社区只提供了接收器。插数据线时枚举出的本体走的是「未登记 PID」路径，会在设备页多出一条记录（CR-99 同类）。补到本体 PID 后加进 `DeviceGroups` 同一组即可归一。
 - 插拔线瞬间百分比跳变（50% → 65%）社区称官方驱动同样如此，归因于电量计在电源路径切换时重新校准；**未独立复现**。
 - 关机后 dongle 连续 12 次无应答、重开机恢复——行为与既有 ATK 一致，未额外处理。
+
+## 11. VXE R1SE+（Compx 号段 3554:F58E，2026-11-13 本机验证）
+
+R1SE+ 的接收器不在 ATK 自家 `373B` 号段，而在 Compx 共用号段：USB/HID 产品串 `VXE Mouse 1K Dongle`，
+`3554:F58E`。接口形状与 §2 的 17 字节协议完全同款——电量口在 `MI_01&COL05`（`FF02/0002`，17/17，
+report ID `0x08`），另有 `FF05`(8B) / `FF03`(8B) / `FF04`(feature 8B) / 普通鼠标口，均无电量。
+探针脚本 `scripts/probe-vxe-r1se-battery.py`（结构与 `probe-atk-battery.py` 相同）连发 3 次查询，**3/3 应答**：
+
+```text
+TX 08 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 49
+RX 08 04 00 00 00 02 14 00 0D F1 00 00 00 00 00 00 35
+```
+
+校验通过：电量 **20%**、充电位 `[7]=0` 未充电、电压 `0x0DF1` = **3569 mV**。应答结构与
+`AtkCodec` 现有解析逐字节吻合，编解码零改动。
+
+**认领边界（重点）**：`0x3554` 是 Compx 共用号段——派世 X2 V2（`F508`，归 PulsarPlugin）、
+AULA F99 Pro / 凌豹 K98 / 迈从 G75（`FA09`，键盘会话协议）、VGN F2（`FB56`，y2 查询）都在这里。
+所以 `AtkPlugin` 对该号段**只放行精确指纹** `F58E + FF02 + 17/17`，其余一律不认；回归由
+`AtkReceiverTests.CompxReceiverClaimsOnlyExactBatteryFingerprint` 守着（含 `F508` 不被抢的用例）。
+`F58E` 已登记配对组 `r1se`（设备 ID `atk:atk-r1se`）与型号表（显示名 `VXE R1SE+`）；
+故意的取舍是**不进** `_receiversInPlace` 缓存——那只服务未登记的 `373B` 本体，混入 `3554`
+设备会让跨品牌接收器误挡本体认领。
+
+共用 `Atk` 品牌开关（默认关）；未验证：有线本体 PID（本机未插线枚举）、充电态、休眠/唤醒、
+关机后行为。接入方式与证据收集记录见 changelog 2026-11-13。

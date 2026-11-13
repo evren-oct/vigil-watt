@@ -50,6 +50,11 @@ public sealed class AtkPlugin : BatteryPluginBase
     private const ushort DonglePidA9Air = 0x1278;         // A9 Air 大师版+ GEM 8K 接收器（产品名同为 "...8k dongle-L"）
     private const ushort DonglePidR1Nk = 0x10C9;          // VXE R1 Nearlink 接收器（产品名 "NK mouse NANO dongle"）
 
+    /// <summary>Compx 共用号段（0x3554）：派世 F508、AULA/K98/G75 FA09、VGN F2 FB56 全在这里。
+    /// 只放行下方登记过的精确 PID，绝不整段放行——判据见 protocols.md §2。</summary>
+    private const ushort VendorIdCompx = 0x3554;
+    private const ushort DonglePidR1Se = 0xF58E;          // VXE R1SE+ 1K 接收器（产品名 "VXE Mouse 1K Dongle"）
+
     /// <summary>A9 Air 大师版+ 的**本体** PID：插数据线时枚举出来（产品名 "ATK A9 Air+"）。
     /// 与 F1 Ultimate 的 0x11E4 同类——**不是接收器**，但插线时只有它应答（atk.md §3.3）。</summary>
     private const ushort BodyPidA9Air = 0x1293;
@@ -82,7 +87,7 @@ public sealed class AtkPlugin : BatteryPluginBase
     /// 已登记分组分支保证（atk.md §4.1）。</summary>
     private static bool IsReceiverPid(ushort pid) =>
         pid is DonglePid or DonglePid1K or DonglePidV3 or DonglePidF1Ultimate or BodyPidF1Ultimate
-            or DonglePidA9Air or DonglePidR1Nk or DonglePidA9UltraMax or DonglePidNkFf05;
+            or DonglePidA9Air or DonglePidR1Nk or DonglePidA9UltraMax or DonglePidNkFf05 or DonglePidR1Se;
 
     private static DateTimeOffset _receiverCheckedAt;
 
@@ -132,6 +137,14 @@ public sealed class AtkPlugin : BatteryPluginBase
             && AtkFf05Codec.IsSupportedInterface(info.UsagePage, info.ProductId,
                 info.InputReportLength, info.OutputReportLength))
             return true;
+
+        if (info.VendorId == VendorIdCompx)
+            // Compx 号段只认 R1SE+ 这一条指纹（FF02 + 17/17，本机 3/3 实测应答）。
+            // 同号段的派世 F508 归 PulsarPlugin、AULA/K98/G75 的 FA09 是键盘会话协议，都不能碰。
+            // F58E 已登记配对组，故不进 _receiversInPlace（那只服务未登记的 373B 本体，
+            // 混入 3554 设备会让跨品牌接收器误挡本体认领）。
+            return info.ProductId == DonglePidR1Se && info.UsagePage == UsagePageBattery
+                && AtkCodec.IsSupportedInterface(info.InputReportLength, info.OutputReportLength);
 
         if (info.VendorId != VendorId || info.UsagePage != UsagePageBattery)
             return false;
@@ -186,6 +199,7 @@ public sealed class AtkPlugin : BatteryPluginBase
         [BodyPidR1Nk] = "r1nk",            // VXE R1 Nearlink 本体（插数据线时枚举）
         [DonglePidA9UltraMax] = "a9ultra", // A9 Ultra Max 2.0 接收器（本体 PID 未知，插线会多一条记录）
         [DonglePidNkFf05] = "nkff05",      // 新固件 FF05 接收器（同样叫 NK mouse NANO dongle，走 64 字节寄存器读）
+        [DonglePidR1Se] = "r1se",          // VXE R1SE+ 接收器（VXE Mouse 1K Dongle；本机无本体 PID 实测）
     };
 
     /// <summary>各组的型号名（本体上报的产品名，即机型）；按组存，两只鼠标互不覆盖。</summary>
@@ -264,6 +278,7 @@ public sealed class AtkPlugin : BatteryPluginBase
         [DonglePidR1Nk] = "VXE R1 Nearlink",             // 接收器形态（NK mouse NANO dongle）
         [BodyPidR1Nk] = "VXE R1 Nearlink",               // 本体形态（插数据线），同一台设备
         [DonglePidA9UltraMax] = "ATK A9 Ultra Max 2.0",  // 接收器形态；本体 PID 未采到，只能靠这一条给名字
+        [DonglePidR1Se] = "VXE R1SE+",                   // 接收器形态（VXE Mouse 1K Dongle）
     };
 
     protected override string BuildDisplayName(HidDeviceInfo info)

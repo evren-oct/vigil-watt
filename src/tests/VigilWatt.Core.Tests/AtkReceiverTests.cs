@@ -20,6 +20,15 @@ public class AtkReceiverTests
             Product = "NK mouse NANO dongle",
         };
 
+    private static HidDeviceInfo CompxInfo(ushort pid, ushort page, ushort input, ushort output)
+        => new()
+        {
+            DevicePath = $@"\\?\hid#vid_3554&pid_{pid:x4}&mi_01&col05#test",
+            VendorId = 0x3554, ProductId = pid, UsagePage = page, Usage = 2,
+            InputReportLength = input, OutputReportLength = output,
+            Product = "VXE Mouse 1K Dongle",
+        };
+
     private static T Invoke<T>(AtkPlugin plugin, string method, object argument)
         => (T)typeof(AtkPlugin).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(plugin, [argument])!;
@@ -75,4 +84,24 @@ public class AtkReceiverTests
         Assert.Equal(wireless, wired);
         Assert.NotEqual(wireless, Invoke<string>(plugin, "IdFor", Info(0x101B, 0xFF02, 17, 17).DevicePath));
     }
+
+    [Theory]
+    [InlineData(0xF58E, 0xFF02, 17, 17, true)]
+    [InlineData(0xF58E, 0xFF02, 20, 20, false)]
+    [InlineData(0xF58E, 0xFF02, 17, 20, false)]
+    [InlineData(0xF58E, 0x0001, 17, 17, false)]
+    [InlineData(0xF58E, 0xFF04, 0, 0, false)]
+    [InlineData(0xF508, 0xFF02, 17, 17, false)]   // 派世 X2 V2 同口同族协议，归 PulsarPlugin，不能抢
+    [InlineData(0xFA09, 0xFF02, 17, 17, false)]   // AULA/K98/G75 共用号段，键盘会话协议
+    public void CompxReceiverClaimsOnlyExactBatteryFingerprint(int pid, int page, int input, int output, bool expected)
+    {
+        var plugin = new AtkPlugin();
+        Assert.Equal(expected, Invoke<bool>(plugin, "IsCandidate",
+            CompxInfo((ushort)pid, (ushort)page, (ushort)input, (ushort)output)));
+    }
+
+    [Fact]
+    public void R1SeShowsModelInsteadOfGenericDongleName()
+        => Assert.Equal("VXE R1SE+", Invoke<string>(new AtkPlugin(), "BuildDisplayName",
+            CompxInfo(0xF58E, 0xFF02, 17, 17)));
 }

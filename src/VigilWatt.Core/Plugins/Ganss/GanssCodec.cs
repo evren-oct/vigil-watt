@@ -28,10 +28,16 @@ public static class GanssCodec
     /// <summary>狼蛛 F108 Pro 自报的产品名含这个串（本机实测 <c>F108Pro Dongle</c>）。</summary>
     public const string AulaProductHint = "F108";
 
-    /// <summary>接收器自报的产品名含品牌名时，接口编号漂移也认领（产品名是设备自己声明的身份）。</summary>
+    /// <summary>接收器自报的产品名含品牌名时，接口编号漂移也认领（产品名是设备自己声明的身份）。
+    /// GS3108T-PRO 自报 <c>GS3108T-PRO 2.4G</c>，与 GS3104T-Pro 同 VID/PID 同协议，一并兜底。</summary>
     public static bool LooksLikeGanss(string product)
         => product.Contains("GANSS", StringComparison.OrdinalIgnoreCase)
-           || product.Contains("GS3104", StringComparison.OrdinalIgnoreCase);
+           || product.Contains("GS3104", StringComparison.OrdinalIgnoreCase)
+           || product.Contains("GS3108", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>三族设备共用一套协议，只差品牌；GS3108T-PRO 不分流，沿用 GS3104T-Pro 显示名。</summary>
+    public static string DisplayNameFor(string product)
+        => LooksLikeAulaF108(product) ? "狼蛛 F108 Pro" : "GANSS GS3104T-Pro";
 
     /// <summary>狼蛛 F108 Pro 与 GS3104T-Pro 在 HID 层完全同指纹，品牌识别只剩产品名这一条路。</summary>
     public static bool LooksLikeAulaF108(string product)

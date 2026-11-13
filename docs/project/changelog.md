@@ -5,6 +5,8 @@
 
 ## 2026-11-13
 
+- **接入 VXE R1SE+（fork 个人适配）**：接收器在 Compx 共用号段 `3554:F58E`（产品串 `VXE Mouse 1K Dongle`），接口与 ATK 17 字节协议完全同款，探针 `scripts/probe-vxe-r1se-battery.py` 3/3 实测应答（20% / 放电 / 3569 mV），编解码零改动。`AtkPlugin` 对 `0x3554` **只认精确指纹**（`F58E + FF02 + 17/17`），同号段的派世 `F508` / AULA 系 `FA09` 不受影响；登记 `r1se` 组与显示名，共用 ATK 开关（默认关）。见 `hardware/brands/atk.md` §11。
+- **GANSS GS3108T-PRO 显示型号**：接收器 `05AC:024F` 与 GS3104T-Pro 同指纹，`&mi_03#` 判据原样命中、协议零改动；产品串自报 `GS3108T-PRO 2.4G`，`LooksLikeGanss` 补 `GS3108` 提示串兜底，显示名不分流、沿用 GS3104T-Pro；本机实发查询真机应答 100%。见 `hardware/brands/ganss.md` §8。
 - **罗技办公线产品图全量**：新增 `scripts/import-logitech-images.py`，读本机 Options+ 的 `devices.json` 与 `depots/*/logioptionsplus/thumbnails`，按 `displayName` 归一化分组，生成 151 款 / 151 张缩略图（原始 22.1MB，300px 重采样后 6.7MB）。每型号只取一张官方主图，不做配色切换——罗技的 `derivatives` 只有 `ext1/ext2` 编号，且混了 for Mac/for Business SKU 与重复引用。`productIds` 写设备 WPID 并排除接收器 PID（C548 是所有 Bolt 设备共用的传输通道）。
 - **修改名设备离线后丢产品图**：`DeviceCustomization` 加 `OriginalName`，改名时记下协议原名，`RestoreOfflineTombstones` 优先用它作 `Name`。在线设备本来就没事（详情页用 `Manager.Find` 的原始实例匹配，改名只写设置），只有墓碑从历史库取名字时才会拿到改名后的值，而墓碑不带 `Usb`/`Reported` 身份。顺带修列表改名时新建 `DeviceCustomization` 会把详情页选过的 `ImageKey` 清掉。
 - **G 系列产品图补上（OpenMouse 图床）**：新增 `scripts/import-openmouse-images.py`，从 `img.openmouse.app` 取 16 个 G / PRO 型号（G502 / G502 X / G502 X Plus / G703 / G903 / G PRO / G PRO 2 / G203 / G303 / G305 / G309 / G402 / G403 / PRO X SUPERLIGHT / PRO X2·X3 SUPERSTRIKE），裁掉透明边距后统一 300 长边，共 0.63MB。`displayNames` 是从它的名字正则反推的，需真机核对 G 系列 `0x0005` 自报名后补变体；图不在其仓库内、不在 AGPL 范围，版权处理同其它产品图。

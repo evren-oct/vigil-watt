@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Litra Beam",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B901",
+      "C901",
+      "C902"
+    ],
+    "displayNames": [
+      "Litra Beam"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "litra_beam.png",
+      "image": "litra_beam.png",
+      "source": "LogiOptions+ devices.json / litra_beam.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

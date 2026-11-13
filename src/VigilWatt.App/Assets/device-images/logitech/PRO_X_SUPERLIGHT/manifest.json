@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "PRO X SUPERLIGHT",
+  "match": {
+    "displayNames": [
+      "PRO X SUPERLIGHT",
+      "PRO X SUPERLIGHT 2",
+      "PRO X SUPERLIGHT 2 SE",
+      "PRO X Wireless"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-pro-x-superlight-2c.png",
+      "image": "logitech-pro-x-superlight-2c.png",
+      "source": "https://img.openmouse.app/logitech-pro-x-superlight-2c.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

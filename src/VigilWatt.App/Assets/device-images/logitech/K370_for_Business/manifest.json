@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K370 for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B37F"
+    ],
+    "displayNames": [
+      "K370 for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "5106d2dd-c7a8-42e6-87a8-46e50578179d.png",
+      "image": "5106d2dd-c7a8-42e6-87a8-46e50578179d.png",
+      "source": "LogiOptions+ devices.json / 5106d2dd-c7a8-42e6-87a8-46e50578179d.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

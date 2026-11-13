@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Ergo M575 for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B02F"
+    ],
+    "displayNames": [
+      "Ergo M575 for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m575.png",
+      "image": "m575.png",
+      "source": "LogiOptions+ devices.json / m575.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

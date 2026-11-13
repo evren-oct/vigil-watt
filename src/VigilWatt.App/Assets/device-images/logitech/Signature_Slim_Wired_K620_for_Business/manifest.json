@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Slim Wired K620 for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "ABDE",
+      "C35D"
+    ],
+    "displayNames": [
+      "Signature Slim Wired K620 for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "fe01b978-fbab-4e7c-841f-01d41c99163d.png",
+      "image": "fe01b978-fbab-4e7c-841f-01d41c99163d.png",
+      "source": "LogiOptions+ devices.json / fe01b978-fbab-4e7c-841f-01d41c99163d.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

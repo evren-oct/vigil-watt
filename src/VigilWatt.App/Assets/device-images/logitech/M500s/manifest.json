@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M500s",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "C093"
+    ],
+    "displayNames": [
+      "M500s"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m500s.png",
+      "image": "m500s.png",
+      "source": "LogiOptions+ devices.json / m500s.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

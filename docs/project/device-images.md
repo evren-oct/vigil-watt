@@ -1,8 +1,8 @@
 # 设备产品图接入
 
 > 这是产品图的**单一接入手册**。新品牌/新型号按本文走，不要重新设计一套图片加载逻辑。
-> 当前内置资产：迈从键盘 31 款 / 170 个配色 / 201 个文件 / 压缩后约 4.5 MB。
-> 快速校验：`python scripts/check-device-images.py`
+> 当前内置资产：迈从键盘 31 款 / 170 个配色 / 201 个文件；罗技办公线 151 款 / 151 个文件。
+> 合计 503 个文件、压缩后约 11.3 MB。快速校验：`python scripts/check-device-images.py`
 
 ## 0. 一句话流程
 
@@ -107,6 +107,18 @@ src/VigilWatt.App/Assets/device-images/<品牌>/<型号>/
 - 详情页 Hero 悬停时右下角出现铅笔按钮，点开可选任一配色；选择按设备 ID 存进
   `settings.json` 的 `DeviceCustomizations[id].ImageKey`，详情页优先用它。
 - 用户选错随时改；设备改名后如果无法匹配型号，会回退几何图标，不会硬套别的图。
+
+### 4.1 改名与离线墓碑
+
+产品图匹配用的是**插件写入的原始 `Name`**，不是界面上的显示名：`DeviceDetailPage` 拿
+`Manager.Find(id)` 的实例去 `TryResolve`，改名只写 `DeviceCustomizations[id].Name`，
+`DeviceCustomizationResolver.Apply` 返回的是 Clone。所以**在线设备改名不影响产品图**。
+
+唯一的例外是**离线墓碑**：设备本次启动后从未上线、但 24h 内有历史时，
+`RestoreOfflineTombstones` 会用历史库里的名字补一条离线条目，而写历史时存的是改名后的名字
+（`ApplyName` 的产物），墓碑又不带 `Usb` / `Reported` 身份。这条路径上两把钥匙都没有，
+所以改名时把原名记进 `DeviceCustomization.OriginalName`，墓碑恢复时优先用它作 `Name`，
+显示层再靠 `Apply` 覆盖回自定义名。
 
 ## 5. 接入新品牌/新设备的完整流程
 
@@ -213,7 +225,76 @@ python scripts/import-mchose-images.py
 - 已有 G87 V1 目录不会被删；
 - 需要整机大图时加 `--with-full --debug-data-dir ...`，整机图只写本机数据目录，不入库。
 
-## 7. 已知坑（接新品牌前先看）
+## 7. 罗技全量记录（2026-11-13）
+
+### 7.1 来源
+
+本机装了 Logitech Options+，官方目录直接可读，不联网：
+
+- `%ProgramData%\LogiOptionsPlus\devices.json`：180 条设备，字段 `displayName` /
+  `interfaces[].id` / `thumbnail` / `derivatives[].thumbnail`。
+- `%ProgramData%\LogiOptionsPlus\depots\<流水号>\logioptionsplus\thumbnails\`：353 张透明底 PNG，
+  原始 44.8 MB。流水号目录名不固定，脚本按 PNG 数量取最大的那个。
+- `interfaces[].id` 形如 `046d_b034`，后半段是**设备 WPID**，与 HID++ `0xB5` 配对寄存器同值
+  （MX Master 3S 两边都是 `B034`）。
+- `derivatives[]` 是配色与版本变体，但混了 `for Mac` / `for Business` SKU 和重复引用
+  （`ext3` 指向 `ext1` 同一张图）。
+
+### 7.2 结果
+
+| 项 | 数量 |
+|---|---:|
+| 唯一 `displayName` | 158 |
+| 无图的条目（接收器 / 软件事件） | 6，跳过 |
+| 内置型号 | 151（`M336 / M337 / M535` 与 `M336/M337/M535` 归一化后合并成一条） |
+| 文件 | 151 manifest + 151 缩略图 |
+| 压缩后体积 | 6.7 MB（原始 22.1 MB，300px 宽重采样） |
+
+### 7.3 与迈从的三处差异
+
+1. **没有官方配色名**：迈从有 `className`（`color-black`），罗技只有 `ext1` / `ext2` 这类编号。
+   所以每型号只取一张主图，不做配色切换——硬做会产出一堆「变体 1/2/3」的噪音。
+2. **`Usb` 是接收器不是本体**：罗技设备挂 Bolt 时 `Usb` 是 `046D:C548`，所有设备共用。
+   manifest 的 `productIds` 必须写**设备 WPID**，并排除 `logitech-hidpp.json` 里登记的接收器 PID，
+   否则会把图挂到别的型号上。
+3. **`Reported` 为 null 且 WPID 读不到**：C548 的 `0xB5` 各子寄存器均无回包（CR-153 已记录），
+   所以当前匹配只能靠显示名；改名兜底依赖 `DeviceCustomization.OriginalName`（§4.1）。
+   manifest 里已写好 WPID，`0xB5` 修好后「自报型号 + VID/PID」这条腿自动生效。
+
+### 7.4 重抓
+
+```powershell
+python scripts/import-logitech-images.py                      # 全量 151 款
+python scripts/import-logitech-images.py --model "MX Master 3S"
+python scripts/import-logitech-images.py --dry-run             # 只统计不落盘
+```
+
+脚本默认清空 `Assets/device-images/logitech` 再写，幂等；`--max-width 0` 可关闭缩放。
+Pillow 缺失时原样复制并警告（体积约 22 MB）。
+
+### 7.5 G 系列：改用 OpenMouse 的公共图床
+
+Options+ 只管办公线，180 条里 **0 条** `G` / `PRO` / `ASTRO` 前缀。另两条路都不通：G HUB 安装器是
+自研封装（70 MB payload 加密在 PE 资源段，7-Zip 只解出图标与清单），OpenLogi 只有动作图标。
+
+改用 OpenMouse 的图床：`https://img.openmouse.app/<file>`（Cloudflare R2，公开读）。它的
+`src/shared/device-images.ts` **按显示名匹配、不按 VID:PID**，理由与本文 §3 第 3 条一致——共用接收器
+PID 分不出型号。`scripts/import-openmouse-images.py` 取 16 个 G / PRO 型号，裁掉透明边距后
+统一 300 长边，共 0.63 MB（原始 6.17 MB）。
+
+注意：
+
+- 图**不在 OpenMouse 仓库里**，也不在它的 AGPL-3.0 范围内。其 README 自述这些是厂商渲染图、
+  版权归厂商，与本项目其它产品图同一处理（个人自用；商用需重新评估）。
+- `displayNames` 是从它的名字正则**反推**的（如 `/\bg502\b/i` → `G502` / `G502 HERO` /
+  `G502 LIGHTSPEED`），属于推导值。G 系列的 `0x0005` 自报名需真机核对后补变体——名字不符时
+  只会回退几何图标，不会挂错图。
+- `logitech-gpro-wireless.png` 在映射表里有、桶里 404，已跳过。
+- MX 系列不重复导入：Options+ 的官方图已在 §7.2。
+- 它还有 12 张雷蛇、2 张迈从（A7 V2/V3）、ATK / VGN / 雷柏 / HyperX / 华硕各 1-2 张，
+  将来补这些品牌可以复用同一个脚本，只需扩 `DEVICES` 表。
+
+## 8. 已知坑（接新品牌前先看）
 
 1. **不要把官方默认色当成硬件颜色**：官方 HUB 的 `checkIndex` 是用户选择，不是设备回读。
 2. **不要按设备 ID 选图**：插线/换口 ID 会变，历史记录也不能作为图片身份。
@@ -224,8 +305,10 @@ python scripts/import-mchose-images.py
 7. **内置资产只放缩略图**：整机图放用户目录，避免仓库/安装包膨胀。
 8. **不同品牌不要共用 `<型号>` 目录**：品牌目录是匹配边界的一部分。
 9. **cardList 不是所有品牌都有**：MCHOSE 键盘有，鼠标/耳机没有；新品牌先确认源结构。
+10. **同一型号多种写法先归一化再分组**：`M336 / M337` 与 `M336/M337` 归一化后同键，
+    分成两条 manifest 会被校验脚本判成 `duplicateDisplayNames`。
 
-## 8. 验证清单
+## 9. 验证清单
 
 - [ ] `python scripts/check-device-images.py`：`missing=0`、`duplicateDisplayNames=0`
 - [ ] `dotnet build VigilWatt.sln -c Debug`：0 警告 0 错误
@@ -234,9 +317,22 @@ python scripts/import-mchose-images.py
 - [ ] Hero 悬停调整按钮能切换配色，保存后立即生效
 - [ ] 列表、托盘、任务栏贴片、桌面小组件没有变化
 
-## 9. 边界
+## 10. 边界
 
-- 产品图只读本地文件，不联网；不参与设备认领、轮询、历史库。
+- 产品图只读本地文件，不联网；不参与设备认领、轮询、历史库。**这条是当前实现，不是永久约束**——
+  按需下载的改造方向见 §11。
 - 厂商产品图版权归厂商；当前按个人自用处理，缩略图作为项目资源随包分发。将来若商用，
   需要重新评估授权。
 - 新增品牌/型号优先只加资产与 manifest；只有通用匹配/加载能力确实不够时才改代码。
+
+## 11. 未来方向：远端图床 + 按需下载
+
+**现在为什么内置**：开发与验证方便——不用起服务、不用管网络、`check-device-images.py` 一次扫完。
+这是刻意的取舍，不是没想到体积问题。
+
+**问题在规模**：图片 337 张 / 11.75 MB，占全量安装包（36 MB）的 **33%**；而 198 个 manifest
+合计只有 146 KB。再补雷蛇、ATK/VGN、G 系列键盘与整机大图，很容易到几十 MB。
+
+**方案与已拍板的决策单独成文：[device-images-remote.md](device-images-remote.md)**——
+那边记了数据流、URL 规则、缓存目录、验收标准与「明确不做」的清单。本文不重复，
+避免两处各写一半。对应待办 `docs/reviews/BACKLOG.md` CR-162。

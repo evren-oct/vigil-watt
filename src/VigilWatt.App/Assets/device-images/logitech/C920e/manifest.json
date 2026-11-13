@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "C920e",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "08B6",
+      "08E7"
+    ],
+    "displayNames": [
+      "C920e"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c920e.png",
+      "image": "c920e.png",
+      "source": "LogiOptions+ devices.json / c920e.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

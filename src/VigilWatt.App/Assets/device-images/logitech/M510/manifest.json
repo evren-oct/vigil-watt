@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M510",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4051"
+    ],
+    "displayNames": [
+      "M510"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m510.png",
+      "image": "m510.png",
+      "source": "LogiOptions+ devices.json / m510.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

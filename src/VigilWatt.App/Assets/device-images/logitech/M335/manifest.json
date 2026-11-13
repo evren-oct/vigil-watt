@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M335",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4050"
+    ],
+    "displayNames": [
+      "M335"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m335.png",
+      "image": "m335.png",
+      "source": "LogiOptions+ devices.json / m335.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

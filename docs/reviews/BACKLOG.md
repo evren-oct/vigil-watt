@@ -11,6 +11,9 @@
 
 | 编号 | 优先级 | 一句话 | 证据 | 状态 |
 |---|---|---|---|---|
+| **CR-160** | P2 | 罗技 G 系列产品图已用 OpenMouse 图床补 16 个型号，但 `displayNames` 是从它的名字正则**反推**的、未经真机核对：`0x0005` 自报名若是别的写法（如 `G502 HERO` 之外的变体）就匹配不上，只会回退几何图标。G 系列键盘（G915 / G Pro X TKL 等）OpenMouse 不覆盖，仍无图 | `docs/project/device-images.md` §7.5、`scripts/import-openmouse-images.py` | `open` |
+| **CR-161** | P2 | `DeviceImageCatalog.ColorDto` 只解析 `source`，而迈从 manifest 写的是 `thumbnailSource` / `imageSource`，导致 `DeviceImageAsset.Source` 恒为 null（不影响显示，只影响排错时回看官方 URL） | `Media/DeviceImageCatalog.cs:ColorDto`、`Assets/device-images/mchose/*/manifest.json` | `open` |
+| **CR-162** | P2 | 产品图全内置不可持续：337 张 / 11.75 MB 随包分发，占全量安装包（36 MB）的 33%，用户为一台设备要背上全部型号。方案已定稿、待实施：manifest 全内置（146 KB）、PNG 走远端、详情页首次打开时按需下、缓存独立于用户自定义目录、不做换图失效。待定只剩托管方与联网开关默认值 | `docs/project/device-images-remote.md`、`Services/DeviceImageService.cs` | `open` |
 | **CR-148** | P1 | 迈从 CZ 状态块没有独立的"已充满"字段：`[0x20]` 只报充电中 + 电量百分比，"满电"靠 `MchoseSpecs.ResolveFull` 补判（100% 且设备不再报充电），且低 7 位是电压估算、同簇内 ±2 抖动（90→89→90）；只有本机一台样本 | `specs/mchose.protocols.json:cz-block`、`Plugins/Mchose/MchoseSpecs.cs:ResolveFull`、`hardware/mchose.md` §2.4 | `open` |
 | **CR-149** | P2 | 迈从 CZ 分块读只验证了第一段（`0x00..0x37`）：`0x38..0x3F` 那一段官方也读，但电量在 `0x20`，其内容语义未定（疑灯效/配置），未解析也未记录 | `hardware/mchose.md` §2.4 | `open` |
 | **CR-84** | P1 | AKG N9 Hybrid 已见 50% / 100% 读数，尚未核对官方 App、连续电量变化、关机与长期运行；用户观察充电时无法工作并取消充电测试，不接入充电标志，状态保持 Unknown | `Plugins/Akg/AkgN9Codec.cs:TryParseBattery`、`hardware/akg.md` §2 | `open` |

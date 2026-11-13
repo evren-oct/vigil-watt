@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "C930e",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0843"
+    ],
+    "displayNames": [
+      "C930e"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c930e.png",
+      "image": "c930e.png",
+      "source": "LogiOptions+ devices.json / c930e.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

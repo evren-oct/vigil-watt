@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Slim Solar+",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B391"
+    ],
+    "displayNames": [
+      "Signature Slim Solar+"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "978242a5-cddb-4d69-bcb3-cef516007f9d.png",
+      "image": "978242a5-cddb-4d69-bcb3-cef516007f9d.png",
+      "source": "LogiOptions+ devices.json / 978242a5-cddb-4d69-bcb3-cef516007f9d.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

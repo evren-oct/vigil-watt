@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Spotlight 2",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B506"
+    ],
+    "displayNames": [
+      "Spotlight 2"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "a03693ba-46f9-4bd9-a0e7-627073eb1b7a.png",
+      "image": "a03693ba-46f9-4bd9-a0e7-627073eb1b7a.png",
+      "source": "LogiOptions+ devices.json / a03693ba-46f9-4bd9-a0e7-627073eb1b7a.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

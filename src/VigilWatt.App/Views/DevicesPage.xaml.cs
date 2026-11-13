@@ -351,9 +351,14 @@ public sealed partial class DevicesPage : Page
         else
         {
             var name = FilterDeviceNameInput(nameBox.Text, 0, 0).Text.Trim();
-            var custom = new DeviceCustomization();
+            // 复用现有项：新建会把详情页选过的配色（ImageKey）一起清掉
+            settings.DeviceCustomizations.TryGetValue(id, out var custom);
+            custom ??= new DeviceCustomization();
             custom.Name = name;
             custom.IconKind = selectedKind;
+            // 首次改名时记下协议原名：离线墓碑的名字取自历史库（已是改名后的值），没有原名就配不上产品图
+            if (!string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(custom.OriginalName))
+                custom.OriginalName = App.Services.Manager.Find(id)?.Name;
             if (custom.Name == null && custom.IconKind == null) settings.DeviceCustomizations.Remove(id);
             else settings.DeviceCustomizations[id] = custom;
         }

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K850",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4062",
+      "B34D"
+    ],
+    "displayNames": [
+      "K850"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k850.png",
+      "image": "k850.png",
+      "source": "LogiOptions+ devices.json / k850.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

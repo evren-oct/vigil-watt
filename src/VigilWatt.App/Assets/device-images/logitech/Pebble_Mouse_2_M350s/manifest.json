@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Pebble Mouse 2 M350s",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B036"
+    ],
+    "displayNames": [
+      "Pebble Mouse 2 M350s"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "bf0cfa22-97ef-11ed-9f35-9730edd0c71a.png",
+      "image": "bf0cfa22-97ef-11ed-9f35-9730edd0c71a.png",
+      "source": "LogiOptions+ devices.json / bf0cfa22-97ef-11ed-9f35-9730edd0c71a.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G502 X",
+  "match": {
+    "displayNames": [
+      "G502 X",
+      "G502 X LIGHTSPEED"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g502-x.png",
+      "image": "logitech-g502-x.png",
+      "source": "https://img.openmouse.app/logitech-g502-x.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Keys-To-Go 2",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B38C",
+      "B38D"
+    ],
+    "displayNames": [
+      "Keys-To-Go 2"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "0e035a79-730a-41ac-85f4-c51bfaff8a72.png",
+      "image": "0e035a79-730a-41ac-85f4-c51bfaff8a72.png",
+      "source": "LogiOptions+ devices.json / 0e035a79-730a-41ac-85f4-c51bfaff8a72.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

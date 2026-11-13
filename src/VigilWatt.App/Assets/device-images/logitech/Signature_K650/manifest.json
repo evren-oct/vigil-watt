@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature K650",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B36F"
+    ],
+    "displayNames": [
+      "Signature K650"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k650_for_business.png",
+      "image": "k650_for_business.png",
+      "source": "LogiOptions+ devices.json / k650_for_business.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

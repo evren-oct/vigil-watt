@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Keys S",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B378"
+    ],
+    "displayNames": [
+      "MX Keys S"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "e5680f13-c9a1-4997-8aab-74e4e2430a2b.png",
+      "image": "e5680f13-c9a1-4997-8aab-74e4e2430a2b.png",
+      "source": "LogiOptions+ devices.json / e5680f13-c9a1-4997-8aab-74e4e2430a2b.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

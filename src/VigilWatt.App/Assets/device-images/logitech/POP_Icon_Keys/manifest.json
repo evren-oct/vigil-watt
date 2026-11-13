@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "POP Icon Keys",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B38F"
+    ],
+    "displayNames": [
+      "POP Icon Keys"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "2fa9a1ae-1b69-4cd5-bd29-174a1ebab914.png",
+      "image": "2fa9a1ae-1b69-4cd5-bd29-174a1ebab914.png",
+      "source": "LogiOptions+ devices.json / 2fa9a1ae-1b69-4cd5-bd29-174a1ebab914.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

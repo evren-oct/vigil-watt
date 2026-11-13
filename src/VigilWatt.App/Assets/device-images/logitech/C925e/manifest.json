@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "C925e",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "085B"
+    ],
+    "displayNames": [
+      "C925e"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c925e.png",
+      "image": "c925e.png",
+      "source": "LogiOptions+ devices.json / c925e.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

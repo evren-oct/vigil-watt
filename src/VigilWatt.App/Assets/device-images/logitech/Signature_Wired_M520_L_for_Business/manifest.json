@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Wired M520 L for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "ABDD",
+      "C0A2"
+    ],
+    "displayNames": [
+      "Signature Wired M520 L for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "5bf3bbb2-8e4e-4d33-a0b3-1c010ece1afc.png",
+      "image": "5bf3bbb2-8e4e-4d33-a0b3-1c010ece1afc.png",
+      "source": "LogiOptions+ devices.json / 5bf3bbb2-8e4e-4d33-a0b3-1c010ece1afc.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

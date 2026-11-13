@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Master 4 for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B048"
+    ],
+    "displayNames": [
+      "MX Master 4 for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "2334eaeb-eeeb-4249-abfd-67002f421230.png",
+      "image": "2334eaeb-eeeb-4249-abfd-67002f421230.png",
+      "source": "LogiOptions+ devices.json / 2334eaeb-eeeb-4249-abfd-67002f421230.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

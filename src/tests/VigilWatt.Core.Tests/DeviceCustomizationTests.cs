@@ -81,7 +81,11 @@ public sealed class DeviceCustomizationTests
     {
         var value = new Dictionary<string, DeviceCustomization>
         {
-            ["device-1"] = new() { Name = "Desk", IconKind = DeviceKind.Mouse, ImageKey = "color-pink-side" },
+            ["device-1"] = new()
+            {
+                Name = "Desk", IconKind = DeviceKind.Mouse, ImageKey = "color-pink-side",
+                OriginalName = "MX Master 3S",
+            },
         };
 
         var json = JsonSerializer.Serialize(value);
@@ -90,5 +94,6 @@ public sealed class DeviceCustomizationTests
         Assert.Equal("Desk", restored["device-1"].Name);
         Assert.Equal(DeviceKind.Mouse, restored["device-1"].IconKind);
         Assert.Equal("color-pink-side", restored["device-1"].ImageKey);
+        Assert.Equal("MX Master 3S", restored["device-1"].OriginalName);
     }
 }

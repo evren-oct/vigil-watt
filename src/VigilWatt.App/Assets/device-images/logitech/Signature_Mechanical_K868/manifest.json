@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Mechanical K868",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B39A",
+      "C35E"
+    ],
+    "displayNames": [
+      "Signature Mechanical K868"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "1a65c02e-bfbf-49e8-86fd-bf7ece635350.png",
+      "image": "1a65c02e-bfbf-49e8-86fd-bf7ece635350.png",
+      "source": "LogiOptions+ devices.json / 1a65c02e-bfbf-49e8-86fd-bf7ece635350.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

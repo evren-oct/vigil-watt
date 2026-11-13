@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "POP Mouse",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B030"
+    ],
+    "displayNames": [
+      "POP Mouse"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "pop_mouse.png",
+      "image": "pop_mouse.png",
+      "source": "LogiOptions+ devices.json / pop_mouse.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

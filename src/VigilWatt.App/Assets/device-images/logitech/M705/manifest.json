@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M705",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "101B",
+      "406D"
+    ],
+    "displayNames": [
+      "M705"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m705_lcc.png",
+      "image": "m705_lcc.png",
+      "source": "LogiOptions+ devices.json / m705_lcc.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

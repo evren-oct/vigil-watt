@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Keys Mini for Mac",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B36A"
+    ],
+    "displayNames": [
+      "MX Keys Mini for Mac"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_keys_mini_mac.png",
+      "image": "mx_keys_mini_mac.png",
+      "source": "LogiOptions+ devices.json / mx_keys_mini_mac.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

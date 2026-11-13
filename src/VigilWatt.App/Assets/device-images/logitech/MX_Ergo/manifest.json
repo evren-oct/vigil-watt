@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Ergo",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "406F",
+      "B01D"
+    ],
+    "displayNames": [
+      "MX Ergo"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_ergo.png",
+      "image": "mx_ergo.png",
+      "source": "LogiOptions+ devices.json / mx_ergo.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

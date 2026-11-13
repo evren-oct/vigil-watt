@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Anywhere 3 for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B02D"
+    ],
+    "displayNames": [
+      "MX Anywhere 3 for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_anywhere_3_for_business.png",
+      "image": "mx_anywhere_3_for_business.png",
+      "source": "LogiOptions+ devices.json / mx_anywhere_3_for_business.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

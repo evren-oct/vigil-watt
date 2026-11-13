@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Brio 500",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0943"
+    ],
+    "displayNames": [
+      "Brio 500"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "brio_500_ext1.png",
+      "image": "brio_500_ext1.png",
+      "source": "LogiOptions+ devices.json / brio_500_ext1.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

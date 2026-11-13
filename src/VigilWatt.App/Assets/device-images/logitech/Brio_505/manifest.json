@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Brio 505",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0919"
+    ],
+    "displayNames": [
+      "Brio 505"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "brio_505_ext1.png",
+      "image": "brio_505_ext1.png",
+      "source": "LogiOptions+ devices.json / brio_505_ext1.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

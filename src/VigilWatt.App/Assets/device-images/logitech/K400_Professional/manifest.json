@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K400 Professional",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4068"
+    ],
+    "displayNames": [
+      "K400 Professional"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k400.png",
+      "image": "k400.png",
+      "source": "LogiOptions+ devices.json / k400.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

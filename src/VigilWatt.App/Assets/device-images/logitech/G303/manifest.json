@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G303",
+  "match": {
+    "displayNames": [
+      "G303",
+      "G303 Daedalus Apex",
+      "G303 Shroud Edition"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g303.png",
+      "image": "logitech-g303.png",
+      "source": "https://img.openmouse.app/logitech-g303.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

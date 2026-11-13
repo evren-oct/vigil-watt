@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "C920c",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "08B7"
+    ],
+    "displayNames": [
+      "C920c"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c920c.png",
+      "image": "c920c.png",
+      "source": "LogiOptions+ devices.json / c920c.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

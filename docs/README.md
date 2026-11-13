@@ -25,6 +25,7 @@
 - [capture.md](project/capture.md)：设备诊断（USB/HID 采集）的流程、能力边界、包格式与验证记录。
 - [code-flow.md](project/code-flow.md)：启动、设备发现、轮询和 UI 更新流程。
 - [device-images.md](project/device-images.md)：产品图接入的完整手册（官方源、manifest、匹配、压缩、验证、已知坑）。
+- [device-images-remote.md](project/device-images-remote.md)：产品图远端化与按需下载的**方案**（未实施）。数据流、URL 规则、缓存目录、已拍板决策与明确不做的事。
 - [pointer-telemetry.md](project/pointer-telemetry.md)：DPI / 回报率遥测模型、来源口径与过期规则（尚无插件接入）。
 - [experience.md](project/experience.md)：项目经验与后续规划；不维护待办。
 - [changelog.md](project/changelog.md)：按日期记录重要改动及原因。

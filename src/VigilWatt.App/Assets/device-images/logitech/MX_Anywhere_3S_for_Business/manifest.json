@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Anywhere 3S for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B038"
+    ],
+    "displayNames": [
+      "MX Anywhere 3S for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "6279dbd7-8bd1-45c4-9af1-90f64a32358a.png",
+      "image": "6279dbd7-8bd1-45c4-9af1-90f64a32358a.png",
+      "source": "LogiOptions+ devices.json / 6279dbd7-8bd1-45c4-9af1-90f64a32358a.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

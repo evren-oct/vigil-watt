@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Plus M750 L For Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B03D"
+    ],
+    "displayNames": [
+      "Signature Plus M750 L For Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c6df3179-10f0-4ecf-b8d1-df7743a5fc00.png",
+      "image": "c6df3179-10f0-4ecf-b8d1-df7743a5fc00.png",
+      "source": "LogiOptions+ devices.json / c6df3179-10f0-4ecf-b8d1-df7743a5fc00.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

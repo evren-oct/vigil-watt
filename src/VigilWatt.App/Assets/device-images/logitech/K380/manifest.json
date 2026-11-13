@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K380",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B342"
+    ],
+    "displayNames": [
+      "K380"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k380.png",
+      "image": "k380.png",
+      "source": "LogiOptions+ devices.json / k380.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -12,6 +12,8 @@ public sealed class DeviceCustomization
     public DeviceKind? IconKind { get; set; }
     /// <summary>产品图配色 key（如 <c>color-pink-side</c>）；null = 用清单默认色。</summary>
     public string? ImageKey { get; set; }
+    /// <summary>改名前的设备原名：离线墓碑不带身份，只能靠它匹配产品图（device-images.md §4）。</summary>
+    public string? OriginalName { get; set; }
 }
 
 public static class DeviceCustomizationResolver

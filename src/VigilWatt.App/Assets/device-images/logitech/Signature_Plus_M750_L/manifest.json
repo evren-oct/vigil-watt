@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Plus M750 L",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B02C"
+    ],
+    "displayNames": [
+      "Signature Plus M750 L"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "signature_m750.png",
+      "image": "signature_m750.png",
+      "source": "LogiOptions+ devices.json / signature_m750.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

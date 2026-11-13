@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature M650 For Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B032"
+    ],
+    "displayNames": [
+      "Signature M650 For Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "signature_m650_for_business.png",
+      "image": "signature_m650_for_business.png",
+      "source": "LogiOptions+ devices.json / signature_m650_for_business.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

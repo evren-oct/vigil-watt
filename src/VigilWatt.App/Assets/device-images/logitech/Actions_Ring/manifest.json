@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Actions Ring",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [],
+    "displayNames": [
+      "Actions Ring"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "b1b8816c-20cf-4c16-91b1-0db4ccddf913.png",
+      "image": "b1b8816c-20cf-4c16-91b1-0db4ccddf913.png",
+      "source": "LogiOptions+ devices.json / b1b8816c-20cf-4c16-91b1-0db4ccddf913.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

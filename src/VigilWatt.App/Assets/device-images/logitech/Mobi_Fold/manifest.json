@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Mobi Fold",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B045"
+    ],
+    "displayNames": [
+      "Mobi Fold"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "2b2a7791-832b-4cd8-8aa4-5a790e83697a.png",
+      "image": "2b2a7791-832b-4cd8-8aa4-5a790e83697a.png",
+      "source": "LogiOptions+ devices.json / 2b2a7791-832b-4cd8-8aa4-5a790e83697a.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

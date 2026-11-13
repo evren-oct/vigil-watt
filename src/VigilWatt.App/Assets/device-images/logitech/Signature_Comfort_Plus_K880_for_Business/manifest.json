@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Comfort Plus K880 for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B39D"
+    ],
+    "displayNames": [
+      "Signature Comfort Plus K880 for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "b98c5ae9-2eea-4b0c-818b-264d9bfe0e08.png",
+      "image": "b98c5ae9-2eea-4b0c-818b-264d9bfe0e08.png",
+      "source": "LogiOptions+ devices.json / b98c5ae9-2eea-4b0c-818b-264d9bfe0e08.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

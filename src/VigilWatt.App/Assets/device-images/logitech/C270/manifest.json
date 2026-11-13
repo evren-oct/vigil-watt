@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "C270",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0825"
+    ],
+    "displayNames": [
+      "C270"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c270.png",
+      "image": "c270.png",
+      "source": "LogiOptions+ devices.json / c270.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

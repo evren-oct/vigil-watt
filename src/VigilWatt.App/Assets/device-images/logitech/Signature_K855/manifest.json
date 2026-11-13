@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature K855",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B372"
+    ],
+    "displayNames": [
+      "Signature K855"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "signature_k855.png",
+      "image": "signature_k855.png",
+      "source": "LogiOptions+ devices.json / signature_k855.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

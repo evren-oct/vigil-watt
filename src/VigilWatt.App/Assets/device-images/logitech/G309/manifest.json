@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G309",
+  "match": {
+    "displayNames": [
+      "G309"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g309.png",
+      "image": "logitech-g309.png",
+      "source": "https://img.openmouse.app/logitech-g309.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

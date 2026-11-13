@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Alto Keys K75M",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B396"
+    ],
+    "displayNames": [
+      "Alto Keys K75M"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "0625d7ab-68d0-4622-b01e-a3fd806530d7.png",
+      "image": "0625d7ab-68d0-4622-b01e-a3fd806530d7.png",
+      "source": "LogiOptions+ devices.json / 0625d7ab-68d0-4622-b01e-a3fd806530d7.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Flip Folio",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B398",
+      "B399"
+    ],
+    "displayNames": [
+      "Flip Folio"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c291e5a1-58e8-40a0-8cfe-141160df0ac5.png",
+      "image": "c291e5a1-58e8-40a0-8cfe-141160df0ac5.png",
+      "source": "LogiOptions+ devices.json / c291e5a1-58e8-40a0-8cfe-141160df0ac5.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

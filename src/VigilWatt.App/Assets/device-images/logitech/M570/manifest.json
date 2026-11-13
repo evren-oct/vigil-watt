@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M570",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "1028"
+    ],
+    "displayNames": [
+      "M570"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m570.png",
+      "image": "m570.png",
+      "source": "LogiOptions+ devices.json / m570.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K370s/K375s",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4061",
+      "B34C"
+    ],
+    "displayNames": [
+      "K370s/K375s"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k375s.png",
+      "image": "k375s.png",
+      "source": "LogiOptions+ devices.json / k375s.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

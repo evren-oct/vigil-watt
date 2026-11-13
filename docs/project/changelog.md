@@ -3,6 +3,13 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-13
+
+- **罗技办公线产品图全量**：新增 `scripts/import-logitech-images.py`，读本机 Options+ 的 `devices.json` 与 `depots/*/logioptionsplus/thumbnails`，按 `displayName` 归一化分组，生成 151 款 / 151 张缩略图（原始 22.1MB，300px 重采样后 6.7MB）。每型号只取一张官方主图，不做配色切换——罗技的 `derivatives` 只有 `ext1/ext2` 编号，且混了 for Mac/for Business SKU 与重复引用。`productIds` 写设备 WPID 并排除接收器 PID（C548 是所有 Bolt 设备共用的传输通道）。
+- **修改名设备离线后丢产品图**：`DeviceCustomization` 加 `OriginalName`，改名时记下协议原名，`RestoreOfflineTombstones` 优先用它作 `Name`。在线设备本来就没事（详情页用 `Manager.Find` 的原始实例匹配，改名只写设置），只有墓碑从历史库取名字时才会拿到改名后的值，而墓碑不带 `Usb`/`Reported` 身份。顺带修列表改名时新建 `DeviceCustomization` 会把详情页选过的 `ImageKey` 清掉。
+- **G 系列产品图补上（OpenMouse 图床）**：新增 `scripts/import-openmouse-images.py`，从 `img.openmouse.app` 取 16 个 G / PRO 型号（G502 / G502 X / G502 X Plus / G703 / G903 / G PRO / G PRO 2 / G203 / G303 / G305 / G309 / G402 / G403 / PRO X SUPERLIGHT / PRO X2·X3 SUPERSTRIKE），裁掉透明边距后统一 300 长边，共 0.63MB。`displayNames` 是从它的名字正则反推的，需真机核对 G 系列 `0x0005` 自报名后补变体；图不在其仓库内、不在 AGPL 范围，版权处理同其它产品图。
+- **G 系列未覆盖**：Options+ 只管办公线（180 条里 0 条 G/PRO），G HUB 安装器是自研封装、payload 加密，7-Zip 解不出资源；开源侧 OpenLogi 只有动作图标。要做得先装一次 G HUB 再读它的 resources，见 `reviews/BACKLOG.md`。
+
 ## 2026-11-12
 
 - **详情页 Hero 接入本地产品图**：新增 `DeviceImageCatalog` 读取 `device-images/<品牌>/<型号>/manifest.json`，按显示名或「自报型号 + VID/PID」匹配，不按设备 ID；无图/清单损坏回退 `DeviceIconFactory`。只改详情页，列表/托盘/贴片/小组件不动，格式见 `project/device-images.md`。

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Wave Keys for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B384"
+    ],
+    "displayNames": [
+      "Wave Keys for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "31a533b4-7c4d-4498-9257-4677ef1e40ab.png",
+      "image": "31a533b4-7c4d-4498-9257-4677ef1e40ab.png",
+      "source": "LogiOptions+ devices.json / 31a533b4-7c4d-4498-9257-4677ef1e40ab.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

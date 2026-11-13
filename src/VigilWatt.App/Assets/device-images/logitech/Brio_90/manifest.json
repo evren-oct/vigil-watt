@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Brio 90",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0949"
+    ],
+    "displayNames": [
+      "Brio 90"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "52987dde-2d1f-4bc5-86f2-3797b437d7ec_ext1.png",
+      "image": "52987dde-2d1f-4bc5-86f2-3797b437d7ec_ext1.png",
+      "source": "LogiOptions+ devices.json / 52987dde-2d1f-4bc5-86f2-3797b437d7ec_ext1.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

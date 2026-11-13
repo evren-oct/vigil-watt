@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M240 Silent for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B03B"
+    ],
+    "displayNames": [
+      "M240 Silent for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "7c7bc59d-d0a2-4173-8521-7b2fae854c0d.png",
+      "image": "7c7bc59d-d0a2-4173-8521-7b2fae854c0d.png",
+      "source": "LogiOptions+ devices.json / 7c7bc59d-d0a2-4173-8521-7b2fae854c0d.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Creative Dialpad",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "BC00"
+    ],
+    "displayNames": [
+      "MX Creative Dialpad"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "5374bb2c-2a98-4293-92a5-619513c5b56e.png",
+      "image": "5374bb2c-2a98-4293-92a5-619513c5b56e.png",
+      "source": "LogiOptions+ devices.json / 5374bb2c-2a98-4293-92a5-619513c5b56e.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

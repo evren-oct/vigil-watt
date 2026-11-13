@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Casa Touch",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "BB00"
+    ],
+    "displayNames": [
+      "Casa Touch"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "08b03011-2055-4448-a749-dcd0b97e2c27.png",
+      "image": "08b03011-2055-4448-a749-dcd0b97e2c27.png",
+      "source": "LogiOptions+ devices.json / 08b03011-2055-4448-a749-dcd0b97e2c27.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

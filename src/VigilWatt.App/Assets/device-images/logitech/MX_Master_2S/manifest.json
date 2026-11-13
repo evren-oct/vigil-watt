@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Master 2S",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4069",
+      "B019"
+    ],
+    "displayNames": [
+      "MX Master 2S"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_master_2s.png",
+      "image": "mx_master_2s.png",
+      "source": "LogiOptions+ devices.json / mx_master_2s.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

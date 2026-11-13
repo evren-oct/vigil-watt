@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Keys for Mac",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4092",
+      "B361"
+    ],
+    "displayNames": [
+      "MX Keys for Mac"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_keys_mac.png",
+      "image": "mx_keys_mac.png",
+      "source": "LogiOptions+ devices.json / mx_keys_mac.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

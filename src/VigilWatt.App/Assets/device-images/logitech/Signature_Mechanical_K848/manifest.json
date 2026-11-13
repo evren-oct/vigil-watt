@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Mechanical K848",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "C362"
+    ],
+    "displayNames": [
+      "Signature Mechanical K848"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "3e826a89-b536-4e85-aa26-e891b62199d4.png",
+      "image": "3e826a89-b536-4e85-aa26-e891b62199d4.png",
+      "source": "LogiOptions+ devices.json / 3e826a89-b536-4e85-aa26-e891b62199d4.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

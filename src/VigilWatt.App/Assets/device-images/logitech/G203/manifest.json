@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G203",
+  "match": {
+    "displayNames": [
+      "G203",
+      "G203 LIGHTSYNC",
+      "G203 PRODIGY",
+      "G102",
+      "G102 LIGHTSYNC"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g203.png",
+      "image": "logitech-g203.png",
+      "source": "https://img.openmouse.app/logitech-g203.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

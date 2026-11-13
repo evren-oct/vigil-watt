@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Pebble Keys 2 K380s",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B377"
+    ],
+    "displayNames": [
+      "Pebble Keys 2 K380s"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "4cb922ea-97f7-11ed-88b8-0f81027d8668.png",
+      "image": "4cb922ea-97f7-11ed-88b8-0f81027d8668.png",
+      "source": "LogiOptions+ devices.json / 4cb922ea-97f7-11ed-88b8-0f81027d8668.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

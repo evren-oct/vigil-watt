@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Slim Solar+ for Mac",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B392"
+    ],
+    "displayNames": [
+      "Signature Slim Solar+ for Mac"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "4879e5ef-01b9-4d68-8690-15a276fef348.png",
+      "image": "4879e5ef-01b9-4d68-8690-15a276fef348.png",
+      "source": "LogiOptions+ devices.json / 4879e5ef-01b9-4d68-8690-15a276fef348.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Brio 1080p Webcam",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "094E"
+    ],
+    "displayNames": [
+      "Brio 1080p Webcam"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "brio_3xx_ext1.png",
+      "image": "brio_3xx_ext1.png",
+      "source": "LogiOptions+ devices.json / brio_3xx_ext1.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

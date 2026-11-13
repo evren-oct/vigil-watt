@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Ergo K860",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4088",
+      "B359"
+    ],
+    "displayNames": [
+      "Ergo K860"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "ergo_k860.png",
+      "image": "ergo_k860.png",
+      "source": "LogiOptions+ devices.json / ergo_k860.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

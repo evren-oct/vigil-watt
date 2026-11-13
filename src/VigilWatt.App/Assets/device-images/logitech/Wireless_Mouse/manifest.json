@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Wireless Mouse",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4054",
+      "4055",
+      "4091"
+    ],
+    "displayNames": [
+      "Wireless Mouse"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "rom_mice.png",
+      "image": "rom_mice.png",
+      "source": "LogiOptions+ devices.json / rom_mice.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

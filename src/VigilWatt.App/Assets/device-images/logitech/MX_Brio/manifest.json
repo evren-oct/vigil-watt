@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Brio",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0944"
+    ],
+    "displayNames": [
+      "MX Brio"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "dd450184-e47a-487d-a8cc-cc39317824a6_ext1.png",
+      "image": "dd450184-e47a-487d-a8cc-cc39317824a6_ext1.png",
+      "source": "LogiOptions+ devices.json / dd450184-e47a-487d-a8cc-cc39317824a6_ext1.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

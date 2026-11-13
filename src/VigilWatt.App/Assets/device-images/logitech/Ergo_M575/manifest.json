@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Ergo M575",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4096",
+      "B027"
+    ],
+    "displayNames": [
+      "Ergo M575"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m575.png",
+      "image": "m575.png",
+      "source": "LogiOptions+ devices.json / m575.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

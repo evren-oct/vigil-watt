@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K480",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B330",
+      "B33C",
+      "B33D"
+    ],
+    "displayNames": [
+      "K480"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k480.png",
+      "image": "k480.png",
+      "source": "LogiOptions+ devices.json / k480.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

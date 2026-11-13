@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K828 Mechanical Illuminated",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "C36C"
+    ],
+    "displayNames": [
+      "K828 Mechanical Illuminated"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "efb88de4-c488-47e7-9539-7d0caf75211b.png",
+      "image": "efb88de4-c488-47e7-9539-7d0caf75211b.png",
+      "source": "LogiOptions+ devices.json / efb88de4-c488-47e7-9539-7d0caf75211b.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

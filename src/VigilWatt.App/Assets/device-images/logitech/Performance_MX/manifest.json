@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Performance MX",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "101A",
+      "4101A"
+    ],
+    "displayNames": [
+      "Performance MX"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "performance_mx.png",
+      "image": "performance_mx.png",
+      "source": "LogiOptions+ devices.json / performance_mx.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

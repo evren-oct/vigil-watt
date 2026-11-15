@@ -15,6 +15,9 @@ public enum MchoseInterfaceKind
     /// <summary>鼠标 K7 V2 Ultra+ 的命令通道（64 字节 output `0x4D`，3837:1018）。</summary>
     MouseK7,
 
+    /// <summary>G98 V3 / K87 V3 这一代键盘的 0x4D 通道（厂商页 0xFF80，2.4G dongle 1015/1017、本体 2025/2026）。</summary>
+    KeyboardCz,
+
     /// <summary>鼠标 Gmouse 主动查询接口（65 字节，usagePage 0xFF01/usage 0x10，3837:4245 等）。</summary>
     Gmouse,
 
@@ -81,6 +84,11 @@ public static class MchoseInterfaceClassifier
         // 靠完整指纹区分。必须排在「≥60 字节只走鼠标」之前，否则 G3 V2 会被当成等 E2 帧的接收器白等。
         if (MchoseGmouseCodec.IsSupportedInterface(vendorId, productId, usagePage, usage, inputLength, outputLength))
             return MchoseInterfaceKind.Gmouse;
+
+        // G98 V3 / K87 V3 这一代键盘同样是 64/64，但说的是 0x4D 帧（官方 getProtocol 判 qhw）；
+        // 必须排在「≥60 字节只走鼠标」之前，否则只会白等 E2 帧。判据见 Mchose0x4DCodec.IsKeyboardInterface。
+        if (Mchose0x4DCodec.IsKeyboardInterface(vendorId, productId, usagePage, usage, inputLength, outputLength))
+            return MchoseInterfaceKind.KeyboardCz;
 
         // 鼠标接收器厂商接口 65 = 64 数据 + 1 report ID；V2 世代长度差异大，按 ≥60 收口
         if (outputLength >= 60 && inputLength >= 60) return MchoseInterfaceKind.MouseV2;

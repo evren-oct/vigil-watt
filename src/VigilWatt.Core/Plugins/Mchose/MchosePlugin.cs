@@ -33,6 +33,9 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>Gmouse 世代鼠标（G3 V2）：65 字节主动查询帧（55 30 A5…），判据与帧见 <see cref="MchoseGmouseCodec"/>。</summary>
     private const string ProtocolGmouse = "gmouse";
 
+    /// <summary>G98 V3 / K87 V3 这一代键盘：64 字节 0x4D 帧，0x0900 查询（判据与帧见 <see cref="Mchose0x4DCodec"/>）。</summary>
+    private const string ProtocolKeyboardCz = "keyboard-cz";
+
     /// <summary>V9 Pro 耳机：64 字节固定查询帧（帧结构与判据见 <see cref="MchoseV9ProCodec"/>）。同品牌另一条链路，与键鼠判据完全独立。</summary>
     private const string ProtocolHeadsetV9 = "headset-v9";
 
@@ -160,6 +163,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     private const string LogKeyKbV1Silent = "kbv1-silent";    // "keyboard-v1 问了两次都不应答"
     private const string LogKeyKbV1ModelUnknown = "kbv1-model-unknown"; // "共用指纹但型号不在迈从表，交给 AULA"
     private const string LogKeyMouseSilent = "mouse-silent";  // "鼠标探测没等到 E2 帧"
+    private const string LogKeyCzSilent = "cz-silent";        // "键盘 0x4D 查询没等到应答"
     private const string LogKeyMousePokeFail = "mouse-poke-fail"; // "触发帧写失败（接口无输出通道）"
     private const string LogKeyX9Silent = "x9-silent"; // "X9 查询没等到电量响应"
 
@@ -224,6 +228,15 @@ public sealed class MchosePlugin : BatteryPluginBase
             return gm;
         }
 
+        // G98 V3 / K87 V3 这一代键盘：认领前必须真的解析出读数，避免把"有输出通道但不说这条协议"的
+        // 接口当成键盘（同 dongle 上另外两条 65 字节通道就属于这种情况）。
+        if (kind == MchoseInterfaceKind.KeyboardCz)
+        {
+            var cz = TryKeyboardCz(handle);
+            if (cz != null) KnownProtocolByPath[path] = ProtocolKeyboardCz;
+            return cz;
+        }
+
         // ≥60 的接口只可能是鼠标接收器：它不是 0x13 会话通道，在这条通道上发键盘帧没有意义
         if (kind == MchoseInterfaceKind.MouseV2)
         {
@@ -267,6 +280,7 @@ public sealed class MchosePlugin : BatteryPluginBase
                 ? (ProtocolKeyboardV1, kb.Percent, kb.Charging)
                 : null,
             ProtocolMouseV2 => TryMouseV2(handle),
+            ProtocolKeyboardCz => TryKeyboardCz(handle),
             ProtocolMouseK7 => TryMouseK7(handle),
             ProtocolGmouse => TryGmouse(handle),
             ProtocolHeadsetV9 => TryHeadsetV9(handle),
@@ -289,6 +303,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         var read = dev.Protocol switch
         {
             "qhw" => PollQhw(dev),
+            ProtocolKeyboardCz => PollKeyboardCz(dev),
             ProtocolKeyboardV1 => PollKeyboardV1(dev),
             ProtocolHeadsetV9 => PollHeadsetV9(dev),
             ProtocolHeadsetX9 => PollHeadsetX9(dev),
@@ -549,6 +564,58 @@ public sealed class MchosePlugin : BatteryPluginBase
         }
         return null;
     }
+
+    /// <summary>
+    /// 键盘 0x4D 探测：发一次官方 0x0900 设备信息查询。
+    /// **不能先发 AA55 握手**——实测那帧会把这类 dongle 切到另一个 PID（G98 V3：1015 → 1017），
+    /// 之后连官方 0x0900 也不应答，只能拔插恢复。官方 qhw 路径本身也没有握手帧。
+    /// </summary>
+    private static (string Protocol, int? Percent, ChargingState Charging)? TryKeyboardCz(HidDeviceHandle handle)
+    {
+        if (!IsWritesEnabled(SettingsKey)) return null;
+
+        var read = QueryKeyboardCz(handle);
+        if (!read.HasValue)
+        {
+            Log.Once(LogLevel.Debug, LogKey(handle, LogKeyCzSilent),
+                $"迈从 0x4D 键盘无应答（可能在睡；收到读数后复位）：{handle.Info.DevicePath}");
+            return null;
+        }
+
+        Log.ResetOnce(LogKey(handle, LogKeyCzSilent));
+        return (ProtocolKeyboardCz, read.Value.Percent, read.Value.Charging);
+    }
+
+    /// <summary>发 0x0900 并解析应答；2 秒窗口内只做读，不重发（限频：每轮询周期最多 1 条查询帧）。</summary>
+    private static (int Percent, ChargingState Charging)? QueryKeyboardCz(HidDeviceHandle handle)
+    {
+        var frame = Mchose0x4DCodec.BuildDeviceInfoQuery();
+        if (!handle.WriteOutput(frame, TimeSpan.FromMilliseconds(500)))
+        {
+            Log.Debug($"迈从 0x4D 写失败: {handle.Info.DevicePath}");
+            return null;
+        }
+
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+        while (DateTime.UtcNow < deadline)
+        {
+            var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
+            if (input == null) continue;
+
+            if (Mchose0x4DCodec.TryParseDeviceInfo(input, out var percent, out var charge, out var connect))
+            {
+                Log.Info($"迈从 0x4D 设备信息: 电量={percent} 充电标志={charge} 连接={connect} 原始={Log.Hex(input)}");
+                return (percent, MapCharging(charge));
+            }
+
+            Log.Debug($"迈从 0x4D 收到非匹配报文: {Log.Hex(input)}");
+        }
+        return null;
+    }
+
+    /// <summary>键盘 0x4D 轮询：与探测同一条查询帧（官方 M HUB 也是每秒问一次 0x0900）。</summary>
+    private static (int? Percent, ChargingState Charging)? PollKeyboardCz(TrackedDevice dev)
+        => QueryKeyboardCz(dev.Handle) is { } r ? (r.Percent, r.Charging) : null;
 
     /// <summary>
     /// 鼠标 V2 探测：先纯被动等 E2 状态帧（接收器约 10 秒推一次）；等不到才发一次触发帧

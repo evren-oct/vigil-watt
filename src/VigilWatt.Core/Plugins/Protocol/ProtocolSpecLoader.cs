@@ -596,6 +596,8 @@ internal static class ProtocolSpecLoader
                 Protocol = dto.Protocol.Trim(),
                 PairedPid = paired,
                 Wired = dto.Wired,
+                Role = dto.Role?.Trim() ?? "",
+                Group = dto.Group?.Trim() ?? "",
                 Capabilities = ReadCapabilities(dto.Capabilities, vid, pid, prefix),
             }, dto.Override));
         }
@@ -824,6 +826,8 @@ internal static class ProtocolSpecLoader
         public string? Protocol { get; set; }
         public string? PairedPid { get; set; }
         public bool Wired { get; set; }
+        public string? Role { get; set; }
+        public string? Group { get; set; }
 
         /// <summary>用 JsonNode 收，好把"不是对象 / 值不是字符串"变成带 VID:PID 的加载期错误，而不是反序列化异常。</summary>
         public JsonNode? Capabilities { get; set; }

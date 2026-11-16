@@ -1,12 +1,13 @@
 using System.Collections.Concurrent;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Plugins.Protocol;
 using VigilWatt.Core.Utils;
 
 namespace VigilWatt.Core.Plugins.Betop;
 
 /// <summary>
-/// 功 能： 北通 (BETOP) 手柄 2.4G 接收器插件。
+/// 功 能： 北通 (BETOP) 手柄插件——品牌目录认领，帧解析在 <see cref="BetopCodec"/>。
 /// 2026/10/06 15:53:36 xliu
 /// 帧结构、电量编码、T9 被动流与"未连接占位帧"判定见 <see cref="BetopCodec"/> 及 docs/hardware/brands/betop.md §1。
 /// </summary>
@@ -20,6 +21,11 @@ public sealed class BetopPlugin : BatteryPluginBase
 
     /// <summary>回退写入长度（接口未声明输出长度时使用；鲲鹏20 厂商接口为 64）。</summary>
     private const int FallbackWriteLength = 64;
+
+    /// <summary>北通目录与协议判据；帧解析仍在 <see cref="BetopCodec"/>。</summary>
+    private readonly ProtocolEngine _engine = ProtocolEngine.Load(
+        "VigilWatt.Core.Plugins.Betop.specs.betop.protocols.json",
+        "VigilWatt.Core.Plugins.Betop.betop-catalog.json");
 
     public override string Name => "Betop";
     public override string DisplayName => "北通";
@@ -65,7 +71,7 @@ public sealed class BetopPlugin : BatteryPluginBase
         // 观测期（2026-10-25）：官方软件是否参与 dongle 身份抖动尚无证据，这里只让它记状态变化，不拦认领。
         BetopOfficialAppGuard.Observe();
 
-        if (BetopCodec.IsVendorInterface(info.VendorId, info.UsagePage, info.Usage)) return true;
+        if (_engine.Matches(info)) return true;
 
         // 判据不符也要留痕：CR-89 那次用户只看到"没有设备"，日志里一个字都没有
         if (BetopCodec.IsBetopVendor(info.VendorId))
@@ -81,9 +87,12 @@ public sealed class BetopPlugin : BatteryPluginBase
     /// <summary>广播通道的读窗口：广播每秒一帧，3 秒留丢一帧的余量。</summary>
     private static readonly TimeSpan BroadcastListenWindow = TimeSpan.FromSeconds(3);
 
-    /// <summary>鲲鹏20 的 dongle 与有线本体归一同一设备位（先例 AtkPlugin 配对组），表与缺点见 <see cref="BetopDeviceIdentity"/>。</summary>
-    protected override string IdFor(string devicePath)
-        => BetopDeviceIdentity.KunpengId(devicePath, Name.ToLowerInvariant()) ?? base.IdFor(devicePath);
+    /// <summary>目录显式 group 才归一；其余回退路径哈希（规则见 <see cref="BetopDeviceIdentity"/>）。</summary>
+    protected override string BuildDeviceId(HidDeviceInfo info)
+        => BetopDeviceIdentity.GroupId(_engine, info, Name.ToLowerInvariant()) ?? base.BuildDeviceId(info);
+
+    /// <summary>能力只认目录里逐型号声明的；未声明一律 Unverified（docs/dev/protocol-json.md §2.1）。</summary>
+    protected override CapabilitySet CapabilitiesOf(HidDeviceInfo info) => _engine.CapabilitiesOf(info);
 
     /// <summary>
     /// 探测：杂项页先纯听、静默再查询兜底（探测写受基类探测闸门）；厂商页发查询。收不到 = 手柄休眠进冷却。
@@ -313,13 +322,7 @@ public sealed class BetopPlugin : BatteryPluginBase
         SettleByPath.Clear();
     }
 
-    /// <summary>鲲鹏20 组定死组名（两通道产品串不同会互相顶名）；组外按产品串收拾成「北通 &lt;型号&gt;」。</summary>
+    /// <summary>目录确认型号优先；歧义 PID 由产品串分流，识别不到用通用名。</summary>
     protected override string BuildDisplayName(HidDeviceInfo info)
-    {
-        if (BetopDeviceIdentity.KunpengGroups.ContainsKey(info.ProductId))
-            return "北通 鲲鹏20";
-
-        var model = BetopCodec.CleanProductName(info.Product);
-        return string.IsNullOrEmpty(model) ? $"北通手柄 ({info.VidPid})" : $"北通 {model}";
-    }
+        => BetopDisplayName.For(info, _engine.DeviceOf(info));
 }

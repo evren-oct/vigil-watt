@@ -229,6 +229,12 @@ internal sealed class DeviceEntry
     /// <summary>配对组里哪条是有线本体；仅 <see cref="PairedPid"/> 非 0 时有意义，加载期校验每组恰一条。</summary>
     public bool Wired { get; init; }
 
+    /// <summary>目录角色（controller / dongle / dock）；空串 = 未声明，仅目录/诊断用。</summary>
+    public string Role { get; init; } = "";
+
+    /// <summary>同型号多通道归一键；空串 = 不归一。只在同一 VID:PID 表内显式声明，避免系列级误合并。</summary>
+    public string Group { get; init; } = "";
+
     /// <summary>本型号自己的能力声明。**不能**放到 ProtocolSpec 上：同协议多设备会串用（docs/dev/protocol-json.md §2.1）。</summary>
     public CapabilitySet Capabilities { get; init; } = CapabilitySet.Empty;
 }

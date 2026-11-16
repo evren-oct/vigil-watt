@@ -11,6 +11,7 @@
 
 本机已打通：迈从 G87（0x13）、迈从官方通用 dongle `3837:3033`（`cz-block` 分块读，电量/充电/充满三态真机验证，见 `hardware/mchose.md` §2.4）、雷柏 VT3 + VT2S Air Max（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。雷柏 VT3 与 VT2S Air MAX V2 已在设备目录写 `capabilities`（电量 / DPI / 档位；VT3 的回报率读取证据不足，记 `unverified`），声明属设备、不随协议继承，查询走 `ProtocolEngine.CapabilityOf`（`dev/protocol-json.md` §2.1）。**设备卡片已展示 DPI / 档位 / 回报率**（PR-D/E）：单行文案由 `PointerTelemetryFormatter` 产出，能力决定"能不能说未获取"，离线与过期整行不渲染；小组件加第三行、贴片只进悬停提示（`pointer-telemetry.md` §8、§8.1）。
 雷柏本轮已把有线/无线按 SN 归一（CR-150 关闭），同轮优先保留有线；`status-report7` 全系产出 DPI/档位/回报率，能力声明仍只 VT3 / VT2S 有真机证据。其余 85 组配对与全系遥测待真机复看。
+北通 P1 已落品牌目录（33 条 PID，`hardware/reference/betop-catalog.md`）：目录、身份、显示名已接，协议解析/轮询/离线策略未改；T9、鲲鹏20 2.4G 与有线仍是唯一已验电量项。
 
 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），不是 WinUI 覆盖窗；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。**拖动走 16ms 轮询，不靠鼠标捕获**——捕获对非前台窗口无效（`dev/runtime-pitfalls.md` §16、§16.5.1；§17 只对小组件）。选屏由 `Services/TaskbarPillManager.cs` 每秒按 `monitorDevicePath` 匹配，配置的屏不在就降级贴主屏，设置页显示真实屏幕名——`\\.\DISPLAYn` 是配置序号不是身份，见 `dev/monitor-identity.md`。
 页面已缓存（`NavigationCacheMode = Required`），订阅跟 `Loaded`/`Unloaded`。设置页可搜索。日志按日：`logs\app-日期.log`。插件开关即写入授权，没有第二套「写入许可」。
@@ -70,14 +71,12 @@
 | 墨将烈风2 GALE2（`E2B7:122C`，2.4G 接收器 / 有线直连同 PID） | 厂商页 `0xFFAB` 的 `A5 04 04` 读电量 + 充电标志 | 代码已接入，默认关、会写帧。**贡献者**真机：放电 96%/97%、充电 99%→100%，充放电标志 A/B 已验；**本机无此手柄、未复测**。两形态设备路径不同、目前各占一条记录（CR-116），跨模式 3~4 pp 差异成因未定（CR-118）（mojhon.md §7.4） |
 | 本机电池 | `GetSystemPowerStatus`，Id `sys:battery` | 已接入，默认关。托盘最低电量不统计本机 |
 
-## 3. 历史（不在这里记：查「为什么这么改」看 changelog.md，查协议与坑看对应专题文档）
-
 ## 4. 待办
 
 审查未修项以 `docs/reviews/BACKLOG.md` 为准。PR #44 待验证项见 CR-84，HERO 非阻塞传输层测试见 CR-97；充电测试已取消，不等待插拔充电操作。其它人工待办如下。
 
 1. **插线校准**：迈从 `ParseKeyboardV1Charge` 补全充电位（已知 0x10 = 充电中）。雷柏满电一律判「充满」已在 §5.2 落地，不再列待办。
-2. **北通鲲鹏20 有线变体**（PID_5191/KP20EB）主动查询仍未真机验证（PID_5159 广播 / PID_5158 有线 COL01 查询已打通，见 betop.md §1.8）；手柄关机后广播帧是否有占位值无样本，待观察。T9 的 `byte23` 低位仍只认 `0x50` = 未连接；验证方法见 betop.md §1.4.1。
+2. **北通 P2/P3**：P1 目录已落（33 条 PID），下一步把帧偏移 / report ID 搬进 `specs/betop.protocols.json`（P2）；20DD `02 CD` 与 KP40/50/70 电量仍需真机抓包（P3，CR-106）。鲲鹏20 有线变体 `5191` 主动查询仍未真机验证；T9 的 `byte23` 低位仍只认 `0x50` = 未连接，验证方法见 betop.md §1.4.1。
 3. **贴片人手复看**：连续拖 5 次、上下甩出贴片、拖到两端再回拖、松手后不自跳（CR-48）；自动隐藏、竖向/多屏（CR-41）、深色对比（CR-42）、是否压住任务栏按钮（CR-39）、右键菜单（CR-60）、悬停设备名（多台/底栏/深色任务栏）。分辨率往返已于 2026-10-13 通过。Win10 小组件投影（CR-57）等用户决定是否做。
 4. **页面缓存真机**：来回切换是否变快、离开再回来数据是否仍刷新、设置值是否与 `settings.json` 一致、搜索是否仍可用。坑见 `dev/runtime-pitfalls.md` §19。相关未修项 CR-61 / CR-63。
 5. **启动更新确认框**：本轮只验到"托盘气泡 + 日志发现新版本"（当时 `StartMinimized=true`，窗口没开）。**2026-10-20 起 `StartMinimized` 默认 `false`，所以「发现新版本」确认框成了默认路径，更需要在真机上确认一次**——打开主窗口时应弹确认框，未真机验证。

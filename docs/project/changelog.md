@@ -5,6 +5,7 @@
 
 ## 2026-11-16
 
+- **北通 P1 品牌目录与身份**：新增 `betop-catalog.json`（33 条 PID）与 `specs/betop.protocols.json`，接入现有 `ProtocolEngine`；身份归一只认目录显式 `group`（当前仅 5158/5159 → `betop:kunpeng20`），显示名目录优先、歧义 PID 由产品串分流。协议解析、轮询与离线策略未改；T9、鲲鹏20 2.4G/有线是唯一已验电量项，见 `hardware/reference/betop-catalog.md`。
 - **罗技充电状态码拆成两套（CR-164）**：`0x1004` 与 `0x1000` 是两套枚举，此前共用一张表——`0x1004` 的 4（充电故障）被报成"充电中"，`0x1000` 的 5/6/7（无效电池/过热/错误）被报成"放电中"。改为 `TryParseUnifiedBattery` / `TryParseBatteryStatus` 两个解码器，未知码一律 Unknown。
 - **去掉 `0x1004` func 0 电量回退（CR-164）**：func 0 是 GetCapabilities，func 1 超时一次就会锁到档位数上并长期报错值（注释自己记过 15% 误读）。只用 func 1，`UnifiedWorkingFunc` 状态随之删除。
 - **feature 下标不再一次超时就存死（CR-165）**：解析回 0 先留空、下轮再试，连续 3 次才认定不支持（`HidppFeatureProbe`）。此前一次超时即永久禁用该电量路径，直到接收器重插。

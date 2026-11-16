@@ -354,3 +354,24 @@ caps：in=64 out=64 feat=0 outId=0x02）上**每秒自推**一条状态帧：
 - 与官方开关无关、跟取放手柄同步 → ②：改法完全不同（按底座身份做 ID 归一，不是让位）
 - 只在长时间无输入后出现 → ③：查 USB 电源管理（设备管理器里该 dongle 的「允许计算机关闭此设备以节约电源」）
 
+## 1.10 品牌目录与身份（2026-11-16 P1）
+
+北通从“T9 / 鲲鹏20 型号补丁”升级为**品牌目录**：`Plugins/Betop/betop-catalog.json` 收录 33 条
+VID:PID（`20BC` 30 条、`20DD` 3 条），协议判据在 `Plugins/Betop/specs/betop.protocols.json`
+（两套 `implementation=code`，帧解析仍在 `BetopCodec`）。完整表与逐型号验证状态见
+[reference/betop-catalog.md](../reference/betop-catalog.md)。
+
+**目录只解决身份，不证明电量支持**：PID 线索来自 Linux xpad 补丁，只证明 XInput 身份；除 T9、
+鲲鹏20 2.4G/有线外，目录条目均未声明 `batteryRead=supported`。T9 的 `chargingRead=unsupported`
+是“已确认没有充电标志”，不是“未验证”。
+
+**型号歧义**：`5125/5127`（KP20A/KP40A）与 `5145/5146`（KP40A/KP40B）的 `model` 留空，
+由产品串分流；产品串也分不出时用「北通手柄 (VID:PID)」。产品串里的 `Keyboard` / `Mouse`
+只是用途后缀，不参与型号判断。
+
+**身份归一**：只认目录显式 `group`，当前仅 `5158/5159` 归一到 `betop:kunpeng20`。
+不按鲲鹏系列合并、不跨 `20BC`/`20DD` 同 PID 合并；同型号两只并行仍会并成一台（§1.8.2 的取舍）。
+
+**显示名**：目录确认型号优先（`北通 鲲鹏20` / `北通 T9`）；歧义 PID 走产品串
+（`鲲鹏20/40`）；识别不到用通用名。设置页仍是品牌级一行「北通 / BETOP」。
+

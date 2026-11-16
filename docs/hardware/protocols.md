@@ -19,7 +19,7 @@
 | 罗技 Logitech | Bolt C548 + MX Master 3S | `046D` | [logitech.md](brands/logitech.md) | 本机验证 |
 | 罗技 Logitech | PRO X 2 LIGHTSPEED | `046D:0AF7` | [logitech.md](brands/logitech.md) | 已实现，2.4G 与蓝牙真机验证通过 |
 | 雷柏 Rapoo | VT3 二代 | `24AE:1412` | [rapoo.md](brands/rapoo.md) | 本机验证 |
-| 北通 BETOP | T9 / 鲲鹏20（2.4G `5159`、有线 `5158`、有线变体 `5191`） | `20BC:5073` / `5159` / `5158` / `5191` | [betop.md](brands/betop.md) §1.8 | T9 本机验证；鲲鹏20 2.4G 与有线贡献者真机，`5191` 未验 |
+| 北通 BETOP | T9 / 鲲鹏20/40/50/70（品牌目录 33 条 PID） | `20BC` / `20DD` 全系见 [betop-catalog.md](reference/betop-catalog.md) | [betop.md](brands/betop.md) §1.8 §1.10 | T9 本机验证；鲲鹏20 2.4G 与有线贡献者真机；其余仅身份线索、电量未验 |
 | 英菲克 ZHEN | 接收器 | `1D57:FA65` | [inphic.md](brands/inphic.md) | 本机验证 |
 | 英菲克 IN9 | 接收器 | `248A:5B2F` | [inphic.md](brands/inphic.md) §2 | 2026-10-31 维护者真机抓包 |
 | HECATE | G5M Pro | `35BB:D00B` | [hecate.md](brands/hecate.md) | 贡献者真机 |

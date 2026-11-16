@@ -103,6 +103,7 @@
     <!-- T9 开机瞬态的稳定判定（IsSettled）是纯计时逻辑，值得单测；BetopPlugin 只依赖已链接的 Hid/Log/Models -->
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopPlugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopDeviceIdentity.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopDisplayName.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopOfficialAppGuard.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Darkrim\DarkrimCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Darkrim\OfficialAppGuard.cs" />
@@ -212,6 +213,12 @@
 
   <!-- 分类器要查设备目录，资源名必须与 Core 项目一致（MchoseDeviceCatalog 按名字取流） -->
   <ItemGroup>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Betop\betop-catalog.json">
+      <LogicalName>VigilWatt.Core.Plugins.Betop.betop-catalog.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Betop\specs\betop.protocols.json">
+      <LogicalName>VigilWatt.Core.Plugins.Betop.specs.betop.protocols.json</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Mchose\mchose-catalog.json">
       <LogicalName>VigilWatt.Core.Plugins.Mchose.mchose-catalog.json</LogicalName>
     </EmbeddedResource>

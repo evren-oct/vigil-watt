@@ -8,7 +8,7 @@
 
 | 进 JSON | 留代码 |
 |---|---|
-| vid / pid / 型号 / kind / pairedPid / wired / capabilities | 去抖（`chargeDebounce` 只开开关，算法在解释器里） |
+| vid / pid / 型号 / kind / role / group / pairedPid / wired / capabilities | 去抖（`chargeDebounce` 只开开关，算法在解释器里） |
 | 接口指纹：usagePage / usage / 长度 / pathContains / reportId | 无效帧怎么处理（丢读数 / 标离线 / 请求核实） |
 | 查询帧模板（十六进制串 + 总长） | 链路位 → 离线候选 |
 | 字段：偏移 / 类型 / 位宽 / mask / xor | 握手、会话、状态机、轮询策略 |
@@ -90,6 +90,23 @@
 - **判据与认领同源**：VID/PID 命中目录后还要过设备 `interface` 指纹。未收录、接口不符（同一只鼠标的
   鼠标集合 / 底座集合、底座 PID 的另一条 collection）、`implementation: none` 三种情况一律 `unverified`——
   能力只对"本插件认领的那条接口"成立，不会因为 VID/PID 相同就跨接口继承。
+
+### 2.2 目录角色与身份组（北通 P1 起）
+
+`devices[]` 还支持两个**可选**字段，目前只有北通目录使用：
+
+```jsonc
+{ "vid": "0x20bc", "pid": "0x5158", "model": "鲲鹏20", "kind": "gamepad",
+  "role": "controller", "group": "kunpeng20", "pairedPid": "0x5159", "wired": true }
+```
+
+- `role`：`controller` / `dongle` / `dock`。只描述这颗 PID 在目录里的角色，**不参与认领**；
+  空串 = 未声明。
+- `group`：同型号多通道归一键。只有**显式声明**才归一；不按型号系列、不按 PID 数值、不跨 VID 推导。
+  空串 = 不归一，走路径哈希。`pairedPid` 仍只管有线/无线配对与摘接收器，不自动产生 `group`。
+
+当前只有北通 `5158/5159` 声明 `group=kunpeng20`；规则与验证状态见
+[hardware/reference/betop-catalog.md](../hardware/reference/betop-catalog.md) §4。
 
 ## 3. 加一套协议（形态固定时，约 20–30 行）
 

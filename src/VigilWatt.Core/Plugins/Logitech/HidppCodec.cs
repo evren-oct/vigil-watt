@@ -65,18 +65,71 @@ internal static class HidppCodec
     public static byte ParseFeatureIndex(ReadOnlySpan<byte> resp)
         => resp.Length >= 3 ? resp[2] : (byte)0;
 
-    /// <summary>Unified Battery (0x1004) / Battery Status (0x1000) 响应：参数 [0]=百分比，[2]=充电状态字节（相对 feature 缓冲即 resp[2]/resp[4]）。</summary>
-    public static bool TryParseBattery20(ReadOnlySpan<byte> resp, out int percent, out ChargingState charging)
+    /// <summary>字符数上限，只防坏字节、不是协议值：取小了会把长营销名整条丢掉（logitech.md §1.2）。</summary>
+    public const int MaxDeviceNameLength = 64;
+
+    /// <summary>DEVICE_NAME func 0：参数 [0] = 字符数。0 或超过上限按无效丢弃。</summary>
+    public static bool TryParseDeviceNameLength(ReadOnlySpan<byte> resp, out int length)
+    {
+        length = 0;
+        if (resp.Length < 3) return false;
+        int count = resp[2];
+        if (count is 0 or > MaxDeviceNameLength) return false;
+        length = count;
+        return true;
+    }
+
+    /// <summary>DEVICE_NAME func 1：回一块正文（不回显起始下标）。长报文一帧 16 字符、短报文 3 字符。</summary>
+    public static bool TryParseDeviceNameChunk(ReadOnlySpan<byte> resp, int take, out string chunk)
+    {
+        chunk = "";
+        if (resp.Length < 3 || take <= 0) return false;
+        int available = Math.Min(take, resp.Length - 2);
+        if (available <= 0) return false;
+        var chars = new char[available];
+        for (int i = 0; i < available; i++) chars[i] = (char)resp[2 + i];
+        chunk = new string(chars);
+        return true;
+    }
+
+    /// <summary>0x1004 getStatus：参数 [0]=电量%、[2]=充电状态。状态码 4 是**充电故障**，不能报成充电中（logitech.md §1）。</summary>
+    public static bool TryParseUnifiedBattery(ReadOnlySpan<byte> resp, out int percent, out ChargingState charging)
+    {
+        charging = ChargingState.Unknown;
+        if (!TryParseBatteryPercent(resp, out percent)) return false;
+        charging = resp[4] switch
+        {
+            0 => ChargingState.Discharging,
+            1 or 2 => ChargingState.Charging,   // 2 = 慢充，UI 只有四档
+            3 => ChargingState.Full,
+            _ => ChargingState.Unknown,          // 4 = 充电故障
+        };
+        return true;
+    }
+
+    /// <summary>0x1000 getBatteryLevelStatus：同一位置的状态码是**另一套**枚举（2=几乎满、4=慢充、5/6/7=错误，logitech.md §1）。</summary>
+    public static bool TryParseBatteryStatus(ReadOnlySpan<byte> resp, out int percent, out ChargingState charging)
+    {
+        charging = ChargingState.Unknown;
+        if (!TryParseBatteryPercent(resp, out percent)) return false;
+        charging = resp[4] switch
+        {
+            0 => ChargingState.Discharging,
+            1 or 2 or 4 => ChargingState.Charging, // 2 = 几乎满、4 = 慢充
+            3 => ChargingState.Full,
+            _ => ChargingState.Unknown,            // 5/6/7 = 无效电池 / 过热 / 其它错误
+        };
+        return true;
+    }
+
+    /// <summary>两个电量特征共用的百分比校验：长度、0..100；0% 按占位丢弃（与其它插件的 InvalidPercentFloor 一致）。</summary>
+    private static bool TryParseBatteryPercent(ReadOnlySpan<byte> resp, out int percent)
     {
         percent = 0;
-        charging = ChargingState.Unknown;
         if (resp.Length < 5) return false;
         int pct = resp[2];
-        if (pct is < 0 or > 100) return false;
-        // Battery Status 偶发 0% 占位，按无效丢弃（与其它插件 InvalidPercentFloor 一致）
-        if (pct == 0) return false;
+        if (pct is 0 or > 100) return false;
         percent = pct;
-        charging = MapChargingState(resp[4]);
         return true;
     }
 
@@ -161,14 +214,6 @@ internal static class HidppCodec
         return 0;
     }
 
-    /// <summary>HID++ 2.0 统一充电状态：1/2/4 = 充电中，3 = 充满，其余 = 放电（Unified Battery 与 Battery Status 档位编码一致，合用一张表）。</summary>
-    public static ChargingState MapChargingState(byte state) => state switch
-    {
-        1 or 2 or 4 => ChargingState.Charging,
-        3 => ChargingState.Full,
-        _ => ChargingState.Discharging,
-    };
-
     /// <summary>配对信息里的设备类型字节（低 4 位）→ UI 用的 <see cref="DeviceKind"/>（协议常量，不按产品名增长）。</summary>
     public static DeviceKind MapPairingDeviceKind(byte kindByte) => (kindByte & 0x0F) switch
     {
@@ -252,6 +297,8 @@ internal static class HidppCodec
     {
         bool isShort = outputReportLength < LongReportLength;
         bool isLong = outputReportLength >= LongReportLength;
+        // 32 字节扩展集合是另一条集合，HID++ 2.0 走 20 字节那条；两条都认领 = 同一接收器两个会话（logitech.md §1.2）
+        bool isExtended = outputReportLength > LongReportLength;
 
         switch (preference)
         {
@@ -269,6 +316,15 @@ internal static class HidppCodec
 
             case HidppReportPreference.PreferLong:
             default:
+                if (isExtended)
+                {
+                    foreach (var p in peers)
+                    {
+                        if (p.Vid == vendorId && p.Pid == productId && p.OutLen == LongReportLength)
+                            return true;
+                    }
+                    return false;
+                }
                 if (!isShort) return false;
                 foreach (var p in peers)
                 {

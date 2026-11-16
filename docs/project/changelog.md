@@ -3,6 +3,15 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-16
+
+- **罗技充电状态码拆成两套（CR-164）**：`0x1004` 与 `0x1000` 是两套枚举，此前共用一张表——`0x1004` 的 4（充电故障）被报成"充电中"，`0x1000` 的 5/6/7（无效电池/过热/错误）被报成"放电中"。改为 `TryParseUnifiedBattery` / `TryParseBatteryStatus` 两个解码器，未知码一律 Unknown。
+- **去掉 `0x1004` func 0 电量回退（CR-164）**：func 0 是 GetCapabilities，func 1 超时一次就会锁到档位数上并长期报错值（注释自己记过 15% 误读）。只用 func 1，`UnifiedWorkingFunc` 状态随之删除。
+- **feature 下标不再一次超时就存死（CR-165）**：解析回 0 先留空、下轮再试，连续 3 次才认定不支持（`HidppFeatureProbe`）。此前一次超时即永久禁用该电量路径，直到接收器重插。
+- **罗技设备名读不到（G304 显示「罗技设备 1」）**：`0x0005` 的 func 1 是**按块**回正文，旧实现一帧取一个字符、还把字符数上限写成 32；G 系自报长营销名（G304 = 37 字符）整条被丢弃，列表只剩占位名、详情页无型号无图。改为按 16 字符分块读、上限放到 64（仅防坏字节），拼完拒不可见字符。37 次往返降到 3 次。见 `hardware/logitech.md` §1.2。
+- **32 字节扩展集合不再抢会话**：C53F 同时暴露 7/20/32 字节三个 HID++ 集合，`ShouldSkipInterface` 只分短/长，20 与 32 都被认领成独立会话，而 32 字节那条零回包，每分钟重开一次句柄白等三次超时。改为 `PreferLong` 下扩展集合只在没有 20 字节同伴时才认领（C548 无此集合，此前未暴露）。
+- **G304/G305 产品图补长名变体**：`DeviceImageCatalog` 是整串归一化精确比较，`G304` 匹配不到 `g304lightspeedwirelessgamingmouse`。其余 G 型号仍待真机核对（CR-160）。
+
 ## 2026-11-13
 
 - **罗技办公线产品图全量**：新增 `scripts/import-logitech-images.py`，读本机 Options+ 的 `devices.json` 与 `depots/*/logioptionsplus/thumbnails`，按 `displayName` 归一化分组，生成 151 款 / 151 张缩略图（原始 22.1MB，300px 重采样后 6.7MB）。每型号只取一张官方主图，不做配色切换——罗技的 `derivatives` 只有 `ext1/ext2` 编号，且混了 for Mac/for Business SKU 与重复引用。`productIds` 写设备 WPID 并排除接收器 PID（C548 是所有 Bolt 设备共用的传输通道）。

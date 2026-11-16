@@ -7,6 +7,8 @@
 HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 `0x1004` Unified Battery → `0x1000` Battery Status → `0x1001` Battery Voltage → `0x1F20` ADC Measurement → 1.0 寄存器 `0x07`/`0x0D`。
 
+**feature 下标探测（2026-11-16，CR-165）**：GetFeature 解析回 0 时**不立刻认定"不支持"**——先留空、下一轮再试，连续 3 次才写 0 永久跳过（`HidppFeatureProbe`）。发现期一次超时若直接写 0，会把这条电量路径禁用整场会话，只能靠重插接收器恢复；参考实现每次刷新都重查 GetFeature。代价：真不支持的 feature 会多花 2 次请求，只发生在发现后的前 3 轮。
+
 嵌入资源 [`logitech-hidpp.json`](../../src/VigilWatt.Core/Plugins/Logitech/logitech-hidpp.json) 提供接收器槽位/报文偏好与毫伏曲线；**目录是补充不是白名单**——未知 PID 仍打开 HID++ 接口（默认最多 6 槽、有长则跳短）。
 
 **槽位容量以接收器自报为准（2026-11-11）**：`0xB5` 子寄存器 `0x03` 返回接收器信息，**参数区 `[6]` = 配对槽位容量**（相对 feature 缓冲即 `resp[8]`，序列号在 `resp[3..6]`）。`LogitechPlugin.ProbeSlotCount` 每开一次句柄读一次，成功就覆盖目录 `maxSlots`，失败/越界才退回目录值——目录是静态表，自报值是这颗固件的事实。只接受 `1..6`，且校验 `resp[2]` 是子寄存器回显，偏移对不上时宁可读不到。判据同 Solaar `extract_max_devices`（读不到时退回 `product_info["max_devices"]`）与 OpenLogi `get_receiver_info`。**只对目录登记过的接收器 PID 探**：设备本体 PID 不在接收器表里，对 `0xFF` 读 `0xB5` 只会白等一个超时。**局限**：`PreferShort` 的接收器（Unifying / Nano）走短报文句柄，凑不出 9 字节响应，这两族实际仍以目录值为准——不是缺陷，目录对它们的登记本来就对；日志里会留一条 Debug 说明退回了。**C548 真机（2026-11-11）**：`0xB5/0x03` 三次读取均无回包（同会话 Root.Ping 正常），确认该接收器不提供此子寄存器；`ReportedSlotCount` 保持 null，`SlotCapacity` 取目录 6 槽。详见 §1.1。
@@ -25,8 +27,8 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 - Unifying（`C52B`/`C532`）常只在短接口应答 → 目录 `reportPreference=short`，有短同伴时跳过长接口。
 - 把 `0x10` 补零写进长接口 → 驱动 `ERROR_INVALID_FUNCTION`（与北通硬编码错 report ID 同类）。
 - `Request()` 返回缓冲从 feature 字节起，**参数在下标 2**：GetFeature 下标 / 电量% / 充电态分别是 `resp[2]` / `resp[2]` / `resp[4]`（旧代码读 `resp[0]` 会把 feature 下标当成电量）。
-- 发现 ping 醒着约 1s 才回，超时宜 ≥1.5s；设备名走 `GetFeature(0x0005)` 再 GetCount/GetChar；设备类型优先读接收器配对寄存器 `0xB5`（Unifying `0x2N` / Bolt `0x5N`），读不到再 `DeviceKindGuesser`。
-- Unified Battery `0x1004`：**func 1 = GetStatus**（电量% + 充电态），**func 0 = GetCapabilities**（不能当电量）。组装请求必须 `(feature<<8)|(func<<4)`，写成 `|func` 会被 SwId 补丁抹成 func 0（真机曾把 Capabilities 的 15 误当电量，充着电也读不到 charging）。
+- 发现 ping 醒着约 1s 才回，超时宜 ≥1.5s；设备名走 `GetFeature(0x0005)` 再 GetCount + **按块**取正文（一帧一个字符的读法在长营销名上会撞上限，见 §1.2）；设备类型优先读接收器配对寄存器 `0xB5`（Unifying `0x2N` / Bolt `0x5N`），读不到再 `DeviceKindGuesser`。
+- Unified Battery `0x1004`：**func 1 = GetStatus**（电量% + 充电态），**func 0 = GetCapabilities**（不能当电量，**也不做回退**——func 1 超时一次就会锁到档位数上，见 CR-164）。组装请求必须 `(feature<<8)|(func<<4)`，写成 `|func` 会被 SwId 补丁抹成 func 0（真机曾把 Capabilities 的 15 误当电量，充着电也读不到 charging）。
 - **实时充电**：插拔电时设备会发 HID++ 自发通知（`sw` 低 4 位=0，payload 与 GetStatus 同布局）。插件后台 `PumpNotifications` 只读不写，经 `StatusPushed` 即时 Upsert——不必等 60 秒轮询（与 Logi Battery Dashboard 同源）。未知 `devIdx` 的通知会当场补 ping 发现。
 - 每次 `Attach` 按目录槽位数补扫尚未发现的索引（接收器上第二台不必等重启）。
 
@@ -49,9 +51,10 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 |---|---|
 | Battery Voltage `0x1001` | 大端毫伏 + flags；`bit7`=充电中、低 3 位 `1`=充满、`bit5`=危急 |
 | ADC Measurement `0x1F20` | 大端毫伏 + flags；`0x01`=放电 / `0x03`=充电 / `0x07`=充满 |
-| 统一充电状态码（`0x1004` / `0x1000` 共用） | `1`/`2`/`4`=充电中、`3`=充满、其余=放电 |
+| Unified Battery `0x1004` 充电状态码 | `0`=放电、`1`=充电、`2`=慢充、`3`=充满、`4`=**充电故障**（→ Unknown，不能报充电中） |
+| Battery Status `0x1000` 充电状态码 | `0`=放电、`1`=充电、`2`=**几乎满**、`3`=充满、`4`=**慢充**、`5`/`6`/`7`=无效电池/过热/其它错误（→ Unknown） |
 | 配对信息 `0xB5` 字节布局 | Unifying `0x2N`：参数区 `[3..4]`=WPID、`[7]`=kind；Bolt `0x5N`：`[1]`=kind、`[2..3]`=WPID（小端，交换后成大端） |
-| 设备名称/类型 `0x0005` | func 0 = 名称字符数、func 1 = 按位置取字符（一帧一个字符，最多 32）、func 2 = 营销类型字节 |
+| 设备名称/类型 `0x0005` | func 0 = 名称字符数（代码上限 64 只为防坏字节，不是协议值）、func 1 = 按起始下标回**一块**正文（长报文 16 字符 / 短报文 3 字符，不回显下标）、func 2 = 营销类型字节 |
 
 **设备类型的判定顺序**：`0x0005` func 2 的营销类型（权威，能正确区分触控板/轨迹球/演示器）→ 配对寄存器 `kind`（粗，会把触控板报成键盘鼠标）→ 按产品名猜。没有对应 `DeviceKind` 的类型（触控板、演示器、接收器、摄像头等）一律回 `Unknown` 交给下一级，不硬套。2026-11-01 加入 func 2；此前只用配对寄存器。
 
@@ -93,6 +96,34 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 ```
 
 **结论**：C548 身份 = Bolt；容量读取是“请求正确、设备不响应”，目录 6 槽兜底是已实测的安全路径；槽位 1 的 `Wireless24G` 是 `Inferred`，不是设备上报；WPID 与回报率仍 Unknown。**不要**把 C548 的接收器 PID 写进鼠标本体身份，也不要把 `Inferred` 升级成 `DeviceReported`。
+
+### 1.2 C53F（G304）的两个识别缺陷（2026-11-13 日志，2026-11-16 修）
+
+**环境**：Debug 构建，接收器 `046D:C53F`（G304 官方 `C-U0008` Nano 接收器，罗技规格页写作 "Nano receiver"，无线技术是 Logitech G 2.4 GHz），槽位 1 是 G304。证据是 `data/logs/app-2026-11-13.log` 的 18:01–18:03 段，**不是**本轮新采的样本。
+
+**缺陷一：长营销名被 32 字符上限挡死。** 发现阶段 `name=罗技设备 1`，同时 `kind=Mouse`（来自 `0x0005` func 2）、电量 90%、DPI 1600 / 1000 Hz 全部正常——坏在名字这一环。判定过程：
+
+- 整段发现**没有任何 `HID++ 响应超时`**（`0x0005` func 0/1 都没有），而同一次发现里 func 2 成功 → feature 存在、帧有回包，是代码自己把结果判成无效。
+- 旧实现 `resp[2] is 0 or > 32` 直接丢弃，且 func 1 按"一帧一个字符"读。G 系自报的是长营销串（G304 = `G304 Lightspeed Wireless Gaming Mouse`，**37 字符**），正好越过 32。
+- 另一种会走到同一现象的分支是 func 0 回 `0x8F` 错误帧（`HidppIO.ReadMatching` 对错误帧静默返回 null，同样不留日志），当时未排除。
+- 修法（2026-11-16）：func 0 只校验 `1..64`，func 1 改为**按块**读（长报文 16 字符、短报文 3 字符，末块按剩余长度截断），拼完再拒非可打印字符（防 GetCount 回垃圾值拼出不可见串）。37 字符从 37 次往返降到 3 次。**该修法尚未真机复验**（CR-163）。
+- 交叉对照：OpenMouse（`@openmouse/protocol` 0.59.0 `dist/drivers/logitech/hidpp.js` `readName`）就是 `offset += 16` 的分块读法、无 32 上限——用户报告同一台鼠标在那边能正确显示型号。
+
+**缺陷二：32 字节扩展集合被当成第二台接收器。** C53F 同时暴露三个 HID++ 集合：7 字节（`FF00/0001`，`0x10`）、20 字节（`FF00/0002`，`0x11`）、32 字节（`FF00/0004`，`0x20`）。旧 `ShouldSkipInterface` 只分 short(<20)/long(≥20)，20 与 32 都被认领成独立会话（`_sessions` 按 device path 键），而 32 字节那条对 HID++ 请求**零回包**：18:01:32 / 18:02:14 / 18:03:14 各重开一次句柄、每次 3 次超时后「整轮无应答」丢弃，60 秒循环。C548 只有 COL01/COL02（无 32 字节集合），所以本机 MX Master 3S 一直没暴露这个问题。风险不止空转：它一旦应答，同一台鼠标会按两个路径哈希 ID 出两行。修法：`PreferLong` 下，扩展集合（`OutLen > 20`）只有在**同 PID 没有 20 字节同伴**时才认领。
+
+**日志原文**：
+
+```text
+18:01:14.157 罗技跳过冗余接口（偏好=PreferLong）: USB Receiver [VID_046D&PID_C53F] usage=0xFF00/0x0001 in=7 out=7
+18:01:14.162 罗技 HID++ 接口打开: USB Receiver [VID_046D&PID_C53F] usage=0xFF00/0x0002 in=20 out=20 report=0x11
+18:01:19.506 发现罗技设备 devIdx=1 proto=4 kind=Mouse wpid=- name=罗技设备 1 conn=Wireless24G/Inferred
+18:01:32.596 罗技 HID++ 接口打开: USB Receiver [VID_046D&PID_C53F] usage=0xFF00/0x0004 in=32 out=32 report=0x20
+18:01:37.925 罗技接收器整轮无应答（第 1 次），丢弃句柄稍后重开
+18:01:38.235 罗技电量更新: 罗技设备 1 90% Discharging
+18:01:39.395 罗技指针遥测更新: 罗技设备 1 dpi=1600 rate=1000Hz
+```
+
+**产品图连带**：名字读不到时列表显示占位名，详情页无型号、无图。即使名字读对，`device-images/logitech/G305/manifest.json` 的 `displayNames` 也必须包含长名变体——`DeviceImageCatalog` 是**整串**归一化精确比较，`g304` 匹配不到 `g304lightspeedwirelessgamingmouse`。其余 15 个 G 型号的变体仍待真机核对（CR-160）。
 
 ## 2. PRO X 2 LIGHTSPEED（Centurion）
 

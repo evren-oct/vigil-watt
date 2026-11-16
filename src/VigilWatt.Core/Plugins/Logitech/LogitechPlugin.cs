@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text;
 using VigilWatt.Core.Devices;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
@@ -101,11 +102,10 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
     {
         public required DeviceStatus Status;
         public byte ProtocolMajor = 2;
-        public byte? UnifiedBatteryIdx;     // 0x1004 的 feature index
-        public byte? BatteryStatusIdx;      // 0x1000 的 feature index
-        public byte? BatteryVoltageIdx;     // 0x1001
-        public byte? AdcMeasurementIdx;     // 0x1F20
-        public byte? UnifiedWorkingFunc;    // 已验证可用的 Unified Battery func（0 或 1）
+        public FeatureSlot UnifiedBattery = new();  // 0x1004
+        public FeatureSlot BatteryStatus = new();   // 0x1000
+        public FeatureSlot BatteryVoltage = new();  // 0x1001
+        public FeatureSlot AdcMeasurement = new();  // 0x1F20
         public int? RegisterBattery;        // 1.0: 0x07 或 0x0D
         public ushort? WirelessPid;         // 配对寄存器 WPID，供电压曲线覆盖
         public byte? DpiIdx;                // 0x2201 / 0x2202 的 feature index；0 = 已确认不支持
@@ -119,6 +119,19 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         public bool WritesDisabled;         // 熔断停写中
         public DateTimeOffset WritesDisabledAt;
         public int BreakerTrips;            // 熔断次数 = 递增退避档位
+    }
+
+    /// <summary>电量 feature 下标缓存：&gt;0 下标、0 确认不支持、null 还没确认。返回 0 = 本轮用不了。</summary>
+    private sealed class FeatureSlot
+    {
+        public byte? Index;
+        private int _misses;
+
+        public byte Resolve(HidppIO io, byte devIdx, ushort featureId)
+        {
+            Index = HidppFeatureProbe.Next(Index, ResolveFeature(io, devIdx, featureId), ref _misses);
+            return Index ?? 0;
+        }
     }
 
     private sealed class ReceiverSession
@@ -517,20 +530,14 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             ProtocolMajor = protocolMajor,
             WirelessPid = wpid,
         };
-        // 预解析电量 feature 下标，后台通知才能按 feature 匹配（不必等下一轮 Poll）
+        // 预解析电量 feature，后台通知才能按 feature 匹配（不必等下一轮 Poll）；解析不出来的留 null，
+        // 轮询会再试、连续 3 次才认定不支持（CR-165）。仍按级联只探到第一个可用特征，省掉必然无用的 GetFeature。
         if (protocolMajor >= 2)
         {
-            entry.UnifiedBatteryIdx = ResolveFeature(io, idx, 0x1004);
-            if (entry.UnifiedBatteryIdx == 0)
-            {
-                entry.BatteryStatusIdx = ResolveFeature(io, idx, 0x1000);
-                if (entry.BatteryStatusIdx == 0)
-                {
-                    entry.BatteryVoltageIdx = ResolveFeature(io, idx, HidppCodec.FeatureBatteryVoltage);
-                    if (entry.BatteryVoltageIdx == 0)
-                        entry.AdcMeasurementIdx = ResolveFeature(io, idx, HidppCodec.FeatureAdcMeasurement);
-                }
-            }
+            if (entry.UnifiedBattery.Resolve(io, idx, 0x1004) == 0 &&
+                entry.BatteryStatus.Resolve(io, idx, 0x1000) == 0 &&
+                entry.BatteryVoltage.Resolve(io, idx, HidppCodec.FeatureBatteryVoltage) == 0)
+                entry.AdcMeasurement.Resolve(io, idx, HidppCodec.FeatureAdcMeasurement);
         }
         session.Devices[idx] = entry;
         Log.Info($"发现罗技设备 devIdx={idx} proto={protocolMajor} kind={kind} wpid={(wpid is { } w ? w.ToString("X4") : "-")} name={name} conn={status.Connection.Value?.ToString() ?? "Unknown"}/{status.Connection.Source}");
@@ -598,13 +605,13 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
         byte feature = data[0];
         bool batteryFeature =
-            (dev.UnifiedBatteryIdx is { } u && feature == u) ||
-            (dev.BatteryStatusIdx is { } b && feature == b) ||
-            (dev.BatteryVoltageIdx is { } v && feature == v) ||
-            (dev.AdcMeasurementIdx is { } a && feature == a);
+            (dev.UnifiedBattery.Index is { } u && feature == u) ||
+            (dev.BatteryStatus.Index is { } b && feature == b) ||
+            (dev.BatteryVoltage.Index is { } v && feature == v) ||
+            (dev.AdcMeasurement.Index is { } a && feature == a);
         if (!batteryFeature) return;
 
-        if (dev.BatteryVoltageIdx is { } voltIdx && feature == voltIdx)
+        if (dev.BatteryVoltage.Index is { } voltIdx && feature == voltIdx)
         {
             var curve = HidppCatalog.CurveFor(dev.WirelessPid, adcFeature: false);
             if (!HidppCodec.TryParseBatteryVoltage(data, curve, out var pctV, out var chgV, out _))
@@ -613,7 +620,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             return;
         }
 
-        if (dev.AdcMeasurementIdx is { } adcIdx && feature == adcIdx)
+        if (dev.AdcMeasurement.Index is { } adcIdx && feature == adcIdx)
         {
             var curve = HidppCatalog.CurveFor(dev.WirelessPid, adcFeature: true);
             if (!HidppCodec.TryParseAdcMeasurement(data, curve, out var pctA, out var chgA, out _))
@@ -622,7 +629,12 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             return;
         }
 
-        if (!HidppCodec.TryParseBattery20(data, out var pct, out var chg)) return;
+        // 0x1004 与 0x1000 的充电状态码是两套枚举，按命中的 feature 选解码器
+        bool unified = dev.UnifiedBattery.Index is { } unifiedIdx && feature == unifiedIdx;
+        bool parsed = unified
+            ? HidppCodec.TryParseUnifiedBattery(data, out var pct, out var chg)
+            : HidppCodec.TryParseBatteryStatus(data, out pct, out chg);
+        if (!parsed) return;
         PushIfChanged(dev, pct, chg);
     }
 
@@ -698,59 +710,25 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
         if (dev.ProtocolMajor >= 2)
         {
-            // 1) Unified Battery 0x1004
-            //    func 1 = GetStatus（电量% + 充电态）—— MX Master 3S 真机：90% / charging=1
-            //    func 0 = GetCapabilities（档位能力），**不能当电量**（真机会被误读成 15%）
-            //    优先 func 1；仅当 1 无响应时才回退 func 0（极旧固件）
-            var unifiedIdx = dev.UnifiedBatteryIdx ??= ResolveFeature(io, idx, 0x1004);
+            // 1) Unified Battery 0x1004：只有 func 1 = GetStatus 是电量；
+            //    func 0 是 GetCapabilities，当电量读会把档位数报成百分比（真机 15% 事故）
+            var unifiedIdx = dev.UnifiedBattery.Resolve(io, idx, 0x1004);
             if (unifiedIdx != 0)
             {
-                byte[] funcs = dev.UnifiedWorkingFunc.HasValue
-                    ? new byte[] { dev.UnifiedWorkingFunc.Value }
-                    : new byte[] { 1, 0 };
-                int? fallbackPct = null;
-                ChargingState fallbackChg = ChargingState.Unknown;
-                byte? fallbackFunc = null;
-                foreach (byte func in funcs)
+                var resp = io.Request(idx, HidppCodec.FeatureFunc(unifiedIdx, 1), ReadOnlySpan<byte>.Empty);
+                if (resp != null && HidppCodec.TryParseUnifiedBattery(resp, out var pct, out var chg))
                 {
-                    var resp = io.Request(idx, HidppCodec.FeatureFunc(unifiedIdx, func), ReadOnlySpan<byte>.Empty);
-                    if (resp == null || !HidppCodec.TryParseBattery20(resp, out var pct, out var chg))
-                        continue;
-
-                    // 已锁定工作 func：直接用
-                    if (dev.UnifiedWorkingFunc.HasValue)
-                    {
-                        ApplyBattery(status, pct, chg);
-                        return true;
-                    }
-
-                    // 探测期：func 1 立即采信；func 0 只作回退候选
-                    if (func == 1)
-                    {
-                        dev.UnifiedWorkingFunc = 1;
-                        ApplyBattery(status, pct, chg);
-                        return true;
-                    }
-
-                    fallbackPct = pct;
-                    fallbackChg = chg;
-                    fallbackFunc = 0;
-                }
-
-                if (fallbackPct.HasValue)
-                {
-                    dev.UnifiedWorkingFunc = fallbackFunc;
-                    ApplyBattery(status, fallbackPct.Value, fallbackChg);
+                    ApplyBattery(status, pct, chg);
                     return true;
                 }
             }
 
-            // 2) Battery Status 0x1000
-            var statusIdx = dev.BatteryStatusIdx ??= ResolveFeature(io, idx, 0x1000);
+            // 2) Battery Status 0x1000（状态码枚举与 0x1004 不同）
+            var statusIdx = dev.BatteryStatus.Resolve(io, idx, 0x1000);
             if (statusIdx != 0)
             {
                 var resp = io.Request(idx, HidppCodec.FeatureFunc(statusIdx, 0), ReadOnlySpan<byte>.Empty);
-                if (resp != null && HidppCodec.TryParseBattery20(resp, out var pct, out var chg))
+                if (resp != null && HidppCodec.TryParseBatteryStatus(resp, out var pct, out var chg))
                 {
                     ApplyBattery(status, pct, chg);
                     return true;
@@ -758,7 +736,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             }
 
             // 3) Battery Voltage 0x1001（G 系等只有毫伏、没有百分比特征）
-            var voltIdx = dev.BatteryVoltageIdx ??= ResolveFeature(io, idx, HidppCodec.FeatureBatteryVoltage);
+            var voltIdx = dev.BatteryVoltage.Resolve(io, idx, HidppCodec.FeatureBatteryVoltage);
             if (voltIdx != 0)
             {
                 var resp = io.Request(idx, HidppCodec.FeatureFunc(voltIdx, 0), ReadOnlySpan<byte>.Empty);
@@ -772,7 +750,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             }
 
             // 4) ADC Measurement 0x1F20
-            var adcIdx = dev.AdcMeasurementIdx ??= ResolveFeature(io, idx, HidppCodec.FeatureAdcMeasurement);
+            var adcIdx = dev.AdcMeasurement.Resolve(io, idx, HidppCodec.FeatureAdcMeasurement);
             if (adcIdx != 0)
             {
                 var resp = io.Request(idx, HidppCodec.FeatureFunc(adcIdx, 0), ReadOnlySpan<byte>.Empty);
@@ -1011,23 +989,37 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         return false;
     }
 
-    /// <summary>Feature ID 0x0005 = DEVICE NAME/TYPE；<paramref name="nameIdx"/> 由调用方 ResolveFeature 得到（不要写死 0x05）。</summary>
+    /// <summary>Feature ID 0x0005 = DEVICE NAME/TYPE；<paramref name="nameIdx"/> 由调用方 ResolveFeature 得到（不要写死 0x05）。
+    /// func 1 回的是**一块**正文（长报文 16 字符），必须按块拼、别按字符拼（logitech.md §1.2）。</summary>
     private static string? ReadDeviceName(HidppIO io, byte devIdx, byte nameIdx)
     {
         if (nameIdx == 0) return null;
 
-        var resp = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 0), ReadOnlySpan<byte>.Empty); // GetCount
-        if (resp == null || resp.Length < 3 || resp[2] is 0 or > 32) return null;
-        int len = resp[2];
-        var chars = new char[len];
-        for (byte i = 0; i < len; i++)
+        var header = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 0), ReadOnlySpan<byte>.Empty); // GetCount
+        if (!HidppCodec.TryParseDeviceNameLength(header, out int length))
         {
-            var r = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 1), new byte[] { i }); // GetChar
-            if (r == null || r.Length < 3) return null;
-            chars[i] = (char)r[2];
+            // 两种失败都只表现为 name=null，留原始回包才能区分 0x8F 错误帧与字符数越界
+            Log.Info($"罗技设备名 GetCount 无效 devIdx={devIdx} nameIdx={nameIdx} " +
+                     $"resp={(header == null ? "null" : Convert.ToHexString(header))}");
+            return null;
         }
-        var name = new string(chars).Trim();
-        return name.Length == 0 ? null : name;
+
+        int chunkSize = io.IsLongMessage ? 16 : 3;
+        var sb = new StringBuilder(length);
+        for (int offset = 0; offset < length; offset += chunkSize)
+        {
+            int take = Math.Min(chunkSize, length - offset);
+            var resp = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 1), new[] { (byte)offset }); // GetDeviceName
+            if (!HidppCodec.TryParseDeviceNameChunk(resp, take, out var chunk)) return null;
+            sb.Append(chunk);
+        }
+
+        var name = sb.ToString().Trim();
+        // 坏字节（GetCount 回了垃圾值）拼出来的不可见串宁可不要，交给下一级兜底猜类型
+        if (name.Length == 0) return null;
+        foreach (var ch in name)
+            if (ch < ' ' || ch == (char)0x7F) return null;
+        return name;
     }
 
     /// <summary>0x0005 func 2 = getDeviceType，营销类型比配对寄存器准；读不到返回 Unknown 交给下一级兜底。</summary>

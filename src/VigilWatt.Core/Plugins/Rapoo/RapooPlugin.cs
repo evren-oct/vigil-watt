@@ -71,6 +71,15 @@ public sealed class RapooPlugin : BatteryPluginBase
     /// <summary>认领判据完全由 JSON 的 interface 段决定：目录命中先定协议，未收录才按注册顺序比形态。</summary>
     protected override bool IsCandidate(HidDeviceInfo info) => _engine.Matches(info);
 
+    /// <summary>同一只鼠标插线后有线/无线共用 SN，归一到同一 ID，避免列表两行（rapoo.md §4.3）。</summary>
+    protected override string BuildDeviceId(HidDeviceInfo info)
+        => RapooDeviceIdentity.StableId(_engine, info, Name.ToLowerInvariant()) ?? base.BuildDeviceId(info);
+
+    /// <summary>有线本体在场且可认领时先摘掉接收器；否则基类会保留先枚举的接收器、丢掉能读的本体。</summary>
+    protected override IReadOnlyCollection<string> SkipPathsForThisPass(
+        IReadOnlyList<HidDeviceInfo> availableDevices)
+        => RapooDeviceIdentity.WirelessPathsToSkip(_engine, availableDevices);
+
     /// <summary>同步入口（基类要求）：转调异步版本，逻辑只有一份。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
         => ProbeAsync(handle).GetAwaiter().GetResult();

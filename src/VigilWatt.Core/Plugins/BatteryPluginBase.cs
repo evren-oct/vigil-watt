@@ -315,7 +315,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             if (!IsCandidate(info)) continue;
 
             // 永久移除的设备：连句柄都不开、帧也不发。只挡 Upsert 的话，插件照样会写帧。
-            if (DeviceBlocklist.IsBlocked(IdFor(info.DevicePath)))
+            if (DeviceBlocklist.IsBlocked(BlocklistId(info)))
             {
                 if (_devices.Remove(info.DevicePath, out var blocked))
                 {
@@ -451,6 +451,13 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             if (string.Equals(kv.Value.Status.Id, id, StringComparison.Ordinal)) return kv.Key;
         }
         return null;
+    }
+
+    /// <summary>黑名单与设备状态必须同一把 ID 钥匙；读芯片 ID 抛异常时退回路径哈希（旧行为）。</summary>
+    private string BlocklistId(HidDeviceInfo info)
+    {
+        try { return BuildDeviceId(info); }
+        catch { return IdFor(info.DevicePath); }
     }
 
     private void CommitProbes(ProbeOutcome[] outcomes, List<DeviceStatus> claimed)

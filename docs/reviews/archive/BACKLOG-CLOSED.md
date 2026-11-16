@@ -82,6 +82,7 @@
 | CR-131 | `code-flow.md` §4.2 的 `LastUpdated` 措辞改为「最近一次读数；`MarkOffline` 幂等、只在真正翻转在线状态时写一次」，与 `BatteryPluginBase.cs:557` 一致；过期判定逻辑未动 |
 | CR-127 | 删掉 `InphicIn9Codec.TryParseModel` 及 `ModelOffset` / `ModelLength` / `using System.Text`，同步删掉 `ReadsModelStringForDiagnostics` 用例。型号串对排错没有增量价值——原始帧本来就由 `Log.Hex` 完整打进日志。IN9 用例 19 → 18 |
 | CR-128 | `BetopSettleTests.cs` 文件头用户名 `workbuddy` 改为 `20211`（Windows 用户名），符合 `comment-style.md` §7 |
+| CR-150 | 2026-11-16 已修：`RapooDeviceIdentity` 用「目录型号 + 序列号」归一有线/无线 ID，`SkipPathsForThisPass` 同轮优先保留有线；目录 172 条配对记录补 `wired`，加载期校验每组恰一条；黑名单改用同一 ID。VT2S Air MAX V2 真机同 SN 已验证，其余 85 组待真机复看。见 `hardware/brands/rapoo.md` §4.4。 |
 
 ## wontfix
 

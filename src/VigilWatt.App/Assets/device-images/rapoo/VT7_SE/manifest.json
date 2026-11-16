@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT7 SE",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4A00",
+      "1A00"
+    ],
+    "displayNames": [
+      "雷柏 VT7 SE",
+      "VT7 SE"
+    ]
+  },
+  "defaultColor": "Black",
+  "colors": [
+    {
+      "key": "Black",
+      "label": "星空黑",
+      "thumbnail": "Black_thumb.png",
+      "image": "Black_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7%20SE/thumb_Black.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

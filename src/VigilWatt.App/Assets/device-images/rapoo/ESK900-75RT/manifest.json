@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "ESK900-75RT",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "482A"
+    ],
+    "displayNames": [
+      "雷柏 ESK900-75RT",
+      "ESK900-75RT"
+    ]
+  },
+  "defaultColor": "Blade_Pink",
+  "colors": [
+    {
+      "key": "Blade_Pink",
+      "label": "锋刃粉",
+      "thumbnail": "Blade_Pink_thumb.png",
+      "image": "Blade_Pink_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-75RT/thumb_Blade_Pink.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

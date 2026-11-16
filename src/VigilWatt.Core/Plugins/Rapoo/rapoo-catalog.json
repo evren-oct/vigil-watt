@@ -12,7 +12,8 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x4814"
+   "pairedPid": "0x4814",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -22,7 +23,8 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x1914"
+   "pairedPid": "0x1914",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -194,7 +196,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x4506"
+   "pairedPid": "0x4506",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -204,7 +207,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x1874"
+   "pairedPid": "0x1874",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -214,7 +218,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x4504"
+   "pairedPid": "0x4504",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -224,7 +229,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x1872"
+   "pairedPid": "0x1872",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -234,7 +240,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x4507"
+   "pairedPid": "0x4507",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -244,7 +251,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x1876"
+   "pairedPid": "0x1876",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -254,7 +262,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x4500"
+   "pairedPid": "0x4500",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -264,7 +273,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x1870"
+   "pairedPid": "0x1870",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -274,7 +284,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x4503"
+   "pairedPid": "0x4503",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -284,7 +295,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x1871"
+   "pairedPid": "0x1871",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -294,7 +306,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x4c00"
+   "pairedPid": "0x4c00",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -304,7 +317,8 @@
    "kind": "mouse",
    "protocol": "telink-8273",
    "caps": [],
-   "pairedPid": "0x1c00"
+   "pairedPid": "0x1c00",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -332,7 +346,8 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x4807"
+   "pairedPid": "0x4807",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -351,7 +366,8 @@
       }
      }
     }
-   }
+   },
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -370,7 +386,8 @@
       }
      }
     }
-   }
+   },
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -389,7 +406,8 @@
       }
      }
     }
-   }
+   },
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -399,7 +417,8 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x4806"
+   "pairedPid": "0x4806",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -418,7 +437,8 @@
       }
      }
     }
-   }
+   },
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -428,7 +448,8 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x4805"
+   "pairedPid": "0x4805",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -447,7 +468,8 @@
       }
      }
     }
-   }
+   },
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -457,7 +479,8 @@
    "kind": "keyboard",
    "protocol": "telink-keyboard",
    "caps": [],
-   "pairedPid": "0x4824"
+   "pairedPid": "0x4824",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -476,7 +499,8 @@
       }
      }
     }
-   }
+   },
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -504,7 +528,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4610"
+   "pairedPid": "0x4610",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -514,7 +539,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1410"
+   "pairedPid": "0x1410",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -524,7 +550,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46a1"
+   "pairedPid": "0x46a1",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -534,7 +561,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14a1"
+   "pairedPid": "0x14a1",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -544,7 +572,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4620"
+   "pairedPid": "0x4620",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -554,7 +583,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1420"
+   "pairedPid": "0x1420",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -564,7 +594,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x464a"
+   "pairedPid": "0x464a",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -574,7 +605,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x144a"
+   "pairedPid": "0x144a",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -584,7 +616,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4615"
+   "pairedPid": "0x4615",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -594,7 +627,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1415"
+   "pairedPid": "0x1415",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -604,7 +638,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4644"
+   "pairedPid": "0x4644",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -614,7 +649,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1444"
+   "pairedPid": "0x1444",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -624,7 +660,8 @@
    "kind": "mouse",
    "protocol": "vt-ch584",
    "caps": [],
-   "pairedPid": "0x4a11"
+   "pairedPid": "0x4a11",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -634,7 +671,8 @@
    "kind": "mouse",
    "protocol": "vt-ch584",
    "caps": [],
-   "pairedPid": "0x1a11"
+   "pairedPid": "0x1a11",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -644,7 +682,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b0a"
+   "pairedPid": "0x4b0a",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -654,7 +693,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b0a"
+   "pairedPid": "0x1b0a",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -664,7 +704,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x466a"
+   "pairedPid": "0x466a",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -674,7 +715,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x146a"
+   "pairedPid": "0x146a",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -684,7 +726,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4622"
+   "pairedPid": "0x4622",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -694,7 +737,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1422"
+   "pairedPid": "0x1422",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -704,7 +748,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b12"
+   "pairedPid": "0x4b12",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -714,7 +759,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b12"
+   "pairedPid": "0x1b12",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -724,7 +770,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4623"
+   "pairedPid": "0x4623",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -734,7 +781,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1423"
+   "pairedPid": "0x1423",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -744,7 +792,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4675"
+   "pairedPid": "0x4675",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -754,7 +803,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1475"
+   "pairedPid": "0x1475",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -764,7 +814,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b09"
+   "pairedPid": "0x4b09",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -774,7 +825,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b09"
+   "pairedPid": "0x1b09",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -784,7 +836,8 @@
    "kind": "mouse",
    "protocol": "lm20rt",
    "caps": [],
-   "pairedPid": "0x4b21"
+   "pairedPid": "0x4b21",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -794,7 +847,8 @@
    "kind": "mouse",
    "protocol": "lm20rt",
    "caps": [],
-   "pairedPid": "0x1b21"
+   "pairedPid": "0x1b21",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -804,7 +858,8 @@
    "kind": "mouse",
    "protocol": "lm20rt",
    "caps": [],
-   "pairedPid": "0x4b20"
+   "pairedPid": "0x4b20",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -814,7 +869,8 @@
    "kind": "mouse",
    "protocol": "lm20rt",
    "caps": [],
-   "pairedPid": "0x1b20"
+   "pairedPid": "0x1b20",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -824,7 +880,8 @@
    "kind": "mouse",
    "protocol": "telink-3228c",
    "caps": [],
-   "pairedPid": "0x4672"
+   "pairedPid": "0x4672",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -834,7 +891,8 @@
    "kind": "mouse",
    "protocol": "telink-3228c",
    "caps": [],
-   "pairedPid": "0x1472"
+   "pairedPid": "0x1472",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -844,7 +902,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4668"
+   "pairedPid": "0x4668",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -854,7 +913,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1468"
+   "pairedPid": "0x1468",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -864,7 +924,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46a4"
+   "pairedPid": "0x46a4",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -874,7 +935,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14a4"
+   "pairedPid": "0x14a4",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -889,7 +951,8 @@
    "capabilities": {
     "batteryRead": "supported"
    },
-   "pairedPid": "0x4b13"
+   "pairedPid": "0x4b13",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -904,7 +967,8 @@
    "capabilities": {
     "batteryRead": "supported"
    },
-   "pairedPid": "0x1b13"
+   "pairedPid": "0x1b13",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -914,7 +978,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4676"
+   "pairedPid": "0x4676",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -924,7 +989,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1476"
+   "pairedPid": "0x1476",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -934,7 +1000,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b04"
+   "pairedPid": "0x4b04",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -944,7 +1011,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b04"
+   "pairedPid": "0x1b04",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -954,7 +1022,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x465d"
+   "pairedPid": "0x465d",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -964,7 +1033,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x145d"
+   "pairedPid": "0x145d",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -984,16 +1054,7 @@
     "rateRead": "unverified"
    },
    "pairedPid": "0x4612",
-   "override": {
-    "passive": {
-     "fields": {
-      "dpiLevel": { "offset": 2, "type": "u8", "min": 0, "max": 6 },
-      "dpiX": { "offset": 3, "type": "u16", "min": 50, "max": 26000 },
-      "dpiY": { "offset": 5, "type": "u16", "min": 50, "max": 26000 },
-      "rateHz": { "offset": 11, "type": "u8", "mapValue": { "8": 125, "4": 250, "2": 500, "1": 1000, "132": 2000, "130": 4000, "129": 8000 } }
-     }
-    }
-   }
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1003,7 +1064,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1412"
+   "pairedPid": "0x1412",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1013,7 +1075,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b0c"
+   "pairedPid": "0x4b0c",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1023,7 +1086,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b0c"
+   "pairedPid": "0x1b0c",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1033,7 +1097,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4617"
+   "pairedPid": "0x4617",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1043,7 +1108,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1417"
+   "pairedPid": "0x1417",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1053,7 +1119,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x466d"
+   "pairedPid": "0x466d",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1063,7 +1130,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x146d"
+   "pairedPid": "0x146d",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1073,7 +1141,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b06"
+   "pairedPid": "0x4b06",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1083,7 +1152,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b06"
+   "pairedPid": "0x1b06",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1093,7 +1163,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46a5"
+   "pairedPid": "0x46a5",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1103,7 +1174,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14a5"
+   "pairedPid": "0x14a5",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1113,7 +1185,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4662"
+   "pairedPid": "0x4662",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1123,7 +1196,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1462"
+   "pairedPid": "0x1462",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1133,7 +1207,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4611"
+   "pairedPid": "0x4611",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1143,7 +1218,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1411"
+   "pairedPid": "0x1411",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1153,7 +1229,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b0d"
+   "pairedPid": "0x4b0d",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1163,7 +1240,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b0d"
+   "pairedPid": "0x1b0d",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1173,7 +1251,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46a2"
+   "pairedPid": "0x46a2",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1183,7 +1262,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14a2"
+   "pairedPid": "0x14a2",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1193,7 +1273,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4621"
+   "pairedPid": "0x4621",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1203,7 +1284,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1421"
+   "pairedPid": "0x1421",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1213,7 +1295,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x464b"
+   "pairedPid": "0x464b",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1223,7 +1306,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x144b"
+   "pairedPid": "0x144b",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1233,7 +1317,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x466e"
+   "pairedPid": "0x466e",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1243,7 +1328,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x146e"
+   "pairedPid": "0x146e",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1253,7 +1339,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b07"
+   "pairedPid": "0x4b07",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1263,7 +1350,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b07"
+   "pairedPid": "0x1b07",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1273,7 +1361,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46a6"
+   "pairedPid": "0x46a6",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1283,7 +1372,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14a6"
+   "pairedPid": "0x14a6",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1293,7 +1383,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4664"
+   "pairedPid": "0x4664",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1303,7 +1394,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1464"
+   "pairedPid": "0x1464",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1313,7 +1405,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b14"
+   "pairedPid": "0x4b14",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1323,7 +1416,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b14"
+   "pairedPid": "0x1b14",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1333,7 +1427,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4677"
+   "pairedPid": "0x4677",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1343,7 +1438,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1477"
+   "pairedPid": "0x1477",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1353,7 +1449,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b03"
+   "pairedPid": "0x4b03",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1363,7 +1460,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b03"
+   "pairedPid": "0x1b03",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1373,7 +1471,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x465b"
+   "pairedPid": "0x465b",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1383,7 +1482,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x145b"
+   "pairedPid": "0x145b",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1393,7 +1493,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4651"
+   "pairedPid": "0x4651",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1403,7 +1504,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1451"
+   "pairedPid": "0x1451",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1413,7 +1515,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4652"
+   "pairedPid": "0x4652",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1423,7 +1526,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1452"
+   "pairedPid": "0x1452",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1442,7 +1546,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4613"
+   "pairedPid": "0x4613",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1452,7 +1557,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1413"
+   "pairedPid": "0x1413",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1462,7 +1568,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b0e"
+   "pairedPid": "0x4b0e",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1472,7 +1579,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b0e"
+   "pairedPid": "0x1b0e",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1482,7 +1590,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4616"
+   "pairedPid": "0x4616",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1492,7 +1601,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1416"
+   "pairedPid": "0x1416",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1502,7 +1612,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4670"
+   "pairedPid": "0x4670",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1512,7 +1623,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1470"
+   "pairedPid": "0x1470",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1522,7 +1634,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b05"
+   "pairedPid": "0x4b05",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1532,7 +1645,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b05"
+   "pairedPid": "0x1b05",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1542,7 +1656,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46a7"
+   "pairedPid": "0x46a7",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1552,7 +1667,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14a7"
+   "pairedPid": "0x14a7",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1562,7 +1678,8 @@
    "kind": "mouse",
    "protocol": "vt-ch584",
    "caps": [],
-   "pairedPid": "0x4a00"
+   "pairedPid": "0x4a00",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1572,7 +1689,8 @@
    "kind": "mouse",
    "protocol": "vt-ch584",
    "caps": [],
-   "pairedPid": "0x1a00"
+   "pairedPid": "0x1a00",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1582,7 +1700,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4660"
+   "pairedPid": "0x4660",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1592,7 +1711,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1460"
+   "pairedPid": "0x1460",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1602,7 +1722,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b0f"
+   "pairedPid": "0x4b0f",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1612,7 +1733,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b0f"
+   "pairedPid": "0x1b0f",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1622,7 +1744,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4671"
+   "pairedPid": "0x4671",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1632,7 +1755,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1471"
+   "pairedPid": "0x1471",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1642,7 +1766,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b02"
+   "pairedPid": "0x4b02",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1652,7 +1777,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b02"
+   "pairedPid": "0x1b02",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1662,7 +1788,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46a8"
+   "pairedPid": "0x46a8",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1672,7 +1799,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14a8"
+   "pairedPid": "0x14a8",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1682,7 +1810,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4659"
+   "pairedPid": "0x4659",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1692,7 +1821,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1459"
+   "pairedPid": "0x1459",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1702,7 +1832,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b15"
+   "pairedPid": "0x4b15",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1712,7 +1843,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b15"
+   "pairedPid": "0x1b15",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1722,7 +1854,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4678"
+   "pairedPid": "0x4678",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1732,7 +1865,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1478"
+   "pairedPid": "0x1478",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1742,7 +1876,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b0b"
+   "pairedPid": "0x4b0b",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1752,7 +1887,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b0b"
+   "pairedPid": "0x1b0b",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1762,7 +1898,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x466c"
+   "pairedPid": "0x466c",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1772,7 +1909,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x146c"
+   "pairedPid": "0x146c",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1782,7 +1920,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4614"
+   "pairedPid": "0x4614",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1792,7 +1931,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1414"
+   "pairedPid": "0x1414",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1802,7 +1942,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b10"
+   "pairedPid": "0x4b10",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1812,7 +1953,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b10"
+   "pairedPid": "0x1b10",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1822,7 +1964,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4618"
+   "pairedPid": "0x4618",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1832,7 +1975,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1418"
+   "pairedPid": "0x1418",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1842,7 +1986,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4673"
+   "pairedPid": "0x4673",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1852,7 +1997,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1473"
+   "pairedPid": "0x1473",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1862,7 +2008,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b08"
+   "pairedPid": "0x4b08",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1872,7 +2019,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b08"
+   "pairedPid": "0x1b08",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1882,7 +2030,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46a9"
+   "pairedPid": "0x46a9",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1892,7 +2041,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14a9"
+   "pairedPid": "0x14a9",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1902,7 +2052,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4666"
+   "pairedPid": "0x4666",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1912,7 +2063,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1466"
+   "pairedPid": "0x1466",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1922,7 +2074,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b11"
+   "pairedPid": "0x4b11",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1932,7 +2085,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b11"
+   "pairedPid": "0x1b11",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1942,7 +2096,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4674"
+   "pairedPid": "0x4674",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1952,7 +2107,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1474"
+   "pairedPid": "0x1474",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1962,7 +2118,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4b01"
+   "pairedPid": "0x4b01",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1972,7 +2129,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1b01"
+   "pairedPid": "0x1b01",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -1982,7 +2140,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x46aa"
+   "pairedPid": "0x46aa",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -1992,7 +2151,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x14aa"
+   "pairedPid": "0x14aa",
+   "wired": true
   },
   {
    "brand": "rapoo",
@@ -2002,7 +2162,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x4653"
+   "pairedPid": "0x4653",
+   "wired": false
   },
   {
    "brand": "rapoo",
@@ -2012,7 +2173,8 @@
    "kind": "mouse",
    "protocol": "status-report7",
    "caps": [],
-   "pairedPid": "0x1453"
+   "pairedPid": "0x1453",
+   "wired": true
   }
  ]
 }

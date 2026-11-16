@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "ESK900-83RT",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "481B"
+    ],
+    "displayNames": [
+      "雷柏 ESK900-83RT",
+      "ESK900-83RT"
+    ]
+  },
+  "defaultColor": "Translucent_Black",
+  "colors": [
+    {
+      "key": "Phantom_Green",
+      "label": "墨冰雾影",
+      "thumbnail": "Phantom_Green_thumb.png",
+      "image": "Phantom_Green_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-83RT/thumb_Phantom_Green.png"
+    },
+    {
+      "key": "Translucent_Black",
+      "label": "暗影刺客",
+      "thumbnail": "Translucent_Black_thumb.png",
+      "image": "Translucent_Black_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-83RT/thumb_Translucent_Black.png"
+    },
+    {
+      "key": "Black_Mist",
+      "label": "黑雾",
+      "thumbnail": "Black_Mist_thumb.png",
+      "image": "Black_Mist_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-83RT/thumb_Black_Mist.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

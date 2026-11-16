@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT7",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4613",
+      "1413"
+    ],
+    "displayNames": [
+      "雷柏 VT7",
+      "VT7"
+    ]
+  },
+  "defaultColor": "Black",
+  "colors": [
+    {
+      "key": "White",
+      "label": "皎月白",
+      "thumbnail": "White_thumb.png",
+      "image": "White_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7/thumb_White.png"
+    },
+    {
+      "key": "Deep_Blue",
+      "label": "星渊蓝",
+      "thumbnail": "Deep_Blue_thumb.png",
+      "image": "Deep_Blue_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7/thumb_Deep_Blue.png"
+    },
+    {
+      "key": "Black",
+      "label": "星空黑",
+      "thumbnail": "Black_thumb.png",
+      "image": "Black_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7/thumb_Black.png"
+    },
+    {
+      "key": "Metallic_Crimson",
+      "label": "锻绯红",
+      "thumbnail": "Metallic_Crimson_thumb.png",
+      "image": "Metallic_Crimson_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7/thumb_Metallic_Crimson.png"
+    },
+    {
+      "key": "Raspberry_Pink",
+      "label": "树莓粉",
+      "thumbnail": "Raspberry_Pink_thumb.png",
+      "image": "Raspberry_Pink_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7/thumb_Raspberry_Pink.png"
+    },
+    {
+      "key": "Flame_Orange",
+      "label": "焰影橙",
+      "thumbnail": "Flame_Orange_thumb.png",
+      "image": "Flame_Orange_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7/thumb_Flame_Orange.png"
+    },
+    {
+      "key": "Metallic_Blue",
+      "label": "夜光蓝",
+      "thumbnail": "Metallic_Blue_thumb.png",
+      "image": "Metallic_Blue_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7/thumb_Metallic_Blue.png"
+    },
+    {
+      "key": "Metallic_Purple",
+      "label": "魅影紫",
+      "thumbnail": "Metallic_Purple_thumb.png",
+      "image": "Metallic_Purple_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT7/thumb_Metallic_Purple.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

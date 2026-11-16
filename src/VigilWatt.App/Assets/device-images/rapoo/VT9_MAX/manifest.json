@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT9 MAX",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4618",
+      "1418"
+    ],
+    "displayNames": [
+      "雷柏 VT9 MAX",
+      "VT9 MAX"
+    ]
+  },
+  "defaultColor": "Black",
+  "colors": [
+    {
+      "key": "Black",
+      "label": "星空黑",
+      "thumbnail": "Black_thumb.png",
+      "image": "Black_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT9%20MAX/thumb_Black.png"
+    },
+    {
+      "key": "White",
+      "label": "皎月白",
+      "thumbnail": "White_thumb.png",
+      "image": "White_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT9%20MAX/thumb_White.png"
+    },
+    {
+      "key": "Electric_Purple",
+      "label": "电驭紫",
+      "thumbnail": "Electric_Purple_thumb.png",
+      "image": "Electric_Purple_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT9%20MAX/thumb_Electric_Purple.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

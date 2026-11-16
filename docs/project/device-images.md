@@ -1,8 +1,8 @@
 # 设备产品图接入
 
 > 这是产品图的**单一接入手册**。新品牌/新型号按本文走，不要重新设计一套图片加载逻辑。
-> 当前内置资产：迈从键盘 31 款 / 170 个配色 / 201 个文件；罗技办公线 151 款 / 151 个文件。
-> 合计 503 个文件、压缩后约 11.3 MB。快速校验：`python scripts/check-device-images.py`
+> 当前内置资产：迈从键盘 31 款 / 170 个配色；罗技办公线 151 款；雷柏 96 款 / 296 个配色。
+> 合计 294 个型号 / 633 个配色 / 927 个文件、约 23.1 MB。快速校验：`python scripts/check-device-images.py`
 
 ## 0. 一句话流程
 
@@ -294,6 +294,23 @@ PID 分不出型号。`scripts/import-openmouse-images.py` 取 16 个 G / PRO �
 - 它还有 12 张雷蛇、2 张迈从（A7 V2/V3）、ATK / VGN / 雷柏 / HyperX / 华硕各 1-2 张，
   将来补这些品牌可以复用同一个脚本，只需扩 `DEVICES` 表。
 
+### 7.6 雷柏全量（2026-11-16）
+
+官方网页驱动 **AHUB 2.0** 的主包把 109 台设备的 manifest 全部编译在内；每个 manifest 带
+`hardware.productId:[有线, 无线]`、`ui.assetsDir` 与 `ui.colors.series[].key`，缩略图是
+`<assetsDir>/thumb_<key>.png`。这比另找电商图/第三方图库可靠，也顺带给出了有线标记。
+
+- **脚本**：`python scripts/import-rapoo-images.py`。默认联网取 2026-11-16 的主包入口；
+  主包文件名带 hash、发版会换，404 时用 `--js-url` 或 `--source-js` 指新包。
+  `--models` 只导指定型号，`--max-edge` 改缩略图长边（默认 280），`--only-default-color`
+  只导默认色，`--clean` 先清空品牌目录。
+- **结果**：96 款 / 296 个配色 / 296 张缩略图，原始 34.1MB，压缩后 11.1MB。
+- **跳过**：Ace 68 Turbo 官方缩略图 404；V700diy-75 LRV 在官方 manifest 里 `colors` 为空；
+  底座、OHID、telink-3228c 的 `implementation` 为 `none`，不产生设备条目，不导。
+- **匹配**：`match.productIds` 同时写有线/无线两个 PID；`displayNames` 写 `雷柏 <型号>` 与裸型号。
+  配色名从官方 i18n 表取中文，取不到才退回英文 key。
+- **版权**：同其它产品图，厂商渲染图、当前按个人自用处理，缩略图随包分发。
+
 ## 8. 已知坑（接新品牌前先看）
 
 1. **不要把官方默认色当成硬件颜色**：官方 HUB 的 `checkIndex` 是用户选择，不是设备回读。
@@ -330,8 +347,8 @@ PID 分不出型号。`scripts/import-openmouse-images.py` 取 16 个 G / PRO �
 **现在为什么内置**：开发与验证方便——不用起服务、不用管网络、`check-device-images.py` 一次扫完。
 这是刻意的取舍，不是没想到体积问题。
 
-**问题在规模**：图片 337 张 / 11.75 MB，占全量安装包（36 MB）的 **33%**；而 198 个 manifest
-合计只有 146 KB。再补雷蛇、ATK/VGN、G 系列键盘与整机大图，很容易到几十 MB。
+**问题在规模**：图片 633 张 / 23.1 MB，占全量安装包的比重已接近一半；而 294 个 manifest
+合计约 269 KB。再补雷蛇、ATK/VGN 与整机大图，很容易到几十 MB。
 
 **方案与已拍板的决策单独成文：[device-images-remote.md](device-images-remote.md)**——
 那边记了数据流、URL 规则、缓存目录、验收标准与「明确不做」的清单。本文不重复，

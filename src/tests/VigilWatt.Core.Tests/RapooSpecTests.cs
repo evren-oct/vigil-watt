@@ -416,22 +416,29 @@ public sealed class RapooSpecTests
     }
 
     [Fact]
-    public void R28_未验证型号不产出指针遥测()
+    public void R28_同族其他型号也产出指针遥测()
     {
-        // 同一套 status-report7 的 VT2S Air Max（0x4B13）没有 override：电量照旧，遥测全空
+        // 指针字段在协议本体上：同一套 status-report7 的 VT2S Air Max（0x4B13）也产出遥测
         var r = Engine.Parse(Dev(0x4B13, @"\\?\hid#vid_24ae&pid_4b13#test"),
             "status-report7", WiredFrame);
 
         Assert.NotNull(r);
         Assert.Equal(100, r!.Value.Percent);
-        Assert.False(r.Value.Pointer.HasAny);
+        Assert.True(r.Value.Pointer.HasAny);
+        Assert.Equal(1050, r.Value.Pointer.DpiX.Value);
+        Assert.Equal(2, r.Value.Pointer.DpiLevel.Value);
+        Assert.Equal(1000, r.Value.Pointer.ReportRateSettingHz.Value);
     }
 
     [Fact]
-    public void R29_协议本体不带指针字段()
+    public void R29_协议本体带指针字段()
     {
-        // 指针字段只挂在 1412 的设备级 override 上；写进协议本体会让同族 98 台设备被顺带认领
-        Assert.Null(Engine.SpecOf("status-report7")!.Passive!.Pointer);
+        // 12 套族里只有 status-report7 的鼠标 user-data 有这三个字段；能力声明仍按设备三态，
+        // 不能因为协议级解析就把未验证型号标成 supported（见 R37 / R39）。
+        var pointer = Engine.SpecOf("status-report7")!.Passive!.Pointer;
+        Assert.NotNull(pointer);
+        Assert.Equal(3, pointer!.DpiX!.Offset);
+        Assert.Equal(11, pointer.ReportRateSettingHz!.Offset);
     }
 
     [Theory]

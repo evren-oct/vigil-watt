@@ -8,7 +8,7 @@
 
 | 进 JSON | 留代码 |
 |---|---|
-| vid / pid / 型号 / kind / pairedPid / capabilities | 去抖（`chargeDebounce` 只开开关，算法在解释器里） |
+| vid / pid / 型号 / kind / pairedPid / wired / capabilities | 去抖（`chargeDebounce` 只开开关，算法在解释器里） |
 | 接口指纹：usagePage / usage / 长度 / pathContains / reportId | 无效帧怎么处理（丢读数 / 标离线 / 请求核实） |
 | 查询帧模板（十六进制串 + 总长） | 链路位 → 离线候选 |
 | 字段：偏移 / 类型 / 位宽 / mask / xor | 握手、会话、状态机、轮询策略 |
@@ -23,8 +23,11 @@
 
 ```jsonc
 { "vid": "0x24AE", "pid": "0x4B99", "model": "VT9", "kind": "mouse",
-  "protocol": "status-report7", "pairedPid": "0x4B9A" }
+  "protocol": "status-report7", "pairedPid": "0x4B9A", "wired": true }
 ```
+
+`pairedPid` 非 0 时两组条目都要写 `wired`，且**恰有一条 true**；加载期校验，漏写直接报错。
+有线/无线的官方顺序是 `productId:[有线, 无线]`，不要按 PID 大小猜（V700diy-75 LRV 是反例）。
 
 同型号偏移差一位时，只覆盖那一个字段：
 
@@ -179,8 +182,9 @@
   注意它与 `charge` 的 `map`（码 → 枚举）不是一回事。
 - 来源固定是 `DeviceReported`：**码表属于协议本身**，查表不降级成 `Inferred`。
 - 观测时刻由解释器在边界处盖（`ProtocolEngine.Parse`），JSON 里不写时间。
-- **只给已验证的型号加**：写进协议本体会让同族所有设备一起产出遥测，通常应当放在
-  设备目录的 `override` 里（`rapoo-catalog.json` 的 `0x1412` 就是这么做的）。
+- **字段放哪取决于证据范围**：同一族逐字节相同就写协议本体（`status-report7` 现在就是这样，
+  全族产出遥测）；只有某台设备偏移不同才放设备目录的 `override`。能力声明仍按设备三态，
+  未验证型号保持 `Unverified`——协议级解析不等于能力已验。
 
 ## 4. 校验（加载期就报错）
 
@@ -239,4 +243,4 @@ dotnet build VigilWatt.sln -c Debug
 dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~Rapoo"
 ```
 
-雷柏的真机帧用例在 `RapooSpecTests`（R1–R42）：偏移改错会被它们挡住。
+雷柏的真机帧与身份用例在 `RapooSpecTests` / `RapooIdentityTests`（R1–R53）：偏移改错会被它们挡住。

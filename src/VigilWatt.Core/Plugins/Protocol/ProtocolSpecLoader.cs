@@ -66,8 +66,37 @@ internal static class ProtocolSpecLoader
                 : baseSpec;
         }
 
+        ValidatePairs(devices, prefix);
+
         return new SpecBundle(resolved, devices, deviceSpecs, vendors,
             order.Where(resolved.ContainsKey).Select(k => resolved[k]).ToList(), brand);
+    }
+
+    /// <summary>配对组必须双向登记且恰有一条 <c>wired:true</c>；V700diy-75 LRV 的有线 PID 反而更大，不能按大小猜。</summary>
+    private static void ValidatePairs(Dictionary<(ushort, ushort), DeviceEntry> devices, string prefix)
+    {
+        foreach (var (key, entry) in devices)
+        {
+            if (entry.PairedPid == 0) continue;
+
+            var pairedKey = (entry.VendorId, entry.PairedPid);
+            if (!devices.TryGetValue(pairedKey, out var paired))
+                throw new InvalidOperationException(
+                    $"{prefix}/devices.json: {key.Item1:X4}:{key.Item2:X4} 的 pairedPid " +
+                    $"{entry.PairedPid:X4} 未登记");
+            if (paired.PairedPid != entry.ProductId)
+                throw new InvalidOperationException(
+                    $"{prefix}/devices.json: {key.Item1:X4}:{key.Item2:X4} 与 " +
+                    $"{pairedKey.Item1:X4}:{pairedKey.Item2:X4} 的 pairedPid 不互指");
+
+            // 每组只查一次：按较小 PID 作为代表，避免同一组报两次
+            if (entry.ProductId > paired.ProductId) continue;
+            var wiredCount = (entry.Wired ? 1 : 0) + (paired.Wired ? 1 : 0);
+            if (wiredCount != 1)
+                throw new InvalidOperationException(
+                    $"{prefix}/devices.json: 配对组 {key.Item1:X4}:" +
+                    $"{Math.Min(entry.ProductId, paired.ProductId):X4} 必须恰有一条 wired:true，当前 {wiredCount} 条");
+        }
     }
 
     private static JsonObject ReadObject(string name)
@@ -566,6 +595,7 @@ internal static class ProtocolSpecLoader
                 Kind = ParseKind(dto.Kind, $"{dto.Vid}:{dto.Pid}", prefix),
                 Protocol = dto.Protocol.Trim(),
                 PairedPid = paired,
+                Wired = dto.Wired,
                 Capabilities = ReadCapabilities(dto.Capabilities, vid, pid, prefix),
             }, dto.Override));
         }
@@ -793,6 +823,7 @@ internal static class ProtocolSpecLoader
         public string? Kind { get; set; }
         public string? Protocol { get; set; }
         public string? PairedPid { get; set; }
+        public bool Wired { get; set; }
 
         /// <summary>用 JsonNode 收，好把"不是对象 / 值不是字符串"变成带 VID:PID 的加载期错误，而不是反序列化异常。</summary>
         public JsonNode? Capabilities { get; set; }

@@ -6,27 +6,23 @@
 
 ## 1. 当前状态
 
-新增适配：9 个新品牌（华硕 ROG、雷蛇、AKG、ATK、HyperX、凌豹、VGN、Haute42、墨将 MOJHON）与北通鲲鹏20 三通道、狼蛛 G9 / L9 / F108 Pro、VGN V98 Pro、迈从 G75 Pro / A5 V2 Ultra / X9、凌豹 K98、ATK A98 Pro / A9 Air 大师版+ / VXE R1 Nearlink、AULA HERO 68 Air 等，合计约 32 台；新品牌默认关。逐台状态见 §2 表，协议与验证边界见对应 `hardware/*.md`。VXE R1 Nearlink（`373B:10C9` 接收器 / `10C7` 本体）共用 ATK 开关，贡献者真机验证无线与插线充电、插线时由本体接管，**本机未复测**（`hardware/atk.md` §9）。2026-10-31 又加狼途 T98（`1A2C:8FFF`，零写入、默认开）与 ATK A9 Ultra Max 2.0（`373B:11FE`，只登记 PID、编解码零改动），均为贡献者真机、本机未复测（`langtu.md`、`atk.md` §10）。2026-11-01 又加 ilovbee b98（`258A:01BB`，零写入、默认开，issue #68）——只有贡献者一份采集包，本机无此键盘（`ilovbee.md`）。
-
+新增适配约 32 台，逐台状态见 §2 表；协议与验证边界见对应 `hardware/*.md`。新品牌默认关；本机未复测的条目不要当成已验。
 当前安装包 **1.3.1**（`dist/`，本机试装用；尚未上传正式 Release）。正式线上以 GitHub 最新 Release 为准，Gitee 是回退源；更新源 GitHub 优先、8 秒不通回退 Gitee。发新版时保留上一版 `*-full.nupkg` 作为 delta 基准；规则见 `dev/build.md` §8。
 
 本机已打通：迈从 G87（0x13）、迈从官方通用 dongle `3837:3033`（`cz-block` 分块读，电量/充电/充满三态真机验证，见 `hardware/mchose.md` §2.4）、雷柏 VT3 + VT2S Air Max（status-report7，纯被动）、北通 T9（被动流）、经典蓝牙耳机（HFP 网关节点 `DEVPKEY_Device_BatteryLevel`）、罗技 Bolt 接收器（C548）+ MX Master 3S。本机电量可选，默认关。**其余机型均为贡献者真机、本机未复测，逐台状态见 §2 表**——别把 §2 里「贡献者真机」当成我们验过。雷柏 VT3 与 VT2S Air MAX V2 已在设备目录写 `capabilities`（电量 / DPI / 档位；VT3 的回报率读取证据不足，记 `unverified`），声明属设备、不随协议继承，查询走 `ProtocolEngine.CapabilityOf`（`dev/protocol-json.md` §2.1）。**设备卡片已展示 DPI / 档位 / 回报率**（PR-D/E）：单行文案由 `PointerTelemetryFormatter` 产出，能力决定"能不能说未获取"，离线与过期整行不渲染；小组件加第三行、贴片只进悬停提示（`pointer-telemetry.md` §8、§8.1）。
+雷柏本轮已把有线/无线按 SN 归一（CR-150 关闭），同轮优先保留有线；`status-report7` 全系产出 DPI/档位/回报率，能力声明仍只 VT3 / VT2S 有真机证据。其余 85 组配对与全系遥测待真机复看。
 
 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），不是 WinUI 覆盖窗；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。**拖动走 16ms 轮询，不靠鼠标捕获**——捕获对非前台窗口无效（`dev/runtime-pitfalls.md` §16、§16.5.1；§17 只对小组件）。选屏由 `Services/TaskbarPillManager.cs` 每秒按 `monitorDevicePath` 匹配，配置的屏不在就降级贴主屏，设置页显示真实屏幕名——`\\.\DISPLAYn` 是配置序号不是身份，见 `dev/monitor-identity.md`。
-
 页面已缓存（`NavigationCacheMode = Required`），订阅跟 `Loaded`/`Unloaded`。设置页可搜索。日志按日：`logs\app-日期.log`。插件开关即写入授权，没有第二套「写入许可」。
 罗技 ReceiverIdentity 已全量开放：目录登记过 `familyDisplay` 的接收器族（Bolt / Unifying / LIGHTSPEED / Nano / Legacy27Mhz）都填体系名与图标，未收录 PID 与 Direct 路径保持 null；身份不等于链路，两者是两个独立策略、各自读目录。连接推断也已在 2026-11-11 放开到全 2.4G 族：非 Direct + 目录族属 Bolt / Unifying / LightSpeed / Nano + 槽位在容量内即记 `Inferred(Wireless24G)`。**容量优先读接收器自报值**（`0xB5/0x03` 参数区 `[6]`，`ProbeSlotCount` 每句柄一次），读不到才退回目录 `maxSlots`；27MHz（不在 2.4GHz 频段、`ConnectionKind` 无对应值）与 Unknown 族、未收录 PID、Direct `0xFF` 仍 Unknown。该门**不读 `0xB5` 配对寄存器**，与 CR-153 无关。**C548 真机已验（2026-11-11）**：`0xB5/0x03` 三次读取均无回包（同会话 Root.Ping 0.61s 正常），确认 C548 不提供该寄存器读；`ReportedSlotCount` 保持 null、`SlotCapacity` 走目录 6 槽，帧顺序已由 Solaar/OpenLogi 交叉确认。`0x5N/0x6N` 配对/名称读同样无回包，WPID 仍 null、类型由 `0x0005` 营销类型兜底。Unifying / LightSpeed / Nano 的槽位枚举仍未实测（CR-156）。设备列表离线徽标改用 `DeviceConnectionInfo.Badge`（最后 X / 离线）并统一灰色，不再把历史链路显示成当前连接。设备列表已在链路徽标右侧显示体系标签与图标（Bolt 等；展示名与图标 key 都来自目录；`bolt` / `unifying` 直接复用 OpenLogi 官方 path，用户授权，见 `architecture.md` 连接章节），贴片与小组件未同步。指针遥测已接：HID++ `0x2201` 读 DPI（真机 MX Master 3S = 1000），回报率 feature 无应答故仍未知（CR-155）。**2026-11-16 修 G 系设备名读不到**（`0x0005` 改按块读、上限 32→64；32 字节扩展集合不再与 20 字节抢会话），待真机复验（CR-163，`hardware/logitech.md` §1.2）。
 
 设备列表支持：右键自定义名称与图标（按设备 ID 持久化，历史页用当前名、已有采样不改写）；**右键「忽略此设备」在线也能用**——只从列表/托盘/贴片/小组件隐藏、不再写历史，插件照常轮询，恢复入口在底部「已忽略 N 台设备」；**右键删除离线设备**——同时清掉该设备历史（VACUUM），勾「永久移除」写本地黑名单、插件认领阶段即跳过，恢复入口同为底部那行（三份名单见 `code-flow.md` §5.2，真机验收清单见 §4 第 9 条）；剩余时间估算（至少 3 个不同时间点且有净下降才显示，否则说明原因，见 `code-flow.md` §5）。**贴片可指定只显示哪几台设备**（设置页勾选，按**显示名**匹配——不用设备 ID，ID 由路径哈希而来、插线/换口会变；一个都不勾则显示全部在线设备）。
 
-详情页 Hero 已接产品图：项目内置 `Assets/device-images` 缩略图（迈从键盘 31 款 / 170 色 + 罗技办公线 151 款，压缩后合计约 11.3MB），用户数据目录可覆盖；按显示名或「自报型号 + VID/PID」匹配，无图回退几何图标。配色可在 Hero 悬停出现的调整按钮里覆盖（官方 HUB 不读设备颜色）；罗技每型号只有一张主图、没有配色可选。G 系列尚未覆盖（Options+ 不含游戏线，需 G HUB 资源）。列表/贴片/小组件仍不显示产品图（`device-images.md`）。
-
+详情页 Hero 已接产品图：项目内置 `Assets/device-images` 缩略图（迈从键盘 31 款 / 170 色 + 罗技办公线 151 款 + 雷柏 96 款 / 296 色，压缩后合计约 23.1MB），用户数据目录可覆盖；按显示名或「自报型号 + VID/PID」匹配，无图回退几何图标。配色可在 Hero 悬停出现的调整按钮里覆盖（官方 HUB 不读设备颜色）；罗技每型号只有一张主图、没有配色可选。G 系列已用 OpenMouse 图床补 16 款（`device-images.md` §7.5）。列表/贴片/小组件仍不显示产品图（`device-images.md`）。
 **开发版数据目录在 `bin\x64\Debug\...\win-x64\data\`**（`AppPaths` 用 `#if DEBUG` 分流，Release 才用 `%LOCALAPPDATA%\VigilWatt`），所以从 `bin` 双击即可运行、不碰用户目录；`VIGILWATT_DATA_DIR` 可覆盖。为什么必须这么改见 `dev/runtime-pitfalls.md` §20，用法见 `dev/build.md` §3.1。
 
 设备接入已收六批，逐台状态见 §2 表；设备管理类改动（#14 双通道去重、#16 设备管理）、#15 的 BLE 大改、issue #12/#11 按 BACKLOG CR-68 ~ CR-72 排队。**设备诊断页（2026-10-24 新增，主窗口第 5 项）**= 未适配设备的 USB/HID 只读采集，流程与边界见 `capture.md`；审查标准见 `dev/review-standard.md`，未修项见 `reviews/BACKLOG.md`。会写帧的（HERO、N9、ATK、华硕、雷蛇、墨将）默认关；15 秒发现节拍按插件各自声明（`SupportsDiscoveryProbe`）——ATK、樱桃、派世、VGN、雷蛇、凌豹、HECATE 无线、迈从、前行者、索尼 H9 开了，HERO、N9、高斯、北通、墨将没开。**ATK 是唯一另开"熔断期半开探活"的插件**（`BreakerProbeInterval` 30s，`safety.md` §3 规则 3 ③；别的品牌要开按 `runtime-pitfalls.md` §23.1 逐个评估）。纯被动的 CF2 默认开。ATK 认领按「配对组」判、两只鼠标各自一条记录，响应须过运行时校验和；HyperX 充电态只认插拔事件帧；雷蛇 Viper V3 Pro SE 只开零权限 Feature 句柄。HECATE 自 #47 改主动查询、开关默认关。**#72 之后 ATK 双连接改留本体**（`SkipPathsForThisPass` 按组摘掉接收器，CR-115）。全部为贡献者真机、本机未复测。HERO 闲置静音见 CR-81，N9 未核对官方 App 见 CR-84，ATK 显示名与配对表见 CR-98 / CR-99，HECATE 查询阻塞见 CR-100；**1.3.0 的组合识别失效已修**（扫描器补读序列号，CR-112）——VGN 配对由此**首次真正生效**，待真机验蜻蜓 F2 / F1 V5 插线场景（`runtime-pitfalls.md` §24）；墨将的设备 ID 仍是路径哈希（CR-116 ~ CR-118）；协议与验证边界见 `hardware/aula.md` §2、`akg.md`、`atk.md`、`hyperx-cf2.md`、`asus-rog.md`、`razer*.md`、`hecate.md` §3、`mojhon.md`。
-
 更新说明是用户向的 `docs/project/release-notes.md`，随包分发：关于页「更新日志」离线可看全部历史，更新确认框显示目标版本的内容（来自更新源 notes，缺失时只显示版本行）。规则见 `dev/build.md` §8。
-
 下结论前先跑 `cmd /c ver`。**本机现在是 `10.0.26200.9445`（Win11 25H2）**；「哪一层背景可见」「Win10 上透明与 DWM 投影互斥」（CR-57）这类基于 Win10 的判断都要按新系统重判，别照抄。
 
 ## 2. 用户设备清单（勿对号入座错）
@@ -80,7 +76,7 @@
 
 审查未修项以 `docs/reviews/BACKLOG.md` 为准。PR #44 待验证项见 CR-84，HERO 非阻塞传输层测试见 CR-97；充电测试已取消，不等待插拔充电操作。其它人工待办如下。
 
-1. **插线校准两处**：迈从 `ParseKeyboardV1Charge` 补全充电位（已知 0x10 = 充电中）；雷柏满电时 `[7]` 在 0/1/2 间横跳（底座涓流），采不到稳定值 → 100% 一律判「充满」，不再等这个标志（rapoo.md §5.2）。
+1. **插线校准**：迈从 `ParseKeyboardV1Charge` 补全充电位（已知 0x10 = 充电中）。雷柏满电一律判「充满」已在 §5.2 落地，不再列待办。
 2. **北通鲲鹏20 有线变体**（PID_5191/KP20EB）主动查询仍未真机验证（PID_5159 广播 / PID_5158 有线 COL01 查询已打通，见 betop.md §1.8）；手柄关机后广播帧是否有占位值无样本，待观察。T9 的 `byte23` 低位仍只认 `0x50` = 未连接；验证方法见 betop.md §1.4.1。
 3. **贴片人手复看**：连续拖 5 次、上下甩出贴片、拖到两端再回拖、松手后不自跳（CR-48）；自动隐藏、竖向/多屏（CR-41）、深色对比（CR-42）、是否压住任务栏按钮（CR-39）、右键菜单（CR-60）、悬停设备名（多台/底栏/深色任务栏）。分辨率往返已于 2026-10-13 通过。Win10 小组件投影（CR-57）等用户决定是否做。
 4. **页面缓存真机**：来回切换是否变快、离开再回来数据是否仍刷新、设置值是否与 `settings.json` 一致、搜索是否仍可用。坑见 `dev/runtime-pitfalls.md` §19。相关未修项 CR-61 / CR-63。
@@ -88,6 +84,7 @@
 6. **贴片选屏真机复看**：本机只有「仅第二屏」一种接法实测过（配置屏不在 → 降级主屏，日志已确认）。还需切「仅电脑屏幕 / 扩展 / 复制」各一次，看贴片是否 2 秒内跟到新任务栏（重建去抖 2 拍，见 §16.12）、设置页刷新按钮后列表是否反映当前接法、`<名字>（未连接）` 是否显示正确。清单在 `dev/monitor-identity.md` §7。
 7. **设备页 / 诊断页真机复核**：诊断页的 Feature 读取（勾选后实际 GET_REPORT）、采集中拔设备、记录上限截断、另存为对话框与剪贴板（非打包 WinUI）——本机只验到被动监听拿到真实报文，清单在 `capture.md` §7；设备页「忽略此设备」要复看托盘/贴片/小组件是否同步消失、恢复是否立刻回来、重启后是否仍被忽略；**卡片上那行 DPI / 档位 / 回报率（PR-D）**要看是否显示、拔掉与休眠后整行是否消失、用官方软件改 DPI 后是否跟着变（`pointer-telemetry.md` §8）；小组件同一行还要看 1~5 台混排（有指标的行更高）时最后一行有没有被切、贴片悬停提示三行是否不折行。罗技 C548 的离线行真实截图与深色主题对比未做（用户 2026-11-11 跳过深色；离线文案/取色已有单测）。
 8. **本机无设备的真机复核**：墨将 GALE2 应用内验证（开关默认关、须用本仓库源码构建，看列表条目与电量/充电标志是否与官方助手一致，边看边插拔接收器确认有线↔2.4G 切换那 0.5 秒是否闪离线，mojhon.md §7.5、§9）；狼途 T98 看默认开、插线电量爬升，`Silence = 300 秒` 需一份真实休眠样本确认不误判离线（langtu.md §2）；ATK `11FE` 要补本体 PID，否则插数据线会多一条记录（atk.md §10.3）；ilovbee 要一份**插上充电器后静置 3 分钟**的采集，确认 `[7] bit0` 是否保持、`[6]` 是否爬升（ilovbee.md §3）。另：雷柏 VT3 有线 `0x4612` 没声明 `capabilities`（无独立真机记录），要用就插线验一次再补（`hardware/rapoo-catalog.md` §6.2）。 迈从 0x4D 的 DPI / 回报率代码与审计已完成、**零真机样本**，`DpiRead` / `DpiLevelRead` / `RateRead` 仍 `Unverified`；插上 0x4D 鼠标后看日志里 `迈从 0x4D 回报率 / DPI(X) / DPI(Y)` 三行即可取证（`hardware/mchose.md` §3.9）。
+9. **雷柏本轮真机复核**：插线后只留一条且优先有线（同 SN 归一）；VT3 之外至少一台看 DPI/档位/回报率；详情页 Hero 看雷柏产品图与配色切换（96 款 / 296 色）。旧历史/自定义名/黑名单会按新 ID 重记，未做迁移。
 
 ## 5. 给下一个 AI 的注意事项
 

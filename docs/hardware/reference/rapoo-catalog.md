@@ -77,7 +77,7 @@ manifest 的字段形状：
 |---|---|
 | `Plugins/Protocol/` | 品牌无关的解释器：规格加载（`extends` 继承 + 设备级 `override` 深合并 + 加载期校验）、帧读取、查询执行、认领派发 |
 | `Plugins/Rapoo/specs/rapoo.protocols.json` | **12 套协议的全部数据**：接口指纹、字段偏移与类型、充电码映射、查询帧模板 |
-| `Plugins/Rapoo/rapoo-catalog.json` | 195 条 VID:PID → 型号 / kind / 协议 / pairedPid；`override` 处理偏移差一位的机型（V700diy 六个 PID） |
+| `Plugins/Rapoo/rapoo-catalog.json` | 195 条 VID:PID → 型号 / kind / 协议 / pairedPid / wired；`override` 处理偏移差一位的机型（V700diy 六个 PID） |
 | `RapooPlugin.cs` | 只剩认领与转交：`IsCandidate` 问解释器、`Probe` 交给解释器、被动帧交给解释器解析 |
 | `RapooDisplayName.cs` | 未收录设备的显示名启发式（展示逻辑，不是协议数据，所以留代码） |
 
@@ -97,6 +97,8 @@ manifest 的字段形状：
 ## 3. 设备清单
 
 `PID` 列按 **`有线 / 无线`** 顺序（官方 `productId:[有线, 无线]`，代码里用 `productId === pids[1]` 判无线）。
+**目录里已把这条顺序落成 `wired` 布尔**（2026-11-16，CR-150）：每组恰有一条 `wired:true`，
+加载期校验；V700diy-75 LRV 的 `0x6204` 是有线、`0x7204` 是无线，不能按 PID 大小猜。
 
 ### 鼠标（88 款）
 
@@ -290,6 +292,9 @@ DPI 上限来自 `capabilities` 里的 `dpi` 项，四个具名常量 + 内联�
 
 ### 6.2 新 `capabilities` 声明（当前唯一有效来源）
 
+> 2026-11-16 起 `[2]` / `[3..6]` / `[11]` 的解析在 `status-report7` 协议本体，`lm20rt` / `vt-ch584`
+> 一并继承，所以同族鼠标都会产出遥测；**能力声明仍按设备三态**，下表只写真机验证过的三条。
+
 | PID | 型号 | 声明 | 依据 |
 |---|---|---|---|
 | `0x1412` | VT3（2.4G） | `batteryRead` / `dpiRead` / `dpiLevelRead` = supported；`rateRead` = **unverified** | 真机电量 + `[2]` 档位 + `[3..6]` DPI（[rapoo.md](../brands/rapoo.md) §1.1）；回报率证据不足，见下条 |
@@ -317,6 +322,10 @@ DPI 上限来自 `capabilities` 里的 `dpi` 项，四个具名常量 + 内联�
 
 目录里**两条 PID 都收**，并互相记 `pairedPid`，这样上层既能按 PID 认领、也能把同一只鼠标的两条
 记录合并。本机实测印证：VT2S Air MAX V2 有线 `4B13` / 无线 `1B13` 序列号相同（[rapoo.md](../brands/rapoo.md) §4.3）。
+
+2026-11-16 起每条配对记录还带 `wired`：官方 `productId[0]` 为 true、`[1]` 为 false。插件用
+「目录型号 + SN」归一 ID，并在同轮优先保留有线；`ProtocolSpecLoader` 加载期校验每组恰有一条
+`wired:true`，漏写直接报错。见 [rapoo.md](../brands/rapoo.md) §4.4。
 
 底座（`kind: "base"`）是独立设备，只有一条 PID，不参与配对。
 

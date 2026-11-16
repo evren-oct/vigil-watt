@@ -85,6 +85,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\QueryRunner.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\ProtocolEngine.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooDisplayName.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooDeviceIdentity.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Cherry\CherryCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Pulsar\PulsarCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Hecate\HecateCodec.cs" />

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT9S Air MAX V2",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4B11",
+      "1B11"
+    ],
+    "displayNames": [
+      "雷柏 VT9S Air MAX V2",
+      "VT9S Air MAX V2"
+    ]
+  },
+  "defaultColor": "Morning_Mist_Blue",
+  "colors": [
+    {
+      "key": "Morning_Mist_Blue",
+      "label": "晨雾蓝",
+      "thumbnail": "Morning_Mist_Blue_thumb.png",
+      "image": "Morning_Mist_Blue_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT9SAir%20MAX%20V2/thumb_Morning_Mist_Blue.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

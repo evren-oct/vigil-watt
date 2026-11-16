@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT68",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4832"
+    ],
+    "displayNames": [
+      "雷柏 VT68",
+      "VT68"
+    ]
+  },
+  "defaultColor": "Black",
+  "colors": [
+    {
+      "key": "Black",
+      "label": "黑武士",
+      "thumbnail": "Black_thumb.png",
+      "image": "Black_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT68/thumb_Black.png"
+    },
+    {
+      "key": "Yellow",
+      "label": "竞技黄",
+      "thumbnail": "Yellow_thumb.png",
+      "image": "Yellow_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT68/thumb_Yellow.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

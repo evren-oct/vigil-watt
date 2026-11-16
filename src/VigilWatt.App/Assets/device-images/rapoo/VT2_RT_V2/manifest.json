@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT2 RT V2",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4B20",
+      "1B20"
+    ],
+    "displayNames": [
+      "雷柏 VT2 RT V2",
+      "VT2 RT V2"
+    ]
+  },
+  "defaultColor": "Polar_Day",
+  "colors": [
+    {
+      "key": "Polar_Day",
+      "label": "极昼",
+      "thumbnail": "Polar_Day_thumb.png",
+      "image": "Polar_Day_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT2%20RT%20V2/thumb_Polar_Day.png"
+    },
+    {
+      "key": "Sakura_Glide",
+      "label": "掠樱",
+      "thumbnail": "Sakura_Glide_thumb.png",
+      "image": "Sakura_Glide_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT2%20RT%20V2/thumb_Sakura_Glide.png"
+    },
+    {
+      "key": "Moon_Quench",
+      "label": "淬月",
+      "thumbnail": "Moon_Quench_thumb.png",
+      "image": "Moon_Quench_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT2%20RT%20V2/thumb_Moon_Quench.png"
+    },
+    {
+      "key": "Shadow_Veil",
+      "label": "暗影",
+      "thumbnail": "Shadow_Veil_thumb.png",
+      "image": "Shadow_Veil_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT2%20RT%20V2/thumb_Shadow_Veil.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

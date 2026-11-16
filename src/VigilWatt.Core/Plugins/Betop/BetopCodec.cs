@@ -30,7 +30,7 @@ internal static class BetopCodec
     public const byte InvalidPercentFloor = 0;
 
     // T9 被动状态流（Col04 持续推流，不响应查询）。识别特征只能取 report ID：
-    // byte[1] 是可变状态位（实测见过 0x02/0x04/0x0C），拿它当帧头会让解析全数落空。
+    // byte[1] 不是固定帧头，而是官方 extkeyevent_o 位域的首字节（电量等级在低 3 位）。
 
     /// <summary>T9 状态流所在 collection 的 report ID（整帧偏移 0；无 ID 前缀的布局在偏移 1）。</summary>
     public const byte T9StreamReportId = 0x04;
@@ -38,29 +38,48 @@ internal static class BetopCodec
     /// <summary>T9 状态流帧最小长度（含 report ID）。</summary>
     public const int T9MinLength = 24;
 
-    /// <summary>T9 电量原始字节所在偏移。</summary>
-    public const int T9BatteryOffset = 23;
+    /// <summary>
+    /// T9 电量等级所在偏移（整帧第 1 字节）。官方 BetopGame 2.6.2 的 `extkeyevent_o.batlevel`
+    /// 是该字节的 **低 3 位**（LSB-first 打包）。见 docs/hardware/brands/betop.md §1.4。
+    /// </summary>
+    public const int T9LevelOffset = 1;
 
-    /// <summary>T9 电量满值：该字节编码为"4-bit 电量等级(0~15) × 8"，故满值 = 120。</summary>
-    public const byte T9BatteryFull = 120;
+    /// <summary>电量等级掩码：3 bit（0~7）。官方只定义 0~4，其余为 Unknown。</summary>
+    public const byte T9LevelMask = 0x07;
 
     /// <summary>
-    /// dongle 在"手柄未连接（关机/休眠/未配对）"时上报的占位值（raw 80）——不是电量。
-    /// 开机态永远是 0x58，故只认 0x50 是零风险判据。详见 betop.md §1.4.1。
+    /// T9 状态字节所在偏移（整帧第 23 字节）：官方 `extkeyevent_o` 里是连接/模式标志位
+    /// （`connect_24g` / `dongle_mode` / `program_mode` …），**不是电量**，只用于识别占位帧。
+    /// </summary>
+    public const int T9StateOffset = 23;
+
+    /// <summary>
+    /// dongle 在"手柄未连接（关机/休眠/未配对）"时上报的状态字节值（0x50）——不是电量。
+    /// 开机态实测恒为 0x58，两者只差 bit3，故只认 0x50 是零风险判据。详见 betop.md §1.4.1。
     /// </summary>
     public const byte T9NotLinkedRaw = 0x50;
 
     /// <summary>
-    /// 占位帧 ②：dongle 在位、手柄**根本没开机**时推的整帧全 0 空帧——byte[1]=0x00、摇杆位全 0、
-    /// byte23=0x10。0x10 按"等级×8"读是 13%，会被当低电量误报。见 betop.md §1.4.2。
+    /// 占位帧 ②：dongle 在位、手柄**根本没开机**时推的整帧全 0 空帧——电量等级字节 0x00、
+    /// 状态字节 0x10。见 betop.md §1.4.2。
     /// </summary>
-    public const byte T9BlankStateByte = 0x00;
+    public const byte T9BlankLevelByte = 0x00;
 
-    /// <summary>空帧的 byte23（= 等级 2 × 8）。**单独出现不是判据**，须与 <see cref="T9BlankStateByte"/> 同时成立。</summary>
+    /// <summary>空帧的状态字节（byte23）。**单独出现不是判据**，须与 <see cref="T9BlankLevelByte"/> 同时成立。</summary>
     public const byte T9BlankRaw = 0x10;
 
-    /// <summary>把 T9 原始电量字节（0~120）换算成百分比（0~100，四舍五入）。</summary>
-    public static int T9ToPercent(byte raw) => (raw * 100 + T9BatteryFull / 2) / T9BatteryFull;
+    /// <summary>
+    /// 电量等级 → 百分比。取值表来自官方客户端 `[0, 50, 80, 100, 100]`（BetopGame 2.6.2 的
+    /// `appset.baseinfo.bat_level`）。表外等级返回 null = Unknown——**不得兜底成任何百分比**。
+    /// </summary>
+    public static int? T9LevelToPercent(int level) => level switch
+    {
+        0 => 0,
+        1 => 50,
+        2 => 80,
+        3 or 4 => 100,
+        _ => null,
+    };
 
     // 北通有两代 dongle、两个 usage page，判据收在这里便于单测（接口地图见 betop.md §1.1 §1.8）。
 
@@ -94,14 +113,17 @@ internal static class BetopCodec
     private static bool IsVendorPage(ushort value) => value is VendorPage or BroadcastPage;
 
     /// <summary>T9 被动状态流的解析结果。</summary>
-    /// <param name="Percent">电量百分比（0~100）；<paramref name="Linked"/> 为 false 时无意义（是占位值）。</param>
+    /// <param name="Percent">
+    /// 电量百分比（0~100）；null = 等级表外（Unknown），调用方应保留旧读数、不得伪造。
+    /// <paramref name="Linked"/> 为 false 时同样无意义（是占位值）。
+    /// </param>
     /// <param name="Charging">是否充电中（T9 流无充电标志字节，恒为 false）。</param>
     /// <param name="Linked">false = dongle 上报"未连接"占位帧，手柄并不在线，调用方应标离线。</param>
-    public readonly record struct T9Status(int Percent, bool Charging, bool Linked);
+    public readonly record struct T9Status(int? Percent, bool Charging, bool Linked);
 
     /// <summary>
-    /// 解析 T9 的被动状态流帧；非该帧型或电量越界返回 null。
-    /// 识别依据只有 report ID，不要按 byte[1] 判帧头。
+    /// 解析 T9 的被动状态流帧；非该帧型返回 null。
+    /// 识别依据只有 report ID，不要按 byte[1] 判帧头——它是电量等级 + 标志位的打包字节。
     /// </summary>
     public static T9Status? ParseT9Status(byte[] input)
     {
@@ -110,18 +132,20 @@ internal static class BetopCodec
             if (input.Length < off + T9MinLength) continue;
             if (input[off] != T9StreamReportId) continue;
 
-            byte raw = input[off + T9BatteryOffset];
-            if (raw <= InvalidPercentFloor || raw > T9BatteryFull) return null;
+            byte level = input[off + T9LevelOffset];
+            byte state = input[off + T9StateOffset];
 
-            // 占位帧：手柄没连上，不是电量。
-            if (raw == T9NotLinkedRaw) return new T9Status(0, false, Linked: false);
+            // 占位帧 ②（关机空帧）：整帧全 0，只有状态字节 0x10。必须**先于**等级映射判——
+            // 空帧的等级字节也是 0x00，否则会被读成"真实 0%"。
+            if (state == T9BlankRaw && level == T9BlankLevelByte)
+                return new T9Status(null, false, Linked: false);
 
-            // 占位帧 ②（关机空帧）：byte[1] 是组件状态位，0x00 = 一个都没有。真机 241 帧里
-            // byte[1] ∈ {0x02, 0x03}，从未出现 0x00；两个条件同时成立才判，避免误伤真实的 13%。
-            if (raw == T9BlankRaw && input[off + 1] == T9BlankStateByte)
-                return new T9Status(0, false, Linked: false);
+            // 占位帧 ①：手柄没连上（关机/休眠），状态字节换成 0x50。
+            if (state == T9NotLinkedRaw)
+                return new T9Status(null, false, Linked: false);
 
-            return new T9Status(T9ToPercent(raw), false, Linked: true);
+            // 电量取等级低 3 位；表外等级（5~7）返回 null = Unknown，不兜底。
+            return new T9Status(T9LevelToPercent(level & T9LevelMask), false, Linked: true);
         }
         return null;
     }

@@ -59,7 +59,7 @@
 |---|---|---|
 | [hardware/brands/](hardware/brands/) | 23 | 一品牌一份，品牌内多套协议同份分节 |
 | [hardware/devices/](hardware/devices/) | 13 | 单型号深挖（耳机、适配器、单型号鼠标） |
-| [hardware/reference/](hardware/reference/) | 3 | 厂商软件逆向出的型号表 / 命令表 / 档位表 |
+| [hardware/reference/](hardware/reference/) | 5 | 厂商软件逆向出的型号表 / 命令表 / 档位表 |
 
 按设备找文档，直接查 [protocols.md](hardware/protocols.md) 的 VID:PID 对照表，比翻目录快。
 

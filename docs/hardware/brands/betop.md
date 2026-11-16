@@ -71,6 +71,17 @@ bit: 7 6 5 4 | 3 2 1 0
 
 ### 1.4 T9 变体（`USB\VID_20BC&PID_5073`）—— 不响应查询，走被动状态流
 
+> ⚠ **2026-11-16 口径更正（已落地代码）**：电量**不在 byte23**。官方客户端 BetopGame 2.6.2 的
+> `extkeyevent_o` 把电量定义在**帧第 1 字节的低 3 位**（`batlevel: 3`，LSB-first 打包），映射
+> `[0,50,80,100,100]`（表外等级 = Unknown）；byte23 是**连接/模式标志字节**
+> （`connect_24g` / `dongle_mode` / `program_mode` …），不是电量。
+> 实现见 `BetopCodec.T9LevelOffset` / `T9LevelMask` / `T9LevelToPercent`，
+> 依据见 [reference/betop-official-client.md](../reference/betop-official-client.md) §4.2。
+>
+> 本节以下（§1.4 ~ §1.4.3）的「等级×8」换算、`0x78`=满电、`0x50`=67% 的读法**均已作废**，
+> 仅**占位帧结论**保留：`byte23 == 0x50` = 未连接、`byte1 == 0x00 && byte23 == 0x10` = 未开机
+> （判据本身实测仍成立，只是不再用它算电量）。
+
 真机（2026-10-06，Windows 11）实测：T9 的厂商接口（Col01/Col04/Col05，report ID `0x01`/`0x04`/`0x05`）
 **对 `02 15` 查询全程无响应**（含"写一个接口、读全部三个"的路由测试），也不出现任何 `0x15` 帧。
 取而代之：**dongle 在 Col04 上持续推**一帧固定结构的状态流，电量直接就在里面。
@@ -360,6 +371,12 @@ caps：in=64 out=64 feat=0 outId=0x02）上**每秒自推**一条状态帧：
 VID:PID（`20BC` 30 条、`20DD` 3 条），协议判据在 `Plugins/Betop/specs/betop.protocols.json`
 （两套 `implementation=code`，帧解析仍在 `BetopCodec`）。完整表与逐型号验证状态见
 [reference/betop-catalog.md](../reference/betop-catalog.md)。
+
+**厂商口径**：BetopGame 2.6.2 的协议脚本是明文 JS，已逆向出 66 个 PID 的注册表（含接口页、
+报文长、电量/充电字节、写加密开关）与完整命令表，见
+[reference/betop-official-client.md](../reference/betop-official-client.md)。本文 §1.4 的 T9
+电量读法**已按厂商口径更正**（2026-11-16，见 §1.4 开头的更正块）：电量 = `raw[1] & 0x07`
+映射 `[0,50,80,100,100]`，byte23 只作占位/标志位用。
 
 **目录只解决身份，不证明电量支持**：PID 线索来自 Linux xpad 补丁，只证明 XInput 身份；除 T9、
 鲲鹏20 2.4G/有线外，目录条目均未声明 `batteryRead=supported`。T9 的 `chargingRead=unsupported`

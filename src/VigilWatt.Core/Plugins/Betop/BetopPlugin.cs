@@ -152,8 +152,11 @@ public sealed class BetopPlugin : BatteryPluginBase
         {
             if (!t9.Value.Linked)
                 return (null, ChargingState.Unknown, Offline: true);
-            // 开机瞬态（0x18 = 20%，只存在 29~218 ms）不采信，否则低电量提醒和异常过滤器都会拿它当基准。
-            if (!IsSettled(dev.Info.DevicePath, t9.Value.Percent)) return null;
+            // 等级表外（5~7）= 没有可信电量：保留旧读数，不伪造、也不因此标离线。
+            if (t9.Value.Percent is null)
+                return (null, ChargingState.Unknown, Offline: false);
+            // 开机瞬态不采信，否则低电量提醒和异常过滤器都会拿它当基准。
+            if (!IsSettled(dev.Info.DevicePath, t9.Value.Percent.Value)) return null;
             return (t9.Value.Percent, MapCharging(t9.Value.Percent, t9.Value.Charging), Offline: false);
         }
 
@@ -168,10 +171,10 @@ public sealed class BetopPlugin : BatteryPluginBase
     private const string ProtocolName = "betop-status15";
 
     /// <summary>一条查询窗口的结果：读数 / dongle 说"手柄未连接" / 什么都没读到。</summary>
-    /// <param name="Percent">电量百分比；<paramref name="Linked"/> 为 false 时为 0（无意义）。</param>
+    /// <param name="Percent">电量百分比；null = 未连接占位帧或等级表外（Unknown），不得伪造。</param>
     /// <param name="Charging">是否充电中。</param>
     /// <param name="Linked">手柄是否真的连着（false = dongle 推的是"未连接占位帧"）。</param>
-    private readonly record struct QueryResult(int Percent, bool Charging, bool Linked);
+    private readonly record struct QueryResult(int? Percent, bool Charging, bool Linked);
 
     /// <summary>
     /// 发一条状态查询并在窗口内等响应。写一次（长度/report ID 取自接口的报告描述符），
@@ -258,7 +261,7 @@ public sealed class BetopPlugin : BatteryPluginBase
                 return new QueryResult(parsed.Value.Percent, parsed.Value.Charging, Linked: true);
             }
 
-            // T9 不响应 0x15 查询，改解析 dongle 在 Col04 上持续推的状态流（byte23 = 电量）。
+            // T9 不响应 0x15 查询，改解析 dongle 在 Col04 上持续推的状态流（byte1 低 3 位 = 电量等级）。
             var t9 = BetopCodec.ParseT9Status(input);
             if (t9.HasValue)
             {
@@ -268,10 +271,12 @@ public sealed class BetopPlugin : BatteryPluginBase
                     if (dev == null || dev.Status.IsOnline)
                         Log.Info("北通 T9 手柄未连接（dongle 占位帧/空帧，手柄已关机或未配对；dongle 仍在）: " +
                                  Log.Hex(input));
-                    return new QueryResult(0, Charging: false, Linked: false);
+                    return new QueryResult(null, Charging: false, Linked: false);
                 }
 
-                Log.Info($"北通 T9 状态流: 电量={t9.Value.Percent}% 原始={Log.Hex(input)}");
+                // 等级表外 = Unknown：记一行便于事后发现固件改了位域，但不产生读数。
+                string shown = t9.Value.Percent.HasValue ? $"{t9.Value.Percent}%" : "未知(等级表外)";
+                Log.Info($"北通 T9 状态流: 电量={shown} 原始={Log.Hex(input)}");
                 return new QueryResult(t9.Value.Percent, t9.Value.Charging, Linked: true);
             }
         }
@@ -312,8 +317,8 @@ public sealed class BetopPlugin : BatteryPluginBase
 
     /// <summary>充电标志非 0 = 充电中；否则 100% 判充满、其余放电（充电时手柄自报 100%，故先看标志）。</summary>
     /// <summary>充电标志只有"是否充电"一档：收尾规则（未充电且 100% ⇒ 已充满）见 <see cref="ChargingStateMap"/>。</summary>
-    private static ChargingState MapCharging(int percent, bool charging)
-        => ChargingStateMap.FromChargingFlag(charging, percent);
+    private static ChargingState MapCharging(int? percent, bool charging)
+        => percent.HasValue ? ChargingStateMap.FromChargingFlag(charging, percent.Value) : ChargingState.Unknown;
 
     /// <summary>插件被禁用时顺手复位稳定判定表（Detach 幂等，禁用期间每轮都会被调，见 CR-22）。</summary>
     public override void Detach()

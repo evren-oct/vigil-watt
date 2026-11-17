@@ -4,6 +4,7 @@
   "protocols": {
 
     // 鲲鹏20/40/50/70 的 0x15 状态报告：2.4G 广播页纯听，有线静默接口发查询。
+    // 判据是完整三元组（0x00FF/0x03/64）：宙斯系的 0xFF00/24 不得落进来（betop.md §1.1）。
     // 帧解析仍在 BetopCodec，本段只提供目录判据与协议身份（AGENTS.md §10 的 codeFamily 例外）。
     "betop-status15": {
       "kind": "gamepad",
@@ -11,26 +12,23 @@
       "codeFamily": "BetopPlugin",
       "pollable": true,
       "interface": {
-        "anyOf": [
-          { "usagePage": 65280 },
-          { "usage": 65280 },
-          { "usagePage": 255 },
-          { "usage": 255 }
-        ]
+        "usagePage": 255,
+        "usage": 3,
+        "inputLength": 64
       }
     },
 
     // T9 只走厂商页 0xFF00 的 Col04 被动状态流；不回答 0x15 查询。
+    // 宙斯族注册 usage 1/2/3、24 字节，三元组一致；T9 的 0x04 流只落在其中一路。
     "betop-t9": {
       "kind": "gamepad",
       "implementation": "code",
       "codeFamily": "BetopPlugin",
       "pollable": false,
       "interface": {
-        "anyOf": [
-          { "usagePage": 65280 },
-          { "usage": 65280 }
-        ]
+        "usagePage": 65280,
+        "usage": [1, 2, 3],
+        "inputLength": 24
       }
     }
   }

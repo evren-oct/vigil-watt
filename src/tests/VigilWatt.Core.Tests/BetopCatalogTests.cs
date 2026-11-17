@@ -149,16 +149,17 @@ public class BetopCatalogTests
     public static IEnumerable<object[]> CatalogPids
         => Rows.Select(row => new object[] { row.Vid, row.Pid, row.Page, row.Model });
 
-    private static HidDeviceInfo Info(ushort vid, ushort pid, ushort page = 0xFF00, string product = "")
+    private static HidDeviceInfo Info(
+        ushort vid, ushort pid, ushort page = 0xFF00, string product = "", ushort inputLength = 64)
         => new()
         {
-            DevicePath = $"test-{vid:X4}-{pid:X4}",
+            DevicePath = $"test-{vid:X4}-{pid:X4}-{page:X4}-{inputLength}",
             VendorId = vid,
             ProductId = pid,
             UsagePage = page,
             Usage = 0x0003,
-            InputReportLength = 64,
-            OutputReportLength = 64,
+            InputReportLength = inputLength,
+            OutputReportLength = inputLength,
             Product = product,
         };
 
@@ -293,13 +294,17 @@ public class BetopCatalogTests
     [MemberData(nameof(CatalogPids))]
     public void Catalog_EveryPidResolves(ushort vid, ushort pid, ushort page, string model)
     {
-        var info = Info(vid, pid, page);
+        var info = Info(vid, pid, page, inputLength: ReportLength(vid, pid));
         var entry = Engine.DeviceOf(info);
 
         Assert.NotNull(entry);
         Assert.True(Engine.Matches(info));
         Assert.Equal(model, entry!.Model);
     }
+
+    /// <summary>运行目录里只有 T9 走宙斯流（24 字节），其余都是鲲鹏 0x15 报告（64 字节）。</summary>
+    private static ushort ReportLength(ushort vid, ushort pid)
+        => (vid, pid) is (0x20BC, 0x5073) ? (ushort)24 : (ushort)64;
 
     [Fact]
     public void Catalog_SamePidDifferentVidIsDistinct()
@@ -373,7 +378,7 @@ public class BetopCatalogTests
     {
         foreach (var row in Rows)
         {
-            var info = Info(row.Vid, row.Pid, row.Page);
+            var info = Info(row.Vid, row.Pid, row.Page, inputLength: ReportLength(row.Vid, row.Pid));
             var expected = (row.Vid, row.Pid) is (0x20BC, 0x5073) or (0x20BC, 0x5158) or (0x20BC, 0x5159)
                 ? CapabilityState.Supported
                 : CapabilityState.Unverified;
@@ -381,7 +386,7 @@ public class BetopCatalogTests
         }
 
         Assert.Equal(CapabilityState.Unsupported,
-            Engine.CapabilityOf(Info(0x20BC, 0x5073, 0xFF00), DeviceCapability.ChargingRead));
+            Engine.CapabilityOf(Info(0x20BC, 0x5073, 0xFF00, inputLength: 24), DeviceCapability.ChargingRead));
         Assert.Equal(CapabilityState.Supported,
             Engine.CapabilityOf(Info(0x20BC, 0x5158, 0x00FF), DeviceCapability.ChargingRead));
         Assert.Equal(CapabilityState.Supported,
@@ -391,7 +396,8 @@ public class BetopCatalogTests
     [Fact]
     public void UnknownPidFallsBackAndUnknownVendorIsRejected()
     {
-        var unknownBetop = Info(0x20BC, 0x9999, 0xFF00);
+        // 未收录 PID 仍按接口三元组回落：0x00FF/0x03/64 命中鲲鹏协议。
+        var unknownBetop = Info(0x20BC, 0x9999, 0x00FF);
         Assert.Null(Engine.DeviceOf(unknownBetop));
         Assert.True(Engine.Matches(unknownBetop));
         Assert.Null(BetopDeviceIdentity.GroupId(Engine, unknownBetop, "betop"));

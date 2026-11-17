@@ -34,7 +34,7 @@ public class BetopDeviceIdentityTests
         var dongle = BetopDeviceIdentity.GroupId(Engine,
             Info(0x20BC, 0x5159, @"\\?\HID#VID_20BC&PID_5159&MI_01&Col01#1", 0x00FF), "betop");
         var wired = BetopDeviceIdentity.GroupId(Engine,
-            Info(0x20BC, 0x5158, @"\\?\HID#VID_20BC&PID_5158&MI_01&COL01#2"), "betop");
+            Info(0x20BC, 0x5158, @"\\?\HID#VID_20BC&PID_5158&MI_01&COL01#2", 0x00FF), "betop");
 
         Assert.NotNull(dongle);
         Assert.Equal("betop:kunpeng20", dongle);

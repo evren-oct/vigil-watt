@@ -65,13 +65,24 @@ public sealed class BetopPlugin : BatteryPluginBase
     /// <summary>
     /// 候选接口：北通 VID（`0x20BC` 旧 / `0x20DD` 新批次）+ 电量页（`0xFF00` 厂商页 / `0x00FF` 广播页）。
     /// 接收器的鼠标/键盘/手柄接口都在 usage_page 0x0001，据此天然排除（判据见 betop.md §1.8）。
+    /// 宙斯三元组但目录未登记的接口只做识别，不进入主动探测（P1-B1B）。
     /// </summary>
     protected override bool IsCandidate(HidDeviceInfo info)
     {
         // 观测期（2026-10-25）：官方软件是否参与 dongle 身份抖动尚无证据，这里只让它记状态变化，不拦认领。
         BetopOfficialAppGuard.Observe();
 
-        if (_engine.Matches(info)) return true;
+        if (_engine.Matches(info))
+        {
+            // 未登记的宙斯设备没有已验证的解析器：主动探测只会向未知设备写 0x15，收益为零。
+            if (IsUnregisteredZeus(info, _engine.DeviceOf(info)))
+            {
+                Log.InfoThrottled($"betop-zeus-unregistered:{info.DevicePath}",
+                    $"未登记的宙斯接口，仅识别不探测: {info} path={info.DevicePath}", TimeSpan.FromMinutes(10));
+                return false;
+            }
+            return true;
+        }
 
         // 判据不符也要留痕：CR-89 那次用户只看到"没有设备"，日志里一个字都没有
         if (BetopCodec.IsBetopVendor(info.VendorId))
@@ -79,6 +90,16 @@ public sealed class BetopPlugin : BatteryPluginBase
                 $"北通设备在、但接口不对（未认领）: {info} path={info.DevicePath}", TimeSpan.FromMinutes(10));
         return false;
     }
+
+    /// <summary>宙斯三元组（0xFF00 / usage 1~3 / 24 字节）但目录未登记：只识别不探测（P1-B1B）。</summary>
+    internal static bool IsUnregisteredZeus(HidDeviceInfo info, DeviceEntry? entry)
+        => entry is null
+           && info.UsagePage == BetopCodec.VendorPage
+           && info.Usage is 0x01 or 0x02 or 0x03
+           && info.InputReportLength == 24;
+
+    /// <summary>测试接缝：直接跑真实候选判定（含门控与日志），避免测试复制策略。</summary>
+    internal bool IsCandidateForTest(HidDeviceInfo info) => IsCandidate(info);
 
     /// <summary>杂项广播页（`0x00FF`）承载鲲鹏20/70 电量：dongle 每秒自推、有线静默须查询，见 betop.md §1.8。</summary>
     private static bool IsBroadcastChannel(HidDeviceInfo info)

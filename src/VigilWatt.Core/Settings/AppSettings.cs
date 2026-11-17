@@ -109,8 +109,8 @@ public class AppSettings
         ["Vgn"] = false,        // VGN 蜻蜓：kc2 配置帧 / y2 电量查询都要写帧，默认关闭（vgn.md）
         ["Haute42Gaming"] = false, // Haute42 Adapter 4DS：只读 feature，零写入，默认关闭（haute42.md）
         ["Mojhon"] = false,     // 墨将烈风2 手柄：发 A5 帧读寄存器 0x04 取电量，要写帧，默认关闭（mojhon.md §6）
-        ["Flydigi"] = false,  // 飞智 APEX5：发官方同款心跳（帧出自官方 service_log），会写，默认关闭（flydigi.md §2）
-        ["Langtu"] = true,      // 狼途 T98：只听 2.4G 接收器主动推的状态帧，零写入，默认开启（langtu.md §1）
+        ["Flydigi"] = false,  // 飞智 APEX5 / APEX6：发官方同款心跳（会写帧），默认关闭（flydigi.md §2）
+        ["Langtu"] = false,     // 狼途 T98（零写入被动）与 T87（发 GET_DEVICE_INFO 会写帧）共用一个品牌开关；因 T87 会写帧，整品牌默认关（langtu.md §1）
         ["Ilovbee"] = true,     // ilovbee b98：只听 2.4G 接收器主动推的 20 字节帧，零写入，默认开启（ilovbee.md §1）
     };
 

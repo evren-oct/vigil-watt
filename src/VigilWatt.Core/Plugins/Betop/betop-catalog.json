@@ -155,6 +155,21 @@
       "note": "贡献者真机，2.4G 杂项页每秒广播"
     },
     {
+      "vid": "0x20bc", "pid": "0x516f", "model": "鲲鹏20战双帕弥什联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP20DL；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5170", "model": "鲲鹏20战双帕弥什联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP20DL；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5190", "model": "鲲鹏20精英版-丁未", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP20EB；电量未验证"
+    },
+    {
       "vid": "0x20bc", "pid": "0x5191", "model": "鲲鹏20精英版-丁未", "kind": "gamepad", "role": "controller",
       "protocol": "betop-status15",
       "note": "KP20EB；上游实现（oitsukiii/betop-battery）在该型号真机验证 02 15 查询，本机未复测"
@@ -201,6 +216,26 @@
       "note": "xpad 标 KP40F White；电量未验证"
     },
     {
+      "vid": "0x20bc", "pid": "0x5163", "model": "鲲鹏40鸣潮联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40MCK；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5164", "model": "鲲鹏40鸣潮联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40MCK；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5165", "model": "鲲鹏40鸣潮联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40MCF；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5166", "model": "鲲鹏40鸣潮联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40MCF；电量未验证"
+    },
+    {
       "vid": "0x20bc", "pid": "0x5169", "model": "鲲鹏40 电掣黑", "kind": "gamepad", "role": "controller",
       "protocol": "betop-status15",
       "note": "xpad 标 KP40F Black；电量未验证"
@@ -209,6 +244,16 @@
       "vid": "0x20bc", "pid": "0x516a", "model": "鲲鹏40 电掣黑", "kind": "gamepad", "role": "controller",
       "protocol": "betop-status15",
       "note": "xpad 标 KP40F Black；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5194", "model": "鲲鹏40 精英版", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40E；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5195", "model": "鲲鹏40 精英版", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40E；电量未验证"
     },
 
     {
@@ -272,6 +317,66 @@
       "protocol": "betop-status15",
       "note": "xpad 标 KP70A，官方注册为 BTP-KP70B（鲲鹏70AI智控旗舰手柄）；电量未验证"
     },
+    {
+      "vid": "0x20bc", "pid": "0x516d", "model": "鲲鹏70 午马限定款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70A1；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x516e", "model": "鲲鹏70 午马限定款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70A1；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5173", "model": "鲲鹏70 6D升级款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5174", "model": "鲲鹏70 6D升级款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x518a", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C1；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x518b", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C1；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x518c", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C2；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x518d", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C2；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x519b", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C3；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x519c", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C3；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x519d", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C4；电量未验证"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x519e", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C4；电量未验证"
+    },
 
     {
       "vid": "0x20dd", "pid": "0x5128", "model": "鲲鹏20智控游戏手柄", "kind": "unknown", "role": "dongle",
@@ -287,6 +392,111 @@
       "vid": "0x20dd", "pid": "0x515c", "model": "鲲鹏40 御铠白", "kind": "unknown", "role": "dongle",
       "protocol": "betop-status15",
       "note": "xpad 的 KP40D HID receiver；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5163", "model": "鲲鹏40鸣潮联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40MCK；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5164", "model": "鲲鹏40鸣潮联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40MCK；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5165", "model": "鲲鹏40鸣潮联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40MCF；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5166", "model": "鲲鹏40鸣潮联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40MCF；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x516d", "model": "鲲鹏70 午马限定款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70A1；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x516e", "model": "鲲鹏70 午马限定款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70A1；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x516f", "model": "鲲鹏20战双帕弥什联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP20DL；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5170", "model": "鲲鹏20战双帕弥什联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP20DL；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5173", "model": "鲲鹏70 6D升级款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5174", "model": "鲲鹏70 6D升级款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x518a", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C1；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x518b", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C1；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x518c", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C2；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x518d", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C2；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5190", "model": "鲲鹏20精英版-丁未", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP20EB；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5194", "model": "鲲鹏40 精英版", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40E；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5195", "model": "鲲鹏40 精英版", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP40E；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x519b", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C3；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x519c", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C3；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x519d", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C4；0x20DD 第二套身份；电量未验证"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x519e", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15",
+      "note": "官方注册 BTP-KP70C4；0x20DD 第二套身份；电量未验证"
     }
   ],
   "officialDevices": [

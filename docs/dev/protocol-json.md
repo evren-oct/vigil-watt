@@ -108,6 +108,16 @@
 当前只有北通 `5158/5159` 声明 `group=kunpeng20`；规则与验证状态见
 [hardware/reference/betop-catalog.md](../hardware/reference/betop-catalog.md) §4。
 
+**`officialDevices[]` 是目录之外的只读登记表（北通 P1-A 起）**：同一份 `*-catalog.json` 里可以有这个顶层键，
+加载器**完全忽略**它——不进 `Devices`、不参与 `Resolve`、不影响认领与显示名。它只用来记厂商注册表
+（型号代码、官方标题、接口三元组、电量/充电字节、证据指针、官方与 VigilWatt 两套状态）。
+
+- 想**让设备被认领**，只能写进 `devices[]`；写进 `officialDevices[]` 没有任何运行时效果。
+- 别把未验证型号先塞进 `devices[]` 占位：目录优先，`devices[]` 一有记录就会按它认领，
+  并顶掉 fallback 的通用显示名（北通 66 个 PID 的取舍见
+  [betop-official-client.md](../hardware/reference/betop-official-client.md) §10.3）。
+- 键名不要改：加载器忽略未知键，改名不会报错，只会静默变成一份没人读的数据。
+
 ## 3. 加一套协议（形态固定时，约 20–30 行）
 
 `specs/*.protocols.json` 的 `protocols` 里加一条。可用词表：

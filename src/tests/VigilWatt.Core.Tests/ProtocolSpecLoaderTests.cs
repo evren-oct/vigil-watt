@@ -813,7 +813,7 @@ public sealed class ProtocolSpecLoaderTests
         // Gmouse 的 response 没有 length，outputLength 只有 Min：加载必须成功，不能补造帧长
         var gmouse = bundle.Protocols["gmouse"];
         Assert.Null(gmouse.Active!.Response.Length);
-        Assert.Equal(65, gmouse.Active.Query.Length);
+        Assert.Equal(65, gmouse.Active.QueryBytes.Length);
         Assert.Null(gmouse.Interface.OutputLength!.Value.Eq);
         Assert.Equal(65, gmouse.Interface.OutputLength.Value.Min);
         Assert.Equal(new[] { 0, 1 }, gmouse.Active.Response.TryOffsets);
@@ -1068,7 +1068,7 @@ public sealed class ProtocolSpecLoaderTests
             ActiveOf(8, """{ "fields": { "percent": { "offset": 0, "type": "u8" } } }"""),
             """{ "usagePage": 1, "outputLength": { "eq": 8 } }""");
 
-        Assert.Equal(8, bundle.Protocols["p"].Active!.Query.Length);
+        Assert.Equal(8, bundle.Protocols["p"].Active!.QueryBytes.Length);
     }
 
     [Fact]
@@ -1089,7 +1089,7 @@ public sealed class ProtocolSpecLoaderTests
             ActiveOf(65, """{ "fields": { "percent": { "offset": 8, "type": "u8" } } }"""),
             """{ "usagePage": 1, "outputLength": { "min": 8 }, "inputLength": { "eq": 8 } }""");
 
-        Assert.Equal(65, bundle.Protocols["p"].Active!.Query.Length);
+        Assert.Equal(65, bundle.Protocols["p"].Active!.QueryBytes.Length);
         Assert.Null(bundle.Protocols["p"].Interface.OutputLength!.Value.Eq);
     }
 

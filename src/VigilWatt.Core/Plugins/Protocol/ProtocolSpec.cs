@@ -87,6 +87,9 @@ internal sealed class PercentSpec
 
     /// <summary>位域掩码，缺省整字节。用于「电量与标志位同处一字节」的协议（如迈从 CZ 通道）。</summary>
     public int Mask { get; init; } = 0xFF;
+
+    /// <summary>原始值 → 百分比；未命中给 null，不拿 0 冒充。数组写法在加载期展开成下标字典。</summary>
+    public Dictionary<int, int>? Map { get; init; }
 }
 
 /// <summary>充电字段：查表 / 非零即充电 / 零即充电，三选一；满电优先由帧级 <see cref="FrameSpec.FullAt"/> 管。</summary>
@@ -109,6 +112,15 @@ internal sealed class LinkSpec
     public required int Offset { get; init; }
     public int Bit { get; init; }
     public bool ConnectedWhenSet { get; init; } = true;
+
+    /// <summary>按整字节（或 mask 截位）查表；非空时忽略 bit。</summary>
+    public Dictionary<int, LinkState>? Table { get; init; }
+
+    /// <summary>Table 未命中时的返回值。</summary>
+    public LinkState OnMiss { get; init; } = LinkState.Unknown;
+
+    /// <summary>Table 的截位掩码，缺省整字节。</summary>
+    public int Mask { get; init; } = 0xFF;
 
     /// <summary>只在某个连接方式下才有意义：有线时没有 RF 链路，bit 恒 0 属正常，不能当断链。</summary>
     public LinkMode? OnlyWhenMode { get; init; }
@@ -143,18 +155,41 @@ internal sealed class FrameSpec
     public int MinPercent { get; init; } = 1;
     public int MaxPercent { get; init; } = 100;
 
+    /// <summary>true 时电量越界 / 为 0 的帧直接判“不是有效状态帧”，探测继续等下一帧。</summary>
+    public bool RequirePercent { get; init; }
+
+    /// <summary>协议没有 charge 字段时返回的默认充电态；缺省 Unknown。</summary>
+    public ChargingState ChargeWhenMissing { get; init; } = ChargingState.Unknown;
+
     /// <summary>满电阈值：电量达到它一律判"已充满"，优先于充电位。没有充电位的协议也靠它报满电。</summary>
     public int? FullAt { get; init; }
+}
+
+/// <summary>
+/// 查询模板：固定字节（旧写法）或运行时从 HID caps 派生 report ID / 长度的动态写法。
+/// 两者加载期二选一，见 docs/dev/protocol-json.md。
+/// </summary>
+internal sealed class QuerySpec
+{
+    public byte[]? Fixed { get; init; }
+    public byte? Header { get; init; }
+    public bool ReportIdFromCaps { get; init; }
+    public bool PadToInterfaceOutputLength { get; init; }
+    public int FallbackLength { get; init; } = 64;
 }
 
 /// <summary>主动查询规格：发什么帧、等多久、重试几次、怎么解应答。</summary>
 internal sealed class ActiveSpec
 {
-    public required byte[] Query { get; init; }
+    public required QuerySpec Query { get; init; }
     public int WindowMs { get; init; } = 1000;
     public int Attempts { get; init; } = 1;
     public required FrameSpec Response { get; init; }
     public bool RejectQueryEcho { get; init; }
+
+    /// <summary>固定查询字节；动态模板没有固定字节，旧调用点只在固定协议上用它。</summary>
+    public byte[] QueryBytes => Query.Fixed
+        ?? throw new InvalidOperationException("动态查询模板没有固定字节，请用 QueryRunner.BuildFrame");
 }
 
 /// <summary>接口指纹：一个 HID 接口是不是本协议的通道。</summary>

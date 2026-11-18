@@ -26,7 +26,10 @@ internal static class FrameReader
             if (off < 0 || off >= data.Length) continue;
             if (spec.ReportId is { Length: > 0 } ids && Array.IndexOf(ids, (int)data[off]) < 0) continue;
             if (!PrefixMatches(spec, data, off)) continue;
-            return ReadFields(spec, data, off);
+            var reading = ReadFields(spec, data, off);
+            // 只报状态的帧：电量 0 / 越界时整帧不算数，探测继续等下一帧。
+            if (spec.RequirePercent && reading.Percent is null) continue;
+            return reading;
         }
         return null;
     }
@@ -46,11 +49,14 @@ internal static class FrameReader
         if (spec.Percent is { } p && TryRead(data, off + p.Offset, p.Type, out var rawPercent))
         {
             // 位域掩码：电量可能与标志位同处一字节（迈从 CZ 通道 bit7 = 充电、bit0..6 = 电量）
-            int value = rawPercent & p.Mask;
-            if (value >= spec.MinPercent && value <= spec.MaxPercent) percent = value;
+            int? value = rawPercent & p.Mask;
+            if (p.Map is { } map)
+                value = map.TryGetValue(value.Value, out var mapped) ? mapped : null;
+            if (value is { } accepted && accepted >= spec.MinPercent && accepted <= spec.MaxPercent)
+                percent = accepted;
         }
 
-        var charging = ReadCharging(spec.Charge, data, off, percent);
+        var charging = ReadCharging(spec.Charge, data, off, percent, spec.ChargeWhenMissing);
         if (spec.FullAt is { } fullAt && percent >= fullAt) charging = ChargingState.Full;
         var mode = ReadMode(spec.Mode, data, off);
         var link = ReadLink(spec.Link, data, off, mode);
@@ -85,9 +91,10 @@ internal static class FrameReader
         return TelemetryValue<int>.Reported(value, default);
     }
 
-    private static ChargingState ReadCharging(ChargeSpec? spec, byte[] data, int off, int? percent)
+    private static ChargingState ReadCharging(
+        ChargeSpec? spec, byte[] data, int off, int? percent, ChargingState whenMissing)
     {
-        if (spec is null) return ChargingState.Unknown;
+        if (spec is null) return whenMissing;
         // 电量越界说明这帧本身可疑，充电位不能单独采信
         if (percent is null) return ChargingState.Unknown;
         if (!TryRead(data, off + spec.Offset, spec.Type, out var raw)) return ChargingState.Unknown;
@@ -104,6 +111,11 @@ internal static class FrameReader
         // 该链路位只在指定连接方式下有效（有线时没有 RF 链路，bit 恒 0 属正常）
         if (spec.OnlyWhenMode is { } required && mode != required) return LinkState.Unknown;
         if (off + spec.Offset >= data.Length) return LinkState.Unknown;
+        if (spec.Table is { } table)
+        {
+            int raw = data[off + spec.Offset] & spec.Mask;
+            return table.TryGetValue(raw, out var state) ? state : spec.OnMiss;
+        }
         var set = (data[off + spec.Offset] >> spec.Bit & 1) != 0;
         return set == spec.ConnectedWhenSet ? LinkState.Up : LinkState.Down;
     }

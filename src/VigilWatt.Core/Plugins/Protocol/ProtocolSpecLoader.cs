@@ -284,6 +284,7 @@ internal static class ProtocolSpecLoader
                     Offset = p.Offset,
                     Type = ParseFieldType(p.Type, name, prefix),
                     Mask = BuildMask(p.Mask, name, prefix, $"{where}.percent"),
+                    Map = ParsePercentMap(p.Map, name, prefix, $"{where}.percent.map"),
                 }
                 : null,
             Charge = dto.Fields?.Charge is { } c
@@ -295,6 +296,16 @@ internal static class ProtocolSpecLoader
                     Offset = l.Offset,
                     Bit = l.Bit ?? 7,
                     ConnectedWhenSet = l.ConnectedWhen != 0,
+                    Mask = BuildMask(l.Mask, name, prefix, $"{where}.link"),
+                    Table = l.Table is null ? null : l.Table.ToDictionary(
+                        kv => ParseLinkKey(kv.Key, name, prefix, $"{where}.link.table"),
+                        kv => ParseLinkState(kv.Value, name, prefix, $"{where}.link.table")),
+                    OnMiss = (l.OnMiss ?? "unknown").Trim().ToLowerInvariant() switch
+                    {
+                        "up" => LinkState.Up,
+                        "down" => LinkState.Down,
+                        _ => LinkState.Unknown,
+                    },
                     OnlyWhenMode = (l.OnlyWhenMode ?? "").Trim().ToLowerInvariant() switch
                     {
                         "" => null,
@@ -323,6 +334,8 @@ internal static class ProtocolSpecLoader
                 : null,
             MinPercent = dto.ValidPercent?.Min ?? 1,
             MaxPercent = dto.ValidPercent?.Max ?? 100,
+            RequirePercent = dto.RequirePercent,
+            ChargeWhenMissing = ParseChargeWhenMissing(dto.ChargeWhenMissing, name, prefix, $"{where}.chargeWhenMissing"),
             FullAt = dto.FullAt,
             Pointer = BuildPointer(dto.Fields, name, prefix),
         };
@@ -346,6 +359,80 @@ internal static class ProtocolSpecLoader
             : spec;
     }
 
+    /// <summary>数组 = 下标 → 百分比；对象 = 原始码 → 百分比。未命中由 FrameReader 给 null。</summary>
+    private static Dictionary<int, int>? ParsePercentMap(JsonNode? node, string name, string prefix, string where)
+    {
+        if (node is null) return null;
+        var map = new Dictionary<int, int>();
+
+        void Add(int key, JsonNode? valueNode, string keyText)
+        {
+            if (valueNode is not JsonValue v || !v.TryGetValue<int>(out var value))
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的 {where}[{keyText}] 不是整数");
+            if (value is < 0 or > 100)
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的 {where}[{keyText}]={value} 超出 0..100");
+            map[key] = value;
+        }
+
+        if (node is JsonArray array)
+        {
+            if (array.Count > 256)
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的 {where} 数组超过 256 项（原始值只有 1 字节）");
+            for (int i = 0; i < array.Count; i++) Add(i, array[i], i.ToString());
+            return map;
+        }
+
+        if (node is JsonObject obj)
+        {
+            foreach (var (key, value) in obj)
+            {
+                int raw = ParseKey(key, name, prefix);
+                if (raw is < 0 or > 255)
+                    throw new InvalidOperationException(
+                        $"{prefix}: 协议 \"{name}\" 的 {where} 键 {key} 超出 0..255");
+                Add(raw, value, key);
+            }
+            return map;
+        }
+
+        throw new InvalidOperationException(
+            $"{prefix}: 协议 \"{name}\" 的 {where} 既不是数组也不是对象");
+    }
+
+    private static LinkState ParseLinkState(string text, string name, string prefix, string where)
+        => text.Trim().ToLowerInvariant() switch
+        {
+            "up" => LinkState.Up,
+            "down" => LinkState.Down,
+            "unknown" => LinkState.Unknown,
+            var other => throw new InvalidOperationException(
+                $"{prefix}: 协议 \"{name}\" 的 {where} 值 \"{other}\" 非法（up / down / unknown）"),
+        };
+
+    private static int ParseLinkKey(string text, string name, string prefix, string where)
+    {
+        int key = ParseKey(text, name, prefix);
+        if (key is < 0 or > 255)
+            throw new InvalidOperationException(
+                $"{prefix}: 协议 \"{name}\" 的 {where} 键 {text} 超出 0..255");
+        return key;
+    }
+
+    private static ChargingState ParseChargeWhenMissing(string? text, string name, string prefix, string where)
+        => (text ?? "unknown").Trim().ToLowerInvariant() switch
+        {
+            "unknown" => ChargingState.Unknown,
+            "discharging" => ChargingState.Discharging,
+            "charging" => ChargingState.Charging,
+            "full" => ChargingState.Full,
+            var other => throw new InvalidOperationException(
+                $"{prefix}: 协议 \"{name}\" 的 {where} 值 \"{other}\" 非法" +
+                "（unknown / discharging / charging / full）"),
+        };
+
     private static FieldSpec? BuildFieldSpec(FieldDto? dto, string name, string prefix)
     {
         if (dto is null) return null;
@@ -366,8 +453,8 @@ internal static class ProtocolSpecLoader
         Offset = c.Offset,
         Type = ParseFieldType(c.Type, name, prefix),
         Mask = BuildMask(c.Mask, name, prefix, $"{where}.charge"),
-        NonZero = string.Equals(c.On, "nonzero", StringComparison.OrdinalIgnoreCase),
-        Zero = string.Equals(c.On, "zero", StringComparison.OrdinalIgnoreCase),
+        NonZero = c.NonZero == true || string.Equals(c.On, "nonzero", StringComparison.OrdinalIgnoreCase),
+        Zero = c.Zero == true || string.Equals(c.On, "zero", StringComparison.OrdinalIgnoreCase),
         Table = c.Map?.ToDictionary(
             kv => ParseKey(kv.Key, name, prefix),
             kv => kv.Value.Trim().ToLowerInvariant() switch
@@ -392,13 +479,11 @@ internal static class ProtocolSpecLoader
     {
         if (dto.Query is not { } q)
             throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 的 active 缺少 query");
-        if (q.Length <= 0)
-            throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 的 active.query.length 必须 > 0");
         if (dto.Response is null)
             throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 的 active 缺少 response");
         return new ActiveSpec
         {
-            Query = BuildQueryBytes(q, name, prefix),
+            Query = BuildQuerySpec(q, name, prefix),
             WindowMs = dto.WindowMs ?? 1000,
             Attempts = dto.Attempts is > 0 ? dto.Attempts.Value : 1,
             Response = BuildFrame(dto.Response, name, prefix, "active.response"),
@@ -406,23 +491,69 @@ internal static class ProtocolSpecLoader
         };
     }
 
-    private static byte[] BuildQueryBytes(QueryDto q, string name, string prefix)
+    /// <summary>固定字节（旧写法）与动态模板（header + caps 派生 report ID / 长度）二选一。</summary>
+    private static QuerySpec BuildQuerySpec(QueryDto q, string name, string prefix)
     {
-        var frame = new byte[q.Length];
+        bool dynamicForm = q.Header is not null || q.ReportIdFromCaps || q.PadToInterfaceOutputLength
+                           || q.FallbackLength is not null;
+        bool fixedForm = q.Hex is not null || q.Length is not null || q.Pad is not null;
+        if (dynamicForm && fixedForm)
+            throw new InvalidOperationException(
+                $"{prefix}: 协议 \"{name}\" 的 active.query 不能同时写固定写法与动态模板");
+
+        if (dynamicForm)
+        {
+            if (string.IsNullOrWhiteSpace(q.Header))
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的动态 query 缺少 header");
+            if (!q.ReportIdFromCaps)
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的动态 query 必须声明 reportIdFromCaps: true");
+            if (!TryParseByteHex(q.Header, out var header))
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的 query.header \"{q.Header}\" 不是 1 字节十六进制");
+            int fallback = q.FallbackLength ?? 64;
+            if (fallback < 1)
+                throw new InvalidOperationException(
+                    $"{prefix}: 协议 \"{name}\" 的 query.fallbackLength 必须 >= 1");
+            return new QuerySpec
+            {
+                Header = header,
+                ReportIdFromCaps = true,
+                PadToInterfaceOutputLength = q.PadToInterfaceOutputLength,
+                FallbackLength = fallback,
+            };
+        }
+
+        if (q.Length is not { } length || length <= 0)
+            throw new InvalidOperationException(
+                $"{prefix}: 协议 \"{name}\" 的 active.query.length 必须 > 0");
+
+        var frame = new byte[length];
         if (q.Pad is { } pad) Array.Fill(frame, (byte)pad);
-        if (string.IsNullOrWhiteSpace(q.Hex)) return frame;
+        if (string.IsNullOrWhiteSpace(q.Hex))
+            return new QuerySpec { Fixed = frame };
 
         var parts = q.Hex.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < parts.Length; i++)
         {
             if (i >= frame.Length)
-                throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 的 query.hex 超出 length={q.Length}");
+                throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 的 query.hex 超出 length={length}");
             if (!byte.TryParse(parts[i], System.Globalization.NumberStyles.HexNumber,
                     System.Globalization.CultureInfo.InvariantCulture, out var b))
                 throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 的 query.hex 第 {i} 段不是十六进制");
             frame[i] = b;
         }
-        return frame;
+        return new QuerySpec { Fixed = frame };
+    }
+
+    private static bool TryParseByteHex(string text, out byte value)
+    {
+        value = 0;
+        var s = text.Trim();
+        if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) s = s[2..];
+        return byte.TryParse(s, System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture, out value);
     }
 
     /// <summary>位域掩码：缺省整字节；0 会把所有取值抹平，属配置错误，直接拒。</summary>
@@ -483,7 +614,8 @@ internal static class ProtocolSpecLoader
             ValidateFrame(passive, name, prefix, "passive");
         if (spec.Active is not { } active) return;
         ValidateFrame(active.Response, name, prefix, "active.response");
-        ValidateQuery(spec.Interface.OutputLength, active.Query.Length, name, prefix);
+        // 动态模板的长度运行时才知道，加载期只能校验固定写法。
+        ValidateQuery(spec.Interface.OutputLength, active.Query.Fixed?.Length, name, prefix);
     }
 
     /// <summary>Any 非 null 即优先；空集合没有下界，不能写成 Length &gt; 0 再落到 Eq。</summary>
@@ -556,12 +688,13 @@ internal static class ProtocolSpecLoader
     }
 
     /// <summary>OutputLength 只有 Eq 才是确切输出长度，Min 不能拿来卡查询帧。</summary>
-    private static void ValidateQuery(IntMatch? outputLength, int queryLength, string name, string prefix)
+    private static void ValidateQuery(IntMatch? outputLength, int? queryLength, string name, string prefix)
     {
+        if (queryLength is not { } queryLengthValue) return;
         if (outputLength?.Eq is not { } exact) return;
-        if ((long)queryLength > exact)
+        if ((long)queryLengthValue > exact)
             throw new InvalidOperationException(
-                $"{prefix}: 协议 \"{name}\" 的 active.query 长度 {queryLength} 超出 outputLength {exact}");
+                $"{prefix}: 协议 \"{name}\" 的 active.query 长度 {queryLengthValue} 超出 outputLength {exact}");
     }
 
     private static int Width(FieldType type) => type switch
@@ -756,6 +889,8 @@ internal static class ProtocolSpecLoader
         public FieldsDto? Fields { get; set; }
         public RangeDto? ValidPercent { get; set; }
         public JsonNode? Length { get; set; }
+        public bool RequirePercent { get; set; }
+        public string? ChargeWhenMissing { get; set; }
         public int? FullAt { get; set; }
     }
 
@@ -767,7 +902,7 @@ internal static class ProtocolSpecLoader
 
     private sealed class FieldsDto
     {
-        public FieldDto? Percent { get; set; }
+        public PercentDto? Percent { get; set; }
         public FieldDto? Charge { get; set; }
         public FieldDto? Link { get; set; }
         public FieldDto? LinkMode { get; set; }
@@ -776,6 +911,14 @@ internal static class ProtocolSpecLoader
         public FieldDto? DpiLevel { get; set; }
         public FieldDto? DpiLevelCount { get; set; }
         public FieldDto? RateHz { get; set; }
+    }
+
+    private sealed class PercentDto
+    {
+        public int Offset { get; set; }
+        public string? Type { get; set; }
+        public int? Mask { get; set; }
+        public JsonNode? Map { get; set; }
     }
 
     private sealed class FieldDto
@@ -787,10 +930,13 @@ internal static class ProtocolSpecLoader
         public string? OnlyWhenMode { get; set; }
         public int? Mask { get; set; }
         public Dictionary<string, string>? Map { get; set; }
+        public Dictionary<string, string>? Table { get; set; }
         public Dictionary<string, int>? MapValue { get; set; }
         public int? Min { get; set; }
         public int? Max { get; set; }
         public string? On { get; set; }
+        public bool? NonZero { get; set; }
+        public bool? Zero { get; set; }
         public string? OnMiss { get; set; }
         public int? FullAt { get; set; }
     }
@@ -812,9 +958,13 @@ internal static class ProtocolSpecLoader
 
     private sealed class QueryDto
     {
-        public int Length { get; set; }
+        public int? Length { get; set; }
         public string? Hex { get; set; }
         public int? Pad { get; set; }
+        public string? Header { get; set; }
+        public bool ReportIdFromCaps { get; set; }
+        public bool PadToInterfaceOutputLength { get; set; }
+        public int? FallbackLength { get; set; }
     }
 
     private sealed class DeviceDto

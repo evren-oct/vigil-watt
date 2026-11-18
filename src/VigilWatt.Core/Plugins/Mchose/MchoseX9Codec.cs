@@ -38,7 +38,7 @@ public static class MchoseX9Codec
            && featureLength == 0 && reportId == ReportId;
 
     /// <summary>64 字节查询帧：<c>55 65 01</c>，余下 61 字节为 0（来自 JSON 的 <c>active.query</c>）。</summary>
-    public static byte[] CreateQuery() => (byte[])Spec.Active!.Query.Clone();
+    public static byte[] CreateQuery() => (byte[])Spec.Active!.QueryBytes.Clone();
 
     /// <summary>
     /// 解析一条 input report，成功返回电量（1–100）与充电状态。
@@ -49,7 +49,7 @@ public static class MchoseX9Codec
         percent = 0;
         charging = ChargingState.Unknown;
         // 有的接收器会把主机写入回显到输入队列：查询帧（55 65 01 …）正好能解析成 1%，整帧相等时丢弃
-        if (report.AsSpan().SequenceEqual(Spec.Active!.Query)) return false;
+        if (report.AsSpan().SequenceEqual(Spec.Active!.QueryBytes)) return false;
         if (FrameReader.Read(Spec.Active!.Response, report) is not { Percent: { } value } reading) return false;
         percent = value;
         charging = reading.Charging;

@@ -36,7 +36,7 @@ public static class MchoseGmouseCodec
            && outputLength >= FrameLength;
 
     /// <summary>电量查询帧（65 字节），来自 JSON 的 <c>active.query</c>。</summary>
-    public static byte[] CreateQuery() => (byte[])Spec.Active!.Query.Clone();
+    public static byte[] CreateQuery() => (byte[])Spec.Active!.QueryBytes.Clone();
 
     /// <summary>解析电量应答：前缀 <c>AA 30</c>，电量与充电位由 JSON 指定。</summary>
     public static bool TryParse(byte[] report, out int percent, out bool charging)

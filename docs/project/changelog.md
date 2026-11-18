@@ -3,6 +3,11 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-18
+
+- **北通 P2 协议数据化**：鲲鹏 `0x15` 与宙斯 `0x04` 的偏移/掩码/五档表/充电/链路全部搬进 `betop.protocols.json`，`BetopCodec` 删除；通用 schema 新增 `percent.map`、`link.table`、`requirePercent`、`chargeWhenMissing` 与动态查询模板。目录扩到 110 条 / 86 个 `VID:PID`（24 low4 + 26 nocharge、9 个宙斯 PID、26 个 20DD），能力声明不变。见 `hardware/reference/betop-catalog.md` §10。
+- **北通产品图补全**：从 BetopGame 2.6.2 的 `handle_kp*`、`t6pro_*`、`t9*` 抽 21 款 / 34 色缩略图，脚本 `scripts/import-betop-images.py`；`5125/5127/5145/5146/5074` 型号留空，继续回退几何图标。见 `project/device-images.md` §7.7。
+
 ## 2026-11-16
 
 - **北通 P1 品牌目录与身份**：新增 `betop-catalog.json`（33 条 PID）与 `specs/betop.protocols.json`，接入现有 `ProtocolEngine`；身份归一只认目录显式 `group`（当前仅 5158/5159 → `betop:kunpeng20`），显示名目录优先、歧义 PID 由产品串分流。协议解析、轮询与离线策略未改；T9、鲲鹏20 2.4G/有线是唯一已验电量项，见 `hardware/reference/betop-catalog.md`。

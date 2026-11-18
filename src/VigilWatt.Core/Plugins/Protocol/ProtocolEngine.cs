@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Utils;
 
 namespace VigilWatt.Core.Plugins.Protocol;
 
@@ -37,6 +38,10 @@ internal sealed class ProtocolEngine
 
     /// <summary>探测时读到的连接方式，按路径暂存到认领落地为止（认领后由插件按帧维护）。</summary>
     private readonly ConcurrentDictionary<string, ConnectionKind> _probeConnection =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>探测时读到过的链路状态，按路径暂存到插件取用（与 <see cref="ProbeConnectionOf"/> 同风格）。</summary>
+    private readonly ConcurrentDictionary<string, LinkState> _probeLink =
         new(StringComparer.OrdinalIgnoreCase);
 
     private ProtocolEngine(SpecBundle bundle) => _bundle = bundle;
@@ -80,6 +85,9 @@ internal sealed class ProtocolEngine
 
     public bool Matches(HidDeviceInfo info) => Resolve(info) is not null;
 
+    /// <summary>该 VID 是否在本品牌的 vendors 白名单里（读 JSON，不在插件里硬编码）。</summary>
+    public bool IsVendor(ushort vendorId) => _bundle.Vendors.Contains(vendorId);
+
     public ProtocolSpec? SpecOf(string protocol) => _bundle.Protocols.GetValueOrDefault(protocol);
 
     public DeviceEntry? DeviceOf(HidDeviceInfo info)
@@ -120,6 +128,7 @@ internal sealed class ProtocolEngine
 
         // 每次探测先清掉上一条：这次读不到就该是 Unknown，不能拿上一次的旧值冒充
         _probeConnection.TryRemove(handle.Info.DevicePath, out _);
+        _probeLink.TryRemove(handle.Info.DevicePath, out _);
 
         if (spec.Passive is { } passive
             && await ListenAsync(handle, spec.ProbeWindowMs, passive).ConfigureAwait(false) is { } listened)
@@ -128,12 +137,16 @@ internal sealed class ProtocolEngine
             // 与插件同一条门槛：电量越界的帧可能是占位帧，[1] 不可信。
             if (listened.Percent is not null)
                 _probeConnection[handle.Info.DevicePath] = ConnectionOf(listened.Mode);
+            _probeLink[handle.Info.DevicePath] = listened.Link;
             return (spec.Name, listened.Percent, listened.Charging);
         }
 
         if (spec.Active is { } active && writesEnabled
             && await QueryRunner.RunAsync(handle, active).ConfigureAwait(false) is { } answered)
+        {
+            _probeLink[handle.Info.DevicePath] = answered.Link;
             return (spec.Name, answered.Percent, answered.Charging);
+        }
 
         return null;
     }
@@ -142,8 +155,13 @@ internal sealed class ProtocolEngine
     public ConnectionKind ProbeConnectionOf(HidDeviceInfo info)
         => _probeConnection.TryGetValue(info.DevicePath, out var connection) ? connection : ConnectionKind.Unknown;
 
+    /// <summary>探测时读到过的链路；没探过或没读到返回 Unknown。</summary>
+    public LinkState ProbeLinkOf(HidDeviceInfo info)
+        => _probeLink.TryGetValue(info.DevicePath, out var link) ? link : LinkState.Unknown;
+
     /// <summary>轮询。没发帧与发了没应答必须分开，否则零写入协议会被误记成失败。</summary>
-    public PollOutcome Poll(HidDeviceHandle handle, DeviceRef dev, string protocol, bool writesEnabled)
+    public PollOutcome Poll(
+        HidDeviceHandle handle, DeviceRef dev, string protocol, bool writesEnabled, int? windowMs = null)
     {
         var spec = SpecFor(dev, protocol);
         if (spec is null || spec.Implementation != SpecImplementation.Data || !spec.Pollable)
@@ -151,7 +169,7 @@ internal sealed class ProtocolEngine
         if (spec.Active is not { } active || !writesEnabled)
             return new PollOutcome(PollAttempt.NotAttempted, null, ChargingState.Unknown);
 
-        return QueryRunner.Run(handle, active) is { } reading
+        return QueryRunner.Run(handle, active, windowMs) is { } reading
             ? new PollOutcome(PollAttempt.Answered, reading.Percent, ApplyDebounce(spec, dev, reading))
             : new PollOutcome(PollAttempt.Failed, null, ChargingState.Unknown);
     }
@@ -183,6 +201,8 @@ internal sealed class ProtocolEngine
             _lastCharging.TryRemove(key, out _);
         foreach (var key in _probeConnection.Keys.Where(k => !alive.Contains(k)).ToList())
             _probeConnection.TryRemove(key, out _);
+        foreach (var key in _probeLink.Keys.Where(k => !alive.Contains(k)).ToList())
+            _probeLink.TryRemove(key, out _);
     }
 
     /// <summary>插件被禁用/卸载时清空全部状态。</summary>
@@ -190,6 +210,7 @@ internal sealed class ProtocolEngine
     {
         _lastCharging.Clear();
         _probeConnection.Clear();
+        _probeLink.Clear();
     }
 
     /// <summary>设备有覆盖规格（偏移差一位那种）时优先用它，否则回落协议默认。</summary>
@@ -224,6 +245,7 @@ internal sealed class ProtocolEngine
 
             var input = await handle.ReadInputAsync(slice).ConfigureAwait(false);
             if (input is null) continue;
+            if (Log.IsEnabled(LogLevel.Debug)) Log.Debug($"协议探测收到报文: {Log.Hex(input)}");
             if (FrameReader.Read(spec, input) is { } reading) return reading;
         }
         return null;

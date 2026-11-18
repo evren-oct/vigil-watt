@@ -101,7 +101,7 @@ VID/PID、协议、能力、`group`、`pairedPid` **一字未改**。33 条 = `2
 
 | VID:PID | 型号 | role | 协议 | 配对/组 | 能力 | 来源与验证 |
 |---|---|---|---|---|---|---|
-| `20BC:5073` | 宙斯2 | controller | `betop-t9` | — | `batteryRead=supported`、`chargingRead=unsupported` | 本机真机；Col04 被动状态流，无充电标志字节 |
+| `20BC:5073` | 宙斯2 | controller | `betop-zeus-keyevent` | — | `batteryRead=supported`、`chargingRead=unsupported` | 本机真机；Col04 被动状态流，无充电标志字节 |
 | `20BC:5125` | —（歧义） | controller | `betop-status15` | — | 未声明 | xpad 标 KP20A/KP40A 共用；官方注册还含 KUNPThirty（西樵山项目）；型号由产品串判定，电量未验证 |
 | `20BC:5126` | 鲲鹏20智控游戏手柄 | controller | `betop-status15` | — | 未声明 | xpad 标 KP20A；电量未验证 |
 | `20BC:5127` | —（歧义） | controller | `betop-status15` | — | 未声明 | xpad 标 KP20A/KP40A 共用；型号由产品串判定，电量未验证 |
@@ -360,7 +360,58 @@ betop.md §1.4 的 248 条真机样本也是它，别当成两个型号。
 | 5 | 宙斯系是否有充电位 | 位域里没有，但可能藏在 `cmd 0x35`/`0x45` 等扩展状态报告里，未查 |
 | 6 | 118 条注册里 29 个脚本没有 PID | 官方有 65 个型号脚本、只有 36 个调用了 `RegisterDev*`，其余（含老一代）注册方式未查 |
 
-## 10. 相关文档
+## 10. P2 数据化迁移（2026-11-18）
+
+> §3 表的「协议」列写于 P1，P2 起以本节为准；其余字段（型号/role/能力）不变。
+
+运行目录从 75 条 / 51 PID 扩到 **110 条 / 86 个 `VID:PID`**，协议 3 套：
+
+| 协议 | 用途 |
+|---|---|
+| `betop-status15` | 鲲鹏基础帧（`0x00FF/0x03/64`），本身是 low4 充电口径 |
+| `betop-status15-nocharge` | 同帧布局，但不解析充电 |
+| `betop-zeus-keyevent` | 宙斯族（`0xFF00/24`）被动位域，替代原 `betop-t9` |
+
+### 11.1 逐型号充电口径（50 个鲲鹏 20BC）
+
+| 口径 | PID | 数量 |
+|---|---|---|
+| low4（`betop-status15`） | 512f, 5130, 5158, 5159, 515b, 515c, 515f, 5160, 516d, 516e, 516f, 5170, 5173, 5174, 518a, 518b, 518c, 518d, 5190, 5191, 519b, 519c, 519d, 519e | 24 |
+| nocharge（`betop-status15-nocharge`） | 5125, 5126, 5127, 5128（none-documented）；5145, 5146（mixed）；5133, 5134, 5149, 514a, 5150~5153, 5154, 5155, 515d, 515e, 5163~5166, 5169, 516a, 5194, 5195（unknown） | 26 |
+
+`5161/5162`（盘古）官方也是 low4，但不在运行目录（`0xFF80` 页），本批不列。
+能力声明不因解析器支持而升级：只有 `5158/5159` 保持 `chargingRead=supported`。
+
+### 11.2 宙斯 9 个新 PID
+
+`500b, 502f, 5074, 5076, 5077, 5104~5107` 追加进 `devices[]`，指向 `betop-zeus-keyevent`，
+`role=controller`、无 `capabilities`；`5074` 多型号，`model` 留空。
+
+`501E` / `502C` 在当前 2.6.2 包内的注册调用是注释掉的，**不追加**；它们仍留在
+`officialDevices[]` 的 `CatalogOnly`，见 BACKLOG CR-169。
+
+### 11.3 `20DD` 回填 26 条
+
+对“只有 20BC、官方有 20DD 身份”的 26 个 PID 追加 20DD 条目：
+
+```
+5125 5126 5127 512f 5133 5134 5145 5146 5149 514a 5150 5151 5152 5153
+5154 5155 5158 5159 515b 515d 515e 515f 5160 5169 516a 5191
+```
+
+- `kind=unknown`、无 `capabilities`、无 `group` / `pairedPid`；
+- `role` 按官方 20DD 身份映射：`wired → controller`、`dongle → dongle`；`5130` 有底座证据，保持 `dock`；
+- P1-B2 已加的 21 条 20DD 也按同一映射修正 role（不在原 33 条冻结快照内）；
+- 原有 3 条 20DD（5128/5130/515c）字段不动；
+- 回填后 20DD 覆盖 50 / 52 个官方身份；缺的 2 个是盘古 `5161/5162`（不在运行目录）。
+
+### 11.4 解析路径
+
+`BetopCodec` 已删除；鲲鹏 `0x15` 与宙斯 `0x04` 都由 `FrameReader` / `ProtocolEngine` 解析。
+宙斯 `<100%` 的 `Discharging` 由 JSON 的 `chargeWhenMissing: "discharging"` 表达；
+`100%` 的满电收尾在 `BetopPlugin.FinalizeCharging`。`02 CD`（cmd 0xD）仍不解析。
+
+## 11. 相关文档
 
 - 逆向报告与证据等级：[betop-official-client.md](betop-official-client.md)。
 - 协议与真机时间线：[betop.md](../brands/betop.md) §1（T9 口径见 §1.4、鲲鹏20 见 §1.8、目录见 §1.10）。

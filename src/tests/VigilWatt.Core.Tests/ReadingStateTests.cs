@@ -391,7 +391,7 @@ public class ReadingStateTests : IDisposable
         reply[1] = 0x30;   // prefix[1] = 48
         reply[8] = 0x00;   // percent = 0 → 越界
 
-        using var handle = FakeHandle(info, Concat(spec.Active!.Query, reply));
+        using var handle = FakeHandle(info, Concat(spec.Active!.QueryBytes, reply));
         var outcome = MchoseSpecs.Engine.Poll(
             handle, new DeviceRef("x", "gmouse", 0x3837, 0x4245), "gmouse", writesEnabled: true);
 

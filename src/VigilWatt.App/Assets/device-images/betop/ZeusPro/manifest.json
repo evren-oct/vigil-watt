@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "brand": "BETOP",
+  "model": "宙斯 Pro",
+  "match": {
+    "vendorId": "20BC",
+    "productIds": [
+      "500b",
+      "502f"
+    ],
+    "displayNames": [
+      "北通 宙斯 Pro",
+      "宙斯 Pro"
+    ]
+  },
+  "defaultColor": "color-silver",
+  "colors": [
+    {
+      "key": "color-silver",
+      "label": "silver",
+      "thumbnail": "color-silver_thumb.png",
+      "image": "color-silver_thumb.png",
+      "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_0.png"
+    },
+    {
+      "key": "color-blue",
+      "label": "blue",
+      "thumbnail": "color-blue_thumb.png",
+      "image": "color-blue_thumb.png",
+      "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_1.png"
+    },
+    {
+      "key": "color-orange",
+      "label": "orange",
+      "thumbnail": "color-orange_thumb.png",
+      "image": "color-orange_thumb.png",
+      "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_2.png"
+    },
+    {
+      "key": "color-purple",
+      "label": "purple",
+      "thumbnail": "color-purple_thumb.png",
+      "image": "color-purple_thumb.png",
+      "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_3.png"
+    },
+    {
+      "key": "color-lavender",
+      "label": "lavender",
+      "thumbnail": "color-lavender_thumb.png",
+      "image": "color-lavender_thumb.png",
+      "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_4.png"
+    }
+  ],
+  "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_0.png; BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_1.png; BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_2.png; BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_3.png; BetopGame 2.6.2 (20261111.asar) /images/index/t6pro_4.png",
+  "capturedAt": "2026-11-18",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

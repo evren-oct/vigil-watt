@@ -213,6 +213,52 @@
   全族产出遥测）；只有某台设备偏移不同才放设备目录的 `override`。能力声明仍按设备三态，
   未验证型号保持 `Unverified`——协议级解析不等于能力已验。
 
+### 3.2 电量映射、充电缺省与链路码表
+
+```jsonc
+"passive": {
+  "validPercent": { "min": 0 },
+  "requirePercent": true,                 // 只报状态的帧：0 / 越界不算有效帧
+  "chargeWhenMissing": "discharging",     // 没有 charge 字段时的默认值；缺省 unknown
+  "fields": {
+    "percent": { "offset": 1, "mask": 7, "map": [0, 50, 80, 100, 100] },
+    "link":    { "offset": 23, "table": { "0x50": "down", "0x10": "down" }, "onMiss": "up" }
+  }
+}
+```
+
+- `percent.map`：数组 = 下标 → 百分比；对象 = 原始码 → 百分比。未命中给 `null`，不拿 0 冒充；
+  命中值再按 `validPercent` 校验。离散等级（宙斯 `[0,50,80,100,100]`）用它。
+- `chargeWhenMissing`：协议没有 `charge` 字段时返回什么（`unknown` / `discharging` / `charging` / `full`）。
+  宙斯用 `discharging`（旧口径），`betop-status15-nocharge` 保持默认 `unknown`。
+- `link.table`：按整字节（或 `mask` 截位）查表，未命中返回 `onMiss`；`table` 非空时忽略 `bit`。
+  码表型链路（`0x50` / `0x10` = down）用它，比逐值登记 bit 更稳。
+- `requirePercent`：`true` 时电量 0 / 越界直接判“不是有效状态帧”，探测继续等下一帧；
+  只给“只报状态”的帧打开，别给需要链路/遥测的休眠帧打开。
+
+### 3.3 查询模板：固定字节与动态模板
+
+旧写法保持不动（雷柏 / 迈从）：
+
+```jsonc
+"query": { "length": 65, "hex": "00 55 30 A5", "pad": 0 }
+```
+
+新写法从接口 caps 派生 report ID 和长度（北通）：
+
+```jsonc
+"query": {
+  "header": "15",
+  "reportIdFromCaps": true,
+  "padToInterfaceOutputLength": true,
+  "fallbackLength": 64
+}
+```
+
+- `null` report ID → 不发帧；`0` → 无 ID 前缀；`>0` → `[rid, header, 0…]`；
+- 长度取 `Info.OutputReportLength`，`< 2` 时用 `fallbackLength`；
+- 固定写法与动态模板**二选一**，同时写 `hex` / `length` / `pad` 与动态字段会在加载期报错。
+
 ## 4. 校验（加载期就报错）
 
 `ProtocolSpecLoader` 在插件构造时校验，失败直接抛异常（`DeviceManager` 会跳过该插件并记 Error）：
@@ -271,3 +317,29 @@ dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedNa
 ```
 
 雷柏的真机帧与身份用例在 `RapooSpecTests` / `RapooIdentityTests`（R1–R53）：偏移改错会被它们挡住。
+
+## 7. 新设备“只加 JSON”的边界
+
+新增设备先对照这张表：前 8 行只改 JSON，不需要写 C#。
+
+| 变化 | 只改 JSON | 需要 `codeFamily` |
+|---|---|---|
+| 新 PID / 型号 / 显示名 / role / group / capabilities | `devices[]` | — |
+| 同帧布局，只换充电掩码 / 码表 | `devices[].override` 或新协议 | — |
+| 新接口 page / usage / 报文长 | 新协议 `interface` | — |
+| 新帧偏移 / 掩码 / 前缀 / xor / 长度 | 新协议 `passive` / `active.response` | — |
+| 离散电量等级 | `percent.map` | — |
+| 新链路码表 | `link.table` | — |
+| 新查询帧 / report ID / 长度 / 探测窗口 / 重试 | `active.query` / `windowMs` / `attempts` | — |
+| 没有充电位时的默认状态 | `chargeWhenMissing` | — |
+| 握手 / 会话 / 密码门 | — | 是 |
+| 校验和 / CRC / 加密 | — | 是 |
+| 多帧组合 / 跨报告状态机 | — | 是 |
+| 同一 PID 多接口、每口不同布局 | — | 是 |
+| 同一接口多 report ID、每 ID 不同布局 | — | 是 |
+| 电压 → 百分比 / 线性换算 | — | 是 |
+| 大端 / 有符号 / 跨字节位域 | — | 是 |
+| 不同离线策略 / 轮询节拍 / 稳定窗口 / 满电口径 | — | 插件级 |
+
+“帧怎么读、码怎么映射、设备叫什么”全部 JSON；“流程、校验、多帧状态机、换算”才写代码。
+新设备如果落在前 8 行，不需要改 C#。

@@ -4,6 +4,8 @@
 > 目的：拿到官方客户端的完整设备与帧协议，支撑 VigilWatt 对北通**全型号**的电量接入
 > 性质：**互操作性分析**，只读静态分析，未修改厂商文件、未对设备写入任何帧
 > 日期：2026-11-16
+> **P2 落地（2026-11-18）**：帧字段已迁入 `betop.protocols.json`，`BetopCodec` 已删除；
+> 文中出现的 `BetopCodec.*` 是当时的实现位置，当前以 JSON + `FrameReader` / `ProtocolEngine` 为准。
 
 ---
 

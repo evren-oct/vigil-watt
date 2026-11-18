@@ -83,7 +83,8 @@ bit: 7 6 5 4 | 3 2 1 0
      所以"一律 `& 0xf`"是错的，按型号分支的口径见
      [reference/betop-catalog.md](../reference/betop-catalog.md) §7。
 
-解析实现：`Plugins/Betop/BetopCodec.cs`（纯函数，单测 `BetopCodecTests.cs`）；轮询/探测：`Plugins/Betop/BetopPlugin.cs`。
+解析实现：`Plugins/Betop/specs/betop.protocols.json` + `FrameReader` / `ProtocolEngine`；
+轮询/探测：`Plugins/Betop/BetopPlugin.cs`（`BetopCodec` 已于 P2 删除）。
 
 ### 1.4 T9 变体（`USB\VID_20BC&PID_5073`）—— 不响应查询，走被动状态流
 
@@ -91,7 +92,7 @@ bit: 7 6 5 4 | 3 2 1 0
 > `extkeyevent_o` 把电量定义在**帧第 1 字节的低 3 位**（`batlevel: 3`，LSB-first 打包），映射
 > `[0,50,80,100,100]`（表外等级 = Unknown）；byte23 是**连接/模式标志字节**
 > （`connect_24g` / `dongle_mode` / `program_mode` …），不是电量。
-> 实现见 `BetopCodec.T9LevelOffset` / `T9LevelMask` / `T9LevelToPercent`，
+> 实现见 `betop-zeus-keyevent` 的 `percent.offset/mask/map`，
 > 依据见 [reference/betop-official-client.md](../reference/betop-official-client.md) §4.2。
 >
 > 本节以下（§1.4 ~ §1.4.3）的「等级×8」换算、`0x78`=满电、`0x50`=67% 的读法**均已作废**，
@@ -151,7 +152,7 @@ bit: 7 6 5 4 | 3 2 1 0
 **宁可漏判、不可误判**，故只认 `0x50`。
 > 留待验证：**充满（`0x78`）后再关机**，若 dongle 报 `0x70` 则读法 ② 成立，可据此把判据一般化成 `(byte23 & 0x08) == 0`。
 
-**实现**：`BetopCodec.ParseT9Status` 返回 `T9Status(Percent, Charging, Linked)`，占位帧 `Linked = false`；
+**实现**：`ProtocolEngine.Parse` 返回 `PassiveOutcome`，占位帧 `Link = Down`；
 `BetopPlugin` 据此：探测阶段**仍算探测成功但电量留空**（基类按"无读数 = 离线"认领 → 列表显示「北通 宙斯2 · 离线 · --%」），
 轮询阶段 `RequestOffline` 立即标离线（不等 3 次失败 = 3 分钟）。手柄再开机后下一轮自动回到在线。
 > 探测阶段"算成功"是为了**如实列出「离线」**（而不是让设备消失），不是为了省时间 ——
@@ -182,7 +183,7 @@ bit: 7 6 5 4 | 3 2 1 0
   与"手柄没开机、dongle 无状态可报"自洽；
 - 单独用 `byte23 == 0x10` 会误伤真实的 13%（等级 2），故必须与 byte[1] 联合判定（单测 `T12` 钉住）。
 
-**实现**：`BetopCodec.ParseT9Status` 新增第二条占位分支（常量 `T9BlankStateByte` / `T9BlankRaw`），
+**实现**：`betop-zeus-keyevent` 的 `link.table` 把 `0x10` 也映射为 `down`，
 返回 `Linked = false`；后续处理与 §1.4.1 完全一致（探测算成功但电量留空 → 「离线 · --%」；轮询 `RequestOffline`）。
 
 **留待验证**：`0x10` 目前只有两次样本、值相同；若将来见到别的 raw 配 `byte[1] = 0x00`，
@@ -253,7 +254,7 @@ bit: 7 6 5 4 | 3 2 1 0
 ## 1.8 鲲鹏20 三通道接入（2.4G 广播 / 有线查询 / 蓝牙无通道）与身份归一
 
 > **判据（2026-10-25 定稿）**：候选 = 北通 VID（`20BC` / `20DD`）× 电量页（`0xFF00` 厂商页 / `0x00FF` 杂项广播页），
-> 实现为 `BetopCodec.IsVendorInterface`、有单测。page 与 usage 任一侧命中即算（兼容扫描器把两者读颠倒），
+> 实现为 `betop-status15` / `betop-zeus-keyevent` 的 `interface.anyOf`、有单测。page 与 usage 任一侧命中即算（兼容扫描器把两者读颠倒），
 > 但标准 VR 页 `0x0003` **不再单独命中**——那是 #60 留下的临时宽松口子，已随本轮收紧。
 > 判据宽进、探测严出：真伪仍由 `Probe` 决定。
 >
@@ -269,7 +270,7 @@ caps：in=64 out=64 feat=0 outId=0x02）上**每秒自推**一条状态帧：
 02 15 27 00 50 …   = 39% 未充电（byte[2] = 百分比；byte[4] 低 4 位 = 0）
 ```
 
-与 §1.3 的查询响应**完全同构**（report ID 0x02 + header 0x15），现有 `BetopCodec.ParseStatus` 直接可解——
+与 §1.3 的查询响应**完全同构**（report ID 0x02 + header 0x15），`betop-status15` 的 `active.response` 直接可解——
 此前收不到电量的唯一原因是 `IsCandidate` 只认厂商页 `0xFF00`，插件根本不会打开这个接口。
 
 **接入方式**（`BetopPlugin`）：
@@ -405,7 +406,7 @@ else if (cmdtype == 0xd) {
 
 北通从“T9 / 鲲鹏20 型号补丁”升级为**品牌目录**：`Plugins/Betop/betop-catalog.json` 收录 33 条
 VID:PID（`20BC` 30 条、`20DD` 3 条），协议判据在 `Plugins/Betop/specs/betop.protocols.json`
-（两套 `implementation=code`，帧解析仍在 `BetopCodec`）。完整表与逐型号验证状态见
+（三套 `implementation=data`，帧解析在 `betop.protocols.json`）。完整表与逐型号验证状态见
 [reference/betop-catalog.md](../reference/betop-catalog.md)。
 
 **同一份 JSON 分两层（2026-11-16 P1-A）**：

@@ -50,18 +50,18 @@ public sealed class BetopProtocolMatchTests
     [InlineData(0x00FF, 0x03, 64, "betop-status15")]
     [InlineData(0x00FF, 0x03, 24, null)]
     [InlineData(0x00FF, 0x02, 64, null)]
-    [InlineData(0xFF00, 0x01, 24, "betop-t9")]
-    [InlineData(0xFF00, 0x02, 24, "betop-t9")]
-    [InlineData(0xFF00, 0x03, 24, "betop-t9")]
+    [InlineData(0xFF00, 0x01, 24, "betop-zeus-keyevent")]
+    [InlineData(0xFF00, 0x02, 24, "betop-zeus-keyevent")]
+    [InlineData(0xFF00, 0x03, 24, "betop-zeus-keyevent")]
     [InlineData(0xFF00, 0x03, 64, null)]
     public void Status15_RequiresKunpengTriple(ushort page, ushort usage, ushort length, string? expected)
         => Assert.Equal(expected, Engine.Resolve(Info(0x20BC, 0x9999, page, usage, length))?.Name);
 
     /// <summary>宙斯族三条厂商集合（usage 1/2/3）都是 24 字节；长度或页不符一律不认。</summary>
     [Theory]
-    [InlineData(0xFF00, 0x01, 24, "betop-t9")]
-    [InlineData(0xFF00, 0x02, 24, "betop-t9")]
-    [InlineData(0xFF00, 0x03, 24, "betop-t9")]
+    [InlineData(0xFF00, 0x01, 24, "betop-zeus-keyevent")]
+    [InlineData(0xFF00, 0x02, 24, "betop-zeus-keyevent")]
+    [InlineData(0xFF00, 0x03, 24, "betop-zeus-keyevent")]
     [InlineData(0xFF00, 0x01, 64, null)]
     [InlineData(0xFF00, 0x02, 64, null)]
     [InlineData(0xFF00, 0x03, 64, null)]
@@ -97,7 +97,7 @@ public sealed class BetopProtocolMatchTests
                     var page = Hex(hid!["usagePage"]!.GetValue<string>());
                     var usage = Hex(hid["usage"]!.GetValue<string>());
                     var length = (ushort)hid["reportLength"]!.GetValue<int>();
-                    var expected = page == 0xFF00 ? "betop-t9" : null;
+                    var expected = page == 0xFF00 ? "betop-zeus-keyevent" : null;
                     Assert.Equal(expected, Engine.Resolve(Info(vid, pid, page, usage, length))?.Name);
                 }
             }
@@ -106,24 +106,25 @@ public sealed class BetopProtocolMatchTests
         // 0x500b / 0x502f 的杂项集合是 0x00FF/0x03/24：既不是鲲鹏 64 字节，也不是宙斯 0xFF00。
         Assert.Null(Engine.Resolve(Info(0x20BC, 0x500B, 0x00FF, 0x03, 24)));
         Assert.Null(Engine.Resolve(Info(0x20BC, 0x502F, 0x00FF, 0x03, 24)));
-        Assert.Equal("betop-t9", Engine.Resolve(Info(0x20BC, 0x500B, 0xFF00, 0x02, 24))?.Name);
-        Assert.Equal("betop-t9", Engine.Resolve(Info(0x20BC, 0x502F, 0xFF00, 0x02, 24))?.Name);
+        Assert.Equal("betop-zeus-keyevent", Engine.Resolve(Info(0x20BC, 0x500B, 0xFF00, 0x02, 24))?.Name);
+        Assert.Equal("betop-zeus-keyevent", Engine.Resolve(Info(0x20BC, 0x502F, 0xFF00, 0x02, 24))?.Name);
     }
 
-    /// <summary>运行目录 75 条按各自家族三元组仍可认领；T9 单独走 0xFF00/24。</summary>
+    /// <summary>运行目录 110 条按各自家族三元组仍可认领；宙斯走 0xFF00/24。</summary>
     [Fact]
     public void RuntimeCatalogEntries_StillResolve()
     {
         var devices = Catalog()["devices"]!.AsArray();
-        Assert.Equal(75, devices.Count);
+        Assert.Equal(110, devices.Count);
 
         foreach (var device in devices)
         {
             var node = device!;
             var vid = Hex(node["vid"]!.GetValue<string>());
             var pid = Hex(node["pid"]!.GetValue<string>());
-            var info = pid == 0x5073
-                ? Info(vid, pid, 0xFF00, 0x01, 24)
+            var isZeus = node["protocol"]!.GetValue<string>() == "betop-zeus-keyevent";
+            var info = isZeus
+                ? Info(vid, pid, 0xFF00, 0x02, 24)
                 : Info(vid, pid, 0x00FF, 0x03, 64);
 
             Assert.NotNull(Engine.DeviceOf(info));
@@ -131,21 +132,21 @@ public sealed class BetopProtocolMatchTests
         }
     }
 
-    /// <summary>协议命中 ≠ 能力验证：11 个未收录宙斯 PID 全部仍是 Unverified，且不在运行目录。</summary>
+    /// <summary>协议命中 ≠ 能力验证：501E / 502C 仍未收录，能力保持 Unverified。</summary>
     [Fact]
     public void UnlistedZeusPids_MatchProtocolButStayUnverified()
     {
         var unlisted = Catalog()["officialDevices"]!.AsArray()
             .Where(d => d!["protocolFamily"]!.GetValue<string>() == "zeus")
             .Select(d => Hex(d!["pid"]!.GetValue<string>()))
-            .Where(pid => pid != 0x5073)
+            .Where(pid => pid is 0x501E or 0x502C)
             .ToList();
-        Assert.Equal(11, unlisted.Count);
+        Assert.Equal(2, unlisted.Count);
 
         foreach (var pid in unlisted)
         {
             var info = Info(0x20BC, pid, 0xFF00, 0x01, 24);
-            Assert.Equal("betop-t9", Engine.Resolve(info)?.Name);
+            Assert.Equal("betop-zeus-keyevent", Engine.Resolve(info)?.Name);
             Assert.Null(Engine.DeviceOf(info));
             Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));
             Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.ChargingRead));

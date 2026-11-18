@@ -1,13 +1,14 @@
 using VigilWatt.Core.Hid;
+using VigilWatt.Core.Models;
 using VigilWatt.Core.Plugins.Betop;
 using Xunit;
 
 namespace VigilWatt.Core.Tests;
 
 /// <summary>
-/// 功 能： BETOP 候选判定——未登记宙斯设备只识别不探测（P1-B1B）。
+/// 功 能： BETOP 候选判定——未登记且只有被动协议的接口只识别不探测。
 /// 2026/11/17 23:40:00 20211
-/// 门控只认 0xFF00/usage 1~3/24 且目录未登记；鲲鹏 fallback 与已登记设备保持原样。
+/// 已登记设备按目录认领；未登记鲲鹏仍保留 0x00FF/64 fallback。
 /// </summary>
 public sealed class BetopCandidateTests
 {
@@ -25,21 +26,27 @@ public sealed class BetopCandidateTests
             OutputReportLength = inputLength,
         };
 
-    /// <summary>未收录宙斯 PID 的三条厂商集合都必须被挡在主动探测之外。</summary>
+    /// <summary>未收录的被动协议 PID（501E / 5084）不得进入主动探测。</summary>
     [Theory]
-    [InlineData(0x01)]
-    [InlineData(0x02)]
-    [InlineData(0x03)]
-    public void UnregisteredZeus_IsRejected(ushort usage)
-        => Assert.False(Plugin.IsCandidateForTest(Info(0x20BC, 0x501E, 0xFF00, usage, 24)));
+    [InlineData(0x501E, 0x01)]
+    [InlineData(0x501E, 0x02)]
+    [InlineData(0x501E, 0x03)]
+    [InlineData(0x5084, 0x02)]
+    public void UnregisteredPassivePid_IsRejected(ushort pid, ushort usage)
+        => Assert.False(Plugin.IsCandidateForTest(Info(0x20BC, pid, 0xFF00, usage, 24)));
 
-    /// <summary>已登记的 5073/T9 仍按原路径进入探测。</summary>
+    /// <summary>已登记的 5073/T9 与 9 个新宙斯 PID 仍按原路径进入被动探测。</summary>
     [Theory]
-    [InlineData(0x01)]
-    [InlineData(0x02)]
-    [InlineData(0x03)]
-    public void RegisteredT9_IsAccepted(ushort usage)
-        => Assert.True(Plugin.IsCandidateForTest(Info(0x20BC, 0x5073, 0xFF00, usage, 24)));
+    [InlineData(0x5073)]
+    [InlineData(0x500B)]
+    [InlineData(0x502F)]
+    [InlineData(0x5074)]
+    [InlineData(0x5076)]
+    [InlineData(0x5077)]
+    [InlineData(0x5104)]
+    [InlineData(0x5107)]
+    public void RegisteredZeus_IsAccepted(ushort pid)
+        => Assert.True(Plugin.IsCandidateForTest(Info(0x20BC, pid, 0xFF00, 0x02, 24)));
 
     /// <summary>未收录的鲲鹏 PID 仍保留 0x00FF/64 的 fallback。</summary>
     [Fact]
@@ -50,15 +57,18 @@ public sealed class BetopCandidateTests
     public void RegisteredKunpeng_IsAccepted()
         => Assert.True(Plugin.IsCandidateForTest(Info(0x20BC, 0x5158, 0x00FF, 0x03, 64)));
 
-    /// <summary>非宙斯三元组不触发本次门控（判据本身仍由协议匹配负责）。</summary>
+    /// <summary>宙斯通道由接收器承载，认领时推断为 2.4G。</summary>
+    [Fact]
+    public void ZeusChannel_InfersWireless24G()
+        => Assert.Equal(ConnectionKind.Wireless24G,
+            BetopPlugin.ProbeInferredConnection(Info(0x20BC, 0x5073, 0xFF00, 0x01, 24)));
+
     [Theory]
-    [InlineData(0xFF00, 0x03, 64)]   // 宙斯页 + 64 字节（鲲鹏50 副身份形态）
+    [InlineData(0x00FF, 0x03, 64)]   // 鲲鹏广播 / 有线
     [InlineData(0x00FF, 0x03, 24)]   // 宙斯杂项集合
-    [InlineData(0x00FF, 0x02, 64)]   // usage 不符
-    [InlineData(0xFF00, 0x01, 16)]   // 长度不符
-    public void NonZeusTriple_DoesNotTriggerGate(ushort page, ushort usage, ushort length)
-        => Assert.False(BetopPlugin.IsUnregisteredZeus(
-            Info(0x20BC, 0x501E, page, usage, length), entry: null));
+    [InlineData(0xFF00, 0x03, 64)]   // 非 24 字节的 0xFF00 接口
+    public void NonZeusChannel_DoesNotInferConnection(ushort page, ushort usage, ushort length)
+        => Assert.Null(BetopPlugin.ProbeInferredConnection(Info(0x20BC, 0x5158, page, usage, length)));
 
     /// <summary>非北通 VID 维持原有拒绝行为（不进入北通候选）。</summary>
     [Fact]

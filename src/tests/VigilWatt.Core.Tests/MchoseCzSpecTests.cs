@@ -56,8 +56,8 @@ public sealed class MchoseCzSpecTests
         Assert.True(spec.Pollable);
 
         // 官方 web 驱动对这颗 dongle 发的就是这一帧：55 05 00 [off+size] size offLo offHi，其余补零
-        Assert.Equal(65, spec.Active!.Query.Length);
-        Assert.Equal(new byte[] { 0x00, 0x55, 0x05, 0x00, 0x38, 0x38, 0x00, 0x00, 0x00 }, spec.Active.Query[..9]);
+        Assert.Equal(65, spec.Active!.QueryBytes.Length);
+        Assert.Equal(new byte[] { 0x00, 0x55, 0x05, 0x00, 0x38, 0x38, 0x00, 0x00, 0x00 }, spec.Active.QueryBytes[..9]);
         Assert.Equal(65, spec.Active.Response.Length!.Value.Eq);
     }
 

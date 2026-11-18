@@ -36,12 +36,13 @@
 | VGN | V98 Pro 键盘（`0x1A` 查询） | `320F:5088` | [vgn.md](brands/vgn.md) §3 | 贡献者声明 |
 | 索尼 | DualSense 蓝牙 | `054C:0CE6` | [dualsense.md](devices/dualsense.md) | 贡献者真机 |
 | Haute42 | Adapter 4DS（DualSense 适配器，USB） | `054C:0CE6`（借用 DualSense 号） | [haute42.md](devices/haute42.md) | 贡献者声明 |
-| GANSS | GS3104T-Pro | `05AC:024F` | [ganss.md](brands/ganss.md) | 贡献者真机 |
+| GANSS | GS3104T-Pro / GS3108T-PRO（同指纹，按产品串分型号） | `05AC:024F` | [ganss.md](brands/ganss.md) §8 | GS3104T-Pro 贡献者真机；GS3108T-PRO 本机验证 100% |
 | CHERRY | PIXIU75（2.4G / 有线） | `046A:01E4` / `01E2` | [cherry.md](brands/cherry.md) | 贡献者真机 |
 | 派世 PULSAR | X2 V2 | `3554:F508` | [pulsar.md](brands/pulsar.md) | 贡献者真机 |
 | 寸渊影弑 DARKRIM | SHADOW | `3654:6901` | [darkrim.md](brands/darkrim.md) | 贡献者真机 |
 | 盖世小鸡 GameSir | G7 Pro CE | `3537` | [gamesir.md](brands/gamesir.md) | 贡献者真机 |
 | ATK / VXE | 无线鼠标（F1 Pro Max / F1 V3 ULTIMATE+ / F1 Ultimate 2.0） | `373B:101B` / `101A` / `1303` / `11D9` / `11E4` | [atk.md](brands/atk.md) | 本机验证 |
+| VXE | R1SE+ 接收器（Compx 号段） | `3554:F58E` | [atk.md](brands/atk.md) §11 | 本机验证 |
 | ATK | A98 Pro 键盘（VIA） | `373B:1152` | [atk.md](brands/atk.md) §7 | 贡献者声明 |
 | HyperX | Cloud Flight 2 飓风炫彩版 | `03F0:0AC1` | [hyperx-cf2.md](brands/hyperx-cf2.md) | 本机验证 |
 | 雷蛇 RAZER | 毒蝰 V4 Pro（接收器 / 本体） | `1532:00E6` / `00E5` | [razer.md](brands/razer.md) | 贡献者真机 100%；充电态 Unknown |
@@ -69,9 +70,10 @@
 
 ## 2. 共用号段的陷阱（认领前必读）
 
-- **`3554` 是 Compx 共用号段**：AULA F99 Pro（`FA09`）、派世 X2 V2（`F508`）、VGN 蜻蜓 F2（`FB56`/`FB57`）都在这里。
+- **`3554` 是 Compx 共用号段**：AULA F99 Pro（`FA09`）、派世 X2 V2（`F508`）、VGN 蜻蜓 F2（`FB56`/`FB57`）、VXE R1SE+（`F58E`，与 ATK 同款 17 字节 op 协议）都在这里。
   按 VID 猜协议族一定错，判据必须带 usage + 报文长度；`3554:FA09` 上还叠了 AULA F99 Pro、凌豹 K98 与迈从 G75，三者指纹完全一致，
   只能靠会话 ACK 里的型号码分流（[aula.md](brands/aula.md) §1.1、[lingbao.md](brands/lingbao.md) §2、[mchose.md](brands/mchose.md) §5）。
+  ATK 对 `F58E` 只认精确指纹（`FF02 + 17/17`），同号段其它 PID 一律不碰（[atk.md](brands/atk.md) §11）。
 - **`05AC:024F` 是借用苹果号段**：GANSS GS3104T-Pro 与狼蛛 F108 Pro 的五条接口判据逐条一致，HID 层分不出品牌，
   唯一可用证据是产品名。
 - **`1D57:FA65` 被两个品牌共用**：英菲克 ZHEN 读被动 `0x03` 帧，DELUX M900 Pro 读 `0x000A`，靠长度与块结构区分。

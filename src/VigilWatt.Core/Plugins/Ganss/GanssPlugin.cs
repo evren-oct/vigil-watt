@@ -84,5 +84,5 @@ public sealed class GanssPlugin : BatteryPluginBase
     }
 
     protected override string BuildDisplayName(HidDeviceInfo info)
-        => GanssCodec.LooksLikeAulaF108(info.Product) ? "狼蛛 F108 Pro" : "GANSS GS3104T-Pro";
+        => GanssCodec.DisplayNameFor(info.Product);
 }

@@ -103,7 +103,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | DELUX M900 Pro · passive 5-byte status | Implemented, off by default; same VID/PID as Inphic, receiver not seen here |
 | DualSense · passive Bluetooth HID | Implemented, on by default; contributor hardware only |
 | Haute42 Adapter 4DS (DualSense adapter) · read-only feature `0xF9` | Implemented, off by default; zero writes. Presents itself as a DualSense, identified by its firmware string. Contributor claim only |
-| GANSS GS3104T-Pro / AULA F108 Pro · 33-byte query frame | Implemented, off by default; writes frames. Same HID fingerprint, one shared switch. Contributor hardware only |
+| GANSS GS3104T-Pro / GS3108T-PRO / AULA F108 Pro · 33-byte query frame | Implemented, off by default; writes frames. Same HID fingerprint, one shared switch. GS3104T-Pro / F108 contributor hardware only; GS3108T-PRO verified locally (100%) |
 | MCHOSE V9 Pro / X9 headset · 64-byte query frame | Implemented, off by default; writes frames, shares the MCHOSE switch. V9 Pro verified by contributor, X9 contributor claim only |
 | MCHOSE A5 V2 Ultra · inverted Feature `0x11` query | Implemented, off by default; writes frames, shares the MCHOSE switch. Contributor claim only |
 | CHERRY PIXIU75 · 64-byte block protocol (block `0x1A`) | Implemented, off by default; writes frames. Contributor hardware only |
@@ -112,6 +112,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | Thunderobot ML903 NearLink Se · `0xA0` device-info TLV | Implemented, off by default; writes frames. Contributor hardware only |
 | ATK / VXE wireless mouse / A98 Pro keyboard · 17-byte query frame / VIA | Implemented, off by default; writes frames. Verified on F1 Pro Max and F1 V3 ULTIMATE+ |
 | VXE R1 Nearlink · receiver `373B:10C9` | Verified locally over wireless and wired charging (`10C7`); uses the ATK switch, off by default. See [atk.md §9](docs/hardware/brands/atk.md) |
+| VXE R1SE+ · receiver `3554:F58E` (Compx range) · same 17-byte query as ATK | Verified locally (20% / discharging); uses the ATK switch, off by default. See [atk.md §11](docs/hardware/brands/atk.md) |
 | HyperX Cloud Flight 2 · passive 2.4 GHz push frames | Implemented, on by default; zero writes. Verified on a CF2 |
 | MOJHON GALE2 (2.4G dongle / wired, both `E2B7:122C`) · vendor-channel `A5` read frame | Implemented, off by default; writes frames. Verified on hardware in both dongle and wired modes; charging flag confirmed by an A/B plug test |
 | FLYDIGI APEX5 · NewXInput heartbeat (20% steps) | Implemented, off by default; writes frames. Contributor hardware only |

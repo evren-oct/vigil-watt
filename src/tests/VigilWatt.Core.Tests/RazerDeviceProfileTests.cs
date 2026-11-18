@@ -10,16 +10,18 @@ namespace VigilWatt.Core.Tests;
 public class RazerDeviceProfileTests
 {
     [Theory]
-    [InlineData(@"\\?\hid#vid_1532&pid_00df&mi_00#receiver")]
-    [InlineData(@"\\?\HID#VID_1532&PID_00DF&MI_00#receiver")]
-    public void AcceptsKnownWirelessMouseInterface(string path) =>
-        Assert.True(RazerDeviceProfile.Matches(0x1532, 0x00DF, 1, 2, 91, path));
+    [InlineData(0x00DF, @"\\?\hid#vid_1532&pid_00df&mi_00#receiver")]
+    [InlineData(0x00DF, @"\\?\HID#VID_1532&PID_00DF&MI_00#receiver")]
+    [InlineData(0x00C1, @"\\?\hid#vid_1532&pid_00c1&mi_00#receiver")]
+    [InlineData(0x00C1, @"\\?\HID#VID_1532&PID_00C1&MI_00#receiver")]
+    public void AcceptsKnownWirelessMouseInterface(int pid, string path) =>
+        Assert.True(RazerDeviceProfile.Matches(0x1532, (ushort)pid, 1, 2, 91, path));
 
     [Theory]
     [InlineData(0x1533, 0x00DF, 1, 2, 91, "&mi_00#")]
     [InlineData(0x1532, 0x00DE, 1, 2, 91, "&mi_00#")]
-    [InlineData(0x1532, 0x00C1, 1, 2, 91, "&mi_00#")]
     [InlineData(0x1532, 0x00DF, 1, 6, 91, "&mi_00#")]
+    [InlineData(0x1532, 0x00C1, 1, 6, 91, "&mi_00#")]
     [InlineData(0x1532, 0x00DF, 0xFF00, 2, 91, "&mi_00#")]
     [InlineData(0x1532, 0x00DF, 1, 2, 90, "&mi_00#")]
     [InlineData(0x1532, 0x00DF, 1, 2, 0, "&mi_00#")]

@@ -315,3 +315,7 @@
 - 将经典蓝牙中识别为耳机且名称为 `PRO X 2` 的条目显示为 `PRO X 2 LIGHTSPEED`，避免与罗技 2.4G 鼠标混淆；依据用户提供的 G HUB 型号及电量截图。
 - 合并 #45 后的收口：改正 `WritesEnabled` 注释（Centurion 是第二个写点，不再是「唯一写点」）、补回误删的 `IsHidppInterface` 摘要，R2 例外条款按「混合型插件」重写，`logitech.md` 补 §1 标题。
 - 合并 #38（迈从 G3 V2 / `gmouse`）后的收口：`MchoseGmouseCodec` 类头与方法注释压回配额；改正「`0xA8A5`/`0xA8A4` 是 VID 不是 PID」、来源项目是 Rust 不是 Python、覆盖面只到 `3837:4245`；充电态改走 `ChargingStateMap`（100% 未充电判 `Full`，与 K7/V1/QHW 一致）；`safety.md` §3.1 登记第五类设备与 gmouse 的 2 帧/拍写入预算；`mchose.md` §4.5 补未验证边界；`mi_01&col05` 仍走 V2 兜底记 CR-94。
+
+## 2026-11-18
+
+- 雷蛇新增 Viper V3 Pro（`1532:00C1`）无线支持：与 Viper V3 Pro SE（`00DF`）共用 91 字节 feature 协议，仅 PID 与显示名不同；本机探针验证电量 77%（raw `C5`）、未充电，见 `hardware/razer-viper-se.md`。

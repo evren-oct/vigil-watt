@@ -23,7 +23,8 @@ public sealed class RazerPlugin : BatteryPluginBase
     public override DeviceKind Kind => DeviceKind.Mouse;
     public override bool SupportsDiscoveryProbe => true;
     protected override TimeSpan ProbeCooldown => TimeSpan.FromSeconds(8);
-    protected override bool FeatureOnly(HidDeviceInfo info) => info.ProductId == 0x00DF;
+    protected override bool FeatureOnly(HidDeviceInfo info) =>
+        RazerDeviceProfile.IsViperWireless(info.ProductId);
     protected override int MinValidPercent(HidDeviceInfo info) => IsLegacyMouse(info) ? 2 : 0;
     protected override OfflinePolicy Offline { get; } = new() { Confirm = TimeSpan.FromSeconds(6), CountPollFailures = false };
 
@@ -124,7 +125,10 @@ public sealed class RazerPlugin : BatteryPluginBase
     protected override DeviceKind ResolveKind(string protocol) =>
         protocol == "razer-pa" ? DeviceKind.Headset : DeviceKind.Mouse;
     protected override string BuildDisplayName(HidDeviceInfo info) => IsHeadset(info)
-        ? "雷蛇 BlackShark V2 Pro" : IsLegacyMouse(info) ? base.BuildDisplayName(info) : "雷蛇 Viper V3 Pro SE";
+        ? "雷蛇 BlackShark V2 Pro"
+        : IsLegacyMouse(info) ? base.BuildDisplayName(info)
+        : info.ProductId == RazerDeviceProfile.ViperV3ProPid ? "雷蛇 Viper V3 Pro"
+        : "雷蛇 Viper V3 Pro SE";
 
     public override void Detach()
     {

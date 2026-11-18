@@ -79,6 +79,7 @@
 | 雷蛇 BlackShark V2 Pro (2023) · 1532:0555 | 本机 79%、未充电已验证；与鼠标共用雷蛇开关，见 [razer-headset.md](docs/hardware/razer-headset.md) |
 | 雷蛇 Kraken V4 耳机（接收器 `1532:056C`）· 64 字节 `0x02` 查询 | 已实现，默认关闭；会写帧，与鼠标共用雷蛇开关。贡献者声明，维护者未复测 |
 | 雷蛇 Viper V3 Pro SE · 无线接收器 `1532:00DF` | 本机电量查询已验证；默认关闭，见 [razer-viper-se.md](docs/hardware/razer-viper-se.md) |
+| 雷蛇 Viper V3 Pro · 无线接收器 `1532:00C1` | 本机 77% / 未充电已验证；默认关闭，见 [razer-viper-se.md](docs/hardware/razer-viper-se.md) |
 | 迈从 G87 · 2.4G `0x13` | 本机验证 |
 | 迈从新代 dongle · QHW（如 `3837:3033`） | 已实现，待对应设备验证 |
 | 迈从 G87 V2 / A7 V2 Pro · 鼠标 V2 被动帧 | 已实现，默认关闭；贡献者真机，本机只复测 G87 V1 不回归 |

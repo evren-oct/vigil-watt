@@ -58,7 +58,7 @@
 | 黑爵 AK870（`3151:4011`）/ 雷神 ML903 NearLink Se（`369B:0234`） | 分别是 feature `F7` 状态查询（`[2]` 电量 + `[4]` 在线）与 `0xA0` 设备信息 TLV `0x0225` | 代码已接入，默认关、会写帧。贡献者实机确认，本机未复测（ak870-ml903.md） |
 | EDIFIER W820NB | HFP 网关 `DEVPKEY_Device_BatteryLevel` | 已打通，与设置页一致 |
 | 华硕 AURA、Virtual Multitouch、lifeme 音箱、弱水时砂 2.4G（38FF:0001） | — | 与电量无关 / 无电量通道（rose.md），勿探测 |
-| 雷蛇（毒蝰 V4 Pro `1532:00E6`/`00E5`；BlackShark V2 Pro `1532:0555`；Viper V3 Pro SE `1532:00DF`） | 经典 90 字节 feature 查询；耳机独立 PA 协议；SE 只开零权限 Feature 句柄 | 代码已接入，默认关、会写帧。均贡献者真机、本机未复测；V4 Pro 有线 `0x84` 充电查询无应答，充电态 Unknown（razer.md、razer-headset.md、razer-viper-se.md） |
+| 雷蛇（毒蝰 V4 Pro `1532:00E6`/`00E5`；BlackShark V2 Pro `1532:0555`；Viper V3 Pro SE `1532:00DF`；Viper V3 Pro `1532:00C1`） | 经典 90 字节 feature 查询；耳机独立 PA 协议；SE / 普通版只开零权限 Feature 句柄 | 代码已接入，默认关、会写帧。Viper V3 Pro `00C1` 于 2026-11-18 本机探针验证 77%，其余贡献者真机、本机未复测；V4 Pro 有线 `0x84` 充电查询无应答，充电态 Unknown（razer.md、razer-headset.md、razer-viper-se.md） |
 | 雷蛇 Kraken V4 耳机（接收器 `1532:056C`） | 64 字节 `0x02` 报告，`0x21` 电量 / `0x2A` 充电，两条命令每轮交替 | 独立插件 `RazerKrakenPlugin` 但共用雷蛇开关，默认关、会写帧。贡献者声明，本机未复测（razer-kraken.md） |
 | 华硕 ROG Strix Scope II 96（Omni 接收器 `0B05:1ACE`） | 按物理接收器分组、核实通道 2 配对型号后才查询电量 | 代码已接入，默认关、会写帧。贡献者真机 95%，本机未复测（asus-rog.md） |
 | 索尼 INZONE H9 II（054C:0FA8） | `0xFF04` 控制传输 SET_REPORT 查询 | 代码已接入，默认关、会写帧。贡献者真机 78→94%（充电中），关掉 INZONE Hub 仍可读；本机未复测（inzone-h9.md） |

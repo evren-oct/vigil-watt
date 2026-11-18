@@ -15,6 +15,9 @@ public class RazerViperSeCodecTests
     internal static byte[] CapturedDischarging() =>
         Convert.FromHexString("00021F000000020784" + new string('0', 160) + "8100");
 
+    internal static byte[] CapturedViperV3ProBattery() =>
+        Convert.FromHexString("00021F00000002078000C5" + new string('0', 156) + "4000");
+
     internal static void UpdateChecksum(byte[] report)
     {
         report[89] = 0;
@@ -29,6 +32,16 @@ public class RazerViperSeCodecTests
         Assert.Equal(61, percent);
         Assert.True(RazerViperSeCodec.TryParseCharging(CapturedDischarging(), out bool charging));
         Assert.False(charging);
+    }
+
+    [Fact]
+    public void CapturedViperV3ProBatteryReports77Percent()
+    {
+        // 2026-11-18 真机（1532:00C1，MI_00，91 字节 feature），raw 0xC5 = 197/255。
+        var report = CapturedViperV3ProBattery();
+        Assert.Equal(91, report.Length);
+        Assert.True(RazerViperSeCodec.TryParseBattery(report, out int percent));
+        Assert.Equal(77, percent);
     }
 
     [Theory]

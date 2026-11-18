@@ -78,6 +78,7 @@ The table distinguishes devices verified on hardware from protocols implemented 
 | ASUS ROG Strix Scope II 96 Wireless / Omni (`0B05:1ACE`) | Contributor-verified at 95%, discharging; off by default. See [protocol notes](docs/hardware/asus-rog.md) |
 | Razer BlackShark V2 Pro (2023) (`1532:0555`) | Contributor-verified at 79%, discharging; shares the Razer switch. See [protocol notes](docs/hardware/razer-headset.md) |
 | Razer Viper V3 Pro SE wireless (`1532:00DF`) | Contributor-verified battery/charging queries; off by default. See [protocol notes](docs/hardware/razer-viper-se.md) |
+| Razer Viper V3 Pro wireless (`1532:00C1`) | Verified on the developer's device at 77%, discharging; off by default. See [protocol notes](docs/hardware/razer-viper-se.md) |
 | Razer Kraken V4 headset (receiver `1532:056C`) · 64-byte `0x02` query | Implemented, off by default; writes frames, shares the Razer switch. Contributor claim only. See [protocol notes](docs/hardware/razer-kraken.md) |
 | MCHOSE G87 · 2.4 GHz `0x13` | Verified on the developer's device |
 | New-generation MCHOSE dongles · QHW (e.g. `3837:3033`) | Implemented; awaiting matching hardware validation |

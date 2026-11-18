@@ -6,9 +6,16 @@ namespace VigilWatt.Core.Plugins.Razer;
 /// </summary>
 internal static class RazerDeviceProfile
 {
+    public const ushort ViperV3ProSePid = 0x00DF;
+    public const ushort ViperV3ProPid = 0x00C1;
+
+    /// <summary>两款 Viper 共用同一套 91 字节 feature 协议，只是 PID 不同。</summary>
+    public static bool IsViperWireless(ushort productId) =>
+        productId is ViperV3ProSePid or ViperV3ProPid;
+
     public static bool Matches(ushort vendorId, ushort productId, ushort usagePage,
         ushort usage, ushort featureReportLength, string devicePath) =>
-        vendorId == 0x1532 && productId == 0x00DF
+        vendorId == 0x1532 && IsViperWireless(productId)
         && usagePage == 0x0001 && usage == 0x0002
         && featureReportLength == RazerViperSeCodec.ReportLength
         && devicePath.Contains("&mi_00#", StringComparison.OrdinalIgnoreCase);

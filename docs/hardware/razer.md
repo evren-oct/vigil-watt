@@ -95,7 +95,7 @@ PID 关系：`productId = 0x00E5`（鼠标本体），`dongleId = 0x00E6`（接�
 
 ## 7. 其他已验证接口
 
-- [Viper V3 Pro SE 无线](razer-viper-se.md)：`1532:00DF` 的受保护鼠标集合，零访问权限 Feature 句柄，严格校验与独立缩放。
+- [Viper V3 Pro SE / Viper V3 Pro 无线](razer-viper-se.md)：`1532:00DF` / `1532:00C1` 的受保护鼠标集合，零访问权限 Feature 句柄，严格校验与独立缩放。普通版 `00C1` 于 2026-11-18 本机探针验证（91 字节 feature、电量 `C5` = 77%）。
 - [BlackShark V2 Pro (2023)](razer-headset.md)：`1532:0555` 的 PA 音频协议，按会话进入、查询和释放。
 
 这些型号共用品牌开关，分别匹配接口和解析协议，不参与 V4 的事务号学习。

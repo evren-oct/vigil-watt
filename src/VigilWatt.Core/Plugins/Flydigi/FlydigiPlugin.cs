@@ -6,9 +6,9 @@ using VigilWatt.Core.Utils;
 namespace VigilWatt.Core.Plugins.Flydigi;
 
 /// <summary>
-/// 功 能： 飞智 APEX5 2.4G 接收器电量插件（NewXInput 心跳）。
+/// 功 能： 飞智 APEX5 / APEX6 2.4G 接收器电量插件（NewXInput 心跳）。
 /// 2026/10/22 21:50:00 xliu
-/// 字节表、证据链与未验证项见 docs/hardware/brands/flydigi.md。
+/// 2026/11/17 meish 扩展 APEX6（0x2502）。字节表、证据链见 docs/hardware/brands/flydigi.md。
 /// </summary>
 public sealed class FlydigiPlugin : BatteryPluginBase
 {
@@ -28,6 +28,10 @@ public sealed class FlydigiPlugin : BatteryPluginBase
     /// <summary>必须小于 60 秒轮询周期，否则冷却相位让重试间隔翻倍（见基类注释）。</summary>
     protected override TimeSpan ProbeCooldown => TimeSpan.FromSeconds(30);
 
+    /// <summary>认领的都是 2.4G 接收器接口（有线本体不走这条通道），链路可推定 2.4G；否则徽标先显示「未知」。</summary>
+    protected override TelemetryValue<ConnectionKind> ConnectionOfProbe(HidDeviceInfo info)
+        => TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wireless24G, DateTimeOffset.Now);
+
     protected override bool IsCandidate(HidDeviceInfo info)
         => FlydigiCodec.IsSupportedInterface(info.VendorId, info.ProductId, info.UsagePage, info.Usage,
             info.InputReportLength, info.OutputReportLength);
@@ -46,9 +50,9 @@ public sealed class FlydigiPlugin : BatteryPluginBase
         var read = Query(dev.Handle, TimeSpan.FromSeconds(1.5));
         if (!read.HasValue) return null;   // 基类按 CountPollFailures 记账，3 轮转离线
 
-        // 充电时设备用 0x11 顶替了档位，真实电量无从得知：沿用上次采信值，只把状态改成充电中。
-        // 还没有基准（刚启动就在充电）时返回 null，界面显示 —，设备仍算在线。
-        if (read.Value.IsCharging)
+        // APEX5 充电时设备用 0x11 顶替了档位（Percent=null），真实电量无从得知：
+        // 沿用上次采信值，只把状态改成充电中。APEX6 充电时仍带档位（Percent 有效），照实返回。
+        if (read.Value.IsCharging && read.Value.Percent is null)
         {
             int last = dev.Filter.LastAcceptedPercent;
             return (last >= 0 ? last : null, ChargingState.Charging);
@@ -58,7 +62,11 @@ public sealed class FlydigiPlugin : BatteryPluginBase
     }
 
     private static ChargingState MapCharging(FlydigiCodec.Status status)
-        => status.IsCharging ? ChargingState.Charging : ChargingState.Discharging;
+    {
+        if (status.IsCharging) return ChargingState.Charging;
+        // APEX6 已充满时 Percent 恒 100：走通用收尾规则把它归为 Full（未充电且 100% ⇒ 已充满）
+        return ChargingStateMap.FromChargingFlag(false, status.Percent ?? 0);
+    }
 
     /// <summary>发一条心跳并等应答；窗口内收到可解析帧即返回。</summary>
     private static FlydigiCodec.Status? Query(HidDeviceHandle handle, TimeSpan window)

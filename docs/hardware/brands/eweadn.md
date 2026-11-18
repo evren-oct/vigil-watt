@@ -10,6 +10,8 @@
 
 官方驱动 `config.xml` 只认 `VID_0C45&PID_FEFE&MI_03`（另有 USB 直连 `0C45:8006&MI_00`、`05AC:024F&MI_03` 备用）。本机枚举到 **两个** 同 usage `0xFF60/0x0061` 的接口：MI_03（in=33 out=33）与 MI_04（in=65 out=65）。**只能写 MI_03**，MI_04 长度不符必失败——插件用 `OutputReportLength == 33` 区分。
 
+**同号段第二品牌（2026-11-17）**：`0C45:FEFE` 也用于**狼途 T87**（产品串 `Langtu T87-2.4G`），接口指纹与 X87 逐条相同，但对 X87 的 `20 01` 帧**零应答**——它走 AULA 系的 GET_DEVICE_INFO（`AA 10`），见 [langtu.md](../devices/langtu.md) 二。本插件因此在 `IsCandidate` 里排除产品串含 `langtu` 的接口，否则每 12 秒会给狼途 dongle 白写一帧。
+
 帧长 33 字节，`[0]` 是 report ID（0），`[32]` 是校验和：
 
 ```

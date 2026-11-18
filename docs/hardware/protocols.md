@@ -52,11 +52,11 @@
 | 黑爵 AJAZZ | AK870 | `3151:4011` | [ak870-ml903.md](devices/ak870-ml903.md) | 贡献者真机 |
 | 雷神 THUNDEROBOT | ML903 NearLink Se | `369B:0234` | [ak870-ml903.md](devices/ak870-ml903.md) | 贡献者真机 |
 | 弱水时砂 ROSE | FIRST ANGEL | `38FF:0001` | [rose.md](brands/rose.md) | ❌ 2.4G 无电量通道，不再投入 |
-| 飞智 FLYDIGI | APEX5 2.4G 接收器 | `37D7:2501` | [flydigi.md](brands/flydigi.md) | 贡献者真机，维护者未复测 |
+| 飞智 FLYDIGI | APEX5 / APEX6 2.4G 接收器 | `37D7:2501` / `37D7:2502` | [flydigi.md](brands/flydigi.md) | APEX5 贡献者真机、维护者未复测；APEX6 本机真机 100% |
 | ATK | N9 系列耳机（dongle） | `373B:1204` | [atk-n9.md](devices/atk-n9.md) | 协议已记录，**未实现**（电量走 CDC-ACM 串口） |
 | ilovbee | b98 键盘 | `258A:01BB` | [ilovbee.md](devices/ilovbee.md) | 贡献者采集包（issue #68），维护者未复测 |
 | 索尼 SONY | INZONE H9 II（WH-G900N2） | `054C:0FA8` | [inzone-h9.md](devices/inzone-h9.md) | 本机验证（会写帧，默认关闭） |
-| 狼途 LANGTU | T98 键盘 | `1A2C:8FFF` | [langtu.md](devices/langtu.md) | 贡献者真机（issue #40） |
+| 狼途 LANGTU | T98 / T87 键盘 | `1A2C:8FFF` / `0C45:FEFE` | [langtu.md](devices/langtu.md) | T98 贡献者真机（issue #40）；T87 本机真机 29% / 28% |
 | 墨将 MOJHON | 烈风2 / GALE2 手柄 | `E2B7:122C` | [mojhon.md](brands/mojhon.md) | 本机实测（2026-10-26），应用内复看待做 |
 
 ### 1.1 设备目录与逆向资料

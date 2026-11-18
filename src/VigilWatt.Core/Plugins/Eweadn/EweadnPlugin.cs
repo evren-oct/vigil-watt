@@ -1,5 +1,6 @@
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Plugins.Langtu;
 using VigilWatt.Core.Utils;
 
 namespace VigilWatt.Core.Plugins.Eweadn;
@@ -65,6 +66,14 @@ public sealed class EweadnPlugin : BatteryPluginBase
     /// <summary>两套接口指纹：键盘靠输出报文长度分 MI_03/MI_04，鼠标只认带 feature 0x03 的厂商集合。</summary>
     protected override bool IsCandidate(HidDeviceInfo info)
     {
+        // 0C45:FEFE 被狼途 T87 共用：它走 GET_DEVICE_INFO，发 X87 帧只会白写（langtu.md §1.1）。
+        if (LangtuT87Codec.LooksLikeLangtu(info.Product))
+        {
+            Log.InfoThrottled($"eweadn-skip-langtu:{info.DevicePath}",
+                $"前行者 跳过狼途接口（产品串 {info.Product}）: {info.DevicePath}", TimeSpan.FromMinutes(10));
+            return false;
+        }
+
         if (info.VendorId == KeyboardVid && info.ProductId == KeyboardPid
             && info.UsagePage == KeyboardUsagePage && info.Usage == KeyboardUsage)
             return info.OutputReportLength == EweadnKeyboardCodec.FrameLength;

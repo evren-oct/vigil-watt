@@ -93,20 +93,22 @@
   "0x4029": { "0x4029": "1k", "0x101d": "1k" },
   "0x4041": { "0x4041": "1k", "0x101d": "1k" }
  },
+  "deviceNotes": {
+    "0x19f5:0xff0f": "Ace 60 Pro 的贴牌 VID；分类器 VID 白名单不含 0x19F5，当前不可达（同型号见 0x41E4:0x2104）",
+    "0x19f5:0xff1b": "Ace 60 的贴牌 VID；分类器 VID 白名单不含 0x19F5，当前不可达（同型号见 0x41E4:0x2102）"
+  },
  "devices": [
   {
    "vid": "0x19f5",
    "pid": "0xff0f",
    "model": "Ace 60 Pro",
-   "protocol": "qhw",
-   "note": "Ace 60 Pro 的贴牌 VID；分类器 VID 白名单不含 0x19F5，当前不可达（同型号见 0x41E4:0x2104）"
+   "protocol": "qhw"
   },
   {
    "vid": "0x19f5",
    "pid": "0xff1b",
    "model": "Ace 60",
-   "protocol": "qhw",
-   "note": "Ace 60 的贴牌 VID；分类器 VID 白名单不含 0x19F5，当前不可达（同型号见 0x41E4:0x2102）"
+   "protocol": "qhw"
   },
   {
    "vid": "0x291d",

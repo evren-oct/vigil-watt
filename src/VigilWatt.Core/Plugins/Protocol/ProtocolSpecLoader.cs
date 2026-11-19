@@ -19,6 +19,7 @@ internal static class ProtocolSpecLoader
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
         NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
 
     /// <summary>注释与尾随逗号是两份规格 JSON 的既有写法，资源入口与字符串入口必须共用同一份选项。</summary>
@@ -170,7 +171,8 @@ internal static class ProtocolSpecLoader
     {
         if (raw[name] is not { } self) throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 不存在");
         if (!visiting.Add(name)) throw new InvalidOperationException($"{prefix}: 协议 \"{name}\" 的 extends 成环");
-        if (done.ContainsKey(name)) return self;
+        // 已解析的父协议要返回展开后的对象；raw self 可能还带 extends，严格模式下会被当成未知字段
+        if (done.ContainsKey(name)) return effective[name];
 
         var merged = self;
         if (self["extends"]?.GetValue<string>() is { Length: > 0 } parentName)
@@ -710,10 +712,22 @@ internal static class ProtocolSpecLoader
         if (root["devices"] is not JsonArray list)
             throw new InvalidOperationException($"{prefix}: 缺少 devices 数组");
         var result = new List<(DeviceEntry, JsonObject?)>(list.Count);
-        foreach (var item in list)
+        for (int i = 0; i < list.Count; i++)
         {
-            var dto = item?.Deserialize<DeviceDto>(JsonOptions)
-                ?? throw new InvalidOperationException($"{prefix}/devices.json: 有 null 条目");
+            var item = list[i];
+            DeviceDto dto;
+            try
+            {
+                dto = item?.Deserialize<DeviceDto>(JsonOptions)
+                    ?? throw new InvalidOperationException(
+                        $"{prefix}/devices.json: 第 {i + 1} 条设备为 null");
+            }
+            catch (JsonException ex)
+            {
+                var path = string.IsNullOrEmpty(ex.Path) ? "" : $"（JSON Path: {ex.Path}）";
+                throw new InvalidOperationException(
+                    $"{prefix}/devices.json: {DescribeDevice(item, i + 1)} JSON 不合法: {ex.Message}{path}", ex);
+            }
             if (!TryParseHex(dto.Vid, out var vid) || !TryParseHex(dto.Pid, out var pid))
                 throw new InvalidOperationException($"{prefix}/devices.json: {dto.Vid}:{dto.Pid} 不是合法 VID:PID");
             if (string.IsNullOrWhiteSpace(dto.Protocol))
@@ -735,6 +749,16 @@ internal static class ProtocolSpecLoader
             }, dto.Override));
         }
         return result;
+    }
+
+    /// <summary>反序列化失败时设备 DTO 还不存在，只能从原始节点取 VID:PID；序号从 1 开始。</summary>
+    private static string DescribeDevice(JsonNode? item, int index)
+    {
+        var vid = item?["vid"] is { } v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : null;
+        var pid = item?["pid"] is { } p && p.GetValueKind() == JsonValueKind.String ? p.GetValue<string>() : null;
+        return TryParseHex(vid, out var vendorId) && TryParseHex(pid, out var productId)
+            ? $"第 {index} 条设备 {vendorId:X4}:{productId:X4}"
+            : $"第 {index} 条设备";
     }
 
     /// <summary>override 只覆盖协议字段：capabilities 写进来会在反序列化时被丢弃，必须在合并前拦下。</summary>

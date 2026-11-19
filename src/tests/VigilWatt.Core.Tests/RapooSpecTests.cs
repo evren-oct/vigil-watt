@@ -542,7 +542,7 @@ public sealed class RapooSpecTests
     [Fact]
     public void R38_VT3有线PID没有独立证据_保持未验证()
     {
-        // 0x4612 的 caps 是空数组：同一只鼠标的另一条枚举，但没有单独的真机记录
+        // 0x4612 没有独立真机记录；旧 caps 已从运行时 JSON 移除，历史证据见 rapoo-catalog.md §6.1
         var info = MakeInfo(0x24AE, 0x4612);
 
         Assert.Equal(CapabilityState.Unverified, Engine.CapabilityOf(info, DeviceCapability.BatteryRead));

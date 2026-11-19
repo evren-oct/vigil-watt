@@ -3,6 +3,11 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-19
+
+- **协议 JSON 严格加载**：`ProtocolSpecLoader` 对协议/设备/嵌套/`override` DTO 开启 `JsonUnmappedMemberHandling.Disallow`；设备反序列化错误带资源、条目序号、VID:PID 与 JSON Path。见 `dev/protocol-json.md` §2.1。
+- **目录数据清理**：雷柏移除 195 条设备级 `brand` / `caps`（历史证据留在 `hardware/reference/rapoo-catalog.md` §6.1）；北通 110 条、迈从 2 条 `devices[].note` 迁到顶层 `deviceNotes`，`transports[].note` 不动。
+
 ## 2026-11-18
 
 - **北通 P2 协议数据化**：鲲鹏 `0x15` 与宙斯 `0x04` 的偏移/掩码/五档表/充电/链路全部搬进 `betop.protocols.json`，`BetopCodec` 删除；通用 schema 新增 `percent.map`、`link.table`、`requirePercent`、`chargeWhenMissing` 与动态查询模板。目录扩到 110 条 / 86 个 `VID:PID`（24 low4 + 26 nocharge、9 个宙斯 PID、26 个 20DD），能力声明不变。见 `hardware/reference/betop-catalog.md` §10。

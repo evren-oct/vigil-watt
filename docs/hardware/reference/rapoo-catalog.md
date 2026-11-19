@@ -81,6 +81,9 @@ manifest 的字段形状：
 | `RapooPlugin.cs` | 只剩认领与转交：`IsCandidate` 问解释器、`Probe` 交给解释器、被动帧交给解释器解析 |
 | `RapooDisplayName.cs` | 未收录设备的显示名启发式（展示逻辑，不是协议数据，所以留代码） |
 
+`ProtocolSpecLoader` 对协议/设备/嵌套/`override` DTO 开启严格加载；设备条目上的未知字段（含旧 `caps`、
+设备级 `brand`）会直接报错。旧 `caps` 的历史证据只保留在本文 §6.1，不再进入运行时 JSON。
+
 四条设计要点：
 
 1. **派发键用 `TrackedDevice.Protocol`**（基类已存），不需要迈从那种 `KnownProtocolByPath` 旁路字典。
@@ -260,21 +263,24 @@ DPI 上限来自 `capabilities` 里的 `dpi` 项，四个具名常量 + 内联�
 
 ## 6. 能力：旧 `caps` 与新 `capabilities`
 
-目录里**两个字段并存**，语义完全不同，别混：
+运行时目录现在**只保留 `capabilities`**；旧 `caps` 已移除，历史证据见 §6.1。两者语义完全不同，别混：
 
 | 字段 | 是什么 | 谁读它 |
 |---|---|---|
-| `caps` | 2026-11 建目录时的**历史验证记录**（`["battery"]` / `["battery","dpi"]`），只写本机真机插过机的能力 | **代码不读**，纯档案 |
+| `caps`（历史） | 2026-11 建目录时的**历史验证记录**（`["battery"]` / `["battery","dpi"]`），只写本机真机插过机的能力 | 运行时 JSON 已不含此字段；仅本文 §6.1 保留 |
 | `capabilities` | PR-C 起的**正式能力声明**，三态、按型号逐项写，见 [dev/protocol-json.md](../../dev/protocol-json.md) §2.1 | `ProtocolSpecLoader` → `DeviceEntry.Capabilities` |
 
 两条规则：
 
-1. **旧 `caps` 全部保留，不删空数组，也不自动映射成 `capabilities`。**
+1. **旧 `caps` 已从运行时 JSON 移除，历史证据保留在 §6.1；不要再写回 JSON。**
    `caps` 里的 `dpi` 分不出新的 `dpiRead` 与 `dpiLevelRead`，自动映射只能靠猜；
-   而 `[]` 是"没验证"，不是"不支持"——映射成 `unsupported` 会造出假结论。
+   而 `[]` 是"没验证"，不是"不支持"——映射成 `unsupported` 会造出假结论。现在设备条目上写 `caps`
+   会被 `ProtocolSpecLoader` 的严格加载拒绝。
 2. **只有 `capabilities` 参与判断。** 以后新增型号直接写 `capabilities`，`caps` 不再追加。
 
 ### 6.1 旧 `caps` 记录（历史，勿据此推断能力）
+
+以下为历史记录；运行时 `rapoo-catalog.json` 已不再包含 `caps` 字段。
 
 `caps` **只写真机验证过的能力**，官方声明但没插机读过的**一律不写**：
 

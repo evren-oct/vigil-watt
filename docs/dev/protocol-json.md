@@ -74,16 +74,22 @@
 | `unverified` | 尚未验证或证据不足。**默认态**：没实现不等于已确认不支持 |
 
 - 只写已验证的几项即可，其余省略即 `unverified`；`"capabilities": {}` 与省略等价。
-- **唯一合法位置是 `devices[].capabilities`**：`ProtocolDto` 里没有这个字段，未知字段默认被忽略，写错层就是"加载成功但声明丢失"。
+- **唯一合法位置是 `devices[].capabilities`**：`ProtocolDto` 里没有这个字段，`ProtocolSpecLoader` 会对 DTO 未知字段严格拒绝（加载失败，而不是静默忽略）；`capabilities` 放错层仍由现有专门检查给出更具体的路径提示。
   加载器对**协议对象**和**设备 `override`** 的**任意层级**（嵌套对象、数组元素都算，字段名不区分大小写）都直接报错：
   协议层带协议名 + 字段路径（如 `passive.capabilities`、`interface.anyOf[0].capabilities`），
   `override` 层带 `VID:PID` + 字段路径（如 `override.passive.fields.capabilities`）。
   两处都跳过 `map` / `mapValue` 的值——它们是数字取值表，不是协议字段。
 - **大小写**：字段名 `capabilities` 不区分大小写；**能力名区分大小写**，`batteryRead` 写成 `BatteryRead` 会报错。
-- 其余未知字段仍按现有 JSON 反序列化策略忽略：**拼写错误（如 `capabilites`）不会被识别或报告**，别指望加载器兜住。
+- **严格加载**：`ProtocolSpecLoader` 已对协议 DTO、设备 DTO、嵌套 DTO 与 `override` 对应的 DTO 开启
+  `JsonUnmappedMemberHandling.Disallow`。拼写错误（如 `capabilites`）或已废弃字段会在加载期报错；
+  设备条目的错误带 `VID:PID`、条目序号与 JSON Path。
+- 严格模式只覆盖 `ProtocolSpecLoader` 自己反序列化的 DTO。`MchoseDeviceCatalog` 等其它 JSON 加载器
+  尚未统一严格化；顶层研究字段（`officialDevices`、`deviceNotes`、`transports` 等）由各自读取方处理，
+  不属于当前 DTO 校验范围。
 - **不继承**：`extends`、设备 `override`、共享协议引用都不会把能力带过去，每条设备各自声明。
-- 与旧 `caps` 的区别：`caps` 是历史验证记录（只在雷柏目录、代码不读），`capabilities` 才是当前正式声明，
-  两者**不自动映射**，见 [hardware/rapoo-catalog.md](../hardware/reference/rapoo-catalog.md) §6。
+- 与旧 `caps` 的区别：雷柏旧 `caps` 已从运行时 JSON 移除，历史证据保留在
+  [hardware/rapoo-catalog.md](../hardware/reference/rapoo-catalog.md) §6.1；`capabilities` 才是当前正式声明，
+  两者**不自动映射**，设备条目上再写 `caps` 会被严格加载拒绝。
 - 查询入口 `ProtocolEngine.CapabilityOf(info, capability)`：纯配置查询——不开句柄、不发帧、不动解析状态；
   非法枚举值抛异常而不是回落到默认值。整块取用 `CapabilitiesOf(info)`（PR-D 起由插件在**认领落地时**
   写进 `DeviceStatus.Capabilities`，UI 靠它区分"能读但还没读到"与"不支持"）。
@@ -116,7 +122,15 @@
 - 别把未验证型号先塞进 `devices[]` 占位：目录优先，`devices[]` 一有记录就会按它认领，
   并顶掉 fallback 的通用显示名（北通 66 个 PID 的取舍见
   [betop-official-client.md](../hardware/reference/betop-official-client.md) §10.3）。
-- 键名不要改：加载器忽略未知键，改名不会报错，只会静默变成一份没人读的数据。
+- 键名不要改：顶层研究字段不进入 DTO 严格校验，改名不会报错，只会静默变成一份没人读的数据。
+
+### 2.3 设备备注：`deviceNotes`
+
+设备条目的 `note` 已迁到顶层 `deviceNotes`，键为 `VID:PID`（如 `"0x20bc:0x5073"`），值为原备注文本。
+北通与迈从目录已按此格式落盘；`transports[].note` 仍留在各自通道条目上，不并入 `deviceNotes`。
+
+`deviceNotes` 是研究/说明数据，不参与认领、显示名、能力或协议解析；`ProtocolSpecLoader` 不读取它，
+因此也不在 DTO 严格校验范围内。`devices[].note` 已不再允许，写回会被设备 DTO 的严格加载拒绝。
 
 ## 3. 加一套协议（形态固定时，约 20–30 行）
 
@@ -272,6 +286,7 @@
 - `active.query.hex` 超出 `query.length`
 - `capabilities` 不是对象、能力名拼错（大小写敏感）、状态不是 `supported`/`unsupported`/`unverified`、
   状态值不是字符串。报错带设备 `VID:PID` 与 `capabilities.<字段名>`，**不许静默变成 `unverified`**
+- 协议 DTO、设备 DTO、嵌套 DTO 或 `override` 出现未知字段（含旧 `caps`、拼错的 `capabilites`）
 
 > `codeFamily` 必须是真实类型：抽族前填插件名（如 `MchosePlugin`），**不要预留不存在的族名**——数据里写了个找不到的类，下一个人会去翻文件。
 

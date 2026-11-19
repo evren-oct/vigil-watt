@@ -99,10 +99,13 @@ private static readonly string[] FrozenOriginalDevices =
         => device!["vid"]!.GetValue<string>() + ":" + device["pid"]!.GetValue<string>();
 
     /// <summary>一条目录记录的全部字段拼成一行，供"原有条目不许变"的快照比对。</summary>
-    private static string Signature(JsonNode? device)
+    private static string Signature(JsonNode? device, JsonObject notes)
     {
         var node = device!.AsObject();
         string Text(string name) => node.TryGetPropertyValue(name, out var value) ? value!.GetValue<string>() : "";
+        var note = notes.TryGetPropertyValue(DeviceKey(device), out var noteNode)
+            ? noteNode!.GetValue<string>()
+            : "";
         var wired = node.TryGetPropertyValue("wired", out var wiredNode)
             ? (wiredNode!.GetValue<bool>() ? "true" : "false")
             : "";
@@ -110,7 +113,7 @@ private static readonly string[] FrozenOriginalDevices =
             ? string.Join(";", capsNode!.AsObject().Select(p => $"{p.Key}={p.Value!.GetValue<string>()}"))
             : "";
         return string.Join("|", Text("vid"), Text("pid"), Text("model"), Text("kind"), Text("role"),
-            Text("protocol"), Text("group"), Text("pairedPid"), wired, caps, Text("note"));
+            Text("protocol"), Text("group"), Text("pairedPid"), wired, caps, note);
     }
 
     [Fact]
@@ -180,7 +183,9 @@ private static readonly string[] FrozenOriginalDevices =
     [Fact]
     public void Catalog_OriginalEntriesKeepTheirFields()
     {
-        var devices = Catalog()["devices"]!.AsArray();
+        var catalog = Catalog();
+        var devices = catalog["devices"]!.AsArray();
+        var notes = catalog["deviceNotes"]!.AsObject();
         Assert.Equal(33, FrozenOriginalDevices.Length);
 
         foreach (var expected in FrozenOriginalDevices)
@@ -188,7 +193,27 @@ private static readonly string[] FrozenOriginalDevices =
             var parts = expected.Split('|', 3);
             var key = parts[0] + ":" + parts[1];
             var hit = Assert.Single(devices, d => DeviceKey(d) == key);
-            Assert.Equal(expected, Signature(hit));
+            Assert.Null(hit!["note"]);
+            Assert.Equal(expected, Signature(hit, notes));
+        }
+    }
+
+    [Fact]
+    public void Catalog_DeviceNotesMatchEveryDevice()
+    {
+        var catalog = Catalog();
+        var devices = catalog["devices"]!.AsArray();
+        var notes = catalog["deviceNotes"]!.AsObject();
+
+        Assert.Equal(devices.Count, notes.Count);
+        Assert.Equal(
+            devices.Select(DeviceKey).OrderBy(k => k, StringComparer.Ordinal),
+            notes.Select(p => p.Key).OrderBy(k => k, StringComparer.Ordinal));
+
+        foreach (var device in devices)
+        {
+            Assert.Null(device!["note"]);
+            Assert.True(notes.ContainsKey(DeviceKey(device)));
         }
     }
 

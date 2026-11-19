@@ -15,6 +15,10 @@
 > 没有信息量；将来出现第二种无线体系（如 4K / 蓝牙 dongle 需要区分）再填，届时**只改 JSON**。
 > 回报率的 `rateTables`（1k / 8k 两张表）与 `rateProfiles`（本体 PID → {USB PID → 表名}）也在这份 JSON 里，
 > 结构照抄官方 `rateMap` / `mouseDiffConfig`，见 [mchose.md](../brands/mchose.md) §3.4.2。
+>
+> 2026-11-19 起，`devices[].note` 已迁到顶层 `deviceNotes`（键为 `VID:PID`）；`transports[].note` 保持原样。
+> `deviceNotes` 只承载说明文本，不参与认领、显示名或协议解析，也不在 `ProtocolSpecLoader` 的 DTO 严格校验范围内。
+> 设备 DTO 出现未知字段（含旧 `note`）会被严格加载拒绝。
 
 ## 1. 设备全景
 

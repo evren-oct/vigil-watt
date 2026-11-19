@@ -5,7 +5,7 @@
 > 本文只解释结构与结论，逐条数据以 JSON 为准；两边不一致时改本文。
 >
 > 目录分**两层**，这是本阶段最重要的约定：
-> - `devices[]`（33 条）——**运行时认领目录**，`ProtocolEngine` 只读这一段。认领、显示名、能力、`group` 全靠它。
+> - `devices[]`（110 条）——**运行时认领目录**，`ProtocolEngine` 只读这一段。认领、显示名、能力、`group` 全靠它。
 > - `officialDevices[]`（66 PID / 118 身份）——**官方注册表**，BetopGame 2.6.2 逆向所得。**不参与认领**，
 >   加载器会忽略这个键。它回答"官方认哪些 PID、叫什么、走哪套接口、电量在哪一字节"，不回答"VigilWatt 支持谁"。
 
@@ -29,9 +29,13 @@ statusDefinitions  官方状态与 VigilWatt 状态的语义（本节口径）
 evidenceSources    证据指针短名 → 文档位置（每条记录用短名引用）
 protocolFamilies   六套接口族，按 (usagePage, usage, reportLength) 三元组
 vidRelations / vidRules  三个 VID 的含义与不归并规则
-devices[]       运行时认领目录（33 条）
+deviceNotes     设备备注（VID:PID → 文本；devices[].note 已迁到这里）
+devices[]       运行时认领目录（110 条）
 officialDevices[]  官方注册表（66 条，一条 = 一个 PID）
 ```
+
+`ProtocolSpecLoader` 对协议/设备/嵌套/`override` DTO 开启严格加载：设备条目出现未知字段会直接报错。
+`deviceNotes` 是顶层研究字段，加载器不读取，也不属于 DTO 严格校验范围。
 
 `officialDevices[]` 一条 = 一个 PID，因为 **PID 是 USB 层的键**，而一个 PID 可能被厂商自己用多个脚本认领成多个型号
 （`0x5125` = KP20A + KP40A + 西樵山项目）。所以型号是数组 `models[]`，`officialTitles` 保留该 PID 的全部官方标题原文；
@@ -90,11 +94,13 @@ officialDevices[]  官方注册表（66 条，一条 = 一个 PID）
 2. 多型号 PID（`5125`/`5127`/`5145`/`5146`）的 `model` 仍留空：官方对同一 PID 给了 2~3 个标题，
    挑一个就是猜；这几条继续走产品串分流。
 
-## 3. 运行时认领目录（`devices[]`，33 条）
+## 3. 运行时认领目录（`devices[]`，110 条）
 
 本阶段改了两类：**29 条 `model` 换成官方标题**（去掉开头「北通」，因为代码会再加品牌前缀）、
 **6 条 `note` 文案**（上游验证说明、`02 CD` 定性、`KP70B`、`KUNPThirty`）。
-VID/PID、协议、能力、`group`、`pairedPid` **一字未改**。33 条 = `20BC` 30 条 + `20DD` 3 条。
+2026-11-19 起，`devices[].note` 已迁到顶层 `deviceNotes`（键为 `VID:PID`），下表「来源与验证」列文本不变；
+运行时 JSON 的设备条目不再含 `note`。
+VID/PID、协议、能力、`group`、`pairedPid` **一字未改**。110 条 = `20BC` 60 条 + `20DD` 50 条。
 
 `role` 只描述这颗 PID 在目录里的角色：`controller`（手柄 / 承载电量的 XInput dongle）、`dongle`（接收器）、
 `dock`（底座）。`group` 只有 5158/5159 写了 `kunpeng20`。

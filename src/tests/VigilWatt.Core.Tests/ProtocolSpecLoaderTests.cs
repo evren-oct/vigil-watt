@@ -211,6 +211,73 @@ public sealed class ProtocolSpecLoaderTests
     }
 
     [Fact]
+    public void LoadFromJson_Extends_NullDeletesInheritedField()
+    {
+        // 深合并里 null 是"删掉继承来的字段"，不是"保留父值"——严格模式下仍按原语义
+        const string protocols = """
+            {
+              "protocols": {
+                "parent": {
+                  "kind": "mouse",
+                  "interface": { "usagePage": 1 },
+                  "passive": {
+                    "length": { "min": 19 },
+                    "fields": {
+                      "percent": { "offset": 8, "type": "u8" },
+                      "charge": { "offset": 7, "type": "u8", "map": { "1": "discharging" } }
+                    }
+                  }
+                },
+                "child": {
+                  "extends": "parent",
+                  "passive": { "fields": { "charge": null } }
+                }
+              }
+            }
+            """;
+
+        var child = ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices).Protocols["child"];
+
+        Assert.Equal(8, child.Passive!.Percent!.Offset);
+        Assert.Null(child.Passive.Charge);
+    }
+
+    [Fact]
+    public void LoadFromJson_MultiLevelExtends_InheritsThroughChain()
+    {
+        // base → mid → leaf 按声明顺序解析；已解析的父协议不能再把 extends 带进严格 DTO
+        const string protocols = """
+            {
+              "protocols": {
+                "base": {
+                  "kind": "mouse",
+                  "interface": { "usagePage": 1 },
+                  "passive": {
+                    "length": { "min": 19 },
+                    "fields": { "percent": { "offset": 8, "type": "u8" } }
+                  }
+                },
+                "mid": {
+                  "extends": "base",
+                  "passive": { "fields": { "charge": { "offset": 7, "type": "u8" } } }
+                },
+                "leaf": {
+                  "extends": "mid",
+                  "passive": { "fields": { "link": { "offset": 18, "bit": 7 } } }
+                }
+              }
+            }
+            """;
+
+        var leaf = ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices).Protocols["leaf"];
+
+        Assert.Equal(DeviceKind.Mouse, leaf.Kind);
+        Assert.Equal(8, leaf.Passive!.Percent!.Offset);
+        Assert.Equal(7, leaf.Passive.Charge!.Offset);
+        Assert.Equal(18, leaf.Passive.Link!.Offset);
+    }
+
+    [Fact]
     public void LoadFromJson_DeviceOverride_MergesOntoExpandedSpec()
     {
         const string devices = """
@@ -439,14 +506,15 @@ public sealed class ProtocolSpecLoaderTests
     }
 
     [Fact]
-    public void LoadFromJson_LegacyCapsField_StillLoadsAndDeclaresNothing()
+    public void LoadFromJson_LegacyCapsField_Throws()
     {
-        // 旧 caps 是历史验证记录，新系统只读 capabilities：不能拿它自动推断能力
-        var caps = CapsOf(OneDevice(""", "caps": ["battery", "dpi"]"""));
+        // 旧 caps 已从运行时 JSON 移除；历史证据在 rapoo-catalog.md §6.1，不能靠加载器静默忽略
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => CapsOf(OneDevice(""", "caps": ["battery", "dpi"]""")));
 
-        Assert.True(caps.IsEmpty);
-        Assert.Equal(CapabilityState.Unverified, caps.Of(DeviceCapability.BatteryRead));
-        Assert.Equal(CapabilityState.Unverified, caps.Of(DeviceCapability.DpiRead));
+        Assert.Contains("1234:0001", ex.Message);
+        Assert.Contains("caps", ex.Message);
+        Assert.IsAssignableFrom<JsonException>(ex.InnerException);
     }
 
     [Fact]
@@ -516,7 +584,7 @@ public sealed class ProtocolSpecLoaderTests
     [Fact]
     public void LoadFromJson_CapabilitiesOnProtocol_Throws()
     {
-        // ProtocolDto 没有 Capabilities，而未知字段默认被忽略：写在协议上等于"声明了但没人看"
+        // ProtocolDto 没有 Capabilities；这里先给出"放错层"的明确提示，其余未知字段交给严格反序列化
         const string protocols = """
             {
               "protocols": {
@@ -548,7 +616,7 @@ public sealed class ProtocolSpecLoaderTests
     [Fact]
     public void LoadFromJson_CapabilitiesOnProtocol_IsDetectedCaseInsensitively()
     {
-        // 未知字段的忽略本身不区分大小写，写成 Capabilities 同样会被静默吞掉
+        // 字段名匹配不区分大小写；写成 Capabilities 同样会被放错层检查拦下
         const string protocols = """
             {
               "protocols": {
@@ -571,7 +639,7 @@ public sealed class ProtocolSpecLoaderTests
     [Fact]
     public void LoadFromJson_CapabilitiesNestedInProtocol_Throws()
     {
-        // 协议对象任意层级都会被 ProtocolDto 丢掉，只查顶层就等于留一个静默口子
+        // 协议对象任意层级都会进入 DTO；先查 capabilities 是为了给出比反序列化异常更具体的路径
         const string protocols = """
             {
               "protocols": {
@@ -597,7 +665,7 @@ public sealed class ProtocolSpecLoaderTests
     [Fact]
     public void LoadFromJson_CapabilitiesInProtocolArray_Throws()
     {
-        // interface.anyOf 是对象数组：数组元素里的 capabilities 一样会被反序列化丢掉
+        // interface.anyOf 是对象数组：数组元素里的 capabilities 同样会被严格拒绝
         const string protocols = """
             {
               "protocols": {
@@ -640,9 +708,9 @@ public sealed class ProtocolSpecLoaderTests
     }
 
     [Fact]
-    public void LoadFromJson_OtherUnknownProtocolField_StillIgnored()
+    public void LoadFromJson_UnknownProtocolField_Throws()
     {
-        // 只对 capabilities 开这一个洞：其余未知字段仍按默认策略忽略，不改全局 UnmappedMemberHandling
+        // 严格模式覆盖协议 DTO：拼错或无效字段不能再静默忽略
         const string protocols = """
             {
               "protocols": {
@@ -656,9 +724,61 @@ public sealed class ProtocolSpecLoaderTests
             }
             """;
 
-        var bundle = ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices);
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices));
 
-        Assert.Equal(8, Assert.Single(bundle.Protocols).Value.Passive!.Percent!.Offset);
+        Assert.Contains("协议 \"p\"", ex.Message);
+        Assert.Contains("futureField", ex.Message);
+        Assert.IsAssignableFrom<JsonException>(ex.InnerException);
+    }
+
+    [Fact]
+    public void LoadFromJson_UnknownDeviceField_Throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => CapsOf(OneDevice(""", "capabilites": { "batteryRead": "supported" }""")));
+
+        Assert.Contains("第 1 条设备", ex.Message);
+        Assert.Contains("1234:0001", ex.Message);
+        Assert.Contains("capabilites", ex.Message);
+        Assert.Contains("JSON Path", ex.Message);
+        Assert.IsAssignableFrom<JsonException>(ex.InnerException);
+    }
+
+    [Fact]
+    public void LoadFromJson_UnknownNestedField_Throws()
+    {
+        const string protocols = """
+            {
+              "protocols": {
+                "p": {
+                  "kind": "mouse",
+                  "interface": { "usagePage": 1 },
+                  "passive": {
+                    "length": { "min": 19 },
+                    "fields": { "percent": { "offset": 8, "typo": 1 } }
+                  }
+                }
+              }
+            }
+            """;
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ProtocolSpecLoader.LoadFromJson(protocols, EmptyDevices));
+
+        Assert.Contains("协议 \"p\"", ex.Message);
+        Assert.Contains("typo", ex.Message);
+    }
+
+    [Fact]
+    public void LoadFromJson_UnknownOverrideField_Throws()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
+            MinimalProtocols,
+            OneDevice(""", "override": { "futureField": 1 }""")));
+
+        Assert.Contains("协议 \"p\"", ex.Message);
+        Assert.Contains("futureField", ex.Message);
     }
 
     // ── capabilities 写进 override：合并前拒绝（CR-148）─────────────────
@@ -666,7 +786,7 @@ public sealed class ProtocolSpecLoaderTests
     [Fact]
     public void LoadFromJson_OverrideCapabilities_Throws()
     {
-        // override 只覆盖协议字段，合并后 capabilities 会被 ProtocolDto 丢掉：必须在加载期拦下
+        // override 只覆盖协议字段；先给"放错层"提示，其余未知字段由严格反序列化拒绝
         var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
             MinimalProtocols,
             OneDevice(""", "override": { "capabilities": { "rateRead": "supported" } }""")));
@@ -679,7 +799,7 @@ public sealed class ProtocolSpecLoaderTests
     [Fact]
     public void LoadFromJson_OverrideCapabilities_IsCaseInsensitive()
     {
-        // 未知字段的忽略本身不区分大小写，写成 Capabilities 一样会被丢掉
+        // 字段名匹配不区分大小写，写成 Capabilities 一样会被拦下
         var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
             MinimalProtocols,
             OneDevice(""", "override": { "Capabilities": { "rateRead": "supported" } }""")));
@@ -691,7 +811,7 @@ public sealed class ProtocolSpecLoaderTests
     [Fact]
     public void LoadFromJson_OverrideNestedCapabilities_Throws()
     {
-        // 嵌套位置同样会被丢弃，报错要给出完整字段路径而不是只说"override 里有"
+        // 嵌套位置同样会被拒绝，报错要给出完整字段路径而不是只说"override 里有"
         var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
             MinimalProtocols,
             OneDevice(""", "override": { "passive": { "fields": { "capabilities": { "rateRead": "supported" } } } }""")));
@@ -703,7 +823,7 @@ public sealed class ProtocolSpecLoaderTests
     [Fact]
     public void LoadFromJson_OverrideCapabilitiesInArray_Throws()
     {
-        // prefix / anyOf 是对象数组，数组元素里的 capabilities 一样会被反序列化丢掉
+        // prefix / anyOf 是对象数组，数组元素里的 capabilities 一样会被严格拒绝
         var ex = Assert.Throws<InvalidOperationException>(() => ProtocolSpecLoader.LoadFromJson(
             MinimalProtocols,
             OneDevice(""", "override": { "passive": { "prefix": [ { "offset": 0, "value": 7, "capabilities": {} } ] } }""")));

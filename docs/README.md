@@ -41,6 +41,8 @@
 - [comment-style.md](dev/comment-style.md)：代码注释规范。
 - [ui-style.md](dev/ui-style.md)：界面视觉规则——状态色、来源徽标、图标、字号与卡片；颜色只表达电量状态。
 - [review-standard.md](dev/review-standard.md)：审查标准、红线和闭环流程。
+- [vendor-onboarding-process.md](dev/vendor-onboarding-process.md)：新厂商接入流程、实施红线与验证要求。
+- [vendor-plugin-reference-index.md](dev/vendor-plugin-reference-index.md)：四大厂商参考实现索引与模板选择表。
 
 ## 硬件协议与安全
 

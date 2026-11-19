@@ -77,6 +77,9 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 
 - 必须用 **.NET 8 SDK**（机器上只有运行时时：`winget install Microsoft.DotNet.SDK.8`）。
 - 构建：`dotnet build VigilWatt.sln -c Debug`
+- **Codex/AI 沙箱内不要构建或跑测试**：沙箱会占住 App 输出目录的 `VigilWatt.Core.dll`（`MSB3027`/`MSB3021`），
+  vstest 也会连不上 testhost。先申请沙箱外执行权限，再原样运行标准命令；不要换 `OutDir`/`BaseOutputPath`、
+  复制产物或其它绕行。见 `docs/dev/build.md` §0。
 - 运行：从 `src\VigilWatt.App\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\` 启动。
   必须用 **sln** 构建（产物在 `bin\x64\...`），直接构建 csproj 的产物在 `bin\...`，不要混用。
 - **Debug 构建的数据目录在 `bin\x64\...\win-x64\data\`**（`AppPaths` 用 `#if DEBUG` 分流，Release 才用
@@ -85,7 +88,7 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
   写不进 `%LOCALAPPDATA%`/`HKCU\Run`、`Shell_NotifyIcon` 失败（没托盘、贴片跑到原点）。csproj 的
   `RestoreExeIntegrityLevel` 已在 Debug 构建后自动 `icacls /setintegritylevel Medium`；手工验证用
   `icacls <exe> | findstr Mandatory`。见 `docs/dev/runtime-pitfalls.md` §20。
-- 测试：`dotnet test src/tests/VigilWatt.Core.Tests`
+- 测试：`dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<类名>"`
 - 发布：`dotnet publish src/VigilWatt.App -c Release -p:Platform=x64 -o publish`
   发布前确认没有实例在运行——exe 被占用会导致 `MSB3027` 构建失败。
 
@@ -112,7 +115,7 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 ## 8. 审查（提交前必过三条）
 
 - **L0 机械层**：构建 `0 警告 0 错误`；改了帧解析 / 读数过滤 / 历史库 / 离线判定必须重跑对应测试类
-  （用 `--no-build --filter "FullyQualifiedName~<类名>"`，全量 `dotnet test` 在本机会卡住，见 `docs/dev/build.md` §4.1）。
+  （用 `--no-build --filter "FullyQualifiedName~<类名>"`；沙箱内全量 `dotnet test` 会卡住，沙箱外可全量，见 `docs/dev/build.md` §0 / §4.1）。
 - **L1 自查**：碰了红线区域（硬件写入 / 状态模型 / 线程 / 资源释放 / 异常）就对着 R 清单过一遍，
   标准见 `docs/dev/review-standard.md`。其中 **R2「插件必须继承 `BatteryPluginBase`」** 是历史事故的唯一成因，无例外。
 - **发现必须进 `docs/reviews/BACKLOG.md`**——只写在审查报告或 changelog 里等于没记。报告只承载证据与推理。

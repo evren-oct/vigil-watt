@@ -1016,6 +1016,10 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>本设备声明过的只读能力（默认空 = 全 Unverified）。纯配置查询，不许开句柄或发帧。</summary>
     protected virtual CapabilitySet CapabilitiesOf(HidDeviceInfo info) => CapabilitySet.Empty;
 
+    /// <summary>目录是否已把该设备的电量读取标为 Supported（主动查询的唯一能力门控）。</summary>
+    protected bool BatteryReadVerified(HidDeviceInfo info)
+        => CapabilitiesOf(info).Of(DeviceCapability.BatteryRead) == CapabilityState.Supported;
+
     /// <summary>认领落地时补填身份快照（默认不填）。只给 Probe 已拿到自报身份的插件覆写，同样不许发帧。</summary>
     protected virtual void FillIdentitySnapshot(DeviceStatus status, HidDeviceInfo info) { }
 

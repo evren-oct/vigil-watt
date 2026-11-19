@@ -99,11 +99,12 @@ public sealed class BetopPlugin : BatteryPluginBase
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
         => ProbeAsync(handle).GetAwaiter().GetResult();
 
-    /// <summary>探测委托引擎：广播先听、静默再查；占位帧认领但离线。</summary>
+    /// <summary>探测委托引擎：广播先听、静默再查；只有目录已验证电量读取的设备才允许主动查询。</summary>
     protected override async Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
         HidDeviceHandle handle)
     {
-        var probe = await _engine.ProbeAsync(handle, WritesEnabled).ConfigureAwait(false);
+        var probe = await _engine.ProbeAsync(
+            handle, WritesEnabled, BatteryReadVerified(handle.Info)).ConfigureAwait(false);
         if (probe is null) return null;
         if (_engine.ProbeLinkOf(handle.Info) == LinkState.Down)
             return (probe.Value.Protocol, null, ChargingState.Unknown);
@@ -128,7 +129,8 @@ public sealed class BetopPlugin : BatteryPluginBase
         }
 
         if (!CanWrite(dev)) return null;
-        var outcome = _engine.Poll(dev.Handle, RefOf(dev), dev.Protocol, WritesEnabled, PollQueryWindowMs);
+        var outcome = _engine.Poll(dev.Handle, RefOf(dev), dev.Protocol, WritesEnabled, PollQueryWindowMs,
+            BatteryReadVerified(dev.Info));
         if (outcome.Attempt != PollAttempt.Answered || outcome.Percent is not { } queriedPercent) return null;
         return (queriedPercent, FinalizeCharging(outcome.Charging, queriedPercent));
     }

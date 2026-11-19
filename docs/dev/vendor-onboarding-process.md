@@ -157,7 +157,7 @@ dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedNa
 
 - 构建必须 **0 警告 0 错误**。
 - 测试规范要求：改了帧解析 / 读数过滤 / 历史库 / 离线判定，必须重跑对应测试类（R7）；合并/发布前应完成全量回归。
-- 当前开发环境可能存在的执行限制：不带 `--filter` 的全量 `dotnet test` 在本机会卡住，这是本机环境问题，不是项目不要求全量测试。日常迭代用 `--filter` 跑目标测试类；需要全量时按 [build.md](build.md) §4.1 的绕法把测试产物复制到工作区外运行。
+- 日常迭代用 `--filter` 跑目标测试类。
 
 常用过滤：
 

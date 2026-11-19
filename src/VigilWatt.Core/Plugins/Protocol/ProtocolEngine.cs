@@ -120,8 +120,9 @@ internal sealed class ProtocolEngine
     }
 
     /// <summary>首次探测：先被动听一个窗口，听不到再按 active 规格主动问（零写入协议只有前半段）。</summary>
+    /// <param name="activeAllowed">false 时只监听、不主动查询；被动结果仍照常返回。</param>
     public async Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
-        HidDeviceHandle handle, bool writesEnabled)
+        HidDeviceHandle handle, bool writesEnabled, bool activeAllowed = true)
     {
         var spec = Resolve(handle.Info);
         if (spec is null || spec.Implementation != SpecImplementation.Data) return null;
@@ -141,7 +142,7 @@ internal sealed class ProtocolEngine
             return (spec.Name, listened.Percent, listened.Charging);
         }
 
-        if (spec.Active is { } active && writesEnabled
+        if (spec.Active is { } active && writesEnabled && activeAllowed
             && await QueryRunner.RunAsync(handle, active).ConfigureAwait(false) is { } answered)
         {
             _probeLink[handle.Info.DevicePath] = answered.Link;
@@ -160,13 +161,15 @@ internal sealed class ProtocolEngine
         => _probeLink.TryGetValue(info.DevicePath, out var link) ? link : LinkState.Unknown;
 
     /// <summary>轮询。没发帧与发了没应答必须分开，否则零写入协议会被误记成失败。</summary>
+    /// <param name="activeAllowed">false 时禁止主动查询；没发帧返回 NotAttempted，不返回 Failed。</param>
     public PollOutcome Poll(
-        HidDeviceHandle handle, DeviceRef dev, string protocol, bool writesEnabled, int? windowMs = null)
+        HidDeviceHandle handle, DeviceRef dev, string protocol, bool writesEnabled, int? windowMs = null,
+        bool activeAllowed = true)
     {
         var spec = SpecFor(dev, protocol);
         if (spec is null || spec.Implementation != SpecImplementation.Data || !spec.Pollable)
             return new PollOutcome(PollAttempt.NotAttempted, null, ChargingState.Unknown);
-        if (spec.Active is not { } active || !writesEnabled)
+        if (spec.Active is not { } active || !writesEnabled || !activeAllowed)
             return new PollOutcome(PollAttempt.NotAttempted, null, ChargingState.Unknown);
 
         return QueryRunner.Run(handle, active, windowMs) is { } reading

@@ -1,6 +1,25 @@
 # 构建与环境坑
 
-全部实踩于 2026-10-04~05，特征大多是"静默失败"。机器：Windows 11 x64（26200），.NET 8 SDK 8.0.425（winget 装的，机器原本只有运行时）。
+全部实踩于 2026-10-04~05，2026-11-19 补 Codex 沙箱限制；特征大多是"静默失败"。机器：Windows 11 x64（26200），.NET 8 SDK 8.0.425（winget 装的，机器原本只有运行时）。
+
+## 0. Codex 沙箱：构建和测试必须在沙箱外执行
+
+**这是当前 AI 开发环境的第一条规则。** 在 Codex 沙箱内跑标准命令会出现两类假故障：
+
+1. `dotnet build VigilWatt.sln -c Debug`：解决方案级 restore 可能静默失败；即使加 `--no-restore`，
+   复制 `VigilWatt.Core.dll` 到 App 输出目录时也会报 `MSB3027` / `MSB3021`。
+   持有文件的是**沙箱宿主进程**，不是 `VigilWatt.App.exe`，沙箱内看不到、也不该去杀。
+2. `dotnet test ...`：vstest 在 90 秒内连不上 testhost，报“测试运行已中止”。
+
+**正确做法**：申请沙箱外执行权限，然后原样运行标准命令：
+
+```powershell
+dotnet build VigilWatt.sln -c Debug
+dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<测试类名>"
+```
+
+**不要**为了绕过沙箱去改 `OutDir` / `BaseOutputPath`、复制测试产物到工作区外、或反复重试。
+2026-11-19 已验证沙箱外标准命令 `dotnet build VigilWatt.sln -c Debug` 一次成功，**0 警告 0 错误**。
 
 ## 1. XamlCompiler 静默崩溃（最阴的坑）
 
@@ -20,7 +39,9 @@ Debug 构建的数据目录就在该目录下的 `data\`，直接双击即可运
 
 ## 3. 应用运行时锁 DLL
 
-构建前先 `taskkill //IM VigilWatt.App.exe //F`，否则 MSB3021/3027 文件被占用。
+构建前先确认没有 `VigilWatt.App.exe` 在运行，否则会报 MSB3021/3027 文件被占用。
+如果沙箱内看不到占用进程、`Get-Process` 里也没有 VigilWatt，那是沙箱宿主句柄，不是应用实例：
+按 §0 申请沙箱外权限重跑，**不要**换输出目录或强杀未知进程。
 
 ## 3.1 运行 Debug 版：数据就在 exe 旁边
 
@@ -83,26 +104,7 @@ Debug 构建不启用该生成器，所以**只有 Release 打包时暴露**（`
 dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<测试类名>"
 ```
 
-**不带 `--filter` 的全量 `dotnet test` 在本机会卡住**（复现于 2026-10-09：卡在"正在启动测试执行"之后无任何输出，单跑 `LogTests` 即复现）。
-这是**环境问题，与代码改动无关**——所以验证时一律用 `--no-build --filter "FullyQualifiedName~<类名>"` 指定相关测试类，秒级返回。
-
-**根因（2026-10-20 查清）**：报错是
-`Failed to load the dll from [...\host\fxr\<版本>\hostfxr.dll], HRESULT: 0x80070005`。
-既不是缺运行时，也不是权限问题——`hostfxr.dll` 的 ACL 正常（`BUILTIN\Users` 有 ReadAndExecute），
-8.0 与 10.0 两个版本权限完全一致。真正的原因是**从工作区目录启动的 testhost 子进程加载不了
-`Program Files` 下的 DLL**，与 `runtime-pitfalls.md` §20 是同一个环境限制。
-
-**绕法：把测试产物复制到工作区之外再跑**，全量也能一次跑完（2026-10-20 实测 **521 通过 / 0 失败**）：
-
-```powershell
-$dst = "C:\VigilWattTmp"
-Remove-Item $dst -Recurse -Force -ErrorAction SilentlyContinue
-Copy-Item src\tests\VigilWatt.Core.Tests\bin\Debug\net8.0\* $dst -Recurse
-Push-Location $dst
-dotnet vstest VigilWatt.Core.Tests.dll                                              # 全量
-dotnet vstest VigilWatt.Core.Tests.dll --TestCaseFilter:"FullyQualifiedName~DeviceRemovalTests"
-Pop-Location
-```
+**优先在沙箱外执行**（见 §0）。沙箱内 vstest 会连不上 testhost；这不是代码问题，也不是缺运行时。
 
 xUnit 项目（`net8.0`、AnyCPU），用 `<Compile Include>` 直接链接 `src/VigilWatt.Core` 里的真源文件，不引 WinRT。
 **链接清单就是"可测边界"**：文件在 `VigilWatt.Core.Tests.csproj` 里出现，才谈得上单测覆盖；新增纯逻辑文件应一并加进去（见 `docs/dev/review-standard.md` R8）。

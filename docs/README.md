@@ -4,7 +4,7 @@
 
 ## 新开发者从这里开始
 
-不必读完所有文档，按这个顺序四份就够上手：
+不必读完所有文档，按这个顺序四份就够上手；碰通用协议引擎再加读 [protocol-engine-roadmap.md](architecture/protocol-engine-roadmap.md)。
 
 1. [architecture.md](project/architecture.md)：模块边界、线程模型、数据存储，改代码前必看 §6「约定」。
 2. [build.md](dev/build.md)：怎么构建、怎么跑、发布与打包。
@@ -26,11 +26,20 @@
 - [code-flow.md](project/code-flow.md)：启动、设备发现、轮询和 UI 更新流程。
 - [device-images.md](project/device-images.md)：产品图接入的完整手册（官方源、manifest、匹配、压缩、验证、已知坑）。
 - [device-images-remote.md](project/device-images-remote.md)：产品图远端化与按需下载的**方案**（未实施）。数据流、URL 规则、缓存目录、已拍板决策与明确不做的事。
-- [pointer-telemetry.md](project/pointer-telemetry.md)：DPI / 回报率遥测模型、来源口径与过期规则（尚无插件接入）。
+- [pointer-telemetry.md](project/pointer-telemetry.md)：DPI / 回报率遥测模型、来源口径与过期规则（雷柏 VT3 已接入，其余厂商后续）。
 - [experience.md](project/experience.md)：项目经验与后续规划；不维护待办。
 - [changelog.md](project/changelog.md)：按日期记录重要改动及原因。
 - [contributions.md](project/contributions.md)：收进仓库的社区改动、贡献者和没有采纳的部分。
 - [release-notes.md](project/release-notes.md)：用户向更新日志，随安装包分发；关于页与更新确认框读它。
+
+## 架构治理
+
+- [protocol-engine-roadmap.md](architecture/protocol-engine-roadmap.md)：通用协议引擎的定位、当前问题、M1–M6 治理阶段、完成标准与下一步；改协议引擎先读。
+- [protocol-definition-standard.md](architecture/protocol-definition-standard.md)：JSON 与 C# 的高层边界、定义结构、`extends` / `override`、`schemaVersion` 与加载失败原则。
+- [active-query-safety.md](architecture/active-query-safety.md)：主动查询、握手、会话帧的全局/插件/设备/运行时授权层级与测试要求。
+- [device-identity-and-capabilities.md](architecture/device-identity-and-capabilities.md)：设备身份、接口匹配、多接口/接收器、能力声明与证据边界。
+- [protocol-regression-testing.md](architecture/protocol-regression-testing.md)：Golden Frame、测试分层、主动查询授权测试与最小可靠测试集。
+- [protocol-telemetry-integration.md](architecture/protocol-telemetry-integration.md)：厂商协议与统一遥测的职责边界、来源、未知值、过期与重连。
 
 ## 开发与排查
 
@@ -71,6 +80,8 @@
 
 - [BACKLOG.md](reviews/BACKLOG.md)：仍未修复的审查项（`open` / `doing`）。
 - [2026-11-23-backlog-triage.md](reviews/2026-11-23-backlog-triage.md)：BACKLOG 全量分诊表（VERIFY / BUG / EVID / WONTFIX / SOMEDAY / REFACTOR）。
+- [2026-11-23-active-query-write-audit.md](reviews/2026-11-23-active-query-write-audit.md)：M2 主动查询写入点静态盘点、现有闸门与风险。
+- [2026-11-23-active-query-gate-design.md](reviews/2026-11-23-active-query-gate-design.md)：M2 主动查询门控方案、能力覆盖现状与分步实施顺序。
 - [archive/BACKLOG-CLOSED.md](reviews/archive/BACKLOG-CLOSED.md)：已关闭审查项及结论。
 - [archive/README.md](reviews/archive/README.md)：审查报告归档索引（历史代码审查、复核、注释审计和内存调查）。
 

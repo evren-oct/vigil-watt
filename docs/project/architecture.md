@@ -1,6 +1,7 @@
 # 项目结构与架构
 
 > 配套阅读：[code-flow.md](code-flow.md)（运行时数据流）、[protocols.md](../hardware/protocols.md)（协议细节）。
+> 通用协议引擎的治理方向与专项约束见 [protocol-engine-roadmap.md](../architecture/protocol-engine-roadmap.md)；设备身份与能力边界见 [device-identity-and-capabilities.md](../architecture/device-identity-and-capabilities.md)。
 > 以下所有路径相对仓库根，行号会漂移，引用到方法级为止。
 
 ## 1. 总览

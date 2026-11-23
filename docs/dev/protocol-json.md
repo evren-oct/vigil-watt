@@ -3,6 +3,7 @@
 > 雷柏与迈从的帧解析已从 C# 搬到 JSON：解释器在 `src/VigilWatt.Core/Plugins/Protocol/`，
 > 数据在 `Plugins/<品牌>/specs/*.protocols.json` 与 `Plugins/<品牌>/*-catalog.json`。
 > **新增设备先想"能不能只改 JSON"**，改不动才写代码。
+> 高层边界、兼容原则与加载失败规则见 [protocol-definition-standard.md](../architecture/protocol-definition-standard.md)；字段词表与写法仍以本文为准。
 
 ## 1. 切分线
 

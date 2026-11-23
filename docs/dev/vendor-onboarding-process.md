@@ -319,6 +319,11 @@ dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedNa
 
 ## 11. 相关文档
 
+- [通用协议引擎治理路线图](../architecture/protocol-engine-roadmap.md)：治理阶段、当前问题与下一步。
+- [主动查询安全规范](../architecture/active-query-safety.md)：全局/插件/设备/运行时授权层级。
+- [设备身份与能力声明规范](../architecture/device-identity-and-capabilities.md)：身份归一、能力证据与运行时约束。
+- [协议回归测试规范](../architecture/protocol-regression-testing.md)：Golden Frame、授权测试与最小测试集。
+- [统一遥测衔接规范](../architecture/protocol-telemetry-integration.md)：来源、未知值与统一遥测边界。
 - [厂商插件架构标准](plugin-standard.md)：职责边界、三种架构、目录/协议规则、Core 准入。
 - [项目架构](../project/architecture.md)：模块边界、线程模型、状态合并、非插件数据源。
 - [协议 JSON 写法](protocol-json.md)：字段词表、`extends` / `override`、加载期校验。

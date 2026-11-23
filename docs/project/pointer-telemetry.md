@@ -1,5 +1,6 @@
 # 指针遥测（DPI / 回报率）
 
+> 厂商协议与统一遥测的衔接原则见 [protocol-telemetry-integration.md](../architecture/protocol-telemetry-integration.md)；本文继续负责指针遥测的模型、来源和 UI 口径。
 > 现状：PR-A 已落地模型与状态流转；PR-B 接入**第一台设备**——雷柏 VT3（`24AE:1412`，2.4G），
 > 走 `0x07` 被动心跳，零写入。2026-11-16 起 `status-report7` / `lm20rt` / `vt-ch584` 全族共用
 > 协议本体的指针字段，能力声明仍按设备三态（PR-C），见 §6。

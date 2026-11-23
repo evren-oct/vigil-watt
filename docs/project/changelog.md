@@ -5,6 +5,9 @@
 
 ## 2026-11-23
 
+- **协议引擎治理文档体系**：新增治理路线图与协议定义、主动查询安全、身份与能力、回归测试、统一遥测五份专项规范；M1 文档收尾完成，M2 主动查询安全治理列为下一阶段，现有 `protocol-json.md`、`plugin-standard.md` 与 `safety.md` 继续承担原职责。
+- **M2 写入点盘点**：静态审计所有 `WriteOutput` / `SetFeature` / `SendOutputReport` 与 ATK 原生后备路径；确认目前只有北通有设备级能力门控，矩阵与风险见 `reviews/2026-11-23-active-query-write-audit.md`。未改代码、未向设备发帧。
+- **M2 门控方案定稿**：统一授权顺序为插件开关 → 操作类型 → 设备能力 → 身份/接口 → 熔断；`ProtocolEngine.activeAllowed` 改为调用方显式传值，直接 HID 使用同一策略。因能力声明只覆盖少量型号，先补证据再逐插件启用，方案见 `reviews/2026-11-23-active-query-gate-design.md`。
 - **设备状态收口**：新增 `docs/hardware/support-matrix.md` 作为逐台验证状态、默认开关与文档入口的唯一载体；`README.md` 只留本机已验证的 10 台，`handoff.md` §2 与 `protocols.md` 改为链接，不再维护第二份状态表。
 - **文档归位与坏链修复**：`vendor-plugin-standard.md` 从 `docs/architecture/` 移到 `docs/dev/plugin-standard.md`；修掉 logitech 源码链接、`capture.md` §8 顺序、`atk.md` 缺失的 §3 与 4.1/4.2 顺序；补 `reviews/archive/README.md` 归档索引。
 - **发布口径**：GitHub Releases 为主下载源，Gitee Releases 为镜像备份；上传由维护者手动完成，AI 只做本机打包、不代传。`AGENTS.md`、`dev/build.md`、两份 README 与打包/发布脚本同步标注。

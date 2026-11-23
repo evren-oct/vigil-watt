@@ -166,7 +166,7 @@ HID 侧没有插拔事件。**两个方向的目标不同**：
 
 **经典蓝牙电量与类型信号（ClassicDevNodeReader，电量 2026-10-06 打通、类型信号 2026-10-09 并入）**：AEP 属性（`System.Devices.AepBattery_Level` 等）在本机全部无效，但 Windows 设置页显示的耳机电量另有来源——**HFP 免手操作音频网关设备节点的 PnP 属性 `DEVPKEY_Device_BatteryLevel`**（`{104EA319-6EE2-4701-BD47-8DDBF425BBE5},2`，BYTE）。`ClassicDevNodeReader` 用 SetupAPI（`SetupDiGetClassDevsW` → `SetupDiEnumDeviceInfo` → `SetupDiGetDeviceInstanceIdW` → `SetupDiGetDevicePropertyW`）枚举 `BTHENUM\*` 节点，**按设备 MAC 归并**出三样东西：电量（HFP 网关节点）、Windows 设备类别（父节点 `DEVPKEY_DeviceDisplay_Category`）、服务 UUID（子节点实例 ID 前缀）；watcher 侧用 `MacFromAepId`（AEP ID 形如 `Bluetooth#Bluetooth<适配器MAC>-<设备MAC>`，取最后一段）对上号。整表结果缓存 5 秒；`RefreshBattery()` 挂在轮询尾部（`PollOnceAsync` 的 `_classic.RefreshBattery()`）每分钟重读，有变化才通知。实测 EDIFIER W820NB 读数与设置页一致。排查手法见 scripts/probe-devnode-battery.py、scripts/probe-classic-kind.py。
 
-## 3.1 本机电量流（SystemBatteryWatcher，2026-10-08 新增）
+### 3.1 本机电量流（SystemBatteryWatcher，2026-10-08 新增）
 
 **不是插件**。系统电量没有 HID 接口可"认领"，也不是设备事件源，所以照 `BluetoothClassicWatcher` 的范式做成事件式数据源：
 

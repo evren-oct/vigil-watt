@@ -12,7 +12,7 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 3. `docs/project/architecture.md`——模块边界、线程模型、数据存储；改代码前必看 §6「约定」。
 4. 碰硬件协议：`docs/hardware/README.md`（分层规则与"放哪"判据）→ `docs/hardware/protocols.md`（VID:PID 对照表）。
 5. 改界面：`docs/dev/ui-style.md`（颜色只表达电量状态）。
-6. 全量入口 `docs/README.md`，症状速查也在那里；面向使用者的说明在 `docs/user/user-guide.md`。
+6. 全量入口 `docs/README.md`，症状速查也在那里；完整文件清单 `docs/INDEX.md`（自动生成）；面向使用者的说明在 `docs/user/user-guide.md`。
 
 代码分三层：`VigilWatt.Core`（设备发现、BLE/HID、协议插件、历史存储、日志）、`VigilWatt.App`（WinUI 3 界面、托盘、小组件、任务栏贴片）、`tests`。品牌协议一律走 `IBatteryPlugin`——新品牌 = 新插件文件，不改核心。
 
@@ -27,9 +27,11 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 | 「发布」/「打安装包」/「出新版本」 | 本机 `dotnet publish` + `vpk pack`（可改 csproj `<Version>`、changelog 版本表、handoff §1 版本号——**仅当发版必需**） | `git commit`、任何 push / `gh` / 上传 Release |
 | 「提交」/「commit」 | 征得同意后的本机 `git commit` | push；不要顺便 `vpk pack` |
 | 「提交并发布」等**同一条**里写全 | 本机 commit + 本机 pack | 仍禁止远程 |
-| 「推送」/「上传 Release」等**明确**远程词 | 才可动远程 | — |
+| 「推送」/「上传 Release」等**明确**远程词 | 仅维护者手动执行；AI 只准备本机产物 | AI 代传 GitHub/Gitee、`gh`、网页、token |
 
 「发布」**永远不等于**推 GitHub。没有「推送」二字就不要碰远程——哪怕刚打完包、哪怕用户正在高兴。
+
+**发布上传始终由维护者手动完成**：GitHub Releases 是主下载源，Gitee Releases 是镜像备份。即使消息里出现「上传」，AI 也只做到本机 `dotnet publish` / `vpk pack`，不执行任何上传。
 
 ### 1.0.1 含糊指令：禁止猜测，必须先问（强制）
 
@@ -60,6 +62,7 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 ## 3. 动代码前
 
 - 先读 `docs/project/handoff.md`（会话快照）+ 相关专题文档；冲突时以专题文档为准。
+- **设备验证状态只维护在 `docs/hardware/support-matrix.md`。** `README.md`、`handoff.md`、`protocols.md` 只链接，不复制状态表；新增或升级设备时先改矩阵，再改品牌文档。
 - **`handoff.md` 与 `changelog.md` 不许再写长。** 协议、坑、流程进专题文档，这两份只留指针。
   - `handoff.md` 只改 §1 现状和 §4 未完成待办。不追加本轮经过，不保留已完成待办，不抄发布过程。**全文超过 120 行，先删历史再写。**
   - `changelog.md` 按日期追加：每条一两句（改了什么、为什么）。不记构建结果、打包耗时、文件清单。发版只在文末版本表加一行。单日新增超过 15 行，就是把专题文档抄进来了。
@@ -97,8 +100,9 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 - 构建/发布产物：`bin/`、`obj/`、`publish/`、`dist/`（均已 gitignore）。
 - 助手元数据目录：`.workbuddy/`、`.workbuddy-ai/`、`.zcode/`（已 gitignore，**规则写这里等于没写**）。
 - `.vpk-gitee-token`（Gitee 发布令牌，已 gitignore，绝不入库）。`publish-gitee.ps1` **自己不读文件**，
-  由人工读进 `$env:GITEE_TOKEN` 再跑，见 `docs/dev/build.md` §8。GitHub 侧只做更新源读取，
-  没有发布脚本（`publish-github.ps1` 已删，发版只走 Gitee）。
+  由维护者读进 `$env:GITEE_TOKEN` 后手动运行，见 `docs/dev/build.md` §8。
+- **发布上传由维护者手动完成**：GitHub Releases 是主下载源，Gitee Releases 是镜像备份，两处资产保持一致。
+  AI 只做本机 `dotnet publish` / `vpk pack`，**不执行任何上传**（`gh`、网页、token、`git push` 都不碰）。
 - 仓库根不放临时文件；一次性调试脚本放 `scripts/`，并补 `scripts/README.md` 索引。
 
 ## 6. 静默失败的两个坑（必记）
@@ -116,6 +120,7 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 
 - **L0 机械层**：构建 `0 警告 0 错误`；改了帧解析 / 读数过滤 / 历史库 / 离线判定必须重跑对应测试类
   （用 `--no-build --filter "FullyQualifiedName~<类名>"`；沙箱内全量 `dotnet test` 会卡住，沙箱外可全量，见 `docs/dev/build.md` §0 / §4.1）。
+- **改了 `docs/` 的链接、文件名或章节号**：跑 `python scripts/check-doc-links.py` 与 `python scripts/check-doc-health.py`，要求 0 坏链、0 无效小节锚点、0 表格断裂、0 孤儿文档/编号错误。
 - **L1 自查**：碰了红线区域（硬件写入 / 状态模型 / 线程 / 资源释放 / 异常）就对着 R 清单过一遍，
   标准见 `docs/dev/review-standard.md`。其中 **R2「插件必须继承 `BatteryPluginBase`」** 是历史事故的唯一成因，无例外。
 - **发现必须进 `docs/reviews/BACKLOG.md`**——只写在审查报告或 changelog 里等于没记。报告只承载证据与推理。

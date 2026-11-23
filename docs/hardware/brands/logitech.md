@@ -9,7 +9,7 @@ HID++ 1.0/2.0 协议发现（无型号白名单）。电量级联：
 
 **feature 下标探测（2026-11-16，CR-165）**：GetFeature 解析回 0 时**不立刻认定"不支持"**——先留空、下一轮再试，连续 3 次才写 0 永久跳过（`HidppFeatureProbe`）。发现期一次超时若直接写 0，会把这条电量路径禁用整场会话，只能靠重插接收器恢复；参考实现每次刷新都重查 GetFeature。代价：真不支持的 feature 会多花 2 次请求，只发生在发现后的前 3 轮。
 
-嵌入资源 [`logitech-hidpp.json`](../../src/VigilWatt.Core/Plugins/Logitech/logitech-hidpp.json) 提供接收器槽位/报文偏好与毫伏曲线；**目录是补充不是白名单**——未知 PID 仍打开 HID++ 接口（默认最多 6 槽、有长则跳短）。
+嵌入资源 [`logitech-hidpp.json`](../../../src/VigilWatt.Core/Plugins/Logitech/logitech-hidpp.json) 提供接收器槽位/报文偏好与毫伏曲线；**目录是补充不是白名单**——未知 PID 仍打开 HID++ 接口（默认最多 6 槽、有长则跳短）。
 
 **槽位容量以接收器自报为准（2026-11-11）**：`0xB5` 子寄存器 `0x03` 返回接收器信息，**参数区 `[6]` = 配对槽位容量**（相对 feature 缓冲即 `resp[8]`，序列号在 `resp[3..6]`）。`LogitechPlugin.ProbeSlotCount` 每开一次句柄读一次，成功就覆盖目录 `maxSlots`，失败/越界才退回目录值——目录是静态表，自报值是这颗固件的事实。只接受 `1..6`，且校验 `resp[2]` 是子寄存器回显，偏移对不上时宁可读不到。判据同 Solaar `extract_max_devices`（读不到时退回 `product_info["max_devices"]`）与 OpenLogi `get_receiver_info`。**只对目录登记过的接收器 PID 探**：设备本体 PID 不在接收器表里，对 `0xFF` 读 `0xB5` 只会白等一个超时。**局限**：`PreferShort` 的接收器（Unifying / Nano）走短报文句柄，凑不出 9 字节响应，这两族实际仍以目录值为准——不是缺陷，目录对它们的登记本来就对；日志里会留一条 Debug 说明退回了。**C548 真机（2026-11-11）**：`0xB5/0x03` 三次读取均无回包（同会话 Root.Ping 正常），确认该接收器不提供此子寄存器；`ReportedSlotCount` 保持 null，`SlotCapacity` 取目录 6 槽。详见 §1.1。
 

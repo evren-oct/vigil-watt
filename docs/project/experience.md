@@ -1,6 +1,7 @@
 # 项目经验
 
 > 不是 bug 清单（那在 build/runtime 两份里），是"怎么做项目"层面的复盘：哪些决策对了、哪些弯路不该走、下次接类似项目怎么开局。
+> **状态：经验附录，不是规则。** 规则以 [plugin-standard](../dev/plugin-standard.md)、[review-standard](../dev/review-standard.md) 与 `AGENTS.md` 为准。
 
 ## 1. 走对的路
 
@@ -66,6 +67,4 @@
 
 ## 5. 下一步
 
-**当前待办的单一来源是 [handoff.md](handoff.md) §4**——本文档不抄第二份，抄了就会两边不同步。
-
-> 发布位固定为仓库根 `publish/`（self-contained）。**上次发布：2026-10-08（1.0.2，本地打包）**；此后又改过代码（日志分级、经典蓝牙设备类型判定等），**改完重新 publish 并重启应用**才生效。
+**当前待办以 [handoff.md](handoff.md) §4 与 [BACKLOG.md](../reviews/BACKLOG.md) 为准**——本文档不抄第二份。发布流程见 [build.md](../dev/build.md) §8，本文不记录版本状态。

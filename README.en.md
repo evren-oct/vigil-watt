@@ -37,7 +37,7 @@ Taskbar battery pill:
 - Stores battery history with 24-hour, 7-day, and 30-day statistics; records can be managed by device.
 - Can launch at startup.
 
-**Device plugin switches:** ASUS, MCHOSE, Logitech, Razer and Sony INZONE plugins are off by default because reading requires sending query reports. Enable them by brand in Settings. Other strictly passive plugins do not write to devices.
+**Device plugin switches:** Query-based brands are off by default (ASUS, MCHOSE, Logitech, Razer, Sony INZONE, ATK, CHERRY, etc.); strictly passive plugins are on. Enable brands in Settings.
 
 ## Device diagnostics: capture evidence for unsupported devices
 
@@ -58,7 +58,7 @@ Full workflow, file format, and known limits: [docs/project/capture.md](docs/pro
 
 ## Download and quick start
 
-Download from [GitHub Releases](https://github.com/evren-oct/vigil-watt/releases) or the [Gitee mirror](https://gitee.com/YGWG-LX/vigil-watt/releases):
+Download from [GitHub Releases](https://github.com/evren-oct/vigil-watt/releases); the [Gitee Releases](https://gitee.com/YGWG-LX/vigil-watt/releases) page is a mirror backup:
 
 - `VigilWattApp-win-Setup.exe`: per-user installer with Velopack auto-updates.
 - `VigilWattApp-win-Portable.zip`: portable build; no installation required.
@@ -71,58 +71,24 @@ The packages are self-contained and **do not require a separate .NET runtime ins
 
 ## Device support
 
-The table distinguishes devices verified on hardware from protocols implemented but still awaiting a matching device for validation:
+Only devices verified on the maintainer's machine are listed here. The full matrix (contributor-verified, implemented but unverified, unsupported) is in **[docs/hardware/support-matrix.md](docs/hardware/support-matrix.md)**.
 
-| Device / protocol | Status |
+| Device | Status |
 |---|---|
-| ASUS ROG Strix Scope II 96 Wireless / Omni (`0B05:1ACE`) | Contributor-verified at 95%, discharging; off by default. See [protocol notes](docs/hardware/brands/asus-rog.md) |
-| Razer BlackShark V2 Pro (2023) (`1532:0555`) | Contributor-verified at 79%, discharging; shares the Razer switch. See [protocol notes](docs/hardware/devices/razer-headset.md) |
-| Razer Viper V3 Pro SE wireless (`1532:00DF`) | Contributor-verified battery/charging queries; off by default. See [protocol notes](docs/hardware/devices/razer-viper-se.md) |
-| Razer Kraken V4 headset (receiver `1532:056C`) · 64-byte `0x02` query | Implemented, off by default; writes frames, shares the Razer switch. Contributor claim only. See [protocol notes](docs/hardware/devices/razer-kraken.md) |
-| MCHOSE G87 · 2.4 GHz `0x13` | Verified on the developer's device |
-| New-generation MCHOSE dongles · QHW (e.g. `3837:3033`) | Implemented; awaiting matching hardware validation |
-| MCHOSE G87 V2 / A7 V2 Pro · mouse V2 passive frames | Implemented, off by default; contributor hardware only, only G87 V1 retested here |
-| MCHOSE K7 V2 Ultra+ · `0x0900` query + `0x0600` events | Contributor-verified on real hardware; shares the MCHOSE plugin switch |
-| MCHOSE G3 V2 · Gmouse active query (`3837:4245`) | Contributor-verified on real hardware; shares the MCHOSE plugin switch |
-| MCHOSE G75 Pro (`3554:FA09`) · same fingerprint as AULA F99 Pro, split by session ACK model code | Implemented, off by default; writes frames. Contributor verified 36%, not retested here. See [protocol notes](docs/hardware/brands/mchose.md) |
-| Betop T9 / Kunpeng 20 (2.4G broadcast + wired query) · passive vendor-interface stream | T9 verified on hardware; Kunpeng 20 contributor-verified only |
-| Logitech Bolt receiver (C548 + MX Master 3S) · HID++ | Verified on hardware |
-| Razer Viper V4 Pro (receiver) · classic 90-byte feature protocol | Verified on the developer's device; off by default, writes reports |
-| Sony INZONE H9 II (receiver) · `0xFF04` control-transfer query | Verified on the developer's device; off by default, writes reports |
-| Rapoo VT3 Gen 2 · passive `status-report7` | Verified on the developer's device |
-| Inphic ZHEN · passive report `0x03` | Verified on hardware |
-| Inphic IN9 · feature `0x0C` snapshot + refresh sequence | Implemented, off by default; writes frames. Re-captured on hardware 2026-10-31 |
-| HECATE G5M Pro · passive report `0x04` + active query `04 00 00 1A` | Implemented, off by default; writes frames. Contributor hardware only |
-| AULA F99 Pro · `0x13` session/push | Implemented, off by default; contributor hardware only |
-| AULA G9 headset / L9 Ultra mouse · passive status frame / `0x81` query | Implemented; shares the AULA switch (one settings row). Contributor claim only, not retested here |
-| AULA HERO 68 Air · Bytech queries over 8K receiver | Off by default; contributor verified 10% discharging/charging; shares the AULA switch |
-| AKG N9 Hybrid · RACE battery query over USB receiver | Off by default; contributor verified 50%; charging state unknown |
-| LINGBAO M5PRO Max (`3151:402D`) · vendor-driver `F7` status query | Implemented, off by default; writes frames. Contributor verified 88%/95%, not retested here |
-| LINGBAO K98 (`3554:FA09`) · `0x13` session/push | Implemented, off by default; shares VID/PID with AULA, split by session model code `0x0212`. Contributor hardware only |
-| VGN Dragonfly F1 V5 Turbo+ / F2 Master+ / V98 Pro · kc2 config frame / y2 query / `0x1A` query | Implemented, off by default; writes frames. Wired duplicates dropped by serial number. Contributor hardware only |
-| DELUX M900 Pro · passive 5-byte status | Implemented, off by default; same VID/PID as Inphic, receiver not seen here |
-| DualSense · passive Bluetooth HID | Implemented, on by default; contributor hardware only |
-| Haute42 Adapter 4DS (DualSense adapter) · read-only feature `0xF9` | Implemented, off by default; zero writes. Presents itself as a DualSense, identified by its firmware string. Contributor claim only |
-| GANSS GS3104T-Pro / AULA F108 Pro · 33-byte query frame | Implemented, off by default; writes frames. Same HID fingerprint, one shared switch. Contributor hardware only |
-| MCHOSE V9 Pro / X9 headset · 64-byte query frame | Implemented, off by default; writes frames, shares the MCHOSE switch. V9 Pro verified by contributor, X9 contributor claim only |
-| MCHOSE A5 V2 Ultra · inverted Feature `0x11` query | Implemented, off by default; writes frames, shares the MCHOSE switch. Contributor claim only |
-| CHERRY PIXIU75 · 64-byte block protocol (block `0x1A`) | Implemented, off by default; writes frames. Contributor hardware only |
-| Pulsar X2 V2 · 17-byte STATUS/POWER | Implemented, off by default; writes frames. Contributor hardware only |
-| AJAZZ AK870 · feature `F7` status query | Implemented, off by default; writes frames. Contributor hardware only |
-| Thunderobot ML903 NearLink Se · `0xA0` device-info TLV | Implemented, off by default; writes frames. Contributor hardware only |
-| ATK / VXE wireless mouse / A98 Pro keyboard · 17-byte query frame / VIA | Implemented, off by default; writes frames. Verified on F1 Pro Max and F1 V3 ULTIMATE+ |
-| VXE R1 Nearlink · receiver `373B:10C9` | Verified locally over wireless and wired charging (`10C7`); uses the ATK switch, off by default. See [atk.md §9](docs/hardware/brands/atk.md) |
-| HyperX Cloud Flight 2 · passive 2.4 GHz push frames | Implemented, on by default; zero writes. Verified on a CF2 |
-| MOJHON GALE2 (2.4G dongle / wired, both `E2B7:122C`) · vendor-channel `A5` read frame | Implemented, off by default; writes frames. Verified on hardware in both dongle and wired modes; charging flag confirmed by an A/B plug test |
-| FLYDIGI APEX5 · NewXInput heartbeat (20% steps) | Implemented, off by default; writes frames. Contributor hardware only |
-| LANGTU T98 keyboard · 2.4G passive status frame (`1A2C:8FFF`) | Implemented, on by default; zero writes. Contributor hardware, not re-tested by maintainer, see [langtu.md](docs/hardware/devices/langtu.md) |
-| ATK A9 Ultra Max 2.0 · dongle `373B:11FE` | PID registration only, protocol identical to the existing ATK path. Frames from a contributor, not re-tested by maintainer |
-| Classic Bluetooth · HFP gateway device-node property | EDIFIER W820NB verified |
-| System battery · `GetSystemPowerStatus` | Implemented; can be enabled optionally |
-
-Adapters marked "contributor hardware only" come from community captures and on-device verification. See **[CONTRIBUTORS.md](CONTRIBUTORS.md)** for who contributed what.
+| MCHOSE G87 · 2.4 GHz `0x13` | Verified on the maintainer's device |
+| Logitech Bolt (C548 + MX Master 3S) · HID++ | Verified on the maintainer's device |
+| Logitech PRO X 2 LIGHTSPEED | Verified on the maintainer's device (USB wired untested) |
+| Rapoo VT3 Gen 2 · passive `status-report7` | Verified on the maintainer's device |
+| Betop T9 · passive stream | Verified on the maintainer's device |
+| Inphic ZHEN / IN9 | Verified on the maintainer's device |
+| HECATE G3M Pro upgraded | Verified on the maintainer's device (charging bit untested) |
+| ATK F1 Pro Max | Verified on the maintainer's device |
+| EDIFIER W820NB · HFP gateway | Verified on the maintainer's device |
+| System battery | Verified on the maintainer's device (optional) |
 
 The 弱水时砂炽天使 2.4 GHz device (`38FF:0001`) has no battery reporting channel, confirmed through host-side inspection and RoseLink analysis. Other models depend on whether their protocols have been implemented.
+
+Rows marked "contributor-verified" in the full matrix come from community captures and on-device verification. See **[CONTRIBUTORS.md](CONTRIBUTORS.md)** for who contributed what.
 
 ## Build
 

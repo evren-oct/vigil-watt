@@ -3,10 +3,11 @@
 > 所有结论都是真机验证或官方软件抓包所得，**改协议代码前先读对应品牌文档，不要重新猜**。
 > 2026-10-21 按品牌拆分：本文只留**索引 + 通用陷阱 + 抓包资料**，协议细节在各品牌文档里。
 > 零写入原则与写入闸门见 [safety.md](safety.md)；来源与许可边界见 [sources.md](sources.md)。
+> **设备是否已验证、默认开关、维护者是否复测，统一看 [support-matrix.md](support-matrix.md)。** 下表的验证备注列只是协议层提示，不是权威验证结论。
 
 ## 1. 品牌索引
 
-| 品牌 | 型号 | VID:PID | 文档 | 状态 |
+| 品牌 | 型号 | VID:PID | 文档 | 验证备注 |
 |---|---|---|---|---|
 | 迈从 MCHOSE | G87 键盘 | `41E4:2001` | [mchose.md](brands/mchose.md) | 本机验证 |
 | 迈从 MCHOSE | 通用 2.4G dongle（G87 V2 / G75 V2 / K87S / K99 V3） | `3837:3033` | [mchose.md](brands/mchose.md) §2.4 | 本机验证（走 CZ 分块读 `cz-block`；不认 0x4D） |
@@ -43,7 +44,7 @@
 | 盖世小鸡 GameSir | G7 Pro CE | `3537` | [gamesir.md](brands/gamesir.md) | 贡献者真机 |
 | ATK / VXE | 无线鼠标（F1 Pro Max / F1 V3 ULTIMATE+ / F1 Ultimate 2.0） | `373B:101B` / `101A` / `1303` / `11D9` / `11E4` | [atk.md](brands/atk.md) | 本机验证 |
 | ATK | A98 Pro 键盘（VIA） | `373B:1152` | [atk.md](brands/atk.md) §7 | 贡献者声明 |
-| HyperX | Cloud Flight 2 飓风炫彩版 | `03F0:0AC1` | [hyperx-cf2.md](brands/hyperx-cf2.md) | 本机验证 |
+| HyperX | Cloud Flight 2 飓风炫彩版 | `03F0:0AC1` | [hyperx-cf2.md](brands/hyperx-cf2.md) | 纯被动，默认开；维护者未复测 |
 | 雷蛇 RAZER | 毒蝰 V4 Pro（接收器 / 本体） | `1532:00E6` / `00E5` | [razer.md](brands/razer.md) | 贡献者真机 100%；充电态 Unknown |
 | 雷蛇 RAZER | BlackShark V2 Pro (2023) / Viper V3 Pro SE | `1532:0555` / `00DF` | [razer-headset.md](devices/razer-headset.md) · [razer-viper-se.md](devices/razer-viper-se.md) | 贡献者真机 77% / 58% |
 | 雷蛇 RAZER | Kraken V4 耳机（接收器） | `1532:056C` | [razer-kraken.md](devices/razer-kraken.md) | 贡献者声明 |
@@ -55,9 +56,9 @@
 | 飞智 FLYDIGI | APEX5 2.4G 接收器 | `37D7:2501` | [flydigi.md](brands/flydigi.md) | 贡献者真机，维护者未复测 |
 | ATK | N9 系列耳机（dongle） | `373B:1204` | [atk-n9.md](devices/atk-n9.md) | 协议已记录，**未实现**（电量走 CDC-ACM 串口） |
 | ilovbee | b98 键盘 | `258A:01BB` | [ilovbee.md](devices/ilovbee.md) | 贡献者采集包（issue #68），维护者未复测 |
-| 索尼 SONY | INZONE H9 II（WH-G900N2） | `054C:0FA8` | [inzone-h9.md](devices/inzone-h9.md) | 本机验证（会写帧，默认关闭） |
+| 索尼 SONY | INZONE H9 II（WH-G900N2） | `054C:0FA8` | [inzone-h9.md](devices/inzone-h9.md) | 会写帧，默认关闭；维护者未复测 |
 | 狼途 LANGTU | T98 键盘 | `1A2C:8FFF` | [langtu.md](devices/langtu.md) | 贡献者真机（issue #40） |
-| 墨将 MOJHON | 烈风2 / GALE2 手柄 | `E2B7:122C` | [mojhon.md](brands/mojhon.md) | 本机实测（2026-10-26），应用内复看待做 |
+| 墨将 MOJHON | 烈风2 / GALE2 手柄 | `E2B7:122C` | [mojhon.md](brands/mojhon.md) | 贡献者真机，应用内复看待做 |
 
 ### 1.1 设备目录与逆向资料
 

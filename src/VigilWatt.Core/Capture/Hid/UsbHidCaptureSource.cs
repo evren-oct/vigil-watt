@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Capture.Hid;
 /// 2026/10/24 12:40:43 20211
 /// **默认只申请读权限**；只有用户在本会话显式授权（CaptureOptions.AllowSend）才申请写权限，
 /// 且写入只发生在用户手动点「发送」时——本来源从不自己发帧。
-/// 读异常被 HidDeviceHandle 吞成 null（BACKLOG CR-95），只有接口从系统消失才报 device_removed。
+/// 读异常被 HidDeviceHandle 吞成 null（BACKLOG CR-174），只有接口从系统消失才报 device_removed。
 /// </summary>
 public sealed class UsbHidCaptureSource : ICaptureSource, ICaptureWriter
 {

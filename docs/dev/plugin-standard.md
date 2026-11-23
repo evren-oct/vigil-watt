@@ -402,7 +402,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 | 迈从 | `MchosePlugin` / `MchoseA5Plugin` | 多协议、有状态、多代共存 | G87、官方通用 dongle 本机验证；多数鼠标/耳机为贡献者真机或声明，本机未复测 |
 | 罗技 | `LogitechPlugin` | 多设备接收器 + 混合型 | C548 + MX Master 3S 本机验证；C53F 名称读取待复验；槽位枚举部分族未实测 |
 
-状态与逐台清单以 [handoff.md](../project/handoff.md) §1 / §2 为准；协议细节以各品牌文档为准。不要把“代码已接入”当成“本机已验证”。
+状态与逐台清单以 [support-matrix.md](../hardware/support-matrix.md) 为准；协议细节以各品牌文档为准。不要把“代码已接入”当成“本机已验证”。
 
 ### 9.2 已知冲突（记录，不在本次修改）
 

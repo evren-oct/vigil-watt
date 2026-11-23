@@ -63,4 +63,4 @@ if (-not (Test-Path -LiteralPath $feed)) { throw "vpk pack 未生成 releases.wi
 
 $setup = Get-ChildItem $dist -Filter "*-win-Setup.exe" | Select-Object -First 1
 Write-Host "==> 完成。安装包: $($setup.FullName)"
-Write-Host "    更新产物需整体上传到 Gitee Release，发布脚本会上传本 dist 目录全部文件"
+Write-Host "    更新产物由维护者手动上传到 GitHub Releases（主下载）与 Gitee Releases（镜像）；本脚本只打包，不上传"

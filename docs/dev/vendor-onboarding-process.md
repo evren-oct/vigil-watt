@@ -1,7 +1,7 @@
 # 新厂商接入流程
 
 > 适用范围：新增品牌、给已有品牌接入新型号、把贡献者协议收进仓库。
-> 本文规定**顺序与完成条件**；架构判断标准见 [厂商插件架构标准](../architecture/vendor-plugin-standard.md)。
+> 本文规定**顺序与完成条件**；架构判断标准见 [厂商插件架构标准](plugin-standard.md)。
 > 基线：2026-11-18，`dev` 分支。流程里的“完成”指证据齐、行为可复现，不是“代码能编译”。
 
 ## 0. 总览
@@ -274,15 +274,9 @@ dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedNa
 - 罗技的槽位模型不是通用接收器模型；别的品牌可能只是透明通道，先证明“一个接口多设备”再套。
 - `LogitechPlugin` 的混合型 R2 例外不是默认模板，更不是所有新厂商的默认模板。默认优先继承 `BatteryPluginBase`；只有确实存在基类无法承载的会话型设备，并且经过实际设计确认后，才考虑采用。采用时必须逐条补齐基类能力，并明确基类生命周期方法与接口重新实现之间的调用关系：`LogitechPlugin` 对 `AttachAsync` / `Poll` / `ReconcileRemovals` 使用 `new` 隐藏并重新声明 `IBatteryPlugin`；不要以 `BatteryPluginBase` 静态类型持有它再调用，否则 HID++ 分支会被静默跳过（见架构标准 §2.3、CR-93）。
 
-### 7.4 模板选择表
+### 7.4 模板选择
 
-| 情况 | 模板 | 第一份要读的代码 |
-|---|---|---|
-| 单设备、固定帧、纯被动 | 雷柏 | `src/VigilWatt.Core/Plugins/Rapoo/RapooPlugin.cs` |
-| 多套数据协议、少量编排 | 北通 | `src/VigilWatt.Core/Plugins/Betop/BetopPlugin.cs` |
-| 握手/会话/密码门/分块/多代 | 迈从 | `src/VigilWatt.Core/Plugins/Mchose/MchosePlugin.cs` |
-| 一个接收器多台设备 | 罗技 | `src/VigilWatt.Core/Plugins/Logitech/LogitechPlugin.cs` |
-| BLE / 经典蓝牙 / 本机电源 | 非插件 watcher | `src/VigilWatt.Core/Ble/`、`src/VigilWatt.Core/Power/`、`docs/project/architecture.md` §6 |
+选型判据与矩阵以 [插件架构标准](plugin-standard.md) §3.4 为准；本节的 7.1~7.3 只讲三种模板的照抄/不照抄点，不再维护第二张选择表。
 
 ## 8. 统一决策规则
 
@@ -315,23 +309,17 @@ dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedNa
 
 ## 10. 完成检查清单
 
+流程层只检查这些；插件契约、JSON 边界、写入闸门、测试要求以 [插件架构标准](plugin-standard.md) §10 与 [审查标准](review-standard.md) §2 为准。
+
 - [ ] 协议证据包完整：帧、查询、充电、链路、离线、未验证项。
 - [ ] 复用矩阵逐项有结论，五个决策问题有答案。
 - [ ] 设计说明写清范围、架构、目录/协议、身份、离线、能力、写入、测试、不做项。
-- [ ] 插件默认继承 `BatteryPluginBase`；只有基类无法承载的会话型设备且设计确认后才用 R2 例外混合型，并有类头理由与生命周期调用说明。
-- [ ] 新型号优先 JSON；新增 C# 代码里没有本应配置化的设备身份、接口指纹、帧偏移、码表、协议名；保留品牌常量时有明确理由。
-- [ ] 新增/修改 `devices[]` 时没有重复 `VID:PID`（当前加载器不会拒绝重复项）。
-- [ ] 会写帧的插件默认关闭；`WritesEnabled` / `CanWrite` / 熔断路径完整。
-- [ ] 能力只在 `devices[].capabilities`；`supported` 有真机或录制帧证据。
-- [ ] 身份归一有规则；插线双连接只留一条。
-- [ ] 离线路径与协议事实匹配；没有把触发器当证据。
-- [ ] 构建 0 警告 0 错误；目标测试绿；老品牌无回归。
 - [ ] 品牌文档、协议索引、changelog、BACKLOG/handoff 已按职责更新。
-- [ ] 没有新增抽象接口、没有 `codeFamily` 执行器、没有统一目录加载器、没有配置写入。
+- [ ] 构建 0 警告 0 错误；目标测试绿；老品牌无回归。
 
 ## 11. 相关文档
 
-- [厂商插件架构标准](../architecture/vendor-plugin-standard.md)：职责边界、三种架构、目录/协议规则、Core 准入。
+- [厂商插件架构标准](plugin-standard.md)：职责边界、三种架构、目录/协议规则、Core 准入。
 - [项目架构](../project/architecture.md)：模块边界、线程模型、状态合并、非插件数据源。
 - [协议 JSON 写法](protocol-json.md)：字段词表、`extends` / `override`、加载期校验。
 - [硬件安全规则](../hardware/safety.md)：零写入、写入闸门、熔断与退避。

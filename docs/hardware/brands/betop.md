@@ -251,7 +251,7 @@ bit: 7 6 5 4 | 3 2 1 0
   `ReportPollFailure`。
 - 迈从插件已按 VID 排除北通接口（`MchosePlugin.IsCandidate`，两个 VID 都排），避免对北通 dongle 发 0x4D / 0x13 帧。
 
-## 1.8 鲲鹏20 三通道接入（2.4G 广播 / 有线查询 / 蓝牙无通道）与身份归一
+### 1.8 鲲鹏20 三通道接入（2.4G 广播 / 有线查询 / 蓝牙无通道）与身份归一
 
 > **判据（2026-10-25 定稿）**：候选 = 北通 VID（`20BC` / `20DD`）× 电量页（`0xFF00` 厂商页 / `0x00FF` 杂项广播页），
 > 实现为 `betop-status15` / `betop-zeus-keyevent` 的 `interface.anyOf`、有单测。page 与 usage 任一侧命中即算（兼容扫描器把两者读颠倒），
@@ -369,7 +369,7 @@ else if (cmdtype == 0xd) {
 > 依据见 [reference/betop-official-client.md](../reference/betop-official-client.md) §5。
 > `docs/reviews/BACKLOG.md` 的 CR-106 仍标 `open`，本阶段不改它——结案要人工确认。
 
-## 1.9 官方软件（BetopGame）与 dongle 身份抖动 —— 只观测，不让位
+### 1.9 官方软件（BetopGame）与 dongle 身份抖动 —— 只观测，不让位
 
 **现象**（2026-10-23 日志）：KP70 出现 7~36 秒一次的「设备已移除 → 数秒后重新认领」，列表在离线/在线之间闪；
 整份日志 280 条 `设备变更广播 wParam=0x0007`。
@@ -402,7 +402,7 @@ else if (cmdtype == 0xd) {
 - 与官方开关无关、跟取放手柄同步 → ②：改法完全不同（按底座身份做 ID 归一，不是让位）
 - 只在长时间无输入后出现 → ③：查 USB 电源管理（设备管理器里该 dongle 的「允许计算机关闭此设备以节约电源」）
 
-## 1.10 品牌目录与身份（2026-11-16 P1）
+### 1.10 品牌目录与身份（2026-11-16 P1）
 
 北通从“T9 / 鲲鹏20 型号补丁”升级为**品牌目录**：`Plugins/Betop/betop-catalog.json` 收录 33 条
 VID:PID（`20BC` 30 条、`20DD` 3 条），协议判据在 `Plugins/Betop/specs/betop.protocols.json`

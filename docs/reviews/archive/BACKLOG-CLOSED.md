@@ -7,6 +7,7 @@
 
 | 编号 | 结论 |
 |---|---|
+| CR-69 | 删除离线设备（连带清历史 + 永久移除黑名单）、忽略设备、展示去重已落地；社区 PR #16 的「只显示在线」「电量条对齐」不纳入。 |
 | CR-99 | 2026-10-24 使用真实 DeviceManager 原生一分钟节拍完成首次认领及五轮自然轮询：初次第 14 次读取返回长度 0，其后各轮第 1 次返回长度 0，均读取 100%，未失败或熔断。原始日志与边界见 `hardware/akg.md` §3。原分支编号 CR-94 与 dev 的迈从条目重号，合入时迁为 CR-99。 |
 | CR-95 | AKG 空闲态确认及响应阶段对瞬时空读、其它报告 ID 有界重试；持续失败不写入或不重发，格式错误仍立即停止。回归覆盖恢复、耗尽窗口及等待中关闭开关。 |
 | CR-96 | AKG 只在本轮按有效区域跳过相邻重复快照，空闲态及新查询重置比较；回归覆盖重复分片、尾部旧缓存变化及连续两轮相同电量。无事务号的剩余歧义见 `hardware/akg.md` §2。 |
@@ -72,7 +73,7 @@
 | CR-76 | 与 CR-75 同一修法落地。Inphic/Hecate/Delux 的读窗口 `continue` 有 deadline 兜住（不无限循环），未改 |
 | CR-77 | `MarkOffline` 注释改为"插件内软离线的唯一落地点"，并注明拔出走 `ReconcileRemovals`（不该盖 `LastUpdated`）。行为本来就对，是注释过满 |
 | CR-68 | 未采用 PR #14 的按显示名去重，改为按 MAC 判定自研实现：`Ble/DualChannelId` 归一 `btc:`/`ble:` 端点，`DeviceManager.AbsorbDualChannel` 收敛到经典那条。PR #14 的 `Devices` getter 副作用与 `NormalizeName` 大小写问题随之不适用 |
-| CR-86 | 历史库时间戳按本地时区读回（`HistoryStore.LocalTime`）：离线设备的「更新于」原先显示成 UTC，比本地时间少 8 小时。见 runtime-pitfalls.md §21 |
+| CR-179 | 历史库时间戳按本地时区读回（`HistoryStore.LocalTime`）：离线设备的「更新于」原先显示成 UTC，比本地时间少 8 小时。见 runtime-pitfalls.md §21 |
 | CR-108 | 半开探活的闸门改成 opt-in 本身：`IBatteryPlugin` 新增 `HasHalfOpenProbe`（= 覆写了 `BreakerProbeInterval`），`DeviceManager.DiscoverOnlyAsync` 的探活循环不再按 `SupportsDiscoveryProbe`/`SupportsFastDiscovery` 过滤。原写法下"只覆写间隔、没开发现 flag"的插件会静默空转（无帧、无日志）。线上零变化：唯一开探活的 ATK 两个 flag 本来就都开着。新增用例 `NudgeHalfOpenWorksWithoutDiscoveryFlags` 钉住语义 |
 | CR-109 | `SupportsDiscoveryProbe` 的注释口径按实现改写：`ProbeCooldown` 小于 15 秒才吃得到每个节拍，大于 15 秒不会多写帧、只是部分节拍被挡住白跑（VGN 就是 20 秒）。VGN 的冷却值未动——它没有被动监听，有效节拍 30 秒已够用，降到 10 秒是写入预算变更 |
 | CR-111 | `NudgeHalfOpen` 的 XML 注释压回 `AGENTS.md` §2 配额（原约 10 行），并补上"只在 `_passGate` 内调用"的线程前提。压缩前先把「与 CR-53 通道的分工」「闸门不是那两个 flag」两句补进 `runtime-pitfalls.md` §23，避免信息丢失 |
@@ -88,6 +89,13 @@
 
 | 编号 | 为什么不修 |
 |---|---|
+| CR-57 | Win10 小组件投影判据已过时（本机 Win11）；不做 |
+| CR-70 | BLE 大改未纳入；通用 GATT 已够用，不做 |
+| CR-71 | 与 CR-39 同源；贴片避让托盘等 CR-39 真机结论，不单独立项 |
+| CR-102 | 插件级策略按型号分化不做通用化；现有拆类方案足够 |
+| CR-113 | ATK 充电虚高属固件电压估电量，codec 不修正；展示层平滑不做 |
+| CR-114 | 不新增插件学习名持久化；用户手动改名已覆盖 |
+| CR-141 | 插件按需下载已被作者部分否决；保留“插件认领设备”方案 |
 | CR-30 | HID 枚举改只读打开会改变能看见的设备。每分钟几十次打开不值得换这个风险 |
 | CR-31 | 更新源由用户自己填，下载前有确认。签名属于发布流程 |
 | CR-32 | GitHub token 已在 `.gitignore`。分享仓库目录前先删那个文件 |

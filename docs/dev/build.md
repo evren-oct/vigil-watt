@@ -43,7 +43,7 @@ Debug 构建的数据目录就在该目录下的 `data\`，直接双击即可运
 如果沙箱内看不到占用进程、`Get-Process` 里也没有 VigilWatt，那是沙箱宿主句柄，不是应用实例：
 按 §0 申请沙箱外权限重跑，**不要**换输出目录或强杀未知进程。
 
-## 3.1 运行 Debug 版：数据就在 exe 旁边
+### 3.1 运行 Debug 版：数据就在 exe 旁边
 
 **Debug 构建的数据目录是 `bin\x64\Debug\...\win-x64\data\`**，不是 `%LOCALAPPDATA%`。
 `AppPaths.ResolveRootDir()` 用 `#if DEBUG` 分流：Debug 取 `AppContext.BaseDirectory\data`，
@@ -98,7 +98,7 @@ self-contained（含 Windows App SDK 运行时），约 102MB，无需安装任�
 
 Debug 构建不启用该生成器，所以**只有 Release 打包时暴露**（`dotnet build -c Debug` 一直 0 错误，容易误判成"工程没问题"）。已在 `VigilWatt.App.csproj` 加好该项。
 
-## 4.1 测试
+### 4.1 测试
 
 ```
 dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<测试类名>"
@@ -152,7 +152,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 
 - `VigilWattApp-win-Setup.exe`：安装包（**仅当前用户**、无 UAC、装到 `%LocalAppData%\VigilWattApp`，自动建桌面+开始菜单快捷方式、写卸载条目）
 - `VigilWattApp-win-Portable.zip`：绿色免安装版（vpk 顺带生成）
-- `VigilWattApp-*-full.nupkg`、`RELEASES`、`releases.win.json`：Velopack 更新数据；发布到 Gitee Release 时需将 `dist/` 全部产物作为附件上传，确保清单引用的包都可下载
+- `VigilWattApp-*-full.nupkg`、`RELEASES`、`releases.win.json`：Velopack 更新数据；发布上传时（GitHub 主下载 / Gitee 镜像）由维护者将 `dist/` 全部产物作为附件上传，确保清单引用的包都可下载
 
 ### 关键决策与坑
 
@@ -175,7 +175,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 
 - `Program.cs`：自定义入口（csproj `DISABLE_XAML_GENERATED_MAIN` 关掉了 XAML 生成的 Main）。`VelopackApp.Build().Run()` 必须最先跑——安装/更新/卸载钩子进程带 `--veloapp-*` 参数被拉起，在这里被消费后直接退出，所以 `App.OnLaunched` 的单实例互斥不会误杀钩子进程，也不用改。
 - 卸载清理：`OnBeforeUninstallFastCallback` 里调 `AutostartService.SetEnabled(false)` 删 HKCU Run 自启动残留。
-- `Services/UpdateService.cs` + 关于页"软件更新"区：更新源是 Velopack **内置的 `GithubSource` / `GiteaSource`**，不是自写适配器——Gitee 的 `/api/v1` 与 `/api/v5` 返回一致（2026-10-14 实测：同仓库同键同值），而 `GiteaSource` 的 API 基址正是硬编码的 `{host}/api/v1/`，所以直接可用。**GitHub 优先，8 秒内没结果或抛错就回退 Gitee**（`ProbeTimeout`）；检查成功后源固定，delta 包必须从给出清单的那个源继续下载。两个仓库 URL 是常量，`publish-gitee.ps1` 必须与 `UpdateService` 里的 Gitee 地址指向同一个仓库，且两边的 Release 资产要一致。启动时检查一次，关于页保留手动检查。运行副本未安装时不执行安装更新。
+- `Services/UpdateService.cs` + 关于页"软件更新"区：更新源是 Velopack **内置的 `GithubSource` / `GiteaSource`**，不是自写适配器——Gitee 的 `/api/v1` 与 `/api/v5` 返回一致（2026-10-14 实测：同仓库同键同值），而 `GiteaSource` 的 API 基址正是硬编码的 `{host}/api/v1/`，所以直接可用。**GitHub 优先，8 秒内没结果或抛错就回退 Gitee**（`ProbeTimeout`）；检查成功后源固定，delta 包必须从给出清单的那个源继续下载。两个仓库 URL 是常量，`publish-gitee.ps1` 必须与 `UpdateService` 里的 Gitee 地址指向同一个仓库；两边的 Release 资产由维护者手动上传并保持一致。启动时检查一次，关于页保留手动检查。运行副本未安装时不执行安装更新。
 - 版本号唯一来源：`VigilWatt.App.csproj` 的 `<Version>`，exe FileVersion、设置页显示、安装包版本都从它来。
 
 ### 更新说明（release notes）
@@ -196,9 +196,9 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 
 安装（静默）→ 目录/快捷方式/卸载条目正确、数据目录不冲突；自动更新（把 1.0.1 nupkg 丢进 `packages\` 后启动 1.0.0 → 自动升级重启到 1.0.1）；卸载 → 安装目录/快捷方式/卸载条目/HKCU Run 残留全部清掉，用户数据保留。
 
-### 发布到 Gitee（回退源）
+### 发布上传（维护者手动：GitHub 主下载，Gitee 镜像）
 
-自动更新**先读 GitHub**（`github.com/evren-oct/vigil-watt`），8 秒内不可达或报错才回退 `gitee.com/YGWG-LX/vigil-watt`。两边走的是同一套 Velopack 清单：`GiteaSource` 经 `/api/v1/repos/.../releases` 列出版本（空仓库返回 `[]`，视为无新版本），Velopack 清单与包从 Release 附件下载。Gitee Release 下载路由见[官方说明](https://blog.gitee.com/2022/08/18/update/)；`vpk pack` 产出的 `releases.win.json` 与各 `.nupkg` 都要作为附件上传，确保清单引用的包都可下载。**两个仓库都要传同一份资产**，否则国内用户回退到 Gitee 时会看不到新版本。
+自动更新**先读 GitHub**（`github.com/evren-oct/vigil-watt`），8 秒内不可达或报错才回退 `gitee.com/YGWG-LX/vigil-watt`。两边走的是同一套 Velopack 清单：`GiteaSource` 经 `/api/v1/repos/.../releases` 列出版本（空仓库返回 `[]`，视为无新版本），Velopack 清单与包从 Release 附件下载。Gitee Release 下载路由见[官方说明](https://blog.gitee.com/2022/08/18/update/)；`vpk pack` 产出的 `releases.win.json` 与各 `.nupkg` 由维护者手动上传到 GitHub Releases（主下载源）与 Gitee Releases（镜像备份），两处资产保持一致。**AI 不执行上传**：只负责本机 `dotnet publish` / `vpk pack`，不碰 `gh`、网页、token 或 `git push`。
 
 **一次性配置**：Gitee 个人访问令牌（需仓库写权限）。脚本只认两种来源：`-Token` 参数，或 `GITEE_TOKEN` 环境变量——**它不会自己去读令牌文件**。本机的令牌在仓库根 `.vpk-gitee-token`（已 gitignore），所以要先把它读进环境变量再跑脚本：
 
@@ -209,7 +209,7 @@ powershell -ExecutionPolicy Bypass -File scripts\publish-gitee.ps1
 
 令牌只用于发布脚本，不放进客户端或仓库文件；脚本经 `Authorization` 头传递，不走 URL query。
 
-**日常发布**（以 `1.0.12` 为例，替换为本次版本）。**顺序不能变**：`publish-gitee.ps1` 用 `git ls-remote --exit-code origin refs/tags/<tag>` 校验 tag 已在 origin，没推 tag 会直接 throw。
+**日常发布**（以 `1.0.12` 为例，替换为本次版本）。以下步骤由维护者手动执行，AI 不代跑第 2/4/5 步，也不碰远程。**顺序不能变**：`publish-gitee.ps1` 用 `git ls-remote --exit-code origin refs/tags/<tag>` 校验 tag 已在 origin，没推 tag 会直接 throw。
 
 ```
 # 1) 改 src/VigilWatt.App/VigilWatt.App.csproj 的 <Version>，然后提交（本地，不推送）
@@ -229,8 +229,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 $env:GITEE_TOKEN = (Get-Content .vpk-gitee-token -Raw).Trim()
 powershell -ExecutionPolicy Bypass -File scripts\publish-gitee.ps1
 
-# 5) 复核附件是否齐全（应含 releases.win.json + 全部 .nupkg）：
+# 5) GitHub：手动创建 Release 并上传同一份附件（主下载源）
+
+# 6) 复核两处附件是否齐全（应含 releases.win.json + 全部 .nupkg）：
 #    GET https://gitee.com/api/v5/repos/YGWG-LX/vigil-watt/releases
 ```
 
-`publish-gitee.ps1` 自动从 csproj 读版本号，拒绝覆盖已存在的 Release，并把 `dist/` 下全部文件上传到该版本 Release。Release 必须包含 `releases.win.json` 及其引用的全部 `.nupkg`。客户端启动时检查一次；新版本会提示用户确认，启动到托盘时先显示托盘通知，用户打开窗口后再显示安装确认框。
+`publish-gitee.ps1` 自动从 csproj 读版本号，拒绝覆盖已存在的 Release，并把 `dist/` 下全部文件上传到该版本 Release；它只由维护者手动运行。GitHub 侧由维护者手动创建 Release 并上传同一份附件。Release 必须包含 `releases.win.json` 及其引用的全部 `.nupkg`。客户端启动时检查一次；新版本会提示用户确认，启动到托盘时先显示托盘通知，用户打开窗口后再显示安装确认框。

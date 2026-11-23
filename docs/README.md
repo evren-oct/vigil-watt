@@ -1,10 +1,10 @@
 # 文档导航
 
-按当前问题进入对应专题。协议事实、安全边界与排查步骤以专题文档为准；项目当前状态见 [handoff.md](project/handoff.md)。
+按当前问题进入对应专题。协议事实、安全边界与排查步骤以专题文档为准；项目当前状态见 [handoff.md](project/handoff.md)，设备验证状态见 [support-matrix.md](hardware/support-matrix.md)，完整文件清单见 [INDEX.md](INDEX.md)。
 
 ## 新开发者从这里开始
 
-不必读完 70 份文档，按这个顺序四份就够上手：
+不必读完所有文档，按这个顺序四份就够上手：
 
 1. [architecture.md](project/architecture.md)：模块边界、线程模型、数据存储，改代码前必看 §6「约定」。
 2. [build.md](dev/build.md)：怎么构建、怎么跑、发布与打包。
@@ -20,7 +20,7 @@
 
 ## 项目与运行机制
 
-- [handoff.md](project/handoff.md)：当前状态、设备验证情况和待办；新会话先读。
+- [handoff.md](project/handoff.md)：当前状态、环境与待办；新会话先读。设备验证情况看 [support-matrix.md](hardware/support-matrix.md)。
 - [architecture.md](project/architecture.md)：模块职责、关键设计和数据存储。
 - [capture.md](project/capture.md)：设备诊断（USB/HID 采集）的流程、能力边界、包格式与验证记录。
 - [code-flow.md](project/code-flow.md)：启动、设备发现、轮询和 UI 更新流程。
@@ -41,6 +41,7 @@
 - [comment-style.md](dev/comment-style.md)：代码注释规范。
 - [ui-style.md](dev/ui-style.md)：界面视觉规则——状态色、来源徽标、图标、字号与卡片；颜色只表达电量状态。
 - [review-standard.md](dev/review-standard.md)：审查标准、红线和闭环流程。
+- [plugin-standard.md](dev/plugin-standard.md)：厂商插件的职责边界、三种架构、目录/协议 JSON 切分与提交前清单。
 - [vendor-onboarding-process.md](dev/vendor-onboarding-process.md)：新厂商接入流程、实施红线与验证要求。
 - [vendor-plugin-reference-index.md](dev/vendor-plugin-reference-index.md)：四大厂商参考实现索引与模板选择表。
 
@@ -50,31 +51,34 @@
 
 规则层（不属于任何品牌）：
 
+- [support-matrix.md](hardware/support-matrix.md)：**设备支持矩阵**——逐台的验证状态、默认开关与文档入口；README、handoff、protocols 不再维护第二份状态表。
 - [sources.md](hardware/sources.md)：协议、功能方案的依据、外部参考和验证范围；追溯来源先看这里。
 - [protocols.md](hardware/protocols.md)：**索引**——品牌 / 型号 / VID:PID 对照表、共用号段陷阱、官方资料地图。
 - [safety.md](hardware/safety.md)：硬件写入规则与事故复盘；任何写入改动前必读。
 - [debugging.md](hardware/debugging.md)：官方软件抓包、HID 观测和协议验证步骤。
 
-设备文档（39 份，按职责分三层）：
+品牌 / 型号 / 逆向资料（41 份 md，按职责分三层）：
 
 | 目录 | 份数 | 内容 |
 |---|---|---|
 | [hardware/brands/](hardware/brands/) | 23 | 一品牌一份，品牌内多套协议同份分节 |
 | [hardware/devices/](hardware/devices/) | 13 | 单型号深挖（耳机、适配器、单型号鼠标） |
-| [hardware/reference/](hardware/reference/) | 5 | 厂商软件逆向出的型号表 / 命令表 / 档位表 |
+| [hardware/reference/](hardware/reference/) | 5 + 1 份数据 | 厂商软件逆向出的型号表 / 命令表 / 档位表 |
 
-按设备找文档，直接查 [protocols.md](hardware/protocols.md) 的 VID:PID 对照表，比翻目录快。
+按设备找文档，先查 [support-matrix.md](hardware/support-matrix.md) 的状态与文档入口，再查 [protocols.md](hardware/protocols.md) 的 VID:PID 对照表，比翻目录快。
 
 ## 审查跟踪
 
 - [BACKLOG.md](reviews/BACKLOG.md)：仍未修复的审查项（`open` / `doing`）。
+- [2026-11-23-backlog-triage.md](reviews/2026-11-23-backlog-triage.md)：BACKLOG 全量分诊表（VERIFY / BUG / EVID / WONTFIX / SOMEDAY / REFACTOR）。
 - [archive/BACKLOG-CLOSED.md](reviews/archive/BACKLOG-CLOSED.md)：已关闭审查项及结论。
-- [审查报告归档](reviews/archive/)：历史代码审查、复核、注释审计和内存调查。
+- [archive/README.md](reviews/archive/README.md)：审查报告归档索引（历史代码审查、复核、注释审计和内存调查）。
 
 ## 症状速查
 
 | 遇到的问题 | 从这里开始 |
 |---|---|
+| 想知道某台设备是否已支持、验证到什么程度 | [hardware/support-matrix.md](hardware/support-matrix.md) |
 | 编译失败、启动了旧版本、发布文件被占用 | [dev/build.md](dev/build.md) |
 | 设备读不到电量、读数异常、dongle 无响应或离线误判 | [hardware/protocols.md](hardware/protocols.md) · [hardware/debugging.md](hardware/debugging.md) |
 | 蓝牙设备未出现、类型识别错误或电量为空 | [project/code-flow.md](project/code-flow.md) · [dev/runtime-pitfalls.md](dev/runtime-pitfalls.md) |

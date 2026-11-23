@@ -2,7 +2,7 @@
 
 > 接收器 `VID_3837&PID_6045`。**帧结构与 V9 Pro 完全相同，但 VID 与迈从键鼠同号段**——分类器必须把它排在鼠标分支之前。
 > 协议由贡献者 Gpan666 从官方 M HUB 前端（公开 CDN 上未混淆的 Vue bundle）解出，并在本机 Python 探针与 VigilWatt 1.2.1 本地构建上实测；本仓库代码由 AI 辅助编写，只做到编译 + 单测通过，维护者未复测。
-> 索引与其它设备见 [protocols.md](../protocols.md) §14；同品牌键鼠链路见 §1、§1.6，V9 Pro 见 [mchose-v9-pro.md](mchose-v9-pro.md)。
+> 索引与其它设备见 [protocols.md](../protocols.md) §1；同品牌键鼠链路见 §1、§1.6，V9 Pro 见 [mchose-v9-pro.md](mchose-v9-pro.md)。
 
 ## 1. 实测身份
 

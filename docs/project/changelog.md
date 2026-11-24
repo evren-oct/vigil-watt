@@ -3,6 +3,11 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-24
+
+- **手动目标探测设计**：补充 `TargetSelection` / `DeviceIdentity` / `ProbeResult` 的分离，明确插件预登记 `ProbePlan`、一次性只读授权、`ProbeVerified` 仅作实例级证据、失败保持 `unverified`；不新增通用 `ActiveQueryPolicy`。见 `reviews/2026-11-24-manual-target-probing-design.md`。
+- **M2 方案修订**：自动查询与手动探测分离；自动门控按插件逐点补齐，手动探测复用现有插件/解析器/门控，不新增独立协议框架。能力覆盖审计见 `reviews/2026-11-24-active-query-capability-coverage.md`，当前未提交、待审查。
+
 ## 2026-11-23
 
 - **协议引擎治理文档体系**：新增治理路线图与协议定义、主动查询安全、身份与能力、回归测试、统一遥测五份专项规范；M1 文档收尾完成，M2 主动查询安全治理列为下一阶段，现有 `protocol-json.md`、`plugin-standard.md` 与 `safety.md` 继续承担原职责。

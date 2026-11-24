@@ -2,16 +2,16 @@
 
 > 本文件由 `python scripts/gen-doc-index.py` 生成，不要手改。
 > 新增/移动文档后重跑；`--check` 会在过期时退出码 1。日期取 git 最后提交，未入库文件用文件时间。
-> 共 93 份 Markdown；最后生成：2026-11-23。
+> 共 95 份 Markdown；最后生成：2026-11-24。
 
 ## architecture
 
 | 文档 | 标题 | 状态 | 最后提交 |
 |---|---|---|---|
-| [active-query-safety.md](architecture/active-query-safety.md) | 主动查询安全规范 | 规范生效；M2 阶段 1 方案定稿，全面门控受能力声明覆盖阻塞，尚未实施 | 2026-11-23 |
+| [active-query-safety.md](architecture/active-query-safety.md) | 主动查询安全规范 | 规范生效；M2 阶段 1 方案定稿，手动目标探测设计稿待审查，全面门控受能力声明覆盖阻塞，尚未实施 | 2026-11-23 |
 | [device-identity-and-capabilities.md](architecture/device-identity-and-capabilities.md) | 设备身份与能力声明规范 | 规范生效；身份与能力模型已有实现，主动查询的全路径能力门控仍在 M2 | 2026-11-23 |
 | [protocol-definition-standard.md](architecture/protocol-definition-standard.md) | 协议定义与加载规范 | 规范生效；M1 严格加载已提交，本文档收尾未提交 | 2026-11-23 |
-| [protocol-engine-roadmap.md](architecture/protocol-engine-roadmap.md) | 通用协议引擎治理路线图 | M1 文档收尾完成；M2 阶段 1 方案定稿，受能力覆盖阻塞，待实施 | 2026-11-23 |
+| [protocol-engine-roadmap.md](architecture/protocol-engine-roadmap.md) | 通用协议引擎治理路线图 | M1 文档收尾完成；M2 阶段 1 方案定稿，手动目标探测设计稿待审查，受能力覆盖阻塞，待实施 | 2026-11-23 |
 | [protocol-regression-testing.md](architecture/protocol-regression-testing.md) | 协议回归测试规范 | 规范生效；M3 待开展，现有测试分散但可复用 | 2026-11-23 |
 | [protocol-telemetry-integration.md](architecture/protocol-telemetry-integration.md) | 统一遥测衔接规范 | 规范生效；指针遥测与连接方式已有统一模型，电量/充电仍是原始字段 | 2026-11-23 |
 
@@ -24,7 +24,7 @@
 | [logging.md](dev/logging.md) | 日志设计 | 已实施（2026-10-09 起；2026-10-10 改为按日分文件） | 2026-10-16 |
 | [monitor-identity.md](dev/monitor-identity.md) | 显示器身份与名称（任务栏贴片选屏） | — | 2026-10-26 |
 | [plugin-standard.md](dev/plugin-standard.md) | 厂商插件架构标准 | — | 2026-11-23 |
-| [protocol-json.md](dev/protocol-json.md) | 协议 JSON 怎么写（数据化的边界） | — | 2026-11-19 |
+| [protocol-json.md](dev/protocol-json.md) | 协议 JSON 怎么写（数据化的边界） | — | 2026-11-23 |
 | [review-standard.md](dev/review-standard.md) | 代码审查标准与流程 | — | 2026-11-19 |
 | [runtime-pitfalls.md](dev/runtime-pitfalls.md) | 运行时坑 | — | 2026-11-23 |
 | [ui-style.md](dev/ui-style.md) | 界面视觉规则 | — | 2026-11-12 |
@@ -38,7 +38,7 @@
 | [debugging.md](hardware/debugging.md) | 调试手法手册 | — | 2026-11-08 |
 | [protocols.md](hardware/protocols.md) | 2.4G 协议手册（索引） | — | 2026-11-23 |
 | [README.md](hardware/README.md) | 硬件协议文档 | — | 2026-11-23 |
-| [safety.md](hardware/safety.md) | 硬件安全规则（必读） | — | 2026-11-11 |
+| [safety.md](hardware/safety.md) | 硬件安全规则（必读） | — | 2026-11-23 |
 | [sources.md](hardware/sources.md) | 协议与实现来源索引 | — | 2026-11-11 |
 | [support-matrix.md](hardware/support-matrix.md) | 设备支持矩阵 | — | 2026-11-23 |
 
@@ -102,7 +102,7 @@
 
 | 文档 | 标题 | 状态 | 最后提交 |
 |---|---|---|---|
-| [architecture.md](project/architecture.md) | 项目结构与架构 | — | 2026-11-18 |
+| [architecture.md](project/architecture.md) | 项目结构与架构 | — | 2026-11-23 |
 | [capture.md](project/capture.md) | 设备诊断（USB/HID 采集） | — | 2026-11-23 |
 | [changelog.md](project/changelog.md) | 变更历史（changelog） | — | 2026-11-23 |
 | [code-flow.md](project/code-flow.md) | 代码流程 | — | 2026-11-23 |
@@ -111,7 +111,7 @@
 | [device-images.md](project/device-images.md) | 设备产品图接入 | — | 2026-11-23 |
 | [experience.md](project/experience.md) | 项目经验 | 经验附录，不是规则 | 2026-11-23 |
 | [handoff.md](project/handoff.md) | 会话交接（给下一个 AI / 未来的自己） | — | 2026-11-23 |
-| [pointer-telemetry.md](project/pointer-telemetry.md) | 指针遥测（DPI / 回报率） | — | 2026-11-16 |
+| [pointer-telemetry.md](project/pointer-telemetry.md) | 指针遥测（DPI / 回报率） | — | 2026-11-23 |
 | [release-notes.md](project/release-notes.md) | 更新日志（用户向） | — | 2026-10-28 |
 
 ## reviews
@@ -122,6 +122,8 @@
 | [2026-11-23-active-query-gate-design.md](reviews/2026-11-23-active-query-gate-design.md) | 主动查询门控方案（M2 阶段 1） | 方案定稿；未改代码 | 2026-11-23 |
 | [2026-11-23-active-query-write-audit.md](reviews/2026-11-23-active-query-write-audit.md) | 主动查询写入点审计（2026-11-23） | M2 阶段 0 完成；只读静态审计，未向任何设备发帧 | 2026-11-23 |
 | [2026-11-23-backlog-triage.md](reviews/2026-11-23-backlog-triage.md) | BACKLOG 分诊表（2026-11-23） | — | 2026-11-23 |
+| [2026-11-24-active-query-capability-coverage.md](reviews/2026-11-24-active-query-capability-coverage.md) | 主动查询能力覆盖与证据盘点（2026-11-24） | M2 阶段 2 只读审计完成；未改代码、协议 JSON、设备目录、测试或运行行为 | 2026-11-24 |
+| [2026-11-24-manual-target-probing-design.md](reviews/2026-11-24-manual-target-probing-design.md) | 手动目标探测设计（2026-11-24） | 设计稿，待审查；未实施 | 2026-11-24 |
 | [BACKLOG.md](reviews/BACKLOG.md) | 审查发现 BACKLOG | — | 2026-11-23 |
 
 ## reviews/archive

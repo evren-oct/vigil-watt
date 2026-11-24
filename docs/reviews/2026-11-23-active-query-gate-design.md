@@ -68,16 +68,18 @@
 - 有目录的插件补 `devices[].capabilities`；没有目录的主动查询插件先建立最小能力数据源，再谈门控。
 - 这一步只改数据/文档，不切换查询行为，便于单独审查证据。
 
-### 4.2 引入纯策略函数
+### 4.2 不抽通用策略层
 
-在两个以上插件出现同构判断后，增加一个纯函数（建议名 `ActiveQueryPolicy`）：
+不新增通用 `ActiveQueryPolicy`，也不为手动探测另建一套授权框架。自动查询授权按插件现有结构逐点补齐：
 
-```text
-Allow(writesEnabled, probeWrites, capabilityState, identityMatched, canWrite)
-  -> (allowed, reason)
-```
+- `WritesEnabled` / `IsWritesEnabled` 负责插件开关；
+- `CanWrite` 负责熔断与退避；
+- `BatteryReadVerified` 或对应能力查询负责设备能力；
+- 插件自己的接口匹配负责身份边界。
 
-它不读设置、不开句柄、不发帧、不依赖 WinRT；插件只负责提供值。先有测试，再接线。
+只有未来出现两个以上完全同构、且经独立审查的真实实现时，才另行评估是否抽象；不在本方案内。
+
+手动目标探测是另一条受控只读路径，设计见 [手动目标探测设计](2026-11-24-manual-target-probing-design.md)；它同样不新增通用 `ActiveQueryPolicy`。
 
 ### 4.3 按插件逐批启用
 
@@ -87,6 +89,8 @@ Allow(writesEnabled, probeWrites, capabilityState, identityMatched, canWrite)
 4. 最后处理握手、发现探测、半开探活与 ATK 后备写入。
 
 每批只影响一个品牌/插件，失败可单独回滚；不引入全局功能开关。
+
+手动目标探测的 `ProbePlan`、设备实例证据和 UI 另按 [手动目标探测设计](2026-11-24-manual-target-probing-design.md) 推进，不并入本方案的自动门控实施。
 
 ## 5. 验收标准
 
@@ -115,6 +119,7 @@ Allow(writesEnabled, probeWrites, capabilityState, identityMatched, canWrite)
 ## 8. 相关文档
 
 - [主动查询写入点审计](2026-11-23-active-query-write-audit.md)
+- [手动目标探测设计](2026-11-24-manual-target-probing-design.md)
 - [主动查询安全规范](../architecture/active-query-safety.md)
 - [通用协议引擎治理路线图](../architecture/protocol-engine-roadmap.md)
 - [设备身份与能力声明规范](../architecture/device-identity-and-capabilities.md)

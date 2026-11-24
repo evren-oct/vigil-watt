@@ -445,6 +445,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 - [设备身份与能力声明规范](../architecture/device-identity-and-capabilities.md)：身份、接口匹配、能力证据边界。
 - [协议回归测试规范](../architecture/protocol-regression-testing.md)：Golden Frame、授权测试与最小测试集。
 - [统一遥测衔接规范](../architecture/protocol-telemetry-integration.md)：厂商语义到统一模型的边界。
+- [手动目标探测设计](../reviews/2026-11-24-manual-target-probing-design.md)：插件提供的只读 `ProbePlan` 与实例级证据边界。
 - [项目架构](../project/architecture.md)：模块边界、线程模型、状态合并、非插件数据源。
 - [运行时数据流](../project/code-flow.md)：认领、轮询、离线五条路径。
 - [协议 JSON 写法](../dev/protocol-json.md)：字段词表、`extends` / `override`、加载期校验。

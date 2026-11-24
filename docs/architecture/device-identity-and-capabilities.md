@@ -14,6 +14,8 @@
 
 身份与匹配必须分开存储、分开使用。`DeviceStatus.Usb`、`Reported`、`Receiver` 是三个身份快照，不能合成一个“型号”字段。
 
+手动目标探测中的 `TargetSelection` 也不等于设备身份：用户选择某个接口、接收器或槽位，只表示本次操作目标；`ProbeResult` 只能提供证据，不能直接写成已确认的 `DeviceIdentity`。见 [手动目标探测设计](../reviews/2026-11-24-manual-target-probing-design.md)。
+
 ## 2. 识别依据
 
 可用依据按证据强度排列：
@@ -138,3 +140,4 @@
 - [协议 JSON 怎么写](../dev/protocol-json.md)
 - [设备支持矩阵](../hardware/support-matrix.md)
 - [统一遥测衔接规范](protocol-telemetry-integration.md)
+- [手动目标探测设计](../reviews/2026-11-24-manual-target-probing-design.md)

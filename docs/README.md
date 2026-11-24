@@ -82,6 +82,8 @@
 - [2026-11-23-backlog-triage.md](reviews/2026-11-23-backlog-triage.md)：BACKLOG 全量分诊表（VERIFY / BUG / EVID / WONTFIX / SOMEDAY / REFACTOR）。
 - [2026-11-23-active-query-write-audit.md](reviews/2026-11-23-active-query-write-audit.md)：M2 主动查询写入点静态盘点、现有闸门与风险。
 - [2026-11-23-active-query-gate-design.md](reviews/2026-11-23-active-query-gate-design.md)：M2 主动查询门控方案、能力覆盖现状与分步实施顺序。
+- [2026-11-24-active-query-capability-coverage.md](reviews/2026-11-24-active-query-capability-coverage.md)：主动查询能力覆盖与证据盘点（未提交，待审查）。
+- [2026-11-24-manual-target-probing-design.md](reviews/2026-11-24-manual-target-probing-design.md)：手动目标探测的身份、授权、ProbePlan、实例证据与实施阶段。
 - [archive/BACKLOG-CLOSED.md](reviews/archive/BACKLOG-CLOSED.md)：已关闭审查项及结论。
 - [archive/README.md](reviews/archive/README.md)：审查报告归档索引（历史代码审查、复核、注释审计和内存调查）。
 

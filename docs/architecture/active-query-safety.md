@@ -1,6 +1,6 @@
 # 主动查询安全规范
 
-> 状态：规范生效；M2 阶段 1 方案定稿，全面门控受能力声明覆盖阻塞，尚未实施。
+> 状态：规范生效；M2 阶段 1 方案定稿，手动目标探测设计稿待审查，全面门控受能力声明覆盖阻塞，尚未实施。
 > 本文定义所有主机→设备写入的授权边界；事故复盘、逐插件开关现状和写入规则仍以 [`docs/hardware/safety.md`](../hardware/safety.md) 为准。
 > 基线：2026-11-23，`dev` 分支 `d117b59`。
 
@@ -98,6 +98,14 @@
 | BLE / 经典蓝牙 / 本机电源 | 无主动写入 | 不属于主动查询 | 不引入插件写入抽象 |
 | 诊断采集手动发帧 | 用户在会话中显式勾选并授权 | 独立路径，见 [`capture.md`](../project/capture.md) §11 | 不并入插件开关，也不得自动发帧 |
 
+### 6.1 手动目标探测
+
+手动目标探测是受控只读例外，不是自动发现，也不是全面主动化。用户选择目标（`TargetSelection`）不等于确认设备身份；探测结果（`ProbeResult`）也不能直接写成已确认身份。
+
+只有同时满足插件开关、一次性用户确认、已审核 `ProbePlan`、接口指纹、设备能力、运行时未熔断/退避/让位时，才允许执行已知只读查询。探测计划只能包含已登记命令，失败立即停止，不得枚举、扫描、猜测、自动切换目标或扩大范围。
+
+`ProbeVerified` 是证据来源，不是第四种能力状态；只影响当前设备实例实际验证的能力，失败保持 `unverified`，不得自动推广到同型号或其他槽位。完整设计见 [手动目标探测设计](../reviews/2026-11-24-manual-target-probing-design.md)。
+
 2026-11-23 已完成静态写入点盘点，矩阵与风险见 [主动查询写入点审计](../reviews/2026-11-23-active-query-write-audit.md)。完整运行时行为仍需逐插件测试；方案已定稿，实施尚未开始。
 
 门控方案见 [主动查询门控方案](../reviews/2026-11-23-active-query-gate-design.md)：先补能力覆盖，再按插件逐批启用；不能把 `Unverified` 当 `Supported`。
@@ -134,6 +142,7 @@
 
 - 2026-11-23 完成写入点静态盘点；
 - 2026-11-23 完成阶段 1 门控方案定稿；
+- 2026-11-24 完成手动目标探测设计稿，待审查；
 - `ProtocolEngine` 有 `activeAllowed` 参数；
 - `BatteryPluginBase` 有 `BatteryReadVerified`；
 - 北通按目录能力门控主动查询；
@@ -151,6 +160,7 @@
 ## 10. 相关文档
 
 - [通用协议引擎治理路线图](protocol-engine-roadmap.md)
+- [手动目标探测设计](../reviews/2026-11-24-manual-target-probing-design.md)
 - [硬件安全规则](../hardware/safety.md)
 - [设备身份与能力声明规范](device-identity-and-capabilities.md)
 - [协议回归测试规范](protocol-regression-testing.md)

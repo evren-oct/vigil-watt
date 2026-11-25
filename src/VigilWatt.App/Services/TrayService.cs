@@ -317,6 +317,7 @@ public sealed class TrayService : IDisposable
         Log.Info("打开主窗口被调用");
         var window = App.Services.MainWindow;
         if (window == null) return;
+        WorkingSetTrim.Cancel();   // 刚裁完又显示，先取消，免得整页缺页回来
         window.AppWindow.Show();
         window.Activate();
         Native.SetForegroundWindow(WinRT.Interop.WindowNative.GetWindowHandle(window));

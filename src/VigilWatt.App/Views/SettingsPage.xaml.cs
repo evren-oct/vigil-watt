@@ -38,10 +38,11 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
-        // 页面被缓存复用：构造函数只跑一次，所以"建一次"的活留这里，"每次进来都要重读"的活放 Loaded
+        // 懒缓存：首次进来构造一次、之后复用；启动期不再预热（预热一份 231 元素 + 19 个下拉框要 ~27MB 提交）
         NavigationCacheMode = NavigationCacheMode.Required;
         BuildOptions();
         Loaded += OnPageLoaded;
+        Unloaded += (_, _) => _highlightTimer?.Stop();
     }
 
     /// <summary>每次进页面都重读设置。搜索索引改为按需重建：折叠区展开后视觉树会变，缓存会过期。</summary>
@@ -97,6 +98,7 @@ public sealed partial class SettingsPage : Page
         UpdateTaskbarDeviceSummary();
         // 屏幕随时可能插拔：每次进页面重新枚举，选中项按稳定身份还原
         SyncTaskbarScreenCombo(s.TaskbarBatteryScreen, s.TaskbarBatteryScreenLabel);
+        TaskbarLockToggle.IsOn = s.TaskbarBatteryLockPosition;
 
         // 窗口背景：下拉框选中"用户偏好"，副标题说"这台机器上实际会生效什么"——
         // 两者不是一回事（Win10 上选 Mica 会静默降级成 Acrylic），分开显示才不会让人困惑。
@@ -313,6 +315,13 @@ public sealed partial class SettingsPage : Page
     private void TaskbarReset_Click(object sender, RoutedEventArgs e)
     {
         App.Services.TaskbarBattery?.ResetPosition();
+    }
+
+    /// <summary>锁定开关即时生效（不等保存）：拖动本来就是即时行为，等保存才锁等于没锁。
+    /// 程序化赋值 IsOn 也会触发本事件，靠 Manager.SetLockPosition 的"值没变就返回"兜住。</summary>
+    private void TaskbarLock_Toggled(object sender, RoutedEventArgs e)
+    {
+        App.Services.TaskbarBattery?.SetLockPosition(TaskbarLockToggle.IsOn);
     }
 
     /// <summary>重建屏幕下拉框并选中配置项。<paramref name="configuredId"/> 是稳定身份，不是 \\.\DISPLAYn。</summary>
@@ -811,6 +820,8 @@ public sealed partial class SettingsPage : Page
                                      && taskbarMaxItem.Tag is int taskbarMaxValue
             ? TaskbarBatteryOptions.Clamp(taskbarMaxValue)
             : TaskbarBatteryOptions.Default;
+        // 贴片关着时上面的 Toggled 没有落盘通道（Manager 为 null），保存时补一次，免得开关显示与实际相反
+        s.TaskbarBatteryLockPosition = TaskbarLockToggle.IsOn;
         // 身份与名字一起存：屏没插时设置页还要显示它叫什么叫
         if (TaskbarScreenCombo.SelectedItem is ComboBoxItem screenItem && screenItem.Tag is string screenTag)
         {

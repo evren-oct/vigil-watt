@@ -101,24 +101,21 @@ public sealed partial class DevicesPage : Page
         var devices = App.Services.Manager.Devices;
         var settings = App.Services.Settings;
 
-        // 按 Id 取旧行，内容指纹相同就整行复用，避免静止设备跟着重建
+        // 按 Id 取旧行原地 Update：集合元素不替换，ListView 就不会回收容器（替换会让整行闪一下）
         var existing = new Dictionary<string, DeviceRowModel>(_rows.Count);
         foreach (var row in _rows) existing[row.Id] = row;
 
         var fresh = new List<DeviceRowModel>(devices.Count);
         foreach (var d in devices)
         {
-            existing.TryGetValue(d.Id, out var previous);
-            fresh.Add(DeviceRowModel.From(d, settings, App.Services.Manager.GetRemainingTimeEstimate(d), previous));
+            if (!existing.Remove(d.Id, out var row)) row = new DeviceRowModel();
+            row.Update(d, settings);
+            fresh.Add(row);
         }
 
-        // 逐位比较引用：复用的行原地不动，只替换真正变了的那些
-        for (int i = 0; i < fresh.Count; i++)
-        {
-            if (i >= _rows.Count) _rows.Add(fresh[i]);
-            else if (!ReferenceEquals(_rows[i], fresh[i])) _rows[i] = fresh[i];
-        }
-        while (_rows.Count > fresh.Count) _rows.RemoveAt(_rows.Count - 1);
+        // existing 里剩下的是这一轮没再出现的设备，先摘掉，再对齐顺序
+        foreach (var gone in existing.Values) _rows.Remove(gone);
+        SyncRows(fresh);
 
         var online = devices.Count(d => d.IsOnline);
         // 带上时间戳：即使设备数没变，用户也能一眼看出这次刷新确实跑过了
@@ -142,6 +139,27 @@ public sealed partial class DevicesPage : Page
         EmptyHint.Text = ignored > 0
             ? $"已忽略 {ignored} 台设备，可在下方恢复"
             : "连接蓝牙设备或插入 2.4G 接收器，然后点击刷新";
+    }
+
+    /// <summary>把 _rows 对齐到 fresh 的顺序：同实例同位置一律不动，只处理换位与新增（换位才会触发重排动画）。</summary>
+    private void SyncRows(List<DeviceRowModel> fresh)
+    {
+        for (int i = 0; i < fresh.Count; i++)
+        {
+            if (i < _rows.Count && ReferenceEquals(_rows[i], fresh[i])) continue;
+            int at = IndexOfRow(fresh[i]);
+            if (at >= 0) _rows.Move(at, i);
+            else _rows.Insert(i, fresh[i]);
+        }
+    }
+
+    private int IndexOfRow(DeviceRowModel row)
+    {
+        for (int i = 0; i < _rows.Count; i++)
+        {
+            if (ReferenceEquals(_rows[i], row)) return i;
+        }
+        return -1;
     }
 
     private async void CustomizeDevice_Click(object sender, RoutedEventArgs e)
@@ -333,9 +351,14 @@ public sealed partial class DevicesPage : Page
         else
         {
             var name = FilterDeviceNameInput(nameBox.Text, 0, 0).Text.Trim();
-            var custom = new DeviceCustomization();
+            // 复用现有项：新建会把详情页选过的配色（ImageKey）一起清掉
+            settings.DeviceCustomizations.TryGetValue(id, out var custom);
+            custom ??= new DeviceCustomization();
             custom.Name = name;
             custom.IconKind = selectedKind;
+            // 首次改名时记下协议原名：离线墓碑的名字取自历史库（已是改名后的值），没有原名就配不上产品图
+            if (!string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(custom.OriginalName))
+                custom.OriginalName = App.Services.Manager.Find(id)?.Name;
             if (custom.Name == null && custom.IconKind == null) settings.DeviceCustomizations.Remove(id);
             else settings.DeviceCustomizations[id] = custom;
         }
@@ -345,6 +368,36 @@ public sealed partial class DevicesPage : Page
         Refresh();
     }
 
+    /// <summary>单击整卡进详情：行内不设第二个热点，避免"点这里跳、点那里没反应"。</summary>
+    private void DeviceRow_Click(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not DeviceRowModel model) return;
+        Frame.Navigate(typeof(DeviceDetailPage), model.Id);
+    }
+
+    private void OpenDetail_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuFlyoutItem item || item.Tag is not string id) return;
+        Frame.Navigate(typeof(DeviceDetailPage), id);
+    }
+
+    /// <summary>悬停只换描边：卡片自带底色，ListViewItem 的悬停底被盖住，不换描边就看不出可点。</summary>
+    private void DeviceRow_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Border border && HoverStroke is { } brush) border.BorderBrush = brush;
+    }
+
+    private void DeviceRow_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        // 清掉本地值才会回落到样式里的 CardStrokeColorDefaultBrush，主题切换也能跟着变
+        if (sender is Border border) border.ClearValue(Border.BorderBrushProperty);
+    }
+
+    private static Brush? HoverStroke =>
+        Application.Current.Resources.TryGetValue("ControlStrokeColorDefaultBrush", out var value)
+            ? value as Brush
+            : null;
+
     private void DeviceRow_RightTapped(object sender, RightTappedRoutedEventArgs e)
     {
         if (sender is not FrameworkElement row || row.DataContext is not DeviceRowModel model) return;
@@ -352,6 +405,15 @@ public sealed partial class DevicesPage : Page
         if (device == null || device.Source == DeviceSource.System) return;
 
         var menu = new MenuFlyout();
+        // 详情放第一项：它是唯一无损的动作，其余三项都会改状态
+        var detail = new MenuFlyoutItem
+        {
+            Text = "查看详情",
+            Tag = model.Id,
+        };
+        detail.Click += OpenDetail_Click;
+        menu.Items.Add(detail);
+
         var customize = new MenuFlyoutItem
         {
             Text = "自定义名称和图标",
@@ -409,10 +471,15 @@ public sealed partial class DevicesPage : Page
         };
         var secondary = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush;
         var critical = Application.Current.Resources["SystemFillColorCriticalBrush"] as Brush;
+        // 连接信息统一走 DeviceConnectionInfo：离线设备只说"最后已知"或"未知"，不再拿来源冒充链路
         var body = new StackPanel { Spacing = 6, MinWidth = 380 };
+        // 体系名是链路之外的第二个维度（Bolt 走 2.4G），有目录记录才补，不猜品牌
+        var receiver = DeviceConnectionInfo.ReceiverLabel(device.Receiver);
         body.Children.Add(new TextBlock
         {
-            Text = $"来源：{DeviceSourceInfo.ShortLabel(device.Source)} · 最后更新 {device.LastUpdated:MM-dd HH:mm}",
+            Text = $"连接：{DeviceConnectionInfo.Describe(device.Connection, device.Source, device.IsOnline)}"
+                   + (receiver is null ? "" : $"（{receiver}）")
+                   + $" · 最后更新 {device.LastUpdated:MM-dd HH:mm}",
             FontSize = 12,
             Foreground = secondary,
         });

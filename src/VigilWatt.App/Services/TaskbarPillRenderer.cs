@@ -141,6 +141,9 @@ public static class TaskbarPillRenderer
                     tip += remaining.IsAvailable
                         ? $"\n约{RemainingTimeEstimator.Format(remaining.Remaining!.Value)}剩余"
                         : $"\n{remaining.Explain()}";
+                // 贴片横向放不下 DPI（单格会从 60px 涨到 120px），只挂在悬停提示里，宽度零成本
+                if (PointerTelemetryFormatter.Summary(piece.Device, DateTimeOffset.Now) is { } pointer)
+                    tip += $"\n{pointer}";
                 hits.Add(new HitChip(
                     piece.Device.Id, tip,
                     (int)Math.Floor(padLeft + piece.X), (int)Math.Ceiling(piece.Width)));

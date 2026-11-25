@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Anywhere 3S",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B037"
+    ],
+    "displayNames": [
+      "MX Anywhere 3S"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "ace7145b-b71f-4939-8a5c-1af1f142c892.png",
+      "image": "ace7145b-b71f-4939-8a5c-1af1f142c892.png",
+      "source": "LogiOptions+ devices.json / ace7145b-b71f-4939-8a5c-1af1f142c892.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

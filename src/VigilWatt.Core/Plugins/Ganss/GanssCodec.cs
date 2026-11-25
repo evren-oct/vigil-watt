@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Ganss;
 /// <summary>
 /// 功 能： 0x05AC:024F + 0xFF60/0x0061 + 33 字节这一族键盘的电量报文构造与解析（GANSS GS3104T-Pro / 狼蛛 F108 Pro）。
 /// 2026/10/19 19:45:00 xliu；2026/10/21 扩展 F108 Pro（同硅方案，只差产品名）。
-/// 协议与验证范围见 docs/hardware/ganss.md；两品牌同指纹的陷阱见 docs/hardware/protocols.md §2。
+/// 协议与验证范围见 docs/hardware/brands/ganss.md；两品牌同指纹的陷阱见 docs/hardware/protocols.md §2。
 /// </summary>
 public static class GanssCodec
 {

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT2 RT MASTER V2",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4B21",
+      "1B21"
+    ],
+    "displayNames": [
+      "雷柏 VT2 RT MASTER V2",
+      "VT2 RT MASTER V2"
+    ]
+  },
+  "defaultColor": "First_Light",
+  "colors": [
+    {
+      "key": "First_Light",
+      "label": "破晓",
+      "thumbnail": "First_Light_thumb.png",
+      "image": "First_Light_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT2%20RT%20MASTER%20V2/thumb_First_Light.png"
+    },
+    {
+      "key": "Night_Erosion",
+      "label": "夜蚀",
+      "thumbnail": "Night_Erosion_thumb.png",
+      "image": "Night_Erosion_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT2%20RT%20MASTER%20V2/thumb_Night_Erosion.png"
+    },
+    {
+      "key": "Void",
+      "label": "虚空",
+      "thumbnail": "Void_thumb.png",
+      "image": "Void_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT2%20RT%20MASTER%20V2/thumb_Void.png"
+    },
+    {
+      "key": "Ink_Veil",
+      "label": "墨隐",
+      "thumbnail": "Ink_Veil_thumb.png",
+      "image": "Ink_Veil_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT2%20RT%20MASTER%20V2/thumb_Ink_Veil.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 68 V2 III",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 68 V2 III",
+      "Ace 68 V2 III",
+      "迈从 Ace 68 V2",
+      "Ace 68 V2"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "3024",
+      "3025"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68V2_whiteReflection.png"
+    },
+    {
+      "key": "color-white-line",
+      "label": "white line",
+      "thumbnail": "color-white-line_thumb.png",
+      "image": "color-white-line_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_68_V2_White_Line_2x_11d74fd9fa40.png"
+    },
+    {
+      "key": "color-white-copy",
+      "label": "white copy",
+      "thumbnail": "color-white-copy_thumb.png",
+      "image": "color-white-copy_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68V2_whiteSide.png"
+    },
+    {
+      "key": "color-ace68-v2-white-frosted-BMW",
+      "label": "ace68 v2 white frosted BMW",
+      "thumbnail": "color-ace68-v2-white-frosted-BMW_thumb.png",
+      "image": "color-ace68-v2-white-frosted-BMW_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68V2_whiteFrostedBMW.png"
+    },
+    {
+      "key": "color-ace68-v2-white-frosted-Halo",
+      "label": "ace68 v2 white frosted Halo",
+      "thumbnail": "color-ace68-v2-white-frosted-Halo_thumb.png",
+      "image": "color-ace68-v2-white-frosted-Halo_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68V2_whiteFrostedHalo.png"
+    },
+    {
+      "key": "color-ace68-v2-pink-frosted-BMW",
+      "label": "ace68 v2 pink frosted BMW",
+      "thumbnail": "color-ace68-v2-pink-frosted-BMW_thumb.png",
+      "image": "color-ace68-v2-pink-frosted-BMW_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68V2_pinkFrostedBMW.png"
+    },
+    {
+      "key": "color-ace68-v2-pink-frosted-Halo",
+      "label": "ace68 v2 pink frosted Halo",
+      "thumbnail": "color-ace68-v2-pink-frosted-Halo_thumb.png",
+      "image": "color-ace68-v2-pink-frosted-Halo_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68V2_pinkFrostedHalo.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68V2_black.png"
+    },
+    {
+      "key": "color-mist-black",
+      "label": "mist black",
+      "thumbnail": "color-mist-black_thumb.png",
+      "image": "color-mist-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_68_V2雾透黑_2x_32a46456cc65.png"
+    },
+    {
+      "key": "color-black-line",
+      "label": "black line",
+      "thumbnail": "color-black-line_thumb.png",
+      "image": "color-black-line_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace68V2ColorBlackLineFull_vqewxqgkgm6mkwtj.png"
+    },
+    {
+      "key": "color-red",
+      "label": "red",
+      "thumbnail": "color-red_thumb.png",
+      "image": "color-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68V2_red.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

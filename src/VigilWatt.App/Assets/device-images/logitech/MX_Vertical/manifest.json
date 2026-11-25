@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Vertical",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "407B",
+      "B020",
+      "C08A"
+    ],
+    "displayNames": [
+      "MX Vertical"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_vertical.png",
+      "image": "mx_vertical.png",
+      "source": "LogiOptions+ devices.json / mx_vertical.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

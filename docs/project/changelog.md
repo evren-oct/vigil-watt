@@ -3,6 +3,182 @@
 > 只留「改了什么 + 为什么」。协议、坑、流程在专题文档，这里不抄第二份。
 > 新会话不必读。每条一两句；单日新增超过 15 行就是写长了。发版只在文末版本表加一行。构建结果、打包耗时、文件清单不记（`AGENTS.md` §3）。
 
+## 2026-11-25
+
+- **`0xB5` 长寄存器加会话级负缓存**：`ReceiverSession.ReceiverInfoUnavailable` —— 一次超时后本会话不再为它的其他子寄存器白等。C548 对 `0xB5/0x03`（槽位容量）和 `0xB5/0x51`（Bolt 配对）都不回包，此前每次启动白等 **1.73 秒**（877 + 856ms）；改后 `0x83B5` 超时 2 次→1 次，设备出现 5.72→**3.70s**。重开句柄时连同 `SlotCountProbed` 一起复位。回包但解析不出**不**记负缓存（说明接收器答了，只是布局不同）。
+- **HID++ 被动监听不再独占 I/O 锁**：`HidppIO.PumpNotifications` 原来在 `_ioGate` 里读满整个 500ms 窗口、无间隔重入，等于长期占着锁，**每个 `Request` 都要排队约 500ms**（埋点实测 20+ 次，含 `0x83B5` 探测 1346ms、空槽 ping 910ms/400ms 预算）。改成 50ms 切片、每片放锁后再取。整轮发现扫描 **10713→5651ms**，设备出现 10.05s→5.72s，等锁记录归零。剩余项见 CR-181。
+- **`进程身份` 日志不再拖慢启动**：`管理员=` / `沙箱组=` 两项改成只在 `LogLevel=Debug` 时计算。实测这一行曾占启动关键路径 **0.95 秒**（组名翻译逐个问 LSASS/AD，域账户二三十个组）；`用户=`/`会话=`/`完整性=` 保留常打——`完整性` 才是 §20 那次事故要看的东西，而且只要一次 `GetTokenInformation`。
+- **删掉设置页预热**：`PrewarmSettingsPage` 整段移除，启动基线提交 127.7→100.1MB、专用工作集 ~120→74.7MB。**注意这是"推迟"不是"消除"**：第一次切页要一次性补回 ~30MB（图形/文字栈 + 设置页树），点完所有页面后与预热版持平（153.6 vs 153.3）。
+- **页面常驻保留（试过拆，不划算）**：去掉 4 个页面的 `NavigationCacheMode.Required` 后重测，第一轮持平、**重复访问每轮 +28MB 且不回收**，手感却几乎没差别（用户实机判断）。数据与结论见 `dev/runtime-pitfalls.md` §27。
+- **`AboutPage` 订阅归位**：原先是构造函数订阅 `App.UpdateStatusChanged` / `UpdateDownloadUi.ProgressChanged` 且从不解绑，靠"页面永不销毁"侥幸成立；改成 `Loaded` 订阅 + `Unloaded` 解绑 + `_hooked` 守卫（§19 的形态）。
+- **设备图片清单改懒加载**：`DeviceImageService` 的两个清单改 `Lazy<>`，首次打开详情页才解析。315 个 `manifest.json` 常驻只有 ~0.6MB（667 配色 / 4129 条字符串），**这不是内存优化**，只是把启动期 315 次读盘挪走；日志行随之改成按需输出的「设备图片包（内置）: N 个型号」。
+- **隐藏到托盘后修剪工作集**：`MainWindow.HideToTray()` 在 `AppWindow.Hide()` 之后延迟 1.2 秒调 `SetProcessWorkingSetSizeEx(-1,-1)`，`TrayService.ShowMainWindow()` 先取消。起因是用户实测"隐藏半小时仍占 148MB，要等系统内存紧张才掉到 29MB"——非专业用户看的就是任务管理器那一列，而主窗口通常只开一次配置。**只裁驻留页、不改提交**（同期提交 183.8→187.8），口径与取舍见 `dev/runtime-pitfalls.md` §26。
+
+## 2026-11-24
+
+- **Beta 打包通道**：`build-installer.ps1` 增加 `-Version` / `-Channel` / `-OutputDir`；预发布构建只查 `beta` 通道与 prerelease 源，正式版仍走 `win` 稳定通道并在运行时忽略预发布目标。本机已打 `1.4.0-beta.1` 到 `dist-beta/`，未上传。
+- **迈从主动查询白名单**：未登记/未验证接口不再发 0x4D / 0x11 / 键盘会话帧；已验证 G87、G87 V2、CZ、0x4D、Gmouse、V9/X9、G75 Pro 保持查询。新增 `MchoseActiveQueryPolicy` 与 Fake Handle 零写入测试，见 `hardware/safety.md` §3。
+- **手动目标探测设计**：补充 `TargetSelection` / `DeviceIdentity` / `ProbeResult` 的分离，明确插件预登记 `ProbePlan`、一次性只读授权、`ProbeVerified` 仅作实例级证据、失败保持 `unverified`；不新增通用 `ActiveQueryPolicy`。见 `reviews/2026-11-24-manual-target-probing-design.md`。
+- **M2 方案修订**：自动查询与手动探测分离；自动门控按插件逐点补齐，手动探测复用现有插件/解析器/门控，不新增独立协议框架。能力覆盖审计见 `reviews/2026-11-24-active-query-capability-coverage.md`，当前未提交、待审查。
+
+## 2026-11-23
+
+- **协议引擎治理文档体系**：新增治理路线图与协议定义、主动查询安全、身份与能力、回归测试、统一遥测五份专项规范；M1 文档收尾完成，M2 主动查询安全治理列为下一阶段，现有 `protocol-json.md`、`plugin-standard.md` 与 `safety.md` 继续承担原职责。
+- **M2 写入点盘点**：静态审计所有 `WriteOutput` / `SetFeature` / `SendOutputReport` 与 ATK 原生后备路径；确认目前只有北通有设备级能力门控，矩阵与风险见 `reviews/2026-11-23-active-query-write-audit.md`。未改代码、未向设备发帧。
+- **M2 门控方案定稿**：统一授权顺序为插件开关 → 操作类型 → 设备能力 → 身份/接口 → 熔断；`ProtocolEngine.activeAllowed` 改为调用方显式传值，直接 HID 使用同一策略。因能力声明只覆盖少量型号，先补证据再逐插件启用，方案见 `reviews/2026-11-23-active-query-gate-design.md`。
+- **设备状态收口**：新增 `docs/hardware/support-matrix.md` 作为逐台验证状态、默认开关与文档入口的唯一载体；`README.md` 只留本机已验证的 10 台，`handoff.md` §2 与 `protocols.md` 改为链接，不再维护第二份状态表。
+- **文档归位与坏链修复**：`vendor-plugin-standard.md` 从 `docs/architecture/` 移到 `docs/dev/plugin-standard.md`；修掉 logitech 源码链接、`capture.md` §8 顺序、`atk.md` 缺失的 §3 与 4.1/4.2 顺序；补 `reviews/archive/README.md` 归档索引。
+- **发布口径**：GitHub Releases 为主下载源，Gitee Releases 为镜像备份；上传由维护者手动完成，AI 只做本机打包、不代传。`AGENTS.md`、`dev/build.md`、两份 README 与打包/发布脚本同步标注。
+- **文档一致性**：英文 README 缩成 10 台本机已验证 + 矩阵链接；设备图统计改为当前 315 型号 / 667 配色 / 25.8 MB；changelog 与 contributions 按日期排序合并；插件选型表/检查清单收口到 `plugin-standard.md`；新增 `docs/INDEX.md` 生成器与 `check-doc-health.py`。
+- **BACKLOG 核查**：代码核对后把 CR-163/164/165/107/66/67/178 改为 `doing`，CR-69 关闭归档，CR-93 摘要按实际代码更新；撞号条目重编号为 CR-172~CR-179；按分诊表把 7 条 WONTFIX 归档、11 条 SOMEDAY 降为 P3。
+
+## 2026-11-19
+
+- **协议 JSON 严格加载**：`ProtocolSpecLoader` 对协议/设备/嵌套/`override` DTO 开启 `JsonUnmappedMemberHandling.Disallow`；设备反序列化错误带资源、条目序号、VID:PID 与 JSON Path。见 `dev/protocol-json.md` §2.1。
+- **目录数据清理**：雷柏移除 195 条设备级 `brand` / `caps`（历史证据留在 `hardware/reference/rapoo-catalog.md` §6.1）；北通 110 条、迈从 2 条 `devices[].note` 迁到顶层 `deviceNotes`，`transports[].note` 不动。
+
+## 2026-11-18
+
+- **北通 P2 协议数据化**：鲲鹏 `0x15` 与宙斯 `0x04` 的偏移/掩码/五档表/充电/链路全部搬进 `betop.protocols.json`，`BetopCodec` 删除；通用 schema 新增 `percent.map`、`link.table`、`requirePercent`、`chargeWhenMissing` 与动态查询模板。目录扩到 110 条 / 86 个 `VID:PID`（24 low4 + 26 nocharge、9 个宙斯 PID、26 个 20DD），能力声明不变。见 `hardware/reference/betop-catalog.md` §10。
+- **北通产品图补全**：从 BetopGame 2.6.2 的 `handle_kp*`、`t6pro_*`、`t9*` 抽 21 款 / 34 色缩略图，脚本 `scripts/import-betop-images.py`；`5125/5127/5145/5146/5074` 型号留空，继续回退几何图标。见 `project/device-images.md` §7.7。
+
+## 2026-11-16
+
+- **北通 P1 品牌目录与身份**：新增 `betop-catalog.json`（33 条 PID）与 `specs/betop.protocols.json`，接入现有 `ProtocolEngine`；身份归一只认目录显式 `group`（当前仅 5158/5159 → `betop:kunpeng20`），显示名目录优先、歧义 PID 由产品串分流。协议解析、轮询与离线策略未改；T9、鲲鹏20 2.4G/有线是唯一已验电量项，见 `hardware/reference/betop-catalog.md`。
+- **罗技充电状态码拆成两套（CR-164）**：`0x1004` 与 `0x1000` 是两套枚举，此前共用一张表——`0x1004` 的 4（充电故障）被报成"充电中"，`0x1000` 的 5/6/7（无效电池/过热/错误）被报成"放电中"。改为 `TryParseUnifiedBattery` / `TryParseBatteryStatus` 两个解码器，未知码一律 Unknown。
+- **去掉 `0x1004` func 0 电量回退（CR-164）**：func 0 是 GetCapabilities，func 1 超时一次就会锁到档位数上并长期报错值（注释自己记过 15% 误读）。只用 func 1，`UnifiedWorkingFunc` 状态随之删除。
+- **feature 下标不再一次超时就存死（CR-165）**：解析回 0 先留空、下轮再试，连续 3 次才认定不支持（`HidppFeatureProbe`）。此前一次超时即永久禁用该电量路径，直到接收器重插。
+- **罗技设备名读不到（G304 显示「罗技设备 1」）**：`0x0005` 的 func 1 是**按块**回正文，旧实现一帧取一个字符、还把字符数上限写成 32；G 系自报长营销名（G304 = 37 字符）整条被丢弃，列表只剩占位名、详情页无型号无图。改为按 16 字符分块读、上限放到 64（仅防坏字节），拼完拒不可见字符。37 次往返降到 3 次。见 `hardware/logitech.md` §1.2。
+- **32 字节扩展集合不再抢会话**：C53F 同时暴露 7/20/32 字节三个 HID++ 集合，`ShouldSkipInterface` 只分短/长，20 与 32 都被认领成独立会话，而 32 字节那条零回包，每分钟重开一次句柄白等三次超时。改为 `PreferLong` 下扩展集合只在没有 20 字节同伴时才认领（C548 无此集合，此前未暴露）。
+- **G304/G305 产品图补长名变体**：`DeviceImageCatalog` 是整串归一化精确比较，`G304` 匹配不到 `g304lightspeedwirelessgamingmouse`。其余 G 型号仍待真机核对（CR-160）。
+- **雷柏插线双行已修（CR-150）**：同一只鼠标的有线/无线两条枚举按「目录型号 + 序列号」归一到同一 ID，同轮 `SkipPathsForThisPass` 优先保留有线；目录 172 条配对记录补 `wired`，加载期校验每组恰一条，黑名单也改用同一把 ID 钥匙。VT2S Air MAX V2 真机同 SN 已验证，其余配对组待真机复看。
+- **雷柏全系 DPI/档位/回报率遥测**：`[2]`/`[3..6]`/`[11]` 从 `0x1412` 的设备级 override 提到 `status-report7` 协议本体，`lm20rt` / `vt-ch584` 一并继承；能力声明仍按设备三态，只有 VT3 / VT2S 有真机证据。DPI 上限放到 60000，未知回报率码不冒充有值。
+- **雷柏产品图全量**：新增 `scripts/import-rapoo-images.py`，从官方 AHUB 2.0 主包按 `productId` 取 `assetsDir/colors`，下载 96 款 / 296 个配色的缩略图（11.1MB）。Ace 68 Turbo 官方缩略图 404、V700diy-75 LRV 无配色，均跳过；底座/OHID/telink-3228c 不产生设备条目不导。
+
+## 2026-11-13
+
+- **罗技办公线产品图全量**：新增 `scripts/import-logitech-images.py`，读本机 Options+ 的 `devices.json` 与 `depots/*/logioptionsplus/thumbnails`，按 `displayName` 归一化分组，生成 151 款 / 151 张缩略图（原始 22.1MB，300px 重采样后 6.7MB）。每型号只取一张官方主图，不做配色切换——罗技的 `derivatives` 只有 `ext1/ext2` 编号，且混了 for Mac/for Business SKU 与重复引用。`productIds` 写设备 WPID 并排除接收器 PID（C548 是所有 Bolt 设备共用的传输通道）。
+- **修改名设备离线后丢产品图**：`DeviceCustomization` 加 `OriginalName`，改名时记下协议原名，`RestoreOfflineTombstones` 优先用它作 `Name`。在线设备本来就没事（详情页用 `Manager.Find` 的原始实例匹配，改名只写设置），只有墓碑从历史库取名字时才会拿到改名后的值，而墓碑不带 `Usb`/`Reported` 身份。顺带修列表改名时新建 `DeviceCustomization` 会把详情页选过的 `ImageKey` 清掉。
+- **G 系列产品图补上（OpenMouse 图床）**：新增 `scripts/import-openmouse-images.py`，从 `img.openmouse.app` 取 16 个 G / PRO 型号（G502 / G502 X / G502 X Plus / G703 / G903 / G PRO / G PRO 2 / G203 / G303 / G305 / G309 / G402 / G403 / PRO X SUPERLIGHT / PRO X2·X3 SUPERSTRIKE），裁掉透明边距后统一 300 长边，共 0.63MB。`displayNames` 是从它的名字正则反推的，需真机核对 G 系列 `0x0005` 自报名后补变体；图不在其仓库内、不在 AGPL 范围，版权处理同其它产品图。
+- **G 系列未覆盖**：Options+ 只管办公线（180 条里 0 条 G/PRO），G HUB 安装器是自研封装、payload 加密，7-Zip 解不出资源；开源侧 OpenLogi 只有动作图标。要做得先装一次 G HUB 再读它的 resources，见 `reviews/BACKLOG.md`。
+
+## 2026-11-12
+
+- **详情页 Hero 接入本地产品图**：新增 `DeviceImageCatalog` 读取 `device-images/<品牌>/<型号>/manifest.json`，按显示名或「自报型号 + VID/PID」匹配，不按设备 ID；无图/清单损坏回退 `DeviceIconFactory`。只改详情页，列表/托盘/贴片/小组件不动，格式见 `project/device-images.md`。
+- **迈从 G87 图片包**：从 MCHOSE HUB 的 `webIndexList.colorList` 与官方 CDN 整理 11 个配色的缩略图/整机图，最初放在本机数据目录；随后缩略图改为项目资源（见下条）。新增清单匹配、路径越界与配色覆盖单测。
+- **产品图配色可覆盖**：官方 HUB 只用 `checkIndex` 记录用户选择（本机默认 0 = 白），不从设备读颜色；因此详情页 Hero 悬停时显示调整按钮，选中的配色按设备 ID 存 `ImageKey`，详情页优先用户选择。新增配色覆盖与设置序列化单测。
+- **迈从键盘产品图铺全量**：新增 `scripts/import-mchose-images.py`，从官方 `cardList.json` 按型号/PID 分组下载缩略图，生成 30 款 / 159 个配色；加上原有 G87 V1，共 31 款 / 170 个缩略图（压缩后约 4.5MB）。缩略图作为项目 `Assets/device-images` 随包分发，整机图可选写本机数据目录。
+- **产品图接入手册**：`docs/project/device-images.md` 扩成完整流程（官方源、解包、分组、manifest、压缩、校验、已知坑），并新增 `scripts/check-device-images.py` 校验文件缺失与显示名冲突。未来接新品牌照此执行，不再从零设计。
+
+## 2026-11-11
+
+- **设备列表收窄为摘要**：删掉 DPI/档位/回报率那行与「协议 · 状态 · 剩余时间 · 更新于」那行，行高 98→58（800×600 一屏从 5 台变 8 台），这两类信息移交详情页；`DeviceRowModel` 随之删 7 个属性与 `ApplyMetrics`，`Update` 不再要 `remainingTime`。`PointerTelemetryFormatter` / `GetRemainingTimeEstimate` / `ChargeSuffix` **没有删**——贴片悬停提示、桌面小组件与详情页还在用。
+- **新增设备详情页（M4-4）**：Hero（设备牌 + 22 号设备名 + 电量环 + 状态行）加性能 / 连接 / 身份三卡；列表单击整卡或右键「查看详情」进入，`Esc` / 「← 设备电量」返回。离线仍展示最后已知值并逐项标注时刻，为此新增 `PointerTelemetryFormatter.DetailMetrics`（列表口径 `Metrics` 不动）。新增 `Controls/BatteryRing`（ArcSegment 自绘，不用 ProgressRing）、`DeviceIconFactory.Hero`（独立名义框，避免 34px 下描边过粗）、`Models/DeviceKindInfo`。身份卡没有「品牌」——`DeviceStatus` 无此字段，协议串里才带品牌名，按前缀截取等于猜，改用「协议 + 设备 ID」。
+- **修详情页缓存复用残留**：页面 `NavigationCacheMode=Required`，`ApplyMetrics` 用「指标指纹」跳过重建，而空指标列表的指纹是空串、正好等于 `OnNavigatedTo` 复位后的值，于是新设备没有指标时提前返回，上一台设备（雷柏）的 DPI/回报率单元格留在屏幕上（用户发现：迈从还没连上却显示着雷柏的 DPI）。改为空列表走显式分支 `ResetMetrics()`（清子元素 + 收起卡片），换设备时先清空再重绑。
+- **C548 真机验证**：`0xB5/0x03`、`0x51`、`0x61` 均无回包，确认设备不提供该寄存器读；容量走目录 6 槽，连接仍 `Inferred(Wireless24G)`，DPI=1000、回报率 Unknown。证据与原始响应见 `hardware/logitech.md` §1.1。
+- **设备列表离线徽标**：离线改用 `DeviceConnectionInfo.Badge`（最后 X / 离线）并统一灰色，不再把历史链路显示成当前连接；新增 2 条展示测试。
+- **修 BACKLOG 表格渲染断裂**：`CR-124` 起有四条记录前面各夹了一个空行，空行会终止 Markdown 表格，导致后 4 段没有表头、在页面上渲染成普通段落；「重构候选」表则是表头加到 4 列、**分隔行还留在 3 列**，列数以分隔行为准，最后一列被吞掉（两处均由用户发现）。删掉 4 处空行、补上分隔行后，主表恢复为一个连续块。同一轮给 `check-doc-links.py` 加表格完整性检查（被空行截断的残段、分隔行列数、数据行列数），扫出 `review-standard.md` 的 R 清单被一段 R2 例外引用块截断，已把那 8 行引用块搬到表格之后。检查跳过围栏代码块、并认 `\|` 转义，否则 `|| a.includes()` 与单元格内的管道会误报。
+- **文档目录整理**：`docs/hardware/` 43 份平铺拆成 `brands/`(23) / `devices/`(13) / `reference/`(3)，规则层 4 份留在本层。判据是「文件名 = 品牌名 → `brands/`」而不是「型号数 ≥ 2」，这样品牌出第二个型号时只加章节、不搬文件。新增 `hardware/README.md` 承载放哪判据，`protocols.md` 品牌表补 4 份漏项（ilovbee / inzone-h9 / langtu / mojhon），`docs/README.md` 硬件段从 20 行清单改成指向三个子目录——原清单只列了 20/43 份，手写索引已经漂移。全库 706 处路径引用（含 141 处 C# 注释、152 处 hardware 内部相对链接、13 处脚本）用脚本机械改写，新增 `scripts/check-doc-links.py` 兜住「Markdown 坏链不报错」。
+- **补两份文档**：`docs/dev/ui-style.md` 把视觉规则从 `UiPalette.cs` 类头和口头约定里捞出来（颜色只表达电量状态、四档状态色与阈值、图标形状承载身份、字号与卡片）；`docs/user/user-guide.md` 是逐页逐开关的使用说明，此前 README 只覆盖了功能概览。`AGENTS.md` 加 §0「先读什么」，`docs/reviews/BACKLOG.md` 加优先级列（P0/P1/P2，按影响面不按工作量，首轮评估待维护者确认）。
+- **顺带修掉 4 处既有文档错误**：`atk.md §3`（VIA 实际在 §7）、`mojhon.md §2.1`（型号目录实际在 §4.1）两处代码注释锚点失效；两份归档报告指向 `docs/reviews/` 的路径没跟着归档更新；README 写「主窗口第 5 项设备诊断」，实际导航里是第 4 项。
+- **槽位容量改读接收器自报值**：`0xB5/0x03`（RECEIVER_INFO）参数区 `[6]` 是配对槽位容量，`ProbeSlotCount` 每开一次句柄读一次，成功就覆盖目录 `maxSlots`、失败或越界（只收 `1..6`）才退回目录。起因是目录把 Nano / LightSpeed 多半登记成 1 槽，若真实接收器有更多槽位，靠目录就永远扫不到；目录是静态表、自报值是固件事实，判据同 Solaar `extract_max_devices` 与 OpenLogi `get_receiver_info`。只对目录登记过的接收器 PID 探（设备本体 PID 对 `0xFF` 读 `0xB5` 只会白等超时）。解析额外校验 `resp[2]` 是子寄存器回显，偏移不符时宁可读不到。测试 +6（解析 1 条、门控 C17~C19）。**局限**：`PreferShort` 的 Unifying / Nano 走短报文句柄、凑不出 9 字节响应，这两族实际仍以目录值为准；要改得换到长同伴接口上发，代价大于收益。
+- **连接推断放开到全 2.4G 族**：`LogitechConnectionPolicy` 不再只认 Bolt——Unifying / LightSpeed / Nano 与 Bolt 走同一套判据（非 Direct + 目录族属 2.4G 体系 + 槽位在该族目录 `MaxSlots` 内），满足即 `Inferred(Wireless24G)`。理由是这几族的证据完全同源：判据只有"目录族 + 槽位范围"两项，族本身不参与证据强度；原先"要真机确认配对布局才能开"把 `0xB5` 配对寄存器（设备类型 / WPID）误当成了链路前提，而这段代码从来没读过它。27MHz 与 Unknown 族仍排除——前者不在 2.4GHz 频段、`ConnectionKind` 无对应值，后者目录没定性。门控测试扩到 16 条（新增"越界不借别族容量"、"各族都不升级为 `DeviceReported`"）。仍缺 Unifying / LightSpeed / Nano 的真机槽位枚举，见 CR-156。
+- **接收器身份全量开放**：`LogitechReceiverIdentityPolicy` 不再只放行 Bolt——目录里带 `familyDisplay` 的接收器族（Unifying / LIGHTSPEED / Nano / Legacy27Mhz）都填体系名与图标，未收录 PID 与 Direct 路径仍为 null。身份是"这颗 PID 属于哪一族"的目录事实、不是链路结论，`LogitechConnectionPolicy` 是另一个独立策略、各自读目录（其门控同一天一并放开，见上条）。原判定「只有 C548 才配显示体系」把身份与链路混成了一件事。
+- **罗技连接推断边界收紧（M4-3B-2B2-R）**：`LogitechConnectionPolicy` 改收 `HidppCatalog.FindReceiver` 的目录记录，只有 Bolt（当前仅 C548）+ 目录记录内有效槽位才 `Inferred(Wireless24G)`；Unifying / LIGHTSPEED / Nano / Legacy27Mhz / 未知族 / 未收录 PID / PID 缺失一律 Unknown，未知 PID 不再借默认 6 槽当证据。Direct 路径不推断 Wired。门控测试重写为 14 条（含不覆盖 `DeviceReported` 回归）。
+- **设备列表显示接收器体系**：`ReceiverIdentity` 增加 `DisplayName` / `IconKey`（均来自目录 `familyDisplay` / `familyIcon`），设备列表在链路徽标右侧显示「Bolt」这类体系标签与对应图标，ToolTip 补「2.4G（Bolt）」。展示层只读目录给的展示名与语义 key、不做品牌映射——新体系只改 JSON；罗技插件代码里的 `"bolt"` 字面量随之收进目录。图标只用通用几何（信号弧 / 闪电 / 多设备），当时未做厂商标志，见下条。迈从通道暂无体系名（与「2.4G」重复），故不显示。
+- **接收器图标改用官方 path**：`bolt` / `unifying` 不再手绘近似，直接复用 OpenLogi（MIT / Apache-2.0）`action-icons/` 的 path 原文，工厂内加一个只支持 M/L/H/V/C/Z 的私有解析器（WinUI 没有 WPF 的 `Geometry.Parse`）。2026-11-11 用户明确授权推翻「不复刻厂商商标」的旧决定（`architecture.md` 连接章节已改写），范围限于设备列表的小尺寸体系标签。实测官方 Unifying 的星形镂空在 11px 会塌成「方块 + 白十字」，图标边长 11→14 才立得住。`nano` / `lightning` / `multi` / `wireless` 仍为自绘几何。
+
+## 2026-11-10
+
+- **迈从键盘显示真实链路**：`41E4:2001` 是 G87 的 dongle（`mchose.md` §1），登记进目录 `transports` 后，认领到它即把链路推断为 2.4G，来源记 `Inferred`——主机读的是接收器通道，有线数据不会经过 dongle。键盘本体 PID 未登记，插线场景仍显示未知。`ConnectionOfProbe` 改为返回遥测值，来源由插件自报（探测帧 `DeviceReported` / 结构推断 `Inferred`），基类不再一律当成设备上报。
+- **连接遥测的 Unknown 加固（M4-3B-1R）**：`TelemetryValue.HasValue` 只校验"有没有来源"，所以 `Reported(Unknown)` 也算有效，合并时能压掉已知链路。连接专用合并与徽标判据统一改成"Unknown 值不算链路"（`DeviceStatusMerger.MergeConnection`、`DeviceConnectionInfo.IsKnown`），`HasConnectionChanged` 同样忽略它。现有写入点（`SetConnection` / `SeedConnection` / 两个蓝牙 watcher）本来就有守卫，这次是堵住模型层可被误用的口子，未改通用 `TelemetryValue.Merge`，Battery / Pointer 行为不变。测试 +7（`M13`~`M15`、`C16`、`D8`、认领落地两条）。
+- **罗技 C548 ReceiverIdentity（M4-3B-2B1）**：`AddDevice` 只在非 Direct、目录 Family 为 Bolt 时填 `ReceiverIdentity(null, "bolt")`；当前目录只有 C548 为 Bolt，C52B/C532 等其它接收器保持 null。`Connection`、DirectDevice、认领/去重与配对读取均未改；新增纯策略与身份回归测试 9 例。
+- **罗技接收器槽位连接推断（M4-3B-2B2）**：`AddDevice` 只在非 Direct、Ping 成功且槽位在 `1..MaxSlots` 时填 `Inferred(Wireless24G)`；Direct `0xFF`、空槽和越界槽位保持 Unknown。接收器存在不等于设备当前连接，Slot Ping 不升级成 `DeviceReported`。
+- **罗技 DPI / 回报率只读接入（M4-3B-2C）**：`0x2201`（不支持时退回 `0x2202`）读 DPI、`0x8060`（退回 `0x8061`）读回报率，2 分钟一次，来源记 `DeviceReported`；读不到就留空，不按型号补默认值。C548 + MX Master 3S 真机读回 1000 DPI；回报率两个 feature 都不应答，故仍为未知。新增纯解析测试 15 例。
+
+## 2026-11-09
+
+- **设备身份快照（M4-2，补记）**：`DeviceStatus` 增加 `Usb` / `Reported` / `Receiver` 三个可选身份，分别表达"被认领的 HID 接口""协议自报的本体""接收器或传输通道"。三者都是 `readonly record struct`，`Clone` 按值复制，`DeviceStatusMerger` 按"空值不清洗"合并（轮询应答与离线墓碑都不带身份）；合并时先判身份再补子字段，VID+PID 变了就整体替换，不继承旧序列号 / 型号。填充边界：基类在认领构造处统一填 `Usb`（34 个子类零改动），迈从额外用 0x0900 自报身份填 `Reported`、用目录 `transports` 的 role 填 `Receiver`，罗技在 `AddDevice` 里补 `Usb`（会话型插件走不到基类路径）；罗技的 `Receiver` 仍为空，`HidppCatalog.Family()` 未接入。身份不参与认领、去重、设备 ID 与历史，也不进 `HasChanged`。
+- **连接方式改成带来源与时刻的遥测（M4-3B-1）**：`DeviceStatus.Connection` 从裸枚举改为 `TelemetryValue<ConnectionKind>`，来源复用 `TelemetrySource`，新增 `MergePreferTrusted` 按证据强度合并（设备上报压过推断、反向不覆盖、无值不清洗）；`ConnectionKind` 补 `Bluetooth`，BLE 与经典蓝牙两个 watcher 直接声明链路，不再依赖来源兜底。见 `project/architecture.md` §6。
+- **修徽标把接入栈当链路**：删掉 `BadgeLabel` 的 `Hid24G + Unknown → 2.4G` 回落（M4-3A 审计 P1/P3），改由新的 `DeviceConnectionInfo` 统一出文案与取色档——只有 BLE / 经典蓝牙 / 本机允许按来源兜底，未知单独一档用中性灰、不再借 2.4G 紫；离线设备显示"离线 · 最后已知：X"或"离线 · 未知"。设备列表、桌面小组件、删除确认框三处共用同一出口。
+- **测试**：新增 `DeviceConnectionInfoTests`（7 例）与合并优先级 / 来源升级不触发变化 / Clone 保留遥测 / 离线保留最后已知用例，`DeviceSourceInfoTests.S4` 改为钉"来源不再冒充连接方式"；全量 1821 通过 / 1 跳过。
+- **迈从 0x4D 取证准备修正（M2-4C-P1）**：两个 rate index **不一致时不发布**（语义未确认，不顶替也不清旧值，判定集中在 `MchoseRatePolicy`）；`0x0002`/`0x0003` 从"试一次就永久放弃"改为**最多 3 轮**重试，两项都成功才收工；DPI 在 `dpiHasY==1` 时补读 Y 轴（Y 失败不影响 X）；三条取证日志升到 Info 并带原始帧。仍无真机样本，DPI / Rate 能力保持 `Unverified`。见 `hardware/mchose.md` §3.4.1、§3.4.2。
+- **M2-4 归档**：DPI / 回报率只读遥测阶段收尾，官方审计、代码实现、自动化测试三项完成，真机验证与能力开放转 M2-5。归档状态表见 `hardware/mchose.md` §3.9。
+
+## 2026-11-08
+
+- **迈从 0x4D 协议合并（M2-2）**：`qhw` 与 `mouse-k7` 原本是两套并行实现，帧构造、校验范围、应答定位各写一遍，且 QHW 那套的 `0x0904` 命令与 `flags=0x03` + 求和校验都是错的（设备只回显、不执行）。合并为唯一执行器 `Mchose0x4DCodec`，协议名统一 `mchose-0x4d`，删掉 `MchoseK7Codec` 及其测试；分类器 `MouseK7` 改名 `Mouse0x4D`，并为目录登记的通用 dongle（`0x1014/0x1016/0x101C/0x101D`）加「厂商页 + 双向 64 字节」的宽松判据，`0x1018` 仍只认精确指纹。见 `hardware/mchose.md` §2、§3。
+- **迈从 `0x0900` 自报身份**：`payload[0..3]` 是配对**本体**的 VID/PID（不是 dongle 的），新增 `MchoseDeviceIdentity` 把 USB 身份与协议身份分开存，只用于显示名、**不参与认领**——dongle PID 被多款共用，不能反推型号。真机样本自报 `0x4026`（A5 V3 Ultra+），与当时记录的 K7 V2 Ultra+ 不符，型号身份仍未闭环（`hardware/mchose.md` §3.8）。
+- **迈从 0x4D 接入连接方式与统一充电状态（M2-3）**：`0x0900` 的 `payload[10]` 一直是"解析后丢弃"，现在映射到 `ConnectionKind`（`1` 有线 / `2` 2.4G，其余 `Unknown`——官方只给了这两档语义）；`payload[11]` 的充电码表从插件搬进 `Mchose0x4DCodec`，与连接映射同处一个纯函数层，单测可直接钉住。连接方式**只刷徽标**：`Unknown` 不覆盖已知值、不参与在线判定、也不触发重新认领（认领只看 VID/PID 与接口描述符）。见 `hardware/mchose.md` §3.3。
+- **能力声明补两项、只给有真机证据的通道**：`DeviceCapability` 增加 `ConnectionRead` / `ChargingRead`（原六项表达不了这两件事），`mchose-catalog.json` 的 `transports[]` 支持 `capabilities`；只有 `3837:1018` 声明三项 `supported`，四颗未验证的共用 dongle 与四条本体 PID 一律不声明——不从协议族外推。见 `dev/protocol-json.md` §2.1。
+- **补测试**：`Mchose0x4DTelemetryTests`（连接/充电映射、未知值不落确定态、三字段索引隔离、能力声明与目录一致）+ `ConnectionTelemetryTests`（连接变化不碰在线状态/电量、失败轮询不重置遥测、不触发重新认领）。
+- **迈从 0x4D 解析 DPI 档位事件与 `0x0003` 配置读取（M2-4B1）**：`TryParseStatusEvent` 原先要求 payload ≥13 字节，纯档位事件（3 字节）会被整条丢掉；改为**按实际带的字段判长度**，并把档位事件落到 `PointerTelemetry.DpiLevel`（存协议原值，不 +1）。新增 `TryParseDpi` / `TryGetActiveDpi`：`ActiveDpi = dpiX[usbDpiIndex]` 只在"读的配置档确实是活动档"时成立，而活动档来源（`0x0600` 的 `payload[6]`）只有 B 级证据，所以**不发布任何 DPI 值**，插件只在认领后读一次 profile 0 留样本。能力声明未改（仍无真机）。见 `hardware/mchose.md` §3.4.1、`hardware/mchose-dpi-report-rate-audit.md`。
+- **迈从 0x4D 接入回报率只读遥测（M2-4B2）**：`0x0002` 只回 index（`[1]` 高半字节 USB / `[2]` 高半字节 2.4G），Hz 靠官方两张表换算，表与槽位进了 `mchose-catalog.json` 的 `rateTables` / `rateProfiles`（按"型号 + USB 枚举 PID"选槽，本体直连用槽 0）。发布 `ReportRateSettingHz` 并标 `Inferred`；`ReportRateMeasuredHz` 不填；型号不明 / 槽位缺失 / index 越界一律保持 Unknown，不默认 125Hz。见 `hardware/mchose.md` §3.4.2。
+
+## 2026-11-07
+
+- **设备卡片展示 DPI / 档位 / 回报率（PR-D）**：模型与解析在 PR-A/PR-B 就绪，界面此前一处都没展示。新增 `PointerTelemetryFormatter`（Core 纯函数）产出分段与单行文案，设备页只多一个 TextBlock；`DeviceStatus.Capabilities` 在认领落地时由插件写入，用来区分"能读但还没读到（未获取）"与"不支持（该字段不出现）"。离线与过期一律不渲染，实测回报率带 `≈` 与来源标记。见 `project/pointer-telemetry.md` §8。
+- **指标行配色**：标签按类别上色（DPI 青绿 / 档位 琥珀 / 回报率 靛蓝，色值进 `UiPalette`），数值保持主题前景色；未获取的项整段灰显。三个色相避开来源徽标与电量状态色，免得卡片上三套颜色互相干扰。
+- **修设备卡片刷新时整行闪一下**：`RefreshCore` 原来在内容指纹变化时执行 `_rows[i] = fresh[i]`，那是 `ObservableCollection` 的 Replace 通知，`ListView` 会回收容器、重建整行；而指纹里带着 `更新于 HH:mm:ss`，等于每次轮询全表重建。行模型改成可变 + `INotifyPropertyChanged` 原地更新，`x:Bind` 显式 `Mode=OneWay`，集合只在设备增删 / 换位时变动。见 `dev/runtime-pitfalls.md` §25。
+- **修"在线设备百分比显示成灰色"**：原地更新用"旧值 == 新值就 return"省通知，而 `PercentBrush` 的字段默认值 `null` 恰好是正常态的合法值，首帧被判成"没变化"，刷子停在构造函数那个灰色——只有充电或低于 20% 才会自愈。改用透明色当哨兵。见 `dev/runtime-pitfalls.md` §25 规则 5。
+- **小组件与任务栏贴片也展示指针遥测（PR-E）**：小组件在电量条下加第三行（有指标的行高 62 DIP，窗口高度改为按设备累加）；贴片横向塞不下（单格会从 60px 涨到 120px），只加进悬停提示。小组件顺带按内容指纹跳过无谓重建——心跳每 30 秒补推一次，原来每次都清空重建整棵元素树；缩放比例因此也进了指纹，并单独监听 `XamlRoot.Changed`，否则拖到不同 DPI 的屏幕后窗口尺寸不再修正。见 `project/pointer-telemetry.md` §8.1。
+- **修 Capability 查询的设备匹配边界（PR-C1）**：`ProtocolEngine.CapabilityOf` 原本只按 VID/PID 取目录条目，同一只鼠标的鼠标集合、底座集合都会拿到 `supported`。现在判据与认领同源——先过设备 `interface` 指纹，接口不符 / `implementation: none` / 未收录一律 `unverified`，`data` 与 `code` 两种实现的正常行为不变。见 `dev/protocol-json.md` §2.1。
+
+## 2026-11-04
+
+- **新增设备能力声明（PR-C）**：`DeviceCapability` 六项 × `CapabilityState` 三态，声明挂在**设备目录**的 `capabilities` 上而不是协议上——同一套 `status-report7` 被 77 个型号（146 个 PID）共用，放协议层会让 VT3 的验证结果漏给同族。`CapabilitySet` 不可变、未声明一律 `unverified`、非法枚举值直接抛；加载期对未知能力名 / 非法状态 / 非法类型报错（带 `VID:PID` 与 `capabilities.<字段>`），不静默。查询入口 `ProtocolEngine.CapabilityOf` 是纯配置查询，不开句柄、不发帧、不动解析状态。见 `dev/protocol-json.md` §2.1。
+- **只迁移有真机证据的三条设备记录**：VT3 `0x1412` 声明三项读取能力，VT2S Air MAX V2 两个 PID 声明 `batteryRead`；写能力一条没写（本应用没有写入实现）。旧 `caps` 全部保留、不自动映射——`dpi` 分不出 `dpiRead`/`dpiLevelRead`，`[]` 是"没验证"不是"不支持"。见 `hardware/rapoo-catalog.md` §6。
+- **修 PR-C 审查两项（修复批次 A）**：VT3 `0x1412` 的 `rateRead` 由 `supported` 降为 `unverified`——`[11]` 只有单点观测，没验证过"改回报率设置后 `[11]` 随之变化"，`[17]` 的 sensor 模式只印证帧偏移对齐、不是回报率的直接证据；升回 `supported` 需先做这项对照实验（`hardware/rapoo.md` §1.1）。`ProtocolSpecLoader` 改为拒收协议对象（含嵌套层级）里的 `capabilities`：`ProtocolDto` 没有该字段、未知字段默认被忽略，写错层就是"加载成功但声明丢失"，现在加载期报错并指明必须写进设备条目；其余未知字段的忽略策略不变，设备条目的 `capabilities` 照常加载（`dev/protocol-json.md` §2.1）。
+- **补 CR-148（批次 A 补充修复）**：`capabilities` 写进设备 `override` 原本会被静默丢弃——它先深合并进协议对象，再在 `ProtocolDto` 反序列化时丢掉。现在 `ReadDevices` 在合并前拒绝，报错带 `VID:PID` 与完整字段路径（含嵌套对象与数组元素），`map` / `mapValue` 的取值表不参与扫描。调查结论：拒绝逻辑确实被绕过，但能力到不了最终对象（`ProtocolSpec` 无该成员），危害是"声明静默丢失"而非注入；现有 7 条 `passive.fields` override 与设备顶层 `capabilities` 零影响。见 `dev/protocol-json.md` §2.1。
+- **迈从通用 2.4G dongle（`0x3837:0x3033`，G87 V2 / G75 V2 / K87S / K99 V3 共用）打通电量**：这颗 dongle 不认 QHW `0x4D`（本机三条 65 字节通道全静默），官方 web 驱动走的是 **CZ 分块读**——`55 05 00 [off+size] size offLo offHi` 读 64 字节状态块的 `0..0x37` 段，应答 `AA 05 …` 的数据段从下标 9 起。协议写成 JSON 规格 `cz-block`（`specs/mchose.protocols.json`），协议名进 `MchosePlugin` 的探测/轮询/已知协议三处分派；电量与充电同在 `[0x20]`（bit7 充电、bit0..6 百分比）；规格只声明这两个位域，**不写 `fullAt`**——满电改由 `MchoseSpecs.ResolveFull` 在插件层按官方口径补判（100% 且设备不再报充电才是 Full，充电中不覆盖）。本机真机验证 90% / 98% / 100% 与充电三态，见 `hardware/mchose.md` §2.4。
+- **协议 JSON 补位域 `mask`**：`percent` / `charge` 支持 `mask`（1..255，缺省整字节），用于"电量与标志位同处一字节"的设备；`mask: 0` 加载期直接拒。文档 `docs/dev/protocol-json.md` §3.0。
+- **两条已证伪的路写进文档别再试**：QHW `0x4D`（`0x0904`）在本机全静默；官方 `audio.mc` 的单帧电量命令（`0xAA` 帧头 + `subCmd 11`）被 CZ 通道的真 NAK 拒掉（`00 AB AA … cserr`）。
+
+## 2026-11-01
+
+- **协议数据化：新增解释器，雷柏 12 套协议全部搬进 JSON**。`Plugins/Protocol/` 提供规格加载（`extends` 继承 + 设备级 `override` 深合并 + 加载期校验）、帧读取与查询执行；`RapooPlugin` 只留认领与转交，删掉 `RapooCodec`/`RapooFamily`/`RapooFamilies` 等 7 个文件（约 500 行）。**判断与状态仍留代码**：充电去抖、链路位→离线候选、握手与会话都在解释器或插件里。以后加机型改 1 行 JSON、加形态固定的协议改约 20 行 JSON。真机帧用例（R1–R26，含 VT3 断链帧与有线帧）全部改走解释器并通过。
+- **新增 `docs/dev/protocol-json.md` 与 `AGENTS.md` §10 红线**：帧偏移、VID/PID、充电码映射、协议名只允许出现在规格与 JSON 里；只有"新的判断/状态逻辑"才写 `codeFamily`。
+- **删掉迈从 `IsCandidate` 的 7 行品牌排除**（罗技/雷柏/北通/英菲克/HECATE/AULA）：分类器本身是正向 VID 白名单，这些行与白名单等价、纯冗余，删后行为零变化，同时解开对本插件对 6 个别家命名空间的依赖。
+- **修 CR-145：同名双插件让认领互斥失效**。`DeviceClaimRegistry` 原来用插件名当 owner，`MchosePlugin` 与 `MchoseA5Plugin` 都叫 `"Mchose"` → 一个认领后另一个的 `IsClaimedBy` 也返回 true、`Release` 会互删。owner 改成 `ClaimOwner(Id, PluginName)`：Id 做互斥、PluginName 查设置开关；A5 覆写 `ClaimId = "Mchose#A5"`。A5 接收器 `3837:100C` 同时进目录，主插件按**身份**让路（新增 `MchoseInterfaceKind.MouseA5`），不再靠接口形态猜。
+- **迈从 Gmouse / V9 / X9 也迁进解释器**：帧模板、应答窗口、重试次数进 `specs/mchose.protocols.json`，删掉 `QueryGmouse`/`QueryHeadsetV9`/`QueryHeadsetX9` 与对应 Try/Poll 共 9 个方法；三个 codec 改成**薄壳**（只留 `IsSupportedInterface` + 转发解释器），因此既有 35 条 codec 断言一条没删，现在钉的是 JSON 偏移。
+- **修迈从的进程级静态状态**：`KnownProtocolByPath` / `KnownModelByPath` / `_seq` 从 `static` 改实例，`AttachAsync` 每轮清理已不在的路径（空扫描当枚举失败、不动缓存），`Detach` 全部清空。`"qhw-push"` 不再进设备协议名——协议名统一记 `qhw`，"只拿到被动推送"另记在 `_pushOnly`，UI 副标题不会再显示内部标记。
+
+- **雷柏补齐 5 个协议族，覆盖 98/109 台（全部零写入）**：官方主包里每套族都有 `handleReport`，电量全来自被动上报——**不需要为键盘写查询帧**。新增 `telink-8273`（MT 系列，`0xBB`）、`gcome-ap`（`FA FB 07`）、`telink-keyboard`（含 V700diy 变体）、`ch585m` 四个族，并把 `LM20RT`/`VT_CH584` 并进 `status-report7`（三者帧布局逐字节相同，只差 report ID 7/7/8）。认领改成**目录优先 + 形态兜底**：收录过的设备只试它那一个族，底座在第一步就被挡掉。**除 VT3 外的族全部只有合成帧单测，无真机**，边界写在 `hardware/rapoo-catalog.md` §8。
+- **雷柏插件改为「目录 + 协议族注册表」**：`rapoo-catalog.json` 接进内嵌资源，新增 `RapooDeviceCatalog` 与 `RapooFamily`/`RapooFamilies`，`RapooPlugin` 从 211 行降到只管认领与派发。显示名改由目录给官方型号（"雷柏 VT3"，不再是"雷柏 Rapoo Mouse"），图标按协议族给（`ResolveKind` 从 `Unknown` 变成 `Mouse`）。**行为零变化**：认领判据、探测窗口、充电去抖、离线两条腿全部原样搬进 `StatusReport7Family`，单测 64 项全过。以后加机型只改 JSON、加协议族只加一个类。见 `hardware/rapoo-catalog.md` §2.1。
+
+- **雷柏心跳字段全部校准（纯文档 + 真机验证）**：官方 AHUB 2.0 的 `mC()` 解析器给出了 19 字节 `0x07` 的完整字段名，在 VT3（`24AE:1412`）上逐字节核对通过——DPI 档位与数值随 DPI 键变化（3200/6400/26000，顶档 = 官方声明上限）、`[13..14]` 报的是**本体** PID `0x4612`、`[11]` 是 Hz 值不是索引。此前只用了电量与充电位两个字节，现在 `[9]`~`[17]` 也都有出处了。见 `hardware/rapoo.md` §1、§1.1。
+- **雷柏设备目录（纯数据，插件一行未改）**：逆向官方 Web 驱动主包，拿到 **109 台设备 / 195 个 VID:PID / 12 套协议族**（`VT_nrf54L` 一家占 77 台），补上了此前"不在官方表内"的 `1412`=VT3、`1B13/4B13`=VT2S Air MAX V2。落成 `Plugins/Rapoo/rapoo-catalog.json`，与迈从目录同构（多 `brand`/`kind`/`caps`/`pairedPid`），**未加进 csproj、没有加载器**。`caps` 只填真机验证过的三条，其余留空。见 `hardware/rapoo-catalog.md`。
+
+- **狼蛛 F99（非 Pro，型号码 `0x00A4`）**：采集包显示它与 F99 Pro 共用 `3554:FA09` 和同一套 `0x13` 帧，只有会话 ACK 型号不同；`AulaPlugin` 的型号判断从单值改成集合、多认一个 `0x00A4`，编解码零改动。显示名仍是「AULA F99 Pro」——基类不动就拿不到型号码。见 `hardware/aula.md` §1.2。
+- **新品牌 ilovbee（b98 键盘，`258A:01BB`）**：零写入被动插件，只听接收器推的 20 字节 `0x13` 帧；校验和（前 19 字节 8 位和）15 帧全中，关机帧判离线而不是 0%。充电位是插入瞬间的事件位、拔线无对应帧，故充电态一律 `Unknown`。默认开启。见 `hardware/ilovbee.md`、issue #68。
+- **修罗技栈溢出（issue #55，唯一进程级崩溃）**：HID++ 通知不再在等包循环里同步回调——改为入队、出锁后派发，重入只入队（`HidppNotificationQueue`，200ms 时间预算 + 256 条上限）；通知里的未知槽位只登记 `PendingDiscover`，交监听线程补发现；写失败停写 30 秒。顺带修掉 `TryDiscoverSlot` 抹空槽冷却导致通知路径绕过 5 分钟负缓存。见 `hardware/logitech.md` §3。
+- **罗技设备类型改用 `0x0005` func 2 的营销类型**（此前只认配对寄存器，触控板/轨迹球会被报成键盘鼠标）：判定顺序改为 营销类型 → 配对寄存器 → 按名猜；`0x0005` 的下标与名字读取共用一次 GetFeature。见 `hardware/logitech.md` §1。
+- **修「设备重新上线后电量卡在旧值 5 分钟」（CR-124）**：离线期间电量可以大幅变化，但过滤器的基准还停在离线前 → 13%→73% 被判异常、要持续 5 分钟才采信。改为「离线→在线」那一拍用 `Reseed` 重建基准（无效值仍挡住，占位帧不会成为基准）。属基类行为，全部插件受益。
+- **修「便携版数据落在 C 盘」（issue #81 / CR-121）**：`AppPaths` 增加便携版一档——Velopack 便携包解压根目录带 `.portable` 标记，命中就把 `settings.json` / `history.db` / `logs` 放在 `<root>\data`，不迁移旧数据（便携版就是干净一份）；解压到只读位置则退回用户目录。见 `dev/build.md` §3.1。
+
+- **任务栏贴片加位置锁定**：拖动入口是常驻轮询全局左键，判据只有「光标在矩形内 + 左键按下」，单击手抖就把位置改掉并落盘。新增「锁定位置」（贴片右键菜单勾选项 + 设置页开关，默认关）；拖动加系统拖动阈值（`SM_CXDRAG`/`SM_CYDRAG`，默认 4px），锁定时停掉 20Hz 轮询表。见 `dev/runtime-pitfalls.md` §16.5.2。
+
+- **迈从认领改为「目录驱动」**：新增内嵌 `mchose-catalog.json`（官方 cardList / Vb 逆向，62 条本体 VID/PID → 型号 + 协议族），分类器先查目录、未命中才回落接口形态判定，判据里不再出现具体 PID——迈从出新键鼠只要落在已知 6 套协议里就免适配。同时**修 QHW 通道不可达**：`Probe` 的 `MouseV2` 分支原先无条件 `return`，`0x3033` 这类 QHW dongle 永远走不到 `TryQhw`（单测里就把它判成了 `MouseV2`），现改为先试 QHW、握手失败立即返回不拖慢 E2。显示名多一路来源（目录 model）。全部静态验证，CZ 族真机未测。见 `hardware/mchose-catalog.md`。
+- **补迈从设备全景与 QHW 鼠标规格（纯文档，无代码改动）**：逆向 M HUB WEB 前端与配置中心，得到 97 条设备记录（键盘 BY 18 / CZ 30、鼠标 23、耳机 26）、鼠标 DPI（`0x0003`）与回报率（`0x0002`）命令及三张索引映射表；同时修正三处认知（`0x4762` 是 4K dongle 不是 Realtek、`0x19F5` 是 Ace 60 贴牌 VID、K7 Ultra 是 `0x1001` 而 `0x1018` 是 K7 V2 Ultra+）。全部静态分析，本机无对应真机。见 `hardware/mchose-catalog.md`。
+
+## 2026-10-31
+
+- **修北通 T9「手柄没开机也报 13% 在线 + 弹低电量」**：关机空帧（`byte[1]=0x00` + `byte23=0x10`）被当成 13% 采信；判据改为两条件同时成立，避免误伤真实 13%。见 `hardware/betop.md` §1.4.2。
+- **修「手柄开机只显示 20%、随后又离线」**：① 上电瞬态 `0x18`（20%，只存在 29~218 ms）加 500 ms 稳定判定；② 基类 `RequestOffline` 记发出时刻，早于最新读数的请求作废；③ 读数异常 WARN 改 30 秒节流。见 `hardware/betop.md` §1.4.3、`code-flow.md` §4.2。
+- **发现未修**：离线期间读数过滤器基准不重置（开机 73% 被旧基准挡 5 分钟），属基类行为，登记 CR-124。
+- **英菲克 IN9 重启后首轮必挂**：官方驱动 2026-10-31 抓包显示它每次启动都从序号 `01` 重来，遇到重复值立刻改发 `02`。插件据此把首值从 `2` 改回 `1`，并在读到全 0 时隔 500 ms 换号重写一次（单轮最多 2 条），不再只重读。见 `hardware/inphic.md` §2.2。
+- **英菲克 IN9 插充电器显示 100%**：抓包确认 `[19]=0x01` 才是充电中，此时 `[18]` 固定 100% 不可信、`[21]` 仍报放电；充电判据改以 `[19]` 为主，充电时只报状态、不上报数值。见 `hardware/inphic.md` §2.2 §2.3。
+- **ATK A9 Ultra Max 2.0（`373B:11FE`）**：只登记 PID——帧与 `11D9`/`1303` 同构、四条实测帧校验全通过，编解码零改动；本体 PID 未采到，插线时会多一条记录（CR-177 同类）。见 `hardware/atk.md` §10。
+- **狼途 T98 键盘（`1A2C:8FFF`）**：新增 `LangtuT98Plugin`，零写入只听 `0xFF02` 状态帧，插拔瞬间的 `0xFF` 哨兵丢弃；`[7]` 已证伪不是充电位，故一律不推断充电状态。默认开，见 `hardware/langtu.md`。
+
+## 2026-10-30
+
+- **修英菲克 IN9 刷新帧只对第一条生效**：抓包确认 `0x0C` SET_REPORT 的 `[4]` 是**递增序号**（官方 `01`→`02`→`03`）而非固定命令字，设备只在它变化时查询一次，重复值被当重复请求丢掉，于是固定 `02` 之后整轮全 0。`BuildRefreshPayload` 改为接收序号，插件每次写帧前 +1（1..255 循环、跳过 0）。见 `hardware/inphic.md` §2.2。
+
+## 2026-10-29
+
+- **英菲克 IN9 适配（#40 只取其一）**：新增 `InphicIn9Plugin`（`248A:5B2F`，`GetFeature(0x0C)` 取 `[18]` 电量、`[21]` 标志，充电按 `248A:5B2E` 是否在位判）。它与 ZHEN 共用「英菲克」开关但**独立成类**——ZHEN 零写入且要进 15 秒发现节拍，IN9 要先发一条官方驱动同款刷新帧才读得到新值；共用行里有会写帧的设备，故该开关改**默认关**（老 `settings.json` 已存的值不受影响）。见 `hardware/inphic.md` §2。
+
 ## 2026-10-28
 
 - **合并 #72：墨将烈风2 GALE2 与 ATK A9 Air 大师版+**：新增 `MojhonPlugin`（`E2B7:122C`，`A5 04 04` 取电量 + 充电标志，会写帧、默认关）；ATK 只补 GEM 8K 接收器 `0x1278` / 本体 `0x1293` 与 `a9air` 配对组，编解码零改动。协议与未定论项见 `hardware/mojhon.md`、`hardware/atk.md` §2.2。
@@ -69,6 +245,7 @@
 - **摘取 #20（只摘设备适配）**：补上迈从 A5 V2 Ultra（`3837:100C`，反码 Feature `0x11`——发全 `0xFF` 首字节改 `0xF9`、等通知后再按 21 字节读回，回包 `[11]` 电量 / `[12]` 充电位）与雷蛇 Kraken V4 耳机（`1532:056C`，64 字节 `0x02` 报告，`0x21` 电量 / `0x2A` 充电两条命令每轮交替发一条）。两者都做成**独立插件类但共用品牌开关**（`Name` 同为 `Mchose` / `Razer`），设置页按 Name 去重后各一行。顺带给 `HidDeviceHandle` 的 `GetFeature` / `SetFeature` 加了可选 `reportLength`（同一 collection 里混着长短不同的 report，按最大长度读会错位）与 `out error` 重载。**未纳入**：GitHub CI（`.github/workflows/ci.yml`，用户暂不上 CI）、`publish-github.ps1`、`AppVisibilityPolicy`、`PluginReconnectTests` 与配套的基类钩子（`BuildDeviceId` / `ResolveProbeCooldown` / `NeedsReprobe`），以及 175 个陈旧基线回退文件。见 `mchose.md` §6、`razer-kraken.md`。
 - **摘取 #20 的重连回归**：补 `PluginReconnectTests`（11 项，全部不碰硬件——基类新增 `OpenDevice` 钩子后可以用假句柄注入）。为让它跑通，基类做了四处改动：① `AttachAsync` 先释放"本轮扫描里已不在"的接口（同轮重连时旧条目必须先下线），空扫描仍视为枚举失败不动；② 设备 ID 走新的 `BuildDeviceId(info)`，同一物理身份挂在两条路径上时后来的只释放句柄与认领，同轮重连则只报新快照；③ 新增 `RequestReprobe(dev)` + `NeedsReprobe`，插件发现物理身份变了可以让下一轮重探；④ `_devices` / `_probeFailedAt` / `DeviceClaimRegistry` 的键改为大小写不敏感（Windows 会把同一路径报成 `HID#A` / `hid#a`）。顺带新增 `ResolveProbeCooldown(info)`（按型号给探测冷却）。见 `code-flow.md` §2.3。
 - **摘取 #20 的最后一台设备：Haute42 Adapter 4DS**（品牌 Haute42，国产格斗外设，**不是索尼**）。这个适配器插上后把自己枚举成 DualSense（`054C:0CE6`），只能靠固件特征报告 `0xF8` 的 `Haute42 ` 前缀认出来，所以判据里**显式排除蓝牙路径**——蓝牙那条归 `DualSensePlugin`，两边互补不抢接口。零写入，只读三个 feature：`0xF8` 认领、`0xFA` 芯片 ID 当设备 ID（换 USB 口不重复建条目）、`0xF9` 电量/充电。顺带给基类加了 `BuildDeviceId(HidDeviceHandle)` 重载（读芯片 ID 需要句柄）。见 `hardware/haute42.md`。
+
 ## 2026-10-24
 
 - **采集支持「手动发帧」（唯一写入路径）**：会话型通道（迈从 `0x13` 等）要主机先发帧才回，纯被动只能看到应答、看不到请求，写不出适配器。现在开始前勾「允许向设备发送」，该会话才以读写方式打开句柄（`OpenReadWrite`），运行态出现「手动发帧」卡片；每次发送有二次确认，帧写进 `records.jsonl`（`layer=hid-api-output`、`status=sent`），记录列表用 `→` + 「发出」标方向。长度与 report ID 先按 caps 校验。**不勾选时句柄仍只有 `GENERIC_READ`，从权限层面写不了。** 顺带修 `FailedRecords` 原来按「总数-收到」算、会把主机发出的帧算成失败。
@@ -102,6 +279,7 @@
 - **修迈从键盘型号识别（偏移差一位）**：`ModelFromSessionAck` 从 ACK 的 `[6]` 取密码，而真机帧是 `13 05 01 00 0A 03 00 00 00 02 1C 01`，密码在 `[5]`（`03 00 00 00 02 1C` = G87）。取错位置导致**整张 18 项型号表对所有键盘都匹配不到**，显示名一直退回产品名「MCHOSE 2.4G Wireless」。现在两种偏移都试（兼容当初那段多一字节的合成样本），真机复测显示名变「迈从 G87」。
 - **设备列表改增量更新**：每次刷新都整体替换 `ItemsSource`，ListView 会丢弃所有行容器重建，每分钟轮询都闪一下（图标换成 `UIElement` 后更明显）。改为构造时设一次 `ObservableCollection`，之后按 Id 对位同步——内容指纹（不含 Icon）相同就整行复用，连图标元素都不重建，只替换真正变化的行。
 - **历史库时间戳按本地时区读回**：库里存的是 UTC 毫秒，`DateTimeOffset.FromUnixTimeMilliseconds` 给的偏移是 `+00:00`，设备列表的「更新于」直接格式化它就显示成 UTC（本地时间少 8 小时）。在线设备走 `DateTimeOffset.Now` 所以正常，离线设备走库才暴露。`HistoryStore` 加 `LocalTime()` 统一转本地时区，六个读路径全走它；单测 `H14` 盯住「直接格式化不会显示成 UTC」。见 `dev/runtime-pitfalls.md` §21。
+
 ## 2026-10-23
 
 - **新增 HECATE Wireless Receiver（`35BB:D3FB`）插件 `HecateWireless`**：接收器带与派世同族的 17 字节 `0xFF02` 通道，本机 STATUS/POWER 实测 50% / 3848 mV，复用 `PulsarCodec`。要写两条只读查询，所以与被动的 `Hecate` 插件分开、默认关。鼠标型号协议里没找到，由用户告知为 G3M Pro 升级版，设备名据此写死；充电位未验证。见 `hardware/hecate.md` §2。
@@ -109,11 +287,21 @@
 - **寸渊影弑与官方客户端冲突**：官方 `DARKRIM.exe` 自启常驻并长期持有 dongle 应答队列，两边撞上会让 dongle 重置链路，表现为使用中断连、音频回落、卡顿。插件改为检测到官方进程就不认领（不打开句柄才是真让位），官方退出后自动恢复。见 `hardware/darkrim.md` §1.7。
 - **盖世小鸡解析失败补诊断**：失败日志改记 report ID 分布，用来区分"接到别的集合"和"帧布局变了"。同时实测确认 `0x0575` 与 `0x10B9` 的 `0x12` 布局相同，偏移可共用。
 
-## 2026-10-23
-
 - **PR #44 审查修复**：AKG 每轮等待成功 ACK 后才接收异步电量，成功日志保留命中消息的原始 HEX；补齐贡献者名单及待合入范围记录，并增加迟到响应与跨轮 ACK 的回归用例。
 - **AKG N9 Hybrid**：新增默认关闭的 AKG 品牌插件，经接收器固定 RACE 查询读取电量；使用控制输入读取，忽略片段后的旧缓存，充电状态保留未知。协议与真机单点验证边界见 `hardware/akg.md`。
 - **AULA HERO 68 Air**：在现有狼蛛插件内接入 2.4G Bytech 8K 分片查询，按官方 UUID 区分共享接收器，忽略完整包之间穿插的异步通知；响应分片中途穿插通知仍可能使本轮失败。沿用默认关闭的品牌开关、熔断与退避；协议来源和真机验证范围见 `hardware/aula.md` §2。
+
+- 为罗技 PRO X 2 LIGHTSPEED 增加 Centurion 查询路径、严格接口判据与解析单测，并让新路径复用 `BatteryPluginBase` 的读数过滤和熔断；真机覆盖放电、充电和休眠唤醒，并修正拔充电线时短暂超时导致的离线误判。
+- 诊断版真机复核确认耳机按分钟轮询读到充电/放电变化、状态不变时列表更新时间与鼠标同步，并核验关闭罗技开关后插件卸载且不再查询；随后确认蓝牙模式通过 Windows HFP 设备节点读到与系统设置一致的 60%，无需加入 Centurion 协议。详见 `hardware/logitech.md` §2。
+- 将经典蓝牙中识别为耳机且名称为 `PRO X 2` 的条目显示为 `PRO X 2 LIGHTSPEED`，避免与罗技 2.4G 鼠标混淆；依据用户提供的 G HUB 型号及电量截图。
+- 合并 #45 后的收口：改正 `WritesEnabled` 注释（Centurion 是第二个写点，不再是「唯一写点」）、补回误删的 `IsHidppInterface` 摘要，R2 例外条款按「混合型插件」重写，`logitech.md` 补 §1 标题。
+- 合并 #38（迈从 G3 V2 / `gmouse`）后的收口：`MchoseGmouseCodec` 类头与方法注释压回配额；改正「`0xA8A5`/`0xA8A4` 是 VID 不是 PID」、来源项目是 Rust 不是 Python、覆盖面只到 `3837:4245`；充电态改走 `ChargingStateMap`（100% 未充电判 `Full`，与 K7/V1/QHW 一致）；`safety.md` §3.1 登记第五类设备与 gmouse 的 2 帧/拍写入预算；`mchose.md` §4.5 补未验证边界；`mi_01&col05` 仍走 V2 兜底记 CR-94。
+
+## 2026-10-22
+
+- **新增飞智插件（APEX5 2.4G 接收器，`37D7:2501`）**：厂商口 `0xFFA0/0x0001` 发官方同款 NewXInput 心跳（帧出自官方 `service_log`），应答 idx11 是电量档位（0–5，×20）。协议与采集来自贡献者的邮件包，代码按项目规范重写，见 `hardware/flydigi.md`。
+- **充电位 `0x11` 直接映射**：插线后状态字节整体变 `0x11`，此时不含电量（按档位算会得 340%）；插件沿用上次采信值、只把状态改成充电中，开机即充电时显示 `—` 且仍算在线（`NullPercentMeansOffline = false`）。
+- **ATK N9 耳机只记录协议、未实现**（`hardware/atk-n9.md`）：电量走 MI_05 的 CDC-ACM 串口，基类只持有 HID 句柄；且 ATK 品牌只能一行开关，得先定 Atk 插件形状。记 CR-173。
 
 ## 2026-10-21
 
@@ -140,6 +328,9 @@
 - 设置页屏幕行加刷新按钮（页面缓存复用，插拔后不自动重扫）；配置的屏没插时仍列出 `<名字>（未连接）`，保存不会静默改回主屏。
 - **修复任务栏贴片拖动时灵时不灵**：根因是 `SetCapture` 对非前台窗口无效（贴片带 `WS_EX_NOACTIVATE`，光标离开 114×28 的贴片就没有 `WM_MOUSEMOVE`）。拖动改为 16ms 轮询驱动、松手靠 `GetAsyncKeyState` 判定，捕获降级成加速器；顺带修掉"在贴片外松手导致 `_dragging` 卡死、之后悬停就自己跳"的第二个 bug。见 `dev/runtime-pitfalls.md` §16.5.1、BACKLOG CR-73。
 - 单击不再触发设置写盘（偏移没变就不保存）。真机复看清单在 CR-73。
+
+- 修「点几次保存后进程直接退出」：受限令牌下写 `HKCU\Run` 抛 `UnauthorizedAccessException`，异常从 `Save_Click` 逸出、被全局熔断器累计 5 次后放行退出。`AutostartService` 改为 `TrySetEnabled(out error)` 内部收口，失败只弹「开机自启未生效」，其余设置照常保存。
+- **定案「没托盘 / 贴片跑到原点 / 保存失败」的真因**：工作区目录带 `Low` 完整性标签，构建出的 exe 继承它，进程以 Low IL 运行，写不了 Medium 的用户目录与 HKCU、也发不了 shell 消息。csproj 构建后自动 `icacls /setintegritylevel Medium`，`run-app.ps1` 再兜一次；启动日志新增 `进程身份`（含 `完整性=`）一行。见 `dev/runtime-pitfalls.md` §20。
 
 ## 2026-10-19
 
@@ -172,6 +363,10 @@
 - **设备名称输入限制**：仅允许中文、英文、数字、空格和常见中英文标点，最多 20 个字符，避免名称过长或含不可预期字符。
 - **本机打包保留增量基准**：发布新版本时保留上一版全量包，让 Velopack 生成 delta；本机更新流程可优先下载增量包。
 
+- 设备列表右键可自定义外设名称和图标；覆盖值按稳定设备 ID 保存，应用到实时展示与历史页面，已有采样不改写、后续采样沿用自定义名称。
+- 新增剩余使用时间估算，按近期放电历史计算并显示于设备列表和任务栏悬停；设置页提供默认开启的全局开关。
+- 放宽剩余时间估算门槛：使用最近 90 天数据，3 个采样点且可测到 1 个百分点净下降即可估算，适配长续航设备。
+
 ## 2026-10-17
 
 - **关于页**：去掉「打开发布页」按钮，换成「打开 GitHub」；项目行同时列出 Gitee / GitHub 两个地址。
@@ -195,13 +390,58 @@
 - **任务栏贴片悬停名称**：鼠标停在某一格上显示设备名。跨进程子窗口改自绘分层提示 + `TME_HOVER`；样式类 Win11 圆角气泡。见 `runtime-pitfalls.md` §16.10。
 - **英菲克 ZHEN**：应用内真机验证通过；README / handoff 标为已打通。
 
-## 2026-10-04~05
+## 2026-10-14
 
-- **G87 打通**：官方 M HUB 的 0x13 会话（`13 05 01` 开会话，`13 4A 01` 查电量）。规格 `hardware/protocols.md` §1。
-- **MchosePlugin 重写**：只发有出处的帧，删掉盲扫。事故见 `hardware/safety.md`。
-- **插件基类**：`BatteryPluginBase` + 中央认领 + 反射发现。见 `architecture.md` §3。
-- **语言包**：自包含运行时只留 en-us / zh-CN / zh-TW。见 `dev/build.md` §6。
-- **0% 电量**：当时把休眠归零帧当成无效。次日才确认真凶是类型位，见下。
+- 软件更新源切到公开 Gitee Release，应用启动后自动检查；用户确认后安装，启动到托盘时通过托盘通知延后确认。补充 Gitee Release 附件发布脚本与更新状态展示。
+- 程序集补上作者、公司和版权；发布目录带上 `LICENSE`。`src` 下 `.cs` 的主要类型补了文件头。新建文件的格式在 `AGENTS.md` 与 `docs/dev/comment-style.md`。
+- **任务栏耳机图标**：GDI+ `DrawArc` 在 Win10 上把半圆弧两端画得不在同一高度，头梁看起来是斜的。改为居中的对称贝塞尔；小组件补上右侧描边。见 §16.9。
+- **历史设备名**：`MAX(name)` 按字典序，会把偶发写入的 `ble:BluetoothLE#…` 排到真实名前面。改为取最新非占位名。
+- **历史曲线悬停**：命中层设在 Content 根上，气泡才稳定出现；后台刷新不再无谓重建曲线冲掉气泡。内容仍是时间 + 电量。
+- **历史曲线断档**：相邻采样间隔过大时不再连线（默认 3×采样间隔），离线/关机区间不再画成假斜坡。
+- **英菲克 ZHEN**：新增纯被动电量插件；按官方网页驱动抓包确认 85% 放电帧，不发送配置命令。
+- **自动更新改用内置 GiteaSource**：Velopack 1.2.161 已内置 `GiteaSource`，而 Gitee 的 `/api/v1` 与 `/api/v5` 返回一致（实测同键同值），自写的 Gitee 适配器整段删除。旧适配器用 `/releases/latest` 定位 tag，仓库还没有 Release 时该端点返 404，`EnsureSuccessStatusCode()` 会把"没发过版"报成"检查失败"。见 `dev/build.md` §8。
+- **启动更新弹窗**：`XamlRoot` 未就绪时改为等窗口 `Loaded` 再补弹，避免确认框永久丢失；下载进度节流刷新状态文本。发布 1.0.11（首个 Gitee Release）。
+- **publish-gitee.ps1 三处 Gitee 特有坑**已修（PS 5.1 把 JSON `null` 读成字符串 `"null"`、建 Release 只收表单参数、强制要求 `target_commitish`），细节见 `dev/build.md` §8。
+
+## 2026-10-13
+
+- **贴片位置**：外接屏拔插时，过渡帧的夹紧结果写坏了记住的偏移。只在拖动中写回，并按记下时的 DPI 换算；父窗口或 DPI 变了就重新挂上。见 §16.5 / §16.8。真机通过。
+
+## 2026-10-12
+
+- **Win10 白框与裁字**：本机是 Win10 19045，不是文档里写过的 Win11。accent 透明通道实测无效。`TransparentWindowSurface` 两层都清、不分系统。贴片宽度改按客户区。Win10 上透明和 DWM 投影互斥，小组件取透明（CR-57 未做）。见 §17.8。
+- **右键菜单不消失**：WinUI 菜单靠窗口「去激活」关闭，贴片是 `WS_EX_NOACTIVATE`，永远不会去激活。改成 Win32 `TrackPopupMenuEx`。见 §18。
+- **贴片改为真子窗口**：WinUI 窗口不能 `SetParent`（内容岛会灰）。新建 `TaskbarPillWindow`：`SetParent` + `WS_EX_LAYERED` + `UpdateLayeredWindow`。16ms 抢 Z 序删掉。旧覆盖窗的白框和裁字随之消失。见 §16。右键、拖动、竖向/多屏、深色仍待人手看。
+- **页面切换慢**：四个页面不缓存，设置页又在构造函数里建完整棵树。改为缓存，订阅改到 `Loaded`/`Unloaded`，设置页拆成只建一次和每次重读。见 §19。真机复看仍在 handoff §4。
+- **内存爬升结案（CR-64 wontfix）**：不是泄漏。判泄漏只看 PRIVATE；任务管理器里掉下去的往往是工作集。同轮清掉导航 `BackStack`（CR-65）。报告 `docs/reviews/archive/memory-growth-2026-10-12.md` §6。
+
+## 2026-10-11
+
+- **设置页搜索**：按标题、说明、分区和插件名定位，点一下滚到目标并短暂高亮。搜索不改设置值。
+- **协议采集工具**：`src/tests/VigilWatt.ProtocolCapture/`，USBPcap / WebHID / BLE 被动广告。用法 `hardware/debugging.md` §9。
+- **通知区方案撤回**：曾把贴片改成托盘图标，用户要的是独立胶囊，已恢复。随后双击胶囊打开主窗口。
+- **CR-53**：固定 10 分钟熔断把唤醒检测一起挡住（实测盲区 12 分 52 秒）。改为 30s→5 分钟封顶，设备自己的通知可以打破熔断，退避期满立刻半开。见 `Plugins/WriteBackoff.cs`。真机复看仍在 handoff §4。
+
+## 2026-10-10
+
+- **第十七轮**：补上 `docs/dev/review-standard.md` 和 `docs/reviews/BACKLOG.md`。审查发现只进 BACKLOG；handoff 只留还要人做的事。当时核对：共享可变 `DeviceStatus` 让变化判定恒为假（CR-03）。
+- **第十八轮**：上线前全检后修了当时的 P0/P1（快照后再比较、罗技写入闸门、北通探测闸门、小组件订阅泄漏、历史库 WAL、退出释放、异常熔断等）。报告在 `deliverables/gstack/pre-launch-check-2026-10-10.md`。纯拆分、无法点检的项留在 BACKLOG。
+- **第十九轮**：独立「写入许可」让罗技在插件已开时仍不认领设备。改为插件开关即写入授权，删掉第二套开关。熔断仍在。迈从因此在开关打开时会写帧，用户知情。
+- **任务栏贴片（覆盖窗，后被替换）**：deskband 在 Win11 已不可用，AppBar 会挤占屏幕。先做无边框窗口摆进任务栏矩形。本机电量不进贴片。用户不要底色。Win10/Win11 上「白框」换过两次定性：可见层一度判错；最终两层都清，见 `runtime-pitfalls.md` §17。点任务栏闪一下是 Z 序空档。截屏空白是因为截屏进程没声明 DPI 感知。这套覆盖窗后来整段删除，见 10-12。
+- **日志按日**：推翻「不做按日分文件」。`logs\app-日期.log`，默认留 14 天，不再按大小滚动。旧 `app.log` 废弃。
+- **文档目录** `doc/` 改为 `docs/`。
+
+## 2026-10-09
+
+- **日志分级**：默认 Info，逐帧下沉 Debug；写失败不再静默；文件首行写时间基准，好和 history.db 的 UTC 对齐。设计以 `dev/logging.md` 为准。按日分文件是次日才改的，见 10-10。
+- **经典蓝牙类型**：watcher 把所有已配对设备的 `Kind` 写成耳机，错误类型还会被冻结。按设备类别 → 服务 UUID → 名字判定，猜不出就是 Unknown。类别在父节点，UUID 在子节点。见 `runtime-pitfalls.md` §3.1。
+
+## 2026-10-08
+
+- **本机电量**：进列表、历史和低电量提醒；不进托盘最低电量；无电池不显示；默认关。命名空间不能叫 `System`，否则遮蔽 BCL。
+- **雷柏掉线**：心跳是活动驱动的，停手静音十几秒很常见。静音阈值 12s 改 90s，只做兜底。断链看 `[18].bit7`，延迟确认，不立刻判离线（bit7 一抖列表会闪）。
+- **迈从发现太慢**：15 秒发现节拍原先只给零写入插件。`SupportsDiscoveryProbe` 允许写帧，但写入频率由 `ProbeCooldown` 兜住。见 safety.md。
+- **迈从关机后永不离线**：`SupportsPassiveListen` 被当成「轮询空读不算失败」。机制和策略拆开；离线参数收进 `OfflinePolicy`。`0x00` 只当核实触发，不当离线证据。真机关机后迈从约 1.8s、雷柏约 6s 离线。
 
 ## 2026-10-06
 
@@ -218,100 +458,41 @@
 - **图标与托盘**：exe 图标要同时写 csproj 和 `AppWindow.SetIcon`。托盘提示只在启动时画过一次，所以永远是「暂无在线设备」；`DeviceUpdated` 和 `DevicesChanged` 都要订。
 - **T9 的 `0x50`**：手柄关掉后 dongle 仍推流，只把电量字节换成 `0x50`。只认这个值，不把低位猜成标志（宁漏判、不误判）。验证口子见 handoff §4。
 
-## 2026-10-08
+## 2026-10-04~05
 
-- **本机电量**：进列表、历史和低电量提醒；不进托盘最低电量；无电池不显示；默认关。命名空间不能叫 `System`，否则遮蔽 BCL。
-- **雷柏掉线**：心跳是活动驱动的，停手静音十几秒很常见。静音阈值 12s 改 90s，只做兜底。断链看 `[18].bit7`，延迟确认，不立刻判离线（bit7 一抖列表会闪）。
-- **迈从发现太慢**：15 秒发现节拍原先只给零写入插件。`SupportsDiscoveryProbe` 允许写帧，但写入频率由 `ProbeCooldown` 兜住。见 safety.md。
-- **迈从关机后永不离线**：`SupportsPassiveListen` 被当成「轮询空读不算失败」。机制和策略拆开；离线参数收进 `OfflinePolicy`。`0x00` 只当核实触发，不当离线证据。真机关机后迈从约 1.8s、雷柏约 6s 离线。
-
-## 2026-10-09
-
-- **日志分级**：默认 Info，逐帧下沉 Debug；写失败不再静默；文件首行写时间基准，好和 history.db 的 UTC 对齐。设计以 `dev/logging.md` 为准。按日分文件是次日才改的，见 10-10。
-- **经典蓝牙类型**：watcher 把所有已配对设备的 `Kind` 写成耳机，错误类型还会被冻结。按设备类别 → 服务 UUID → 名字判定，猜不出就是 Unknown。类别在父节点，UUID 在子节点。见 `runtime-pitfalls.md` §3.1。
-
-## 2026-10-10
-
-- **第十七轮**：补上 `docs/dev/review-standard.md` 和 `docs/reviews/BACKLOG.md`。审查发现只进 BACKLOG；handoff 只留还要人做的事。当时核对：共享可变 `DeviceStatus` 让变化判定恒为假（CR-03）。
-- **第十八轮**：上线前全检后修了当时的 P0/P1（快照后再比较、罗技写入闸门、北通探测闸门、小组件订阅泄漏、历史库 WAL、退出释放、异常熔断等）。报告在 `deliverables/gstack/pre-launch-check-2026-10-10.md`。纯拆分、无法点检的项留在 BACKLOG。
-- **第十九轮**：独立「写入许可」让罗技在插件已开时仍不认领设备。改为插件开关即写入授权，删掉第二套开关。熔断仍在。迈从因此在开关打开时会写帧，用户知情。
-- **任务栏贴片（覆盖窗，后被替换）**：deskband 在 Win11 已不可用，AppBar 会挤占屏幕。先做无边框窗口摆进任务栏矩形。本机电量不进贴片。用户不要底色。Win10/Win11 上「白框」换过两次定性：可见层一度判错；最终两层都清，见 `runtime-pitfalls.md` §17。点任务栏闪一下是 Z 序空档。截屏空白是因为截屏进程没声明 DPI 感知。这套覆盖窗后来整段删除，见 10-12。
-- **日志按日**：推翻「不做按日分文件」。`logs\app-日期.log`，默认留 14 天，不再按大小滚动。旧 `app.log` 废弃。
-- **文档目录** `doc/` 改为 `docs/`。
-
-## 2026-10-11
-
-- **设置页搜索**：按标题、说明、分区和插件名定位，点一下滚到目标并短暂高亮。搜索不改设置值。
-- **协议采集工具**：`src/tests/VigilWatt.ProtocolCapture/`，USBPcap / WebHID / BLE 被动广告。用法 `hardware/debugging.md` §9。
-- **通知区方案撤回**：曾把贴片改成托盘图标，用户要的是独立胶囊，已恢复。随后双击胶囊打开主窗口。
-- **CR-53**：固定 10 分钟熔断把唤醒检测一起挡住（实测盲区 12 分 52 秒）。改为 30s→5 分钟封顶，设备自己的通知可以打破熔断，退避期满立刻半开。见 `Plugins/WriteBackoff.cs`。真机复看仍在 handoff §4。
-
-## 2026-10-12
-
-- **Win10 白框与裁字**：本机是 Win10 19045，不是文档里写过的 Win11。accent 透明通道实测无效。`TransparentWindowSurface` 两层都清、不分系统。贴片宽度改按客户区。Win10 上透明和 DWM 投影互斥，小组件取透明（CR-57 未做）。见 §17.8。
-- **右键菜单不消失**：WinUI 菜单靠窗口「去激活」关闭，贴片是 `WS_EX_NOACTIVATE`，永远不会去激活。改成 Win32 `TrackPopupMenuEx`。见 §18。
-- **贴片改为真子窗口**：WinUI 窗口不能 `SetParent`（内容岛会灰）。新建 `TaskbarPillWindow`：`SetParent` + `WS_EX_LAYERED` + `UpdateLayeredWindow`。16ms 抢 Z 序删掉。旧覆盖窗的白框和裁字随之消失。见 §16。右键、拖动、竖向/多屏、深色仍待人手看。
-- **页面切换慢**：四个页面不缓存，设置页又在构造函数里建完整棵树。改为缓存，订阅改到 `Loaded`/`Unloaded`，设置页拆成只建一次和每次重读。见 §19。真机复看仍在 handoff §4。
-- **内存爬升结案（CR-64 wontfix）**：不是泄漏。判泄漏只看 PRIVATE；任务管理器里掉下去的往往是工作集。同轮清掉导航 `BackStack`（CR-65）。报告 `docs/reviews/archive/memory-growth-2026-10-12.md` §6。
-
-## 2026-10-13
-
-- **贴片位置**：外接屏拔插时，过渡帧的夹紧结果写坏了记住的偏移。只在拖动中写回，并按记下时的 DPI 换算；父窗口或 DPI 变了就重新挂上。见 §16.5 / §16.8。真机通过。
-
-## 2026-10-14
-
-- 软件更新源切到公开 Gitee Release，应用启动后自动检查；用户确认后安装，启动到托盘时通过托盘通知延后确认。补充 Gitee Release 附件发布脚本与更新状态展示。
-- 程序集补上作者、公司和版权；发布目录带上 `LICENSE`。`src` 下 `.cs` 的主要类型补了文件头。新建文件的格式在 `AGENTS.md` 与 `docs/dev/comment-style.md`。
-- **任务栏耳机图标**：GDI+ `DrawArc` 在 Win10 上把半圆弧两端画得不在同一高度，头梁看起来是斜的。改为居中的对称贝塞尔；小组件补上右侧描边。见 §16.9。
-- **历史设备名**：`MAX(name)` 按字典序，会把偶发写入的 `ble:BluetoothLE#…` 排到真实名前面。改为取最新非占位名。
-- **历史曲线悬停**：命中层设在 Content 根上，气泡才稳定出现；后台刷新不再无谓重建曲线冲掉气泡。内容仍是时间 + 电量。
-- **历史曲线断档**：相邻采样间隔过大时不再连线（默认 3×采样间隔），离线/关机区间不再画成假斜坡。
-- **英菲克 ZHEN**：新增纯被动电量插件；按官方网页驱动抓包确认 85% 放电帧，不发送配置命令。
-- **自动更新改用内置 GiteaSource**：Velopack 1.2.161 已内置 `GiteaSource`，而 Gitee 的 `/api/v1` 与 `/api/v5` 返回一致（实测同键同值），自写的 Gitee 适配器整段删除。旧适配器用 `/releases/latest` 定位 tag，仓库还没有 Release 时该端点返 404，`EnsureSuccessStatusCode()` 会把"没发过版"报成"检查失败"。见 `dev/build.md` §8。
-- **启动更新弹窗**：`XamlRoot` 未就绪时改为等窗口 `Loaded` 再补弹，避免确认框永久丢失；下载进度节流刷新状态文本。发布 1.0.11（首个 Gitee Release）。
-- **publish-gitee.ps1 三处 Gitee 特有坑**已修（PS 5.1 把 JSON `null` 读成字符串 `"null"`、建 Release 只收表单参数、强制要求 `target_commitish`），细节见 `dev/build.md` §8。
-
-## 2026-10-18
-
-- 设备列表右键可自定义外设名称和图标；覆盖值按稳定设备 ID 保存，应用到实时展示与历史页面，已有采样不改写、后续采样沿用自定义名称。
-- 新增剩余使用时间估算，按近期放电历史计算并显示于设备列表和任务栏悬停；设置页提供默认开启的全局开关。
-- 放宽剩余时间估算门槛：使用最近 90 天数据，3 个采样点且可测到 1 个百分点净下降即可估算，适配长续航设备。
-
-## 2026-10-20
-
-- 修「点几次保存后进程直接退出」：受限令牌下写 `HKCU\Run` 抛 `UnauthorizedAccessException`，异常从 `Save_Click` 逸出、被全局熔断器累计 5 次后放行退出。`AutostartService` 改为 `TrySetEnabled(out error)` 内部收口，失败只弹「开机自启未生效」，其余设置照常保存。
-- **定案「没托盘 / 贴片跑到原点 / 保存失败」的真因**：工作区目录带 `Low` 完整性标签，构建出的 exe 继承它，进程以 Low IL 运行，写不了 Medium 的用户目录与 HKCU、也发不了 shell 消息。csproj 构建后自动 `icacls /setintegritylevel Medium`，`run-app.ps1` 再兜一次；启动日志新增 `进程身份`（含 `完整性=`）一行。见 `dev/runtime-pitfalls.md` §20。
+- **G87 打通**：官方 M HUB 的 0x13 会话（`13 05 01` 开会话，`13 4A 01` 查电量）。规格 `hardware/protocols.md` §1。
+- **MchosePlugin 重写**：只发有出处的帧，删掉盲扫。事故见 `hardware/safety.md`。
+- **插件基类**：`BatteryPluginBase` + 中央认领 + 反射发现。见 `architecture.md` §3。
+- **语言包**：自包含运行时只留 en-us / zh-CN / zh-TW。见 `dev/build.md` §6。
+- **0% 电量**：当时把休眠归零帧当成无效。次日才确认真凶是类型位，见下。
 
 ## 版本
 
-发新版留着上一版全量包才有 delta；清空 `dist/` 再打同版本就没有。见 `dev/build.md` §8。**1.0.11 是首个上传 Gitee Release 的版本**（1.0.10 及以前只在本地 `dist/`，故 1.0.11 的 delta 是拿本地留存的 1.0.10 全量包做基准算出来的）。
+发新版留着上一版全量包才有 delta；清空 `dist/` 再打同版本就没有。见 `dev/build.md` §8。GitHub Releases 为主下载源，Gitee Releases 为镜像备份；上传由维护者手动完成，AI 不代传。**1.0.11 是首个上传 Gitee Release 的版本**（1.0.10 及以前只在本地 `dist/`，故 1.0.11 的 delta 是拿本地留存的 1.0.10 全量包做基准算出来的）。
 
 | 版本 | 日期 | 相对上一包多了什么 |
 |---|---|---|
-| 1.0.2 | 10-08 | 本机电量。Release 必须 `AllowUnsafeBlocks`（build.md §4） |
-| 1.0.3 | 10-11 | 清空后重打，无 delta；同日重发含 CR-53 |
-| 1.0.4 | 10-12 | Win10 透明修复；留下 1.0.3 全量包，delta 约 97KB |
-| 1.0.5 | 10-12 | 右键菜单 Win32 化。当日又重发两次（真子窗口、CR-65），那两次 dist 是空的，无 delta |
-| 1.0.6 | 10-13 | 分辨率往返后的贴片位置；有 delta |
-| 1.0.7 | 10-14 | 版权信息与文件头；相对 1.0.6 的 delta 约 97KB |
-| 1.0.8 | 10-14 | Win10 任务栏耳机图标扶正；相对 1.0.7 的 delta 约 80KB |
-| 1.0.9 | 10-14 | 历史设备名取最新非占位；曲线悬停气泡稳定 |
-| 1.0.10 | 10-14 | 历史曲线断档不连线；相对 1.0.9 有 delta |
-| 1.0.11 | 10-14 | 更新源换内置 GiteaSource；启动弹窗与进度修复；**首个 Gitee Release**；相对 1.0.10 的 delta 约 68KB |
-| 1.0.12 | 10-15 | 任务栏贴片悬停显示设备名 |
-| 1.0.1 | 10-16 | 本机试装包（含更新进度 UI）；版本回落便于测升级，非正式发版 |
-| 1.0.2 | 10-16 | 更新进度高水位（多文件不倒退）；本机试装，非正式发版 |
-| 1.2.0 | 10-16 | 关于页（介绍 + 检查更新从设置迁出）；本机打包 |
-| 1.2.1 | 10-18 | 剩余时间估算及原因提示、设备右键重命名简介；本机打包 |
-| 1.3.1 | 10-28 | 5 款新设备（墨将烈风2、ATK A9 Air、VXE R1 星闪、华硕棱镜2 / Delta II）；设置页改弹窗、贴片选设备；组合识别与雷柏充电态等 8 处修复 |
+| 1.3.1 | 10-28 | 5 款新设备（墨将烈风2、ATK A9 Air、VXE R1 星闪、华硕棱镜2 / Delta II）；设置页改弹窗、贴片选设备；组合识别与雷柏充电态等 8 处修复；本机试装 |
 | 1.3.0 | 10-25 | 8 个新品牌、约 29 台设备；设备诊断页、忽略设备、列表崩溃修复；本机试装 |
 | 1.2.3 | 10-21 | 9 款社区设备适配；删除离线设备与永久屏蔽、贴片拖动/选屏/尺寸三处修复、失败不再静默；本机试装 |
 | 1.2.2 | 10-19 | 8 款社区设备适配（会写帧的默认关）、更新说明与贡献者页；本机试装 |
+| 1.2.1 | 10-18 | 剩余时间估算及原因提示、设备右键重命名简介；本机打包 |
+| 1.2.0 | 10-16 | 关于页（介绍 + 检查更新从设置迁出）；本机打包 |
+| 1.0.12 | 10-15 | 任务栏贴片悬停显示设备名 |
+| 1.0.11 | 10-14 | 更新源换内置 GiteaSource；启动弹窗与进度修复；**首个 Gitee Release**；相对 1.0.10 的 delta 约 68KB |
+| 1.0.10 | 10-14 | 历史曲线断档不连线；相对 1.0.9 有 delta |
+| 1.0.9 | 10-14 | 历史设备名取最新非占位；曲线悬停气泡稳定 |
+| 1.0.8 | 10-14 | Win10 任务栏耳机图标扶正；相对 1.0.7 的 delta 约 80KB |
+| 1.0.7 | 10-14 | 版权信息与文件头；相对 1.0.6 的 delta 约 97KB |
+| 1.0.6 | 10-13 | 分辨率往返后的贴片位置；有 delta |
+| 1.0.5 | 10-12 | 右键菜单 Win32 化。当日又重发两次（真子窗口、CR-65），那两次 dist 是空的，无 delta |
+| 1.0.4 | 10-12 | Win10 透明修复；留下 1.0.3 全量包，delta 约 97KB |
+| 1.0.3 | 10-11 | 清空后重打，无 delta；同日重发含 CR-53 |
+| 1.0.2 | 10-08 | 本机电量。Release 必须 `AllowUnsafeBlocks`（build.md §4） |
 
-## 2026-10-23
+### 本机试装（非发布）
 
-- 为罗技 PRO X 2 LIGHTSPEED 增加 Centurion 查询路径、严格接口判据与解析单测，并让新路径复用 `BatteryPluginBase` 的读数过滤和熔断；真机覆盖放电、充电和休眠唤醒，并修正拔充电线时短暂超时导致的离线误判。
-- 诊断版真机复核确认耳机按分钟轮询读到充电/放电变化、状态不变时列表更新时间与鼠标同步，并核验关闭罗技开关后插件卸载且不再查询；随后确认蓝牙模式通过 Windows HFP 设备节点读到与系统设置一致的 60%，无需加入 Centurion 协议。详见 `hardware/logitech.md` §2。
-- 将经典蓝牙中识别为耳机且名称为 `PRO X 2` 的条目显示为 `PRO X 2 LIGHTSPEED`，避免与罗技 2.4G 鼠标混淆；依据用户提供的 G HUB 型号及电量截图。
-- 合并 #45 后的收口：改正 `WritesEnabled` 注释（Centurion 是第二个写点，不再是「唯一写点」）、补回误删的 `IsHidppInterface` 摘要，R2 例外条款按「混合型插件」重写，`logitech.md` 补 §1 标题。
-- 合并 #38（迈从 G3 V2 / `gmouse`）后的收口：`MchoseGmouseCodec` 类头与方法注释压回配额；改正「`0xA8A5`/`0xA8A4` 是 VID 不是 PID」、来源项目是 Rust 不是 Python、覆盖面只到 `3837:4245`；充电态改走 `ChargingStateMap`（100% 未充电判 `Full`，与 K7/V1/QHW 一致）；`safety.md` §3.1 登记第五类设备与 gmouse 的 2 帧/拍写入预算；`mchose.md` §4.5 补未验证边界；`mi_01&col05` 仍走 V2 兜底记 CR-94。
+| 版本 | 日期 | 说明 |
+|---|---|---|
+| 1.0.1 | 10-16 | 本机试装包（含更新进度 UI）；版本回落便于测升级，非正式发版 |
+| 1.0.2 | 10-16 | 更新进度高水位（多文件不倒退）；本机试装，非正式发版 |

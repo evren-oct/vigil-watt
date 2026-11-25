@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature M650 L",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B02A"
+    ],
+    "displayNames": [
+      "Signature M650 L"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "signature_m650.png",
+      "image": "signature_m650.png",
+      "source": "LogiOptions+ devices.json / signature_m650.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

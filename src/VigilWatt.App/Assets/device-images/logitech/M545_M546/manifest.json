@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M545/M546",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4052"
+    ],
+    "displayNames": [
+      "M545/M546"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m545.png",
+      "image": "m545.png",
+      "source": "LogiOptions+ devices.json / m545.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

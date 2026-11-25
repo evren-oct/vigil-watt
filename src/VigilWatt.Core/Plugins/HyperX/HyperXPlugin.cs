@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Plugins.HyperX;
 /// <summary>
 /// 功 能： HyperX Cloud Flight 2 耳机电量插件——零写入被动监听 FF90 口的状态推送帧。
 /// 2026/10/20 22:20:00 Yang
-/// 帧结构与"充电阶段字段被证伪"的过程见 docs/hardware/hyperx-cf2.md；编解码在 Cf2Codec。
+/// 帧结构与"充电阶段字段被证伪"的过程见 docs/hardware/brands/hyperx-cf2.md；编解码在 Cf2Codec。
 /// </summary>
 public sealed class HyperXPlugin : BatteryPluginBase
 {

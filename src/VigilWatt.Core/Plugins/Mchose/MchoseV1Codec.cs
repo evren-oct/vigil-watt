@@ -28,7 +28,7 @@ internal readonly record struct V1Push(V1PushKind Kind, byte Type, byte Payload,
 /// <summary>
 /// 功 能： 迈从键盘 V1 协议（report 0x13）的**纯帧编解码**，不碰句柄、不写日志，便于单测。
 /// 2026/10/06 15:53:36 xliu
-/// 帧布局（全部 20 字节，校验 = 前 19 字节之和 mod 256）见 docs/hardware/mchose.md §1。
+/// 帧布局（全部 20 字节，校验 = 前 19 字节之和 mod 256）见 docs/hardware/brands/mchose.md §1。
 /// </summary>
 internal static class MchoseV1Codec
 {

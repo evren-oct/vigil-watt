@@ -196,10 +196,17 @@ public sealed class DeviceManager : IDisposable
                     .FirstOrDefault(p => string.Equals(p.Name, owner, StringComparison.OrdinalIgnoreCase))?.Kind
                     ?? DeviceKind.Unknown;
 
+                // 改名设备的墓碑用协议原名：历史库存的是改名后的名字，而墓碑不带 Usb/Reported 身份，
+                // 没有原名就配不上产品图（docs/project/device-images.md §4）。
+                var displayName = _settings.DeviceCustomizations.TryGetValue(stat.DeviceId, out var customization) &&
+                                  !string.IsNullOrWhiteSpace(customization.OriginalName)
+                    ? customization.OriginalName!
+                    : stat.Name;
+
                 Upsert(new DeviceStatus
                 {
                     Id = stat.DeviceId,
-                    Name = stat.Name,
+                    Name = displayName,
                     Source = SourceFromId(stat.DeviceId),
                     Kind = stat.Kind != DeviceKind.Unknown ? stat.Kind
                         : pluginKind != DeviceKind.Unknown ? pluginKind
@@ -738,6 +745,10 @@ public sealed class DeviceManager : IDisposable
         var previousKind = status.Kind;
 
         bool changed = DeviceChangeDetector.HasChanged(status, snapshot);
+        // 指针遥测只影响 UI 刷新，**不参与** changed：否则 DPI 一变就写出一条电量采样
+        bool pointerChanged = DeviceChangeDetector.HasPointerChanged(status, snapshot);
+        // 连接方式同理：插拔线只该刷新徽标，不该写采样
+        bool connectionChanged = DeviceChangeDetector.HasConnectionChanged(status, snapshot);
         // 原地同步（Kind/Protocol 的"声明覆盖猜测"规则见 DeviceStatusMerger）
         DeviceStatusMerger.Apply(status, snapshot);
 
@@ -754,9 +765,9 @@ public sealed class DeviceManager : IDisposable
                 _history.Insert(DeviceCustomizationResolver.ApplyName(status, _settings.DeviceCustomizations));
             DeviceUpdated?.Invoke(status);
         }
-        else if (status.Kind != previousKind)
+        else if (pointerChanged || connectionChanged || status.Kind != previousKind)
         {
-            // 类型后解析出来（Unknown → Mouse）：电量没变也要换图标，但不写历史
+            // 类型后解析出来（Unknown → Mouse）、或只有指针遥测/连接方式变了：换图标/刷新读数，但不写历史
             DeviceUpdated?.Invoke(status);
         }
 

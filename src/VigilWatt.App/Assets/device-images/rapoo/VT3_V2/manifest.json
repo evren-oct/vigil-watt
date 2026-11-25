@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT3 V2",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4662",
+      "1462"
+    ],
+    "displayNames": [
+      "雷柏 VT3 V2",
+      "VT3 V2"
+    ]
+  },
+  "defaultColor": "Black",
+  "colors": [
+    {
+      "key": "Black",
+      "label": "星空黑",
+      "thumbnail": "Black_thumb.png",
+      "image": "Black_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT3%20V2/thumb_Black.png"
+    },
+    {
+      "key": "White",
+      "label": "皎月白",
+      "thumbnail": "White_thumb.png",
+      "image": "White_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT3%20V2/thumb_White.png"
+    },
+    {
+      "key": "Fluorescent_Yellow",
+      "label": "炽光黄",
+      "thumbnail": "Fluorescent_Yellow_thumb.png",
+      "image": "Fluorescent_Yellow_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT3%20V2/thumb_Fluorescent_Yellow.png"
+    },
+    {
+      "key": "Raspberry_Pink",
+      "label": "树莓粉",
+      "thumbnail": "Raspberry_Pink_thumb.png",
+      "image": "Raspberry_Pink_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT3%20V2/thumb_Raspberry_Pink.png"
+    },
+    {
+      "key": "Lava_Red",
+      "label": "熔岩红",
+      "thumbnail": "Lava_Red_thumb.png",
+      "image": "Lava_Red_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT3%20V2/thumb_Lava_Red.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

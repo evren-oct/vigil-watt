@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature K865",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B381"
+    ],
+    "displayNames": [
+      "Signature K865"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "e5e6984a-6e4b-438c-b825-e7348d7cc0e8.png",
+      "image": "e5e6984a-6e4b-438c-b825-e7348d7cc0e8.png",
+      "source": "LogiOptions+ devices.json / e5e6984a-6e4b-438c-b825-e7348d7cc0e8.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

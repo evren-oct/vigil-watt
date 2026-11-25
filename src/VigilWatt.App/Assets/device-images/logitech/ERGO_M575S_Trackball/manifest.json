@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "ERGO M575S Trackball",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B041"
+    ],
+    "displayNames": [
+      "ERGO M575S Trackball"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "e93f22c4-fca9-4bcd-a756-33bcd09d6a79.png",
+      "image": "e93f22c4-fca9-4bcd-a756-33bcd09d6a79.png",
+      "source": "LogiOptions+ devices.json / e93f22c4-fca9-4bcd-a756-33bcd09d6a79.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

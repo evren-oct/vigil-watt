@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "brand": "BETOP",
+  "model": "永劫无间",
+  "match": {
+    "vendorId": "20BC",
+    "productIds": [
+      "5104",
+      "5105",
+      "5106",
+      "5107"
+    ],
+    "displayNames": [
+      "北通 永劫无间",
+      "永劫无间"
+    ]
+  },
+  "defaultColor": "color-red-black",
+  "colors": [
+    {
+      "key": "color-red-black",
+      "label": "red-black",
+      "thumbnail": "color-red-black_thumb.png",
+      "image": "color-red-black_thumb.png",
+      "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t9_7.png"
+    },
+    {
+      "key": "color-white-red",
+      "label": "white-red",
+      "thumbnail": "color-white-red_thumb.png",
+      "image": "color-white-red_thumb.png",
+      "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t9_8.png"
+    }
+  ],
+  "source": "BetopGame 2.6.2 (20261111.asar) /images/index/t9_7.png; BetopGame 2.6.2 (20261111.asar) /images/index/t9_8.png",
+  "capturedAt": "2026-11-18",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

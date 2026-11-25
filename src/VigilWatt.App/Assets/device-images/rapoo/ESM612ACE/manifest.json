@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "ESM612ACE",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "464D"
+    ],
+    "displayNames": [
+      "雷柏 ESM612ACE",
+      "ESM612ACE"
+    ]
+  },
+  "defaultColor": "Raspberry_Pink",
+  "colors": [
+    {
+      "key": "Raspberry_Pink",
+      "label": "绯焰风暴",
+      "thumbnail": "Raspberry_Pink_thumb.png",
+      "image": "Raspberry_Pink_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM612ACE/thumb_Raspberry_Pink.png"
+    },
+    {
+      "key": "Gray_Black_Red",
+      "label": "零号赤焰",
+      "thumbnail": "Gray_Black_Red_thumb.png",
+      "image": "Gray_Black_Red_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM612ACE/thumb_Gray_Black_Red.png"
+    },
+    {
+      "key": "Black_Gray_Orange",
+      "label": "炼狱修罗",
+      "thumbnail": "Black_Gray_Orange_thumb.png",
+      "image": "Black_Gray_Orange_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM612ACE/thumb_Black_Gray_Orange.png"
+    },
+    {
+      "key": "White_Black_Yellow",
+      "label": "炽翼星魂",
+      "thumbnail": "White_Black_Yellow_thumb.png",
+      "image": "White_Black_Yellow_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM612ACE/thumb_White_Black_Yellow.png"
+    },
+    {
+      "key": "Black_Purple_Green",
+      "label": "暗渊游侠",
+      "thumbnail": "Black_Purple_Green_thumb.png",
+      "image": "Black_Purple_Green_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM612ACE/thumb_Black_Purple_Green.png"
+    },
+    {
+      "key": "Vajra_Red",
+      "label": "热血硬派",
+      "thumbnail": "Vajra_Red_thumb.png",
+      "image": "Vajra_Red_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM612ACE/thumb_Vajra_Red.png"
+    },
+    {
+      "key": "Darkthorn",
+      "label": "暗影荆棘",
+      "thumbnail": "Darkthorn_thumb.png",
+      "image": "Darkthorn_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM612ACE/thumb_Darkthorn.png"
+    },
+    {
+      "key": "Black_Gray_Green",
+      "label": "骇客特工",
+      "thumbnail": "Black_Gray_Green_thumb.png",
+      "image": "Black_Gray_Green_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM612ACE/thumb_Black_Gray_Green.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

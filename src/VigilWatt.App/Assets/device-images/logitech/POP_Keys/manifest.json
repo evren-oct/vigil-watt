@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "POP Keys",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B365"
+    ],
+    "displayNames": [
+      "POP Keys"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "pop_keys.png",
+      "image": "pop_keys.png",
+      "source": "LogiOptions+ devices.json / pop_keys.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

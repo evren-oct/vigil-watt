@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Keys B",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B363"
+    ],
+    "displayNames": [
+      "MX Keys B"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_keys_for_business.png",
+      "image": "mx_keys_for_business.png",
+      "source": "LogiOptions+ devices.json / mx_keys_for_business.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

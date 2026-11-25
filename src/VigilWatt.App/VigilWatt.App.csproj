@@ -9,7 +9,7 @@
     <WindowsSdkPackageVersion>10.0.19041.38</WindowsSdkPackageVersion>
     <RootNamespace>VigilWatt.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- 版本号单一来源：打包脚本 scripts/build-installer.ps1 从发布 exe 的 FileVersion 读取 -->
+    <!-- 版本号单一来源：正式版由打包脚本从发布 exe 的 FileVersion 读取；Beta 用 -Version 显式传 SemVer2 -->
     <Version>1.3.1</Version>
     <Authors>evren-oct</Authors>
     <Company>evren-oct</Company>
@@ -69,6 +69,8 @@
   <!-- 图标文件随输出一起拷贝：运行时 AppWindow.SetIcon 要从 exe 同目录读它 -->
   <ItemGroup>
     <None Update="Assets\VigilWatt.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- 设备产品图：只放缩略图与 manifest，随包分发；用户数据目录仍可覆盖 -->
+    <Content Include="Assets\device-images\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
     <!-- 更新日志随包分发：关于页离线可看全部历史版本，不必联网；格式契约见该文件头 -->
     <Content Include="..\..\docs\project\release-notes.md" Link="release-notes.md" CopyToOutputDirectory="PreserveNewest" />

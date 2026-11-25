@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Comfort Plus M850 L for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B04B"
+    ],
+    "displayNames": [
+      "Signature Comfort Plus M850 L for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "935f9c71-d7a3-4748-bea1-7e4ab289c37f.png",
+      "image": "935f9c71-d7a3-4748-bea1-7e4ab289c37f.png",
+      "source": "LogiOptions+ devices.json / 935f9c71-d7a3-4748-bea1-7e4ab289c37f.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

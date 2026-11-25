@@ -1,0 +1,2979 @@
+{
+ "source": "BetopGame 2.6.2 (2026-11-11 资源包) RegisterDev/RegisterDev2/RegisterAlterDev 调用",
+ "vendorIds": [
+  "0x20bc",
+  "0x20dd",
+  "0x0517"
+ ],
+ "deviceCount": 118,
+ "devices": [
+  {
+   "vid": "0x0517",
+   "pid": "0x5350",
+   "modelCodes": [
+    "BTP-KP50B",
+    "BTP-KP50C",
+    "BTP-KP50D",
+    "BTP-KP50E"
+   ],
+   "titles": [
+    "北通鲲鹏50 云翼白",
+    "北通鲲鹏50 星穹紫",
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50c",
+    "kp50d1",
+    "kp50d2",
+    "kp50p"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x2104",
+   "modelCodes": [
+    "HONGHThirty"
+   ],
+   "titles": [
+    "海心桥项目"
+   ],
+   "scripts": [
+    "hh30"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0xff7a",
+     "usage": "0x01",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x500b",
+   "modelCodes": [
+    "T6Pro"
+   ],
+   "titles": [
+    "宙斯 Pro"
+   ],
+   "scripts": [
+    "t6p2a"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x501e",
+   "modelCodes": [
+    "zs2"
+   ],
+   "titles": [
+    "宙斯2"
+   ],
+   "scripts": [
+    "t9_app"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x502c",
+   "modelCodes": [
+    "T6Pro"
+   ],
+   "titles": [
+    "宙斯 Pro"
+   ],
+   "scripts": [
+    "t6p2a"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x502f",
+   "modelCodes": [
+    "T6Pro"
+   ],
+   "titles": [
+    "宙斯 Pro"
+   ],
+   "scripts": [
+    "t6p2a"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5073",
+   "modelCodes": [
+    "zs2"
+   ],
+   "titles": [
+    "宙斯2"
+   ],
+   "scripts": [
+    "t9"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5074",
+   "modelCodes": [
+    "T6Pro",
+    "zs2"
+   ],
+   "titles": [
+    "宙斯 Pro",
+    "宙斯2"
+   ],
+   "scripts": [
+    "t6p2a",
+    "t9"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5076",
+   "modelCodes": [
+    "zs2"
+   ],
+   "titles": [
+    "宙斯2"
+   ],
+   "scripts": [
+    "t9"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5077",
+   "modelCodes": [
+    "zs2"
+   ],
+   "titles": [
+    "宙斯2"
+   ],
+   "scripts": [
+    "t9"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5104",
+   "modelCodes": [
+    "zs2"
+   ],
+   "titles": [
+    "永劫无间"
+   ],
+   "scripts": [
+    "t9_yjwj"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5105",
+   "modelCodes": [
+    "zs2"
+   ],
+   "titles": [
+    "永劫无间"
+   ],
+   "scripts": [
+    "t9_yjwj"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5106",
+   "modelCodes": [
+    "zs2"
+   ],
+   "titles": [
+    "永劫无间"
+   ],
+   "scripts": [
+    "t9_yjwj"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5107",
+   "modelCodes": [
+    "zs2"
+   ],
+   "titles": [
+    "永劫无间"
+   ],
+   "scripts": [
+    "t9_yjwj"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0xff00",
+     "usage": "0x01",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x02",
+     "reportLength": 24
+    },
+    {
+     "page": "0xff00",
+     "usage": "0x03",
+     "reportLength": 24
+    }
+   ],
+   "writeEnc": []
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5125",
+   "modelCodes": [
+    "BTP-KP20A",
+    "BTP-KP40A",
+    "KUNPThirty"
+   ],
+   "titles": [
+    "北通鲲鹏20 智控游戏手柄",
+    "北通鲲鹏40智控游戏手柄",
+    "西樵山项目"
+   ],
+   "scripts": [
+    "hxc",
+    "kp30",
+    "kp30_app",
+    "kp40",
+    "kp401"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0",
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5126",
+   "modelCodes": [
+    "BTP-KP20A"
+   ],
+   "titles": [
+    "北通鲲鹏20智控游戏手柄"
+   ],
+   "scripts": [
+    "kp20"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5127",
+   "modelCodes": [
+    "BTP-KP20A",
+    "BTP-KP40A"
+   ],
+   "titles": [
+    "北通鲲鹏20 智控游戏手柄",
+    "北通鲲鹏40智控游戏手柄"
+   ],
+   "scripts": [
+    "kp30",
+    "kp40",
+    "kp401"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0",
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5128",
+   "modelCodes": [
+    "BTP-KP20A"
+   ],
+   "titles": [
+    "北通鲲鹏20智控游戏手柄"
+   ],
+   "scripts": [
+    "kp20"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x512f",
+   "modelCodes": [
+    "BTP-KP70A"
+   ],
+   "titles": [
+    "北通鲲鹏70 AI旗舰"
+   ],
+   "scripts": [
+    "kp70"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5130",
+   "modelCodes": [
+    "BTP-KP70A"
+   ],
+   "titles": [
+    "北通鲲鹏70 AI旗舰"
+   ],
+   "scripts": [
+    "kp70"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5133",
+   "modelCodes": [
+    "BTP-KP50B"
+   ],
+   "titles": [
+    "北通鲲鹏50 云翼白"
+   ],
+   "scripts": [
+    "kp50p"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5134",
+   "modelCodes": [
+    "BTP-KP50B"
+   ],
+   "titles": [
+    "北通鲲鹏50 云翼白"
+   ],
+   "scripts": [
+    "kp50p"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5145",
+   "modelCodes": [
+    "BTP-KP40A",
+    "BTP-KP40B"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄",
+    "北通鲲鹏40智控游戏手柄 极光蓝"
+   ],
+   "scripts": [
+    "kp40b",
+    "kp40v1r"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5146",
+   "modelCodes": [
+    "BTP-KP40A",
+    "BTP-KP40B"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄",
+    "北通鲲鹏40智控游戏手柄 极光蓝"
+   ],
+   "scripts": [
+    "kp40b",
+    "kp40v1r"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5149",
+   "modelCodes": [
+    "BTP-KP50C"
+   ],
+   "titles": [
+    "北通鲲鹏50 星穹紫"
+   ],
+   "scripts": [
+    "kp50c"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x514a",
+   "modelCodes": [
+    "BTP-KP50C"
+   ],
+   "titles": [
+    "北通鲲鹏50 星穹紫"
+   ],
+   "scripts": [
+    "kp50c"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5150",
+   "modelCodes": [
+    "BTP-KP50D"
+   ],
+   "titles": [
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50d1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5151",
+   "modelCodes": [
+    "BTP-KP50D"
+   ],
+   "titles": [
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50d1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5152",
+   "modelCodes": [
+    "BTP-KP50E"
+   ],
+   "titles": [
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50d2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5153",
+   "modelCodes": [
+    "BTP-KP50E"
+   ],
+   "titles": [
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50d2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5154",
+   "modelCodes": [
+    "BTP-KP40D"
+   ],
+   "titles": [
+    "北通鲲鹏40 明末联动款"
+   ],
+   "scripts": [
+    "kp40b1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5155",
+   "modelCodes": [
+    "BTP-KP40D"
+   ],
+   "titles": [
+    "北通鲲鹏40 明末联动款"
+   ],
+   "scripts": [
+    "kp40b1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5158",
+   "modelCodes": [
+    "BTP-KP20D"
+   ],
+   "titles": [
+    "北通鲲鹏20 绝尘白"
+   ],
+   "scripts": [
+    "kp20d"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5159",
+   "modelCodes": [
+    "BTP-KP20D"
+   ],
+   "titles": [
+    "北通鲲鹏20 绝尘白"
+   ],
+   "scripts": [
+    "kp20d"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x515b",
+   "modelCodes": [
+    "BTP-KP40D"
+   ],
+   "titles": [
+    "北通鲲鹏40 御铠白"
+   ],
+   "scripts": [
+    "kp40d"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x515c",
+   "modelCodes": [
+    "BTP-KP40D"
+   ],
+   "titles": [
+    "北通鲲鹏40 御铠白"
+   ],
+   "scripts": [
+    "kp40d"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x515d",
+   "modelCodes": [
+    "BTP-KP40F"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄 风驰白"
+   ],
+   "scripts": [
+    "kp40b1w"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x515e",
+   "modelCodes": [
+    "BTP-KP40F"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄 风驰白"
+   ],
+   "scripts": [
+    "kp40b1w"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x515f",
+   "modelCodes": [
+    "BTP-KP70B"
+   ],
+   "titles": [
+    "北通鲲鹏70AI智控旗舰手柄"
+   ],
+   "scripts": [
+    "kp70b"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5160",
+   "modelCodes": [
+    "BTP-KP70B"
+   ],
+   "titles": [
+    "北通鲲鹏70AI智控旗舰手柄"
+   ],
+   "scripts": [
+    "kp70b"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5161",
+   "modelCodes": [
+    "BTP-PG01A"
+   ],
+   "titles": [
+    "北通盘古智控游戏手柄"
+   ],
+   "scripts": [
+    "pgv1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0xff80",
+     "usage": "0x01",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5162",
+   "modelCodes": [
+    "BTP-PG01A"
+   ],
+   "titles": [
+    "北通盘古智控游戏手柄"
+   ],
+   "scripts": [
+    "pgv1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0xff80",
+     "usage": "0x01",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5163",
+   "modelCodes": [
+    "BTP-KP40MCK"
+   ],
+   "titles": [
+    "北通鲲鹏40鸣潮联名款"
+   ],
+   "scripts": [
+    "kp40dk"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5164",
+   "modelCodes": [
+    "BTP-KP40MCK"
+   ],
+   "titles": [
+    "北通鲲鹏40鸣潮联名款"
+   ],
+   "scripts": [
+    "kp40dk"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5165",
+   "modelCodes": [
+    "BTP-KP40MCF"
+   ],
+   "titles": [
+    "北通鲲鹏40鸣潮联名款"
+   ],
+   "scripts": [
+    "kp40df"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5166",
+   "modelCodes": [
+    "BTP-KP40MCF"
+   ],
+   "titles": [
+    "北通鲲鹏40鸣潮联名款"
+   ],
+   "scripts": [
+    "kp40df"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5169",
+   "modelCodes": [
+    "BTP-KP40F"
+   ],
+   "titles": [
+    "北通鲲鹏40 电掣黑"
+   ],
+   "scripts": [
+    "kp40b2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x516a",
+   "modelCodes": [
+    "BTP-KP40F"
+   ],
+   "titles": [
+    "北通鲲鹏40 电掣黑"
+   ],
+   "scripts": [
+    "kp40b2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x516d",
+   "modelCodes": [
+    "BTP-KP70A1"
+   ],
+   "titles": [
+    "北通鲲鹏70 午马限定款"
+   ],
+   "scripts": [
+    "kp70a1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x516e",
+   "modelCodes": [
+    "BTP-KP70A1"
+   ],
+   "titles": [
+    "北通鲲鹏70 午马限定款"
+   ],
+   "scripts": [
+    "kp70a1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x516f",
+   "modelCodes": [
+    "BTP-KP20DL"
+   ],
+   "titles": [
+    "北通鲲鹏20战双帕弥什联名款"
+   ],
+   "scripts": [
+    "kp20dl"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5170",
+   "modelCodes": [
+    "BTP-KP20DL"
+   ],
+   "titles": [
+    "北通鲲鹏20战双帕弥什联名款"
+   ],
+   "scripts": [
+    "kp20dl"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5173",
+   "modelCodes": [
+    "BTP-KP70C"
+   ],
+   "titles": [
+    "北通鲲鹏70 6D升级款"
+   ],
+   "scripts": [
+    "kp70c"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5174",
+   "modelCodes": [
+    "BTP-KP70C"
+   ],
+   "titles": [
+    "北通鲲鹏70 6D升级款"
+   ],
+   "scripts": [
+    "kp70c"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x518a",
+   "modelCodes": [
+    "BTP-KP70C1"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x518b",
+   "modelCodes": [
+    "BTP-KP70C1"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x518c",
+   "modelCodes": [
+    "BTP-KP70C2"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x518d",
+   "modelCodes": [
+    "BTP-KP70C2"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5190",
+   "modelCodes": [
+    "BTP-KP20EB"
+   ],
+   "titles": [
+    "北通鲲鹏20精英版-丁未"
+   ],
+   "scripts": [
+    "kp20eb"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5191",
+   "modelCodes": [
+    "BTP-KP20EB"
+   ],
+   "titles": [
+    "北通鲲鹏20精英版-丁未"
+   ],
+   "scripts": [
+    "kp20eb"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5194",
+   "modelCodes": [
+    "BTP-KP40E"
+   ],
+   "titles": [
+    "北通鲲鹏40 精英版"
+   ],
+   "scripts": [
+    "kp40e"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x5195",
+   "modelCodes": [
+    "BTP-KP40E"
+   ],
+   "titles": [
+    "北通鲲鹏40 精英版"
+   ],
+   "scripts": [
+    "kp40e"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x519b",
+   "modelCodes": [
+    "BTP-KP70C3"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c3"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x519c",
+   "modelCodes": [
+    "BTP-KP70C3"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c3"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x519d",
+   "modelCodes": [
+    "BTP-KP70C4"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c4"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20bc",
+   "pid": "0x519e",
+   "modelCodes": [
+    "BTP-KP70C4"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c4"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5125",
+   "modelCodes": [
+    "BTP-KP20A",
+    "BTP-KP40A"
+   ],
+   "titles": [
+    "北通鲲鹏20 智控游戏手柄",
+    "北通鲲鹏40智控游戏手柄"
+   ],
+   "scripts": [
+    "kp30",
+    "kp40",
+    "kp401"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0",
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5126",
+   "modelCodes": [
+    "BTP-KP20A"
+   ],
+   "titles": [
+    "北通鲲鹏20智控游戏手柄"
+   ],
+   "scripts": [
+    "kp20"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5127",
+   "modelCodes": [
+    "BTP-KP40A"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄"
+   ],
+   "scripts": [
+    "kp40"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5128",
+   "modelCodes": [
+    "BTP-KP20A"
+   ],
+   "titles": [
+    "北通鲲鹏20智控游戏手柄"
+   ],
+   "scripts": [
+    "kp20"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x512f",
+   "modelCodes": [
+    "BTP-KP70A"
+   ],
+   "titles": [
+    "北通鲲鹏70 AI旗舰"
+   ],
+   "scripts": [
+    "kp70"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5130",
+   "modelCodes": [
+    "BTP-KP70A"
+   ],
+   "titles": [
+    "北通鲲鹏70 AI旗舰"
+   ],
+   "scripts": [
+    "kp70"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5133",
+   "modelCodes": [
+    "BTP-KP50B"
+   ],
+   "titles": [
+    "北通鲲鹏50 云翼白"
+   ],
+   "scripts": [
+    "kp50p"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5134",
+   "modelCodes": [
+    "BTP-KP50B"
+   ],
+   "titles": [
+    "北通鲲鹏50 云翼白"
+   ],
+   "scripts": [
+    "kp50p"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5145",
+   "modelCodes": [
+    "BTP-KP40A",
+    "BTP-KP40B"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄",
+    "北通鲲鹏40智控游戏手柄 极光蓝"
+   ],
+   "scripts": [
+    "kp40b",
+    "kp40v1r"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5146",
+   "modelCodes": [
+    "BTP-KP40A",
+    "BTP-KP40B"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄",
+    "北通鲲鹏40智控游戏手柄 极光蓝"
+   ],
+   "scripts": [
+    "kp40b",
+    "kp40v1r"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5149",
+   "modelCodes": [
+    "BTP-KP50C"
+   ],
+   "titles": [
+    "北通鲲鹏50 星穹紫"
+   ],
+   "scripts": [
+    "kp50c"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x514a",
+   "modelCodes": [
+    "BTP-KP50C"
+   ],
+   "titles": [
+    "北通鲲鹏50 星穹紫"
+   ],
+   "scripts": [
+    "kp50c"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5150",
+   "modelCodes": [
+    "BTP-KP50D"
+   ],
+   "titles": [
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50d1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5151",
+   "modelCodes": [
+    "BTP-KP50D"
+   ],
+   "titles": [
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50d1"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5152",
+   "modelCodes": [
+    "BTP-KP50E"
+   ],
+   "titles": [
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50d2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5153",
+   "modelCodes": [
+    "BTP-KP50E"
+   ],
+   "titles": [
+    "鲲鹏50智控游戏手柄 解限机联名款"
+   ],
+   "scripts": [
+    "kp50d2"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5154",
+   "modelCodes": [
+    "BTP-KP40D"
+   ],
+   "titles": [
+    "北通鲲鹏40 明末联动款"
+   ],
+   "scripts": [
+    "kp40b1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5155",
+   "modelCodes": [
+    "BTP-KP40D"
+   ],
+   "titles": [
+    "北通鲲鹏40 明末联动款"
+   ],
+   "scripts": [
+    "kp40b1"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5158",
+   "modelCodes": [
+    "BTP-KP20D"
+   ],
+   "titles": [
+    "北通鲲鹏20 绝尘白"
+   ],
+   "scripts": [
+    "kp20d"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5159",
+   "modelCodes": [
+    "BTP-KP20D"
+   ],
+   "titles": [
+    "北通鲲鹏20 绝尘白"
+   ],
+   "scripts": [
+    "kp20d"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x515b",
+   "modelCodes": [
+    "BTP-KP40D"
+   ],
+   "titles": [
+    "北通鲲鹏40 御铠白"
+   ],
+   "scripts": [
+    "kp40d"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x515c",
+   "modelCodes": [
+    "BTP-KP40D"
+   ],
+   "titles": [
+    "北通鲲鹏40 御铠白"
+   ],
+   "scripts": [
+    "kp40d"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x515d",
+   "modelCodes": [
+    "BTP-KP40F"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄 风驰白"
+   ],
+   "scripts": [
+    "kp40b1w"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x515e",
+   "modelCodes": [
+    "BTP-KP40F"
+   ],
+   "titles": [
+    "北通鲲鹏40智控游戏手柄 风驰白"
+   ],
+   "scripts": [
+    "kp40b1w"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x515f",
+   "modelCodes": [
+    "BTP-KP70B"
+   ],
+   "titles": [
+    "北通鲲鹏70AI智控旗舰手柄"
+   ],
+   "scripts": [
+    "kp70b"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5160",
+   "modelCodes": [
+    "BTP-KP70B"
+   ],
+   "titles": [
+    "北通鲲鹏70AI智控旗舰手柄"
+   ],
+   "scripts": [
+    "kp70b"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5161",
+   "modelCodes": [
+    "BTP-PG01A"
+   ],
+   "titles": [
+    "北通盘古智控游戏手柄"
+   ],
+   "scripts": [
+    "pgv1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5162",
+   "modelCodes": [
+    "BTP-PG01A"
+   ],
+   "titles": [
+    "北通盘古智控游戏手柄"
+   ],
+   "scripts": [
+    "pgv1"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0xff80",
+     "usage": "0x01",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5163",
+   "modelCodes": [
+    "BTP-KP40MCK"
+   ],
+   "titles": [
+    "北通鲲鹏40鸣潮联名款"
+   ],
+   "scripts": [
+    "kp40dk"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5164",
+   "modelCodes": [
+    "BTP-KP40MCK"
+   ],
+   "titles": [
+    "北通鲲鹏40鸣潮联名款"
+   ],
+   "scripts": [
+    "kp40dk"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5165",
+   "modelCodes": [
+    "BTP-KP40MCF"
+   ],
+   "titles": [
+    "北通鲲鹏40鸣潮联名款"
+   ],
+   "scripts": [
+    "kp40df"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5166",
+   "modelCodes": [
+    "BTP-KP40MCF"
+   ],
+   "titles": [
+    "北通鲲鹏40鸣潮联名款"
+   ],
+   "scripts": [
+    "kp40df"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5169",
+   "modelCodes": [
+    "BTP-KP40F"
+   ],
+   "titles": [
+    "北通鲲鹏40 电掣黑"
+   ],
+   "scripts": [
+    "kp40b2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x516a",
+   "modelCodes": [
+    "BTP-KP40F"
+   ],
+   "titles": [
+    "北通鲲鹏40 电掣黑"
+   ],
+   "scripts": [
+    "kp40b2"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x1"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x516d",
+   "modelCodes": [
+    "BTP-KP70A1"
+   ],
+   "titles": [
+    "北通鲲鹏70 午马限定款"
+   ],
+   "scripts": [
+    "kp70a1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x516e",
+   "modelCodes": [
+    "BTP-KP70A1"
+   ],
+   "titles": [
+    "北通鲲鹏70 午马限定款"
+   ],
+   "scripts": [
+    "kp70a1"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x516f",
+   "modelCodes": [
+    "BTP-KP20DL"
+   ],
+   "titles": [
+    "北通鲲鹏20战双帕弥什联名款"
+   ],
+   "scripts": [
+    "kp20dl"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5170",
+   "modelCodes": [
+    "BTP-KP20DL"
+   ],
+   "titles": [
+    "北通鲲鹏20战双帕弥什联名款"
+   ],
+   "scripts": [
+    "kp20dl"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5173",
+   "modelCodes": [
+    "BTP-KP70C"
+   ],
+   "titles": [
+    "北通鲲鹏70 6D升级款"
+   ],
+   "scripts": [
+    "kp70c"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5174",
+   "modelCodes": [
+    "BTP-KP70C"
+   ],
+   "titles": [
+    "北通鲲鹏70 6D升级款"
+   ],
+   "scripts": [
+    "kp70c"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x518a",
+   "modelCodes": [
+    "BTP-KP70C1"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c1"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x518b",
+   "modelCodes": [
+    "BTP-KP70C1"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c1"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x518c",
+   "modelCodes": [
+    "BTP-KP70C2"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c2"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x518d",
+   "modelCodes": [
+    "BTP-KP70C2"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c2"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5190",
+   "modelCodes": [
+    "BTP-KP20EB"
+   ],
+   "titles": [
+    "北通鲲鹏20精英版-丁未"
+   ],
+   "scripts": [
+    "kp20eb"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5191",
+   "modelCodes": [
+    "BTP-KP20EB"
+   ],
+   "titles": [
+    "北通鲲鹏20精英版-丁未"
+   ],
+   "scripts": [
+    "kp20eb"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5194",
+   "modelCodes": [
+    "BTP-KP40E"
+   ],
+   "titles": [
+    "北通鲲鹏40 精英版"
+   ],
+   "scripts": [
+    "kp40e"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x5195",
+   "modelCodes": [
+    "BTP-KP40E"
+   ],
+   "titles": [
+    "北通鲲鹏40 精英版"
+   ],
+   "scripts": [
+    "kp40e"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x519b",
+   "modelCodes": [
+    "BTP-KP70C3"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c3"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x519c",
+   "modelCodes": [
+    "BTP-KP70C3"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c3"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x519d",
+   "modelCodes": [
+    "BTP-KP70C4"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c4"
+   ],
+   "role": "wired",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  },
+  {
+   "vid": "0x20dd",
+   "pid": "0x519e",
+   "modelCodes": [
+    "BTP-KP70C4"
+   ],
+   "titles": [
+    "北通鲲鹏70 异环联名款"
+   ],
+   "scripts": [
+    "kp70c4"
+   ],
+   "role": "dongle",
+   "ifaces": [
+    {
+     "page": "0x00ff",
+     "usage": "0x03",
+     "reportLength": 64
+    }
+   ],
+   "writeEnc": [
+    "0x0"
+   ]
+  }
+ ]
+}

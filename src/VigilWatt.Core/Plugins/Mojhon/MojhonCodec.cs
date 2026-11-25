@@ -4,7 +4,7 @@ namespace VigilWatt.Core.Plugins.Mojhon;
 /// 功 能： 墨将（MOJHON）A5 帧协议的纯编解码，不碰句柄、不写日志，便于单测。
 /// 2026/10/26 00:45:00 workbuddy
 ///
-/// 帧布局与全部取值出处见 docs/hardware/mojhon.md §6.3（USBPcap 实录，35/35 帧校验通过）：
+/// 帧布局与全部取值出处见 docs/hardware/brands/mojhon.md §6.3（USBPcap 实录，35/35 帧校验通过）：
 ///   [0xA5 短帧 | 0xA4 长帧] [总长度=含头尾] [命令/寄存器] [载荷...] [校验]
 ///   校验 = 帧内除末字节外所有字节之和 &amp; 0xFF
 /// 读请求恒为 4 字节 `A5 04 &lt;寄存器&gt; &lt;校验&gt;`，设备回复时**原样回显寄存器号**。
@@ -22,14 +22,14 @@ internal static class MojhonCodec
 
     /// <summary>
     /// 电量寄存器。取值实测：官方助手显示 18% 时回 `12 00`，显示 17% 时回 `11 00`，
-    /// payload[0] 即百分比（docs/hardware/mojhon.md §6.4 / §7）。
+    /// payload[0] 即百分比（docs/hardware/brands/mojhon.md §6.4 / §7）。
     /// </summary>
     public const byte RegisterBattery = 0x04;
 
     /// <summary>
     /// 设备型号标识寄存器：应答载荷形如 `58 52 00` + ASCII 标识串（实测本机回 `C4_SERVER`）。
     /// 官方助手用同一标识查型号目录（`MojhonAssistant.exe` 里的 devices[] 表把
-    /// `C4_SERVER` 映射到 webName `GALE2`），见 docs/hardware/mojhon.md §2.1。
+    /// `C4_SERVER` 映射到 webName `GALE2`），见 docs/hardware/brands/mojhon.md §4.1。
     /// </summary>
     public const byte RegisterDeviceName = 0xE2;
 
@@ -109,7 +109,7 @@ internal static class MojhonCodec
 
     /// <summary>
     /// 充电标志：payload[1] = 0x00 表示未接充电线（放电），0x01 表示正在充电。
-    /// 实测对照见 docs/hardware/mojhon.md §7.2：放电 6 次读数恒 0x00，插线后 120+ 次读数恒 0x01。
+    /// 实测对照见 docs/hardware/brands/mojhon.md §7.2：放电 6 次读数恒 0x00，插线后 120+ 次读数恒 0x01。
     /// 除这两个值外的取值从未观测到，映射为 <see cref="ChargingFlagUnknown"/>，不做外推。
     /// </summary>
     public const byte ChargingFlagDischarging = 0x00;

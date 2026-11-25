@@ -1,6 +1,35 @@
 # 构建与环境坑
 
-全部实踩于 2026-10-04~05，特征大多是"静默失败"。机器：Windows 11 x64（26200），.NET 8 SDK 8.0.425（winget 装的，机器原本只有运行时）。
+全部实踩于 2026-10-04~05，2026-11-19 补 Codex 沙箱限制；特征大多是"静默失败"。机器：Windows 11 x64（26200），.NET 8 SDK 8.0.425（winget 装的，机器原本只有运行时）。
+
+## 0. Codex 沙箱：构建和测试必须在沙箱外执行
+
+**这是当前 AI 开发环境的第一条规则。** 在 Codex 沙箱内跑标准命令会出现两类假故障：
+
+1. `dotnet build VigilWatt.sln -c Debug`：解决方案级 restore 可能静默失败；即使加 `--no-restore`，
+   复制 `VigilWatt.Core.dll` 到 App 输出目录时也会报 `MSB3027` / `MSB3021`。
+   持有文件的是**沙箱宿主进程**，不是 `VigilWatt.App.exe`，沙箱内看不到、也不该去杀。
+2. `dotnet test ...`：vstest 在 90 秒内连不上 testhost，报“测试运行已中止”。
+3. `dotnet test ...` 启动 testhost 后立刻报 `Win32Exception (5)`，栈在
+   `OpenProcess` → `EnsureWatchingForExit` → `SetParentProcessExitCallback`：
+   工作区目录带 Low 完整性标签，NuGet 拷出的 `testhost.exe` 继承了它；testhost 启动后要
+   `OpenProcess` 父进程，Low IL 会被拒绝。这不是测试断言失败，也不是缺运行时。
+
+**正确做法**：申请沙箱外执行权限，然后原样运行标准命令：
+
+```powershell
+dotnet build VigilWatt.sln -c Debug
+dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<测试类名>"
+```
+
+**不要**为了绕过沙箱去改 `OutDir` / `BaseOutputPath`、复制测试产物到工作区外、或反复重试。
+测试工程已用 `RestoreTestHostIntegrityLevel` 在每次 Build 后把输出目录里的
+`testhost.exe` / `testhost.x86.exe` 提回 Medium；不要改工作区目录本身的标签，也不要用
+`--arch x64`、`.runsettings` 或改 SDK 目录里的 `testhost.exe.config` 绕，这些都不解决 Low IL。
+
+2026-11-19 已验证沙箱外标准命令 `dotnet build VigilWatt.sln -c Debug` 一次成功，**0 警告 0 错误**。
+2026-11-24 已验证：`testhost.exe` 为 Medium 时全量测试 **1982 通过 / 1 跳过 / 0 失败**；
+新增的构建目标在故意把 testhost 降回 Low 后仍能自动恢复为 Medium。
 
 ## 1. XamlCompiler 静默崩溃（最阴的坑）
 
@@ -20,13 +49,16 @@ Debug 构建的数据目录就在该目录下的 `data\`，直接双击即可运
 
 ## 3. 应用运行时锁 DLL
 
-构建前先 `taskkill //IM VigilWatt.App.exe //F`，否则 MSB3021/3027 文件被占用。
+构建前先确认没有 `VigilWatt.App.exe` 在运行，否则会报 MSB3021/3027 文件被占用。
+如果沙箱内看不到占用进程、`Get-Process` 里也没有 VigilWatt，那是沙箱宿主句柄，不是应用实例：
+按 §0 申请沙箱外权限重跑，**不要**换输出目录或强杀未知进程。
 
-## 3.1 运行 Debug 版：数据就在 exe 旁边
+### 3.1 运行 Debug 版：数据就在 exe 旁边
 
 **Debug 构建的数据目录是 `bin\x64\Debug\...\win-x64\data\`**，不是 `%LOCALAPPDATA%`。
 `AppPaths.ResolveRootDir()` 用 `#if DEBUG` 分流：Debug 取 `AppContext.BaseDirectory\data`，
-Release 才取 `%LOCALAPPDATA%\VigilWatt`。这是 .NET 开发的常规做法，好处是：
+Release 再分两档——**便携版取解压根目录的 `data\`**（Velopack 便携包根目录带 `.portable` 标记，
+exe 在 `<root>\current\` 下），安装版才取 `%LOCALAPPDATA%\VigilWatt`（issue #81）。这是 .NET 开发的常规做法，好处是：
 
 - 开发版与正式版各用一份 `settings.json` / `history.db` / `logs`，互不覆盖、历史不互相污染；
 - 不往用户目录写东西，卸载/清理只要删 `bin`；
@@ -55,6 +87,8 @@ powershell -File scripts\run-app.ps1 -Copy    # 兜底：复制到 C:\VigilWattR
 
 `-Copy` 只在"从工作区启动仍被环境限制"时才需要，原因见 `runtime-pitfalls.md` §20。
 
+**便携版是干净的一份**：数据只认解压根目录的 `data\`，不复制、不迁移 `%LOCALAPPDATA%` 里的旧数据。1.3.1 及以前便携版误写到了用户目录（issue #81），那些旧数据留在原处不会自动搬——需要的话自己拷到 `<解压根目录>\data`。解压到只读位置（如 Program Files）时自动退回 `%LOCALAPPDATA%`，不会因为写不进去而启动失败。
+
 **注意**：单实例互斥量 `VigilWatt_SingleInstance` 是全局同名的，正式版在跑时开发版会直接退出。
 这是有意的——两边同时抓 HID 会互相抢设备。
 
@@ -74,32 +108,13 @@ self-contained（含 Windows App SDK 运行时），约 102MB，无需安装任�
 
 Debug 构建不启用该生成器，所以**只有 Release 打包时暴露**（`dotnet build -c Debug` 一直 0 错误，容易误判成"工程没问题"）。已在 `VigilWatt.App.csproj` 加好该项。
 
-## 4.1 测试
+### 4.1 测试
 
 ```
 dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<测试类名>"
 ```
 
-**不带 `--filter` 的全量 `dotnet test` 在本机会卡住**（复现于 2026-10-09：卡在"正在启动测试执行"之后无任何输出，单跑 `LogTests` 即复现）。
-这是**环境问题，与代码改动无关**——所以验证时一律用 `--no-build --filter "FullyQualifiedName~<类名>"` 指定相关测试类，秒级返回。
-
-**根因（2026-10-20 查清）**：报错是
-`Failed to load the dll from [...\host\fxr\<版本>\hostfxr.dll], HRESULT: 0x80070005`。
-既不是缺运行时，也不是权限问题——`hostfxr.dll` 的 ACL 正常（`BUILTIN\Users` 有 ReadAndExecute），
-8.0 与 10.0 两个版本权限完全一致。真正的原因是**从工作区目录启动的 testhost 子进程加载不了
-`Program Files` 下的 DLL**，与 `runtime-pitfalls.md` §20 是同一个环境限制。
-
-**绕法：把测试产物复制到工作区之外再跑**，全量也能一次跑完（2026-10-20 实测 **521 通过 / 0 失败**）：
-
-```powershell
-$dst = "C:\VigilWattTmp"
-Remove-Item $dst -Recurse -Force -ErrorAction SilentlyContinue
-Copy-Item src\tests\VigilWatt.Core.Tests\bin\Debug\net8.0\* $dst -Recurse
-Push-Location $dst
-dotnet vstest VigilWatt.Core.Tests.dll                                              # 全量
-dotnet vstest VigilWatt.Core.Tests.dll --TestCaseFilter:"FullyQualifiedName~DeviceRemovalTests"
-Pop-Location
-```
+**优先在沙箱外执行**（见 §0）。沙箱内 vstest 会连不上 testhost；这不是代码问题，也不是缺运行时。
 
 xUnit 项目（`net8.0`、AnyCPU），用 `<Compile Include>` 直接链接 `src/VigilWatt.Core` 里的真源文件，不引 WinRT。
 **链接清单就是"可测边界"**：文件在 `VigilWatt.Core.Tests.csproj` 里出现，才谈得上单测覆盖；新增纯逻辑文件应一并加进去（见 `docs/dev/review-standard.md` R8）。
@@ -147,7 +162,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 
 - `VigilWattApp-win-Setup.exe`：安装包（**仅当前用户**、无 UAC、装到 `%LocalAppData%\VigilWattApp`，自动建桌面+开始菜单快捷方式、写卸载条目）
 - `VigilWattApp-win-Portable.zip`：绿色免安装版（vpk 顺带生成）
-- `VigilWattApp-*-full.nupkg`、`RELEASES`、`releases.win.json`：Velopack 更新数据；发布到 Gitee Release 时需将 `dist/` 全部产物作为附件上传，确保清单引用的包都可下载
+- `VigilWattApp-*-full.nupkg`、`RELEASES`、`releases.win.json`：Velopack 更新数据；发布上传时（GitHub 主下载 / Gitee 镜像）由维护者将 `dist/` 全部产物作为附件上传，确保清单引用的包都可下载
 
 ### 关键决策与坑
 
@@ -170,8 +185,8 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 
 - `Program.cs`：自定义入口（csproj `DISABLE_XAML_GENERATED_MAIN` 关掉了 XAML 生成的 Main）。`VelopackApp.Build().Run()` 必须最先跑——安装/更新/卸载钩子进程带 `--veloapp-*` 参数被拉起，在这里被消费后直接退出，所以 `App.OnLaunched` 的单实例互斥不会误杀钩子进程，也不用改。
 - 卸载清理：`OnBeforeUninstallFastCallback` 里调 `AutostartService.SetEnabled(false)` 删 HKCU Run 自启动残留。
-- `Services/UpdateService.cs` + 关于页"软件更新"区：更新源是 Velopack **内置的 `GithubSource` / `GiteaSource`**，不是自写适配器——Gitee 的 `/api/v1` 与 `/api/v5` 返回一致（2026-10-14 实测：同仓库同键同值），而 `GiteaSource` 的 API 基址正是硬编码的 `{host}/api/v1/`，所以直接可用。**GitHub 优先，8 秒内没结果或抛错就回退 Gitee**（`ProbeTimeout`）；检查成功后源固定，delta 包必须从给出清单的那个源继续下载。两个仓库 URL 是常量，`publish-gitee.ps1` 必须与 `UpdateService` 里的 Gitee 地址指向同一个仓库，且两边的 Release 资产要一致。启动时检查一次，关于页保留手动检查。运行副本未安装时不执行安装更新。
-- 版本号唯一来源：`VigilWatt.App.csproj` 的 `<Version>`，exe FileVersion、设置页显示、安装包版本都从它来。
+- `Services/UpdateService.cs` + 关于页"软件更新"区：更新源是 Velopack **内置的 `GithubSource` / `GiteaSource`**，不是自写适配器——Gitee 的 `/api/v1` 与 `/api/v5` 返回一致（2026-10-14 实测：同仓库同键同值），而 `GiteaSource` 的 API 基址正是硬编码的 `{host}/api/v1/`，所以直接可用。**GitHub 优先，8 秒内没结果或抛错就回退 Gitee**（`ProbeTimeout`）；检查成功后源固定，delta 包必须从给出清单的那个源继续下载。两个仓库 URL 是常量，`publish-gitee.ps1` 必须与 `UpdateService` 里的 Gitee 地址指向同一个仓库；两边的 Release 资产由维护者手动上传并保持一致。启动时检查一次，关于页保留手动检查。运行副本未安装时不执行安装更新。
+- 版本号唯一来源：`VigilWatt.App.csproj` 的 `<Version>`，exe FileVersion、设置页显示、安装包版本都从它来；Beta 打包用 `-Version 1.4.0-beta.1` 显式覆盖，避免 FileVersion 丢掉预发布后缀。
 
 ### 更新说明（release notes）
 
@@ -191,9 +206,24 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 
 安装（静默）→ 目录/快捷方式/卸载条目正确、数据目录不冲突；自动更新（把 1.0.1 nupkg 丢进 `packages\` 后启动 1.0.0 → 自动升级重启到 1.0.1）；卸载 → 安装目录/快捷方式/卸载条目/HKCU Run 残留全部清掉，用户数据保留。
 
-### 发布到 Gitee（回退源）
+### Beta 预发布（2026-11-24 起）
 
-自动更新**先读 GitHub**（`github.com/evren-oct/vigil-watt`），8 秒内不可达或报错才回退 `gitee.com/YGWG-LX/vigil-watt`。两边走的是同一套 Velopack 清单：`GiteaSource` 经 `/api/v1/repos/.../releases` 列出版本（空仓库返回 `[]`，视为无新版本），Velopack 清单与包从 Release 附件下载。Gitee Release 下载路由见[官方说明](https://blog.gitee.com/2022/08/18/update/)；`vpk pack` 产出的 `releases.win.json` 与各 `.nupkg` 都要作为附件上传，确保清单引用的包都可下载。**两个仓库都要传同一份资产**，否则国内用户回退到 Gitee 时会看不到新版本。
+Beta 用独立通道，避免和正式版互相更新：
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 -Version 1.4.0-beta.1 -Channel beta -OutputDir dist-beta
+```
+
+- `-Version` 必须显式传完整 SemVer2（含 `-beta.N`），脚本不会再把预发布截成三段。
+- `-Channel beta` 让包元数据写 `channel=beta`，产物是 `releases.beta.json` / `RELEASES-beta` / `assets.beta.json`。
+- 预发布构建的 `UpdateService` 只查 `beta` 通道 + prerelease 资产；正式版仍只查默认 `win` 稳定通道 + stable 资产。
+- 正式版客户端还有一道运行时保护：即使发布时误把 Beta 标成正式版，也会忽略带预发布后缀的目标版本。
+- 上传时 **必须把 GitHub/Gitee Release 标成 Pre-release**，并把 `dist-beta\` 全部产物传齐。不要把 beta 资产混进 1.3.1 的正式 Release。
+- 这样 1.3.1 不会看到/更新到 Beta；Beta 也不会被 1.3.1 的稳定清单降级。手动运行 1.3.1 安装包仍可能覆盖同 `packId` 的 Beta，这属于用户手动操作，不是自动更新。
+
+### 发布上传（维护者手动：GitHub 主下载，Gitee 镜像）
+
+自动更新**先读 GitHub**（`github.com/evren-oct/vigil-watt`），8 秒内不可达或报错才回退 `gitee.com/YGWG-LX/vigil-watt`。两边走的是同一套 Velopack 清单：`GiteaSource` 经 `/api/v1/repos/.../releases` 列出版本（空仓库返回 `[]`，视为无新版本），Velopack 清单与包从 Release 附件下载。Gitee Release 下载路由见[官方说明](https://blog.gitee.com/2022/08/18/update/)；`vpk pack` 产出的 `releases.win.json` 与各 `.nupkg` 由维护者手动上传到 GitHub Releases（主下载源）与 Gitee Releases（镜像备份），两处资产保持一致。**AI 不执行上传**：只负责本机 `dotnet publish` / `vpk pack`，不碰 `gh`、网页、token 或 `git push`。
 
 **一次性配置**：Gitee 个人访问令牌（需仓库写权限）。脚本只认两种来源：`-Token` 参数，或 `GITEE_TOKEN` 环境变量——**它不会自己去读令牌文件**。本机的令牌在仓库根 `.vpk-gitee-token`（已 gitignore），所以要先把它读进环境变量再跑脚本：
 
@@ -204,7 +234,7 @@ powershell -ExecutionPolicy Bypass -File scripts\publish-gitee.ps1
 
 令牌只用于发布脚本，不放进客户端或仓库文件；脚本经 `Authorization` 头传递，不走 URL query。
 
-**日常发布**（以 `1.0.12` 为例，替换为本次版本）。**顺序不能变**：`publish-gitee.ps1` 用 `git ls-remote --exit-code origin refs/tags/<tag>` 校验 tag 已在 origin，没推 tag 会直接 throw。
+**日常发布**（以 `1.0.12` 为例，替换为本次版本）。以下步骤由维护者手动执行，AI 不代跑第 2/4/5 步，也不碰远程。**顺序不能变**：`publish-gitee.ps1` 用 `git ls-remote --exit-code origin refs/tags/<tag>` 校验 tag 已在 origin，没推 tag 会直接 throw。
 
 ```
 # 1) 改 src/VigilWatt.App/VigilWatt.App.csproj 的 <Version>，然后提交（本地，不推送）
@@ -224,8 +254,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 $env:GITEE_TOKEN = (Get-Content .vpk-gitee-token -Raw).Trim()
 powershell -ExecutionPolicy Bypass -File scripts\publish-gitee.ps1
 
-# 5) 复核附件是否齐全（应含 releases.win.json + 全部 .nupkg）：
+# 5) GitHub：手动创建 Release 并上传同一份附件（主下载源）
+
+# 6) 复核两处附件是否齐全（应含 releases.win.json + 全部 .nupkg）：
 #    GET https://gitee.com/api/v5/repos/YGWG-LX/vigil-watt/releases
 ```
 
-`publish-gitee.ps1` 自动从 csproj 读版本号，拒绝覆盖已存在的 Release，并把 `dist/` 下全部文件上传到该版本 Release。Release 必须包含 `releases.win.json` 及其引用的全部 `.nupkg`。客户端启动时检查一次；新版本会提示用户确认，启动到托盘时先显示托盘通知，用户打开窗口后再显示安装确认框。
+`publish-gitee.ps1` 自动从 csproj 读版本号，拒绝覆盖已存在的 Release，并把 `dist/` 下全部文件上传到该版本 Release；它只由维护者手动运行。GitHub 侧由维护者手动创建 Release 并上传同一份附件。Release 必须包含 `releases.win.json` 及其引用的全部 `.nupkg`。客户端启动时检查一次；新版本会提示用户确认，启动到托盘时先显示托盘通知，用户打开窗口后再显示安装确认框。

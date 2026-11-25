@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Master",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4041",
+      "4060",
+      "4071",
+      "B012",
+      "B017",
+      "B01E"
+    ],
+    "displayNames": [
+      "MX Master"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_master.png",
+      "image": "mx_master.png",
+      "source": "LogiOptions+ devices.json / mx_master.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

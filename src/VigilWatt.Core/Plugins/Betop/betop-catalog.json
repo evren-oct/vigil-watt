@@ -1,0 +1,2825 @@
+{
+  "schemaVersion": 2,
+  "version": "2026-11-16",
+  "brand": "北通",
+  "source": "Linux xpad KP 系列 PID 线索（2026-07 补丁，仅证明 XInput 身份）+ 项目 betop.md 真机记录；电量通道是否可用仍以真机为准",
+  "officialSource": {
+    "vendor": "BETOP / 北通智控（BetopGame）",
+    "sourceVersion": "2.6.2（资源包 20261111.asar，ver=20261111）",
+    "method": "asar 静态解析 + 65 个明文 JS 型号脚本的 RegisterDev/RegisterDev2/RegisterAlterDev 调用",
+    "report": "docs/hardware/reference/betop-official-client.md",
+    "registrations": "docs/hardware/reference/betop-official-client.devices.json",
+    "verifiedOn": "2026-11-16",
+    "limits": "只读静态分析；未对设备写入任何帧，未与官方界面做百分比对照"
+  },
+  "statusDefinitions": {
+    "official": {
+      "OfficialRegistered": "官方客户端脚本里有明确的 RegisterDev/RegisterAlterDev 注册（有 VID/PID）",
+      "OfficialUnconfirmed": "官方脚本存在但缺 PID 等注册证据，无法构成设备记录（当前无条目）"
+    },
+    "vigilWatt": {
+      "CatalogOnly": "只在本目录里登记，VigilWatt 从未接触过该身份",
+      "Identified": "本机枚举到过该身份（HID 描述符/设备名），但没有解析到电量帧",
+      "ProtocolVerified": "收到过可解析的电量帧（真机或用户日志），但未与官方界面百分比对照",
+      "BatteryVerified": "真机多日样本且口径与官方源码一致；仍未做官方界面百分比对照"
+    }
+  },
+  "evidenceSources": {
+    "appendixA": "betop-official-client.md 附录 A（66 PID：页/usage/报文长/电量字节/充电字节/写加密）",
+    "register": "betop-official-client.devices.json（118 条接口注册，机器可读）",
+    "charge41": "betop-official-client.md §4.1（充电字段按脚本分支）",
+    "zeus42": "betop-official-client.md §4.2（宙斯位域：电量 = raw[1] 低 3 位）",
+    "cmd0d": "betop-official-client.md §5（cmd 0xD = 全局配置，不是电量）",
+    "betop13": "betop.md §1.3（5191 主动查询；上游 oitsukiii/betop-battery 真机验证）",
+    "betop14": "betop.md §1.4（T9 真机 248 条样本与口径更正）",
+    "betop181": "betop.md §1.8.1（5158 有线查询 78% 充电中）",
+    "betop182": "betop.md §1.8.2（5159 2.4G 广播 39%）",
+    "betop184": "betop.md §1.8.4（20DD 只回 02 CD）",
+    "betop19": "betop.md §1.9（设备变更日志里的身份抖动）"
+  },
+  "protocolFamilies": {
+    "kunpeng": {
+      "label": "鲲鹏 / 盘古主路（0x00FF 页，64 字节）",
+      "usagePage": "0x00ff",
+      "usage": ["0x03"],
+      "reportLength": 64,
+      "battery": "整帧 byte2 = 百分比",
+      "pids": ["0x5125", "0x5126", "0x5127", "0x5128", "0x512f", "0x5130", "0x5133", "0x5134", "0x5145", "0x5146", "0x5149", "0x514a", "0x5150", "0x5151", "0x5152", "0x5153", "0x5154", "0x5155", "0x5158", "0x5159", "0x515b", "0x515c", "0x515d", "0x515e", "0x515f", "0x5160", "0x5163", "0x5164", "0x5165", "0x5166", "0x5169", "0x516a", "0x516d", "0x516e", "0x516f", "0x5170", "0x5173", "0x5174", "0x518a", "0x518b", "0x518c", "0x518d", "0x5190", "0x5191", "0x5194", "0x5195", "0x519b", "0x519c", "0x519d", "0x519e"]
+    },
+    "zeus": {
+      "label": "宙斯系（0xFF00 页，24 字节）",
+      "usagePage": "0xff00",
+      "usage": ["0x01", "0x02", "0x03"],
+      "reportLength": 24,
+      "battery": "位域：raw[1] 低 3 位 → [0,50,80,100,100]，无充电位",
+      "pids": ["0x500b", "0x501e", "0x502c", "0x502f", "0x5073", "0x5074", "0x5076", "0x5077", "0x5104", "0x5105", "0x5106", "0x5107"]
+    },
+    "kunpeng50-alt": {
+      "label": "鲲鹏50 第二身份（VID 0x0517，0xFF00 页 + 64 字节）",
+      "usagePage": "0xff00",
+      "usage": ["0x01"],
+      "reportLength": 64,
+      "battery": "整帧 byte2 = 百分比；页与报文长不是一一对应，判据必须按三元组",
+      "pids": ["0x5350"]
+    },
+    "pangu": {
+      "label": "盘古另一路（0xFF80 页，64 字节）",
+      "usagePage": "0xff80",
+      "usage": ["0x01"],
+      "reportLength": 64,
+      "battery": "整帧 byte2 = 百分比（pgv1 与鲲鹏同构）",
+      "pids": ["0x5161", "0x5162"]
+    },
+    "hh30": {
+      "label": "海心桥项目机（0xFF7A 页，64 字节）",
+      "usagePage": "0xff7a",
+      "usage": ["0x01"],
+      "reportLength": 64,
+      "battery": "整帧 byte5 = 百分比；无充电字段",
+      "pids": ["0x2104"]
+    },
+    "legacy": {
+      "label": "老一代（阿修罗 / 斯巴达 / 蝙蝠，0x0003 页）",
+      "usagePage": "0x0003",
+      "usage": ["0x02"],
+      "reportLength": 64,
+      "battery": "byte5 或 byte6 = 百分比，无充电标志；多为有线无电池",
+      "pids": [],
+      "notes": "官方脚本里有这批型号（a1_ns / axl2_new / axl2prow_new / bd2w / sbd2 / sbd3*），但没有 PID 注册证据（不在 118 条注册里），不构成 officialDevices 条目；不纳入接入范围"
+    }
+  },
+  "vidRelations": [
+    {
+      "vid": "0x20bc",
+      "meaning": "本体 / 直插身份（RegisterDev2）",
+      "registeredPids": 65,
+      "claimable": true
+    },
+    {
+      "vid": "0x20dd",
+      "meaning": "同一 PID 的第二套 USB 身份（RegisterAlterDev：接收器 / 底座 / 配置口）",
+      "registeredPids": 52,
+      "claimable": true
+    },
+    {
+      "vid": "0x0517",
+      "meaning": "鲲鹏50 第三套身份，只注册了 PID 0x5350（0xFF00 页 + 64 字节）",
+      "registeredPids": 1,
+      "claimable": false,
+      "notes": "不在 betop.protocols.json 的 vendors 里，当前不认领；接入前先确认它是不是同一只鲲鹏50 的另一套身份"
+    }
+  ],
+  "vidRules": [
+    "同一 PID 在 0x20BC / 0x20DD 下是同一设备的两种 USB 身份，不是两个型号（官方 kp20.js 同时注册两个 VID）",
+    "只有证据能确认的型号对应关系才允许归并；仅凭 PID 相同不得跨 VID 合并身份（betop-catalog.md §4）",
+    "0x0517:0x5350 与 0x20BC:0x5133/0x5134 的官方型号名重叠（鲲鹏50），但官方没给配对证据，本目录不归并"
+  ],
+  "deviceNotes": {
+    "0x20bc:0x5073": "本机真机；Col04 被动状态流，无充电标志字节",
+    "0x20bc:0x5125": "xpad 标 KP20A/KP40A 共用；官方注册还含 KUNPThirty（西樵山项目）；型号由产品串判定，电量未验证",
+    "0x20bc:0x5126": "xpad 标 KP20A；电量未验证",
+    "0x20bc:0x5127": "xpad 标 KP20A/KP40A 共用；型号由产品串判定，电量未验证",
+    "0x20bc:0x5128": "xpad 标 KP20A；电量未验证",
+    "0x20bc:0x5158": "贡献者真机，有线 02 15 查询 78% 充电中",
+    "0x20bc:0x5159": "贡献者真机，2.4G 杂项页每秒广播",
+    "0x20bc:0x516f": "官方注册 BTP-KP20DL；电量未验证",
+    "0x20bc:0x5170": "官方注册 BTP-KP20DL；电量未验证",
+    "0x20bc:0x5190": "官方注册 BTP-KP20EB；电量未验证",
+    "0x20bc:0x5191": "KP20EB；上游实现（oitsukiii/betop-battery）在该型号真机验证 02 15 查询，本机未复测",
+    "0x20bc:0x5145": "xpad 标 KP40A/KP40B 共用；型号由产品串判定，电量未验证",
+    "0x20bc:0x5146": "xpad 标 KP40A/KP40B 共用；型号由产品串判定，电量未验证",
+    "0x20bc:0x5154": "xpad 标 KP40D；电量未验证",
+    "0x20bc:0x5155": "xpad 标 KP40D；电量未验证",
+    "0x20bc:0x515b": "xpad 标 KP40D White；电量未验证",
+    "0x20bc:0x515c": "xpad 标 KP40D White；电量未验证",
+    "0x20bc:0x515d": "xpad 标 KP40F White；电量未验证",
+    "0x20bc:0x515e": "xpad 标 KP40F White；电量未验证",
+    "0x20bc:0x5163": "官方注册 BTP-KP40MCK；电量未验证",
+    "0x20bc:0x5164": "官方注册 BTP-KP40MCK；电量未验证",
+    "0x20bc:0x5165": "官方注册 BTP-KP40MCF；电量未验证",
+    "0x20bc:0x5166": "官方注册 BTP-KP40MCF；电量未验证",
+    "0x20bc:0x5169": "xpad 标 KP40F Black；电量未验证",
+    "0x20bc:0x516a": "xpad 标 KP40F Black；电量未验证",
+    "0x20bc:0x5194": "官方注册 BTP-KP40E；电量未验证",
+    "0x20bc:0x5195": "官方注册 BTP-KP40E；电量未验证",
+    "0x20bc:0x5133": "xpad 标 KP50B；电量未验证",
+    "0x20bc:0x5149": "xpad 标 KP50C；电量未验证",
+    "0x20bc:0x5150": "xpad 标 KP50D；电量未验证",
+    "0x20bc:0x5151": "xpad 标 KP50D；电量未验证",
+    "0x20bc:0x5152": "xpad 标 KP50E；电量未验证",
+    "0x20bc:0x5153": "xpad 标 KP50E；电量未验证",
+    "0x20bc:0x5134": "xpad 标 KP50B XInput Dongle；电量未验证",
+    "0x20bc:0x514a": "xpad 标 KP50C XInput Dongle；电量未验证",
+    "0x20bc:0x512f": "xpad 标 KP70A；电量未验证",
+    "0x20bc:0x5130": "xpad 标 KP70A XInput Dongle；用户日志广播 02 15 80%",
+    "0x20bc:0x515f": "xpad 标 KP70A，官方注册为 BTP-KP70B（鲲鹏70AI智控旗舰手柄）；电量未验证",
+    "0x20bc:0x5160": "xpad 标 KP70A，官方注册为 BTP-KP70B（鲲鹏70AI智控旗舰手柄）；电量未验证",
+    "0x20bc:0x516d": "官方注册 BTP-KP70A1；电量未验证",
+    "0x20bc:0x516e": "官方注册 BTP-KP70A1；电量未验证",
+    "0x20bc:0x5173": "官方注册 BTP-KP70C；电量未验证",
+    "0x20bc:0x5174": "官方注册 BTP-KP70C；电量未验证",
+    "0x20bc:0x518a": "官方注册 BTP-KP70C1；电量未验证",
+    "0x20bc:0x518b": "官方注册 BTP-KP70C1；电量未验证",
+    "0x20bc:0x518c": "官方注册 BTP-KP70C2；电量未验证",
+    "0x20bc:0x518d": "官方注册 BTP-KP70C2；电量未验证",
+    "0x20bc:0x519b": "官方注册 BTP-KP70C3；电量未验证",
+    "0x20bc:0x519c": "官方注册 BTP-KP70C3；电量未验证",
+    "0x20bc:0x519d": "官方注册 BTP-KP70C4；电量未验证",
+    "0x20bc:0x519e": "官方注册 BTP-KP70C4；电量未验证",
+    "0x20dd:0x5128": "KP20 DONGLE；只回 02 CD（cmd 0xD 全局配置，不是电量帧；CR-106 待结案）",
+    "0x20dd:0x5130": "BTP-KP70A DONGLE 底座；只回 02 CD（cmd 0xD 全局配置，不是电量帧；CR-106 待结案）",
+    "0x20dd:0x515c": "xpad 的 KP40D HID receiver；电量未验证",
+    "0x20dd:0x5163": "官方注册 BTP-KP40MCK；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5164": "官方注册 BTP-KP40MCK；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5165": "官方注册 BTP-KP40MCF；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5166": "官方注册 BTP-KP40MCF；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x516d": "官方注册 BTP-KP70A1；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x516e": "官方注册 BTP-KP70A1；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x516f": "官方注册 BTP-KP20DL；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5170": "官方注册 BTP-KP20DL；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5173": "官方注册 BTP-KP70C；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5174": "官方注册 BTP-KP70C；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x518a": "官方注册 BTP-KP70C1；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x518b": "官方注册 BTP-KP70C1；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x518c": "官方注册 BTP-KP70C2；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x518d": "官方注册 BTP-KP70C2；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5190": "官方注册 BTP-KP20EB；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5194": "官方注册 BTP-KP40E；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x5195": "官方注册 BTP-KP40E；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x519b": "官方注册 BTP-KP70C3；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x519c": "官方注册 BTP-KP70C3；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x519d": "官方注册 BTP-KP70C4；0x20DD 第二套身份；电量未验证",
+    "0x20dd:0x519e": "官方注册 BTP-KP70C4；0x20DD 第二套身份；电量未验证",
+    "0x20bc:0x500b": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20bc:0x502f": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20bc:0x5074": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20bc:0x5076": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20bc:0x5077": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20bc:0x5104": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20bc:0x5105": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20bc:0x5106": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20bc:0x5107": "官方宙斯注册；位域电量来自 t9/t6p2a 脚本，未真机复测",
+    "0x20dd:0x5125": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5126": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5127": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x512f": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5133": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5134": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5145": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5146": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5149": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x514a": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5150": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5151": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5152": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5153": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5154": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5155": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5158": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5159": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x515b": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x515d": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x515e": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x515f": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5160": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5169": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x516a": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力",
+    "0x20dd:0x5191": "官方 RegisterAlterDev 第二身份；未单独验证，不声明能力"
+  },
+  "devices": [
+    {
+      "vid": "0x20bc", "pid": "0x5073", "model": "宙斯2", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent",
+      "capabilities": { "batteryRead": "supported", "chargingRead": "unsupported" }
+    },
+
+    {
+      "vid": "0x20bc", "pid": "0x5125", "model": "", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5126", "model": "鲲鹏20智控游戏手柄", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5127", "model": "", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5128", "model": "鲲鹏20智控游戏手柄", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5158", "model": "鲲鹏20 绝尘白", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15", "group": "kunpeng20", "pairedPid": "0x5159", "wired": true,
+      "capabilities": { "batteryRead": "supported", "chargingRead": "supported" }
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5159", "model": "鲲鹏20 绝尘白", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15", "group": "kunpeng20", "pairedPid": "0x5158", "wired": false,
+      "capabilities": { "batteryRead": "supported", "chargingRead": "supported" }
+    },
+    {
+      "vid": "0x20bc", "pid": "0x516f", "model": "鲲鹏20战双帕弥什联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5170", "model": "鲲鹏20战双帕弥什联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5190", "model": "鲲鹏20精英版-丁未", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5191", "model": "鲲鹏20精英版-丁未", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+
+    {
+      "vid": "0x20bc", "pid": "0x5145", "model": "", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5146", "model": "", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5154", "model": "鲲鹏40 明末联动款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5155", "model": "鲲鹏40 明末联动款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x515b", "model": "鲲鹏40 御铠白", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x515c", "model": "鲲鹏40 御铠白", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x515d", "model": "鲲鹏40智控游戏手柄 风驰白", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x515e", "model": "鲲鹏40智控游戏手柄 风驰白", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5163", "model": "鲲鹏40鸣潮联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5164", "model": "鲲鹏40鸣潮联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5165", "model": "鲲鹏40鸣潮联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5166", "model": "鲲鹏40鸣潮联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5169", "model": "鲲鹏40 电掣黑", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x516a", "model": "鲲鹏40 电掣黑", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5194", "model": "鲲鹏40 精英版", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5195", "model": "鲲鹏40 精英版", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+
+    {
+      "vid": "0x20bc", "pid": "0x5133", "model": "鲲鹏50 云翼白", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5149", "model": "鲲鹏50 星穹紫", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5150", "model": "鲲鹏50智控游戏手柄 解限机联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5151", "model": "鲲鹏50智控游戏手柄 解限机联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5152", "model": "鲲鹏50智控游戏手柄 解限机联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5153", "model": "鲲鹏50智控游戏手柄 解限机联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5134", "model": "鲲鹏50 云翼白", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x514a", "model": "鲲鹏50 星穹紫", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+
+    {
+      "vid": "0x20bc", "pid": "0x512f", "model": "鲲鹏70 AI旗舰", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5130", "model": "鲲鹏70 AI旗舰", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x515f", "model": "鲲鹏70AI智控旗舰手柄", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5160", "model": "鲲鹏70AI智控旗舰手柄", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x516d", "model": "鲲鹏70 午马限定款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x516e", "model": "鲲鹏70 午马限定款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5173", "model": "鲲鹏70 6D升级款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5174", "model": "鲲鹏70 6D升级款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x518a", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x518b", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x518c", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x518d", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x519b", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x519c", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x519d", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x519e", "model": "鲲鹏70 异环联名款", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-status15"
+    },
+
+    {
+      "vid": "0x20dd", "pid": "0x5128", "model": "鲲鹏20智控游戏手柄", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5130", "model": "鲲鹏70 AI旗舰", "kind": "unknown", "role": "dock",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x515c", "model": "鲲鹏40 御铠白", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5163", "model": "鲲鹏40鸣潮联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5164", "model": "鲲鹏40鸣潮联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5165", "model": "鲲鹏40鸣潮联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5166", "model": "鲲鹏40鸣潮联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x516d", "model": "鲲鹏70 午马限定款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x516e", "model": "鲲鹏70 午马限定款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x516f", "model": "鲲鹏20战双帕弥什联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5170", "model": "鲲鹏20战双帕弥什联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5173", "model": "鲲鹏70 6D升级款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5174", "model": "鲲鹏70 6D升级款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x518a", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x518b", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x518c", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x518d", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5190", "model": "鲲鹏20精英版-丁未", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5194", "model": "鲲鹏40 精英版", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5195", "model": "鲲鹏40 精英版", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x519b", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x519c", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x519d", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x519e", "model": "鲲鹏70 异环联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x500b", "model": "宙斯 Pro", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x502f", "model": "宙斯 Pro", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5074", "model": "", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5076", "model": "宙斯2", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5077", "model": "宙斯2", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5104", "model": "永劫无间", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5105", "model": "永劫无间", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5106", "model": "永劫无间", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20bc", "pid": "0x5107", "model": "永劫无间", "kind": "gamepad", "role": "controller",
+      "protocol": "betop-zeus-keyevent"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5125", "model": "", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5126", "model": "鲲鹏20智控游戏手柄", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5127", "model": "", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x512f", "model": "鲲鹏70 AI旗舰", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5133", "model": "鲲鹏50 云翼白", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5134", "model": "鲲鹏50 云翼白", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5145", "model": "", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5146", "model": "", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5149", "model": "鲲鹏50 星穹紫", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x514a", "model": "鲲鹏50 星穹紫", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5150", "model": "鲲鹏50智控游戏手柄 解限机联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5151", "model": "鲲鹏50智控游戏手柄 解限机联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5152", "model": "鲲鹏50智控游戏手柄 解限机联名款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5153", "model": "鲲鹏50智控游戏手柄 解限机联名款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5154", "model": "鲲鹏40 明末联动款", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5155", "model": "鲲鹏40 明末联动款", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5158", "model": "鲲鹏20 绝尘白", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5159", "model": "鲲鹏20 绝尘白", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x515b", "model": "鲲鹏40 御铠白", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x515d", "model": "鲲鹏40智控游戏手柄 风驰白", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x515e", "model": "鲲鹏40智控游戏手柄 风驰白", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x515f", "model": "鲲鹏70AI智控旗舰手柄", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5160", "model": "鲲鹏70AI智控旗舰手柄", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5169", "model": "鲲鹏40 电掣黑", "kind": "unknown", "role": "controller",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x516a", "model": "鲲鹏40 电掣黑", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15-nocharge"
+    },
+    {
+      "vid": "0x20dd", "pid": "0x5191", "model": "鲲鹏20精英版-丁未", "kind": "unknown", "role": "dongle",
+      "protocol": "betop-status15"
+    }
+  ],
+  "officialDevices": [
+{
+      "pid": "0x2104",
+      "protocolFamily": "hh30",
+      "hidInterfaces": [{"usagePage": "0xff7a", "usage": "0x01", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0xff7a", "usage": "0x01", "reportLength": 64}],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["海心桥项目"],
+      "models": [{"modelId": "betop:honghthirty", "modelCode": "HONGHThirty", "productLine": "项目机（海心桥）", "modelName": "海心桥项目"}],
+      "officialScripts": ["hh30"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 5, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x500b",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0x00ff", "usage": "0x03", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [
+            {"usagePage": "0x00ff", "usage": "0x03", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["宙斯 Pro"],
+      "models": [{"modelId": "betop:t6pro", "modelCode": "T6Pro", "productLine": "宙斯 Pro", "modelName": "宙斯 Pro"}],
+      "officialScripts": ["t6p2a"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x501e",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["宙斯2"],
+      "models": [{"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2", "modelName": "宙斯2"}],
+      "officialScripts": ["t9_app"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x502c",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "dongle",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["宙斯 Pro"],
+      "models": [{"modelId": "betop:t6pro", "modelCode": "T6Pro", "productLine": "宙斯 Pro", "modelName": "宙斯 Pro"}],
+      "officialScripts": ["t6p2a"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x502f",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0x00ff", "usage": "0x03", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "dongle",
+          "hidInterfaces": [
+            {"usagePage": "0x00ff", "usage": "0x03", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["宙斯 Pro"],
+      "models": [{"modelId": "betop:t6pro", "modelCode": "T6Pro", "productLine": "宙斯 Pro", "modelName": "宙斯 Pro"}],
+      "officialScripts": ["t6p2a"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5073",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "dongle",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {
+            "inRuntimeCatalog": true,
+            "protocol": "betop-zeus-keyevent",
+            "verification": "BatteryVerified",
+            "note": "本机真机 248 条样本；已按官方位域改读 raw[1] 低 3 位，未与官方界面百分比对照",
+            "evidence": ["betop14", "zeus42"]
+          }
+        }
+      ],
+      "officialTitles": ["宙斯2"],
+      "models": [{"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2", "modelName": "宙斯2"}],
+      "officialScripts": ["t9"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "BatteryVerified",
+      "notes": "官方 title 是「宙斯2」，与产品串 T9 不同名：T9 是同一 PID 的变体名，官方按 zs2 归类",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5074",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "dongle",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["宙斯 Pro", "宙斯2"],
+      "models": [{"modelId": "betop:t6pro", "modelCode": "T6Pro", "productLine": "宙斯 Pro"}, {"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2"}],
+      "officialScripts": ["t6p2a", "t9"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "厂商自己用多个脚本认领同一 PID，型号不能按 PID 反推；标题见 officialTitles",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5076",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["宙斯2"],
+      "models": [{"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2", "modelName": "宙斯2"}],
+      "officialScripts": ["t9"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5077",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "dongle",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["宙斯2"],
+      "models": [{"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2", "modelName": "宙斯2"}],
+      "officialScripts": ["t9"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5104",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["永劫无间"],
+      "models": [{"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2", "modelName": "永劫无间"}],
+      "officialScripts": ["t9_yjwj"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5105",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "dongle",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["永劫无间"],
+      "models": [{"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2", "modelName": "永劫无间"}],
+      "officialScripts": ["t9_yjwj"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5106",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "dongle",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["永劫无间"],
+      "models": [{"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2", "modelName": "永劫无间"}],
+      "officialScripts": ["t9_yjwj"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5107",
+      "protocolFamily": "zeus",
+      "hidInterfaces": [
+        {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+        {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+      ],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "dongle",
+          "hidInterfaces": [
+            {"usagePage": "0xff00", "usage": "0x01", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x02", "reportLength": 24},
+            {"usagePage": "0xff00", "usage": "0x03", "reportLength": 24}
+          ],
+          "writeEncryption": null,
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["永劫无间"],
+      "models": [{"modelId": "betop:zs2", "modelCode": "zs2", "productLine": "宙斯2", "modelName": "永劫无间"}],
+      "officialScripts": ["t9_yjwj"],
+      "officialBatterySupport": {
+        "level": {"kind": "bitfield", "offset": 1, "mask": "0x07", "table": [0, 50, 80, 100, 100], "unit": "level", "evidence": ["zeus42"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5125",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0/0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0/0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20 智控游戏手柄", "北通鲲鹏40智控游戏手柄", "西樵山项目"],
+      "models": [
+        {"modelId": "betop:kp20a", "modelCode": "BTP-KP20A", "productLine": "鲲鹏20"},
+        {"modelId": "betop:kp40a", "modelCode": "BTP-KP40A", "productLine": "鲲鹏40"},
+        {"modelId": "betop:kunpthirty", "modelCode": "KUNPThirty", "productLine": "项目机（西樵山）"}
+      ],
+      "officialScripts": ["hxc", "kp30", "kp30_app", "kp40", "kp401"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "厂商自己用多个脚本认领同一 PID，型号不能按 PID 反推；标题见 officialTitles",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5126",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20智控游戏手柄"],
+      "models": [{"modelId": "betop:kp20a", "modelCode": "BTP-KP20A", "productLine": "鲲鹏20", "modelName": "北通鲲鹏20智控游戏手柄"}],
+      "officialScripts": ["kp20"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5127",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0/0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20 智控游戏手柄", "北通鲲鹏40智控游戏手柄"],
+      "models": [
+        {"modelId": "betop:kp20a", "modelCode": "BTP-KP20A", "productLine": "鲲鹏20"},
+        {"modelId": "betop:kp40a", "modelCode": "BTP-KP40A", "productLine": "鲲鹏40"}
+      ],
+      "officialScripts": ["kp30", "kp40", "kp401"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "厂商自己用多个脚本认领同一 PID，型号不能按 PID 反推；标题见 officialTitles",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5128",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {
+            "inRuntimeCatalog": true,
+            "protocol": "betop-status15-nocharge",
+            "verification": "Identified",
+            "note": "设备变更日志里枚举到（两个口），无电量帧记录",
+            "evidence": ["betop19"]
+          }
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {
+            "inRuntimeCatalog": true,
+            "protocol": "betop-status15",
+            "verification": "Identified",
+            "note": "本机枚举到，只回 02 CD（cmd 0xD 全局配置），无电量帧；CR-106",
+            "evidence": ["betop184", "cmd0d"]
+          }
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20智控游戏手柄"],
+      "models": [{"modelId": "betop:kp20a", "modelCode": "BTP-KP20A", "productLine": "鲲鹏20", "modelName": "北通鲲鹏20智控游戏手柄"}],
+      "officialScripts": ["kp20"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "none-documented", "evidence": ["appendixA"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "Identified",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x512f",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 AI旗舰"],
+      "models": [{"modelId": "betop:kp70a", "modelCode": "BTP-KP70A", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 AI旗舰"}],
+      "officialScripts": ["kp70"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5130",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {
+            "inRuntimeCatalog": true,
+            "protocol": "betop-status15",
+            "verification": "ProtocolVerified",
+            "note": "用户日志：BTP-KP70A XINPUT DONGLE 广播 02 15 50 00 50 = 80%",
+            "evidence": ["betop184"]
+          }
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {
+            "inRuntimeCatalog": true,
+            "protocol": "betop-status15",
+            "verification": "Identified",
+            "note": "本机枚举到，只回 02 CD（cmd 0xD 全局配置），无电量帧；CR-106",
+            "evidence": ["betop184", "cmd0d"]
+          }
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 AI旗舰"],
+      "models": [{"modelId": "betop:kp70a", "modelCode": "BTP-KP70A", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 AI旗舰"}],
+      "officialScripts": ["kp70"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "ProtocolVerified",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5133",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏50 云翼白"],
+      "models": [{"modelId": "betop:kp50b", "modelCode": "BTP-KP50B", "productLine": "鲲鹏50", "modelName": "北通鲲鹏50 云翼白"}],
+      "officialScripts": ["kp50p"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp50p": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5134",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏50 云翼白"],
+      "models": [{"modelId": "betop:kp50b", "modelCode": "BTP-KP50B", "productLine": "鲲鹏50", "modelName": "北通鲲鹏50 云翼白"}],
+      "officialScripts": ["kp50p"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp50p": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5145",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40智控游戏手柄", "北通鲲鹏40智控游戏手柄 极光蓝"],
+      "models": [
+        {"modelId": "betop:kp40a", "modelCode": "BTP-KP40A", "productLine": "鲲鹏40"},
+        {"modelId": "betop:kp40b", "modelCode": "BTP-KP40B", "productLine": "鲲鹏40"}
+      ],
+      "officialScripts": ["kp40b", "kp40v1r"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "mixed", "byScript": {"kp40b": "unknown", "kp40v1r": "none"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "厂商自己用多个脚本认领同一 PID，型号不能按 PID 反推；标题见 officialTitles；充电字段读法在不同脚本间不一致，不按型号推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5146",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40智控游戏手柄", "北通鲲鹏40智控游戏手柄 极光蓝"],
+      "models": [
+        {"modelId": "betop:kp40a", "modelCode": "BTP-KP40A", "productLine": "鲲鹏40"},
+        {"modelId": "betop:kp40b", "modelCode": "BTP-KP40B", "productLine": "鲲鹏40"}
+      ],
+      "officialScripts": ["kp40b", "kp40v1r"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "mixed", "byScript": {"kp40b": "unknown", "kp40v1r": "none"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "厂商自己用多个脚本认领同一 PID，型号不能按 PID 反推；标题见 officialTitles；充电字段读法在不同脚本间不一致，不按型号推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5149",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏50 星穹紫"],
+      "models": [{"modelId": "betop:kp50c", "modelCode": "BTP-KP50C", "productLine": "鲲鹏50", "modelName": "北通鲲鹏50 星穹紫"}],
+      "officialScripts": ["kp50c"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp50c": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x514a",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏50 星穹紫"],
+      "models": [{"modelId": "betop:kp50c", "modelCode": "BTP-KP50C", "productLine": "鲲鹏50", "modelName": "北通鲲鹏50 星穹紫"}],
+      "officialScripts": ["kp50c"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp50c": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5150",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["鲲鹏50智控游戏手柄 解限机联名款"],
+      "models": [{"modelId": "betop:kp50d", "modelCode": "BTP-KP50D", "productLine": "鲲鹏50", "modelName": "鲲鹏50智控游戏手柄 解限机联名款"}],
+      "officialScripts": ["kp50d1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp50d1": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5151",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["鲲鹏50智控游戏手柄 解限机联名款"],
+      "models": [{"modelId": "betop:kp50d", "modelCode": "BTP-KP50D", "productLine": "鲲鹏50", "modelName": "鲲鹏50智控游戏手柄 解限机联名款"}],
+      "officialScripts": ["kp50d1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp50d1": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5152",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["鲲鹏50智控游戏手柄 解限机联名款"],
+      "models": [{"modelId": "betop:kp50e", "modelCode": "BTP-KP50E", "productLine": "鲲鹏50", "modelName": "鲲鹏50智控游戏手柄 解限机联名款"}],
+      "officialScripts": ["kp50d2"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp50d2": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5153",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["鲲鹏50智控游戏手柄 解限机联名款"],
+      "models": [{"modelId": "betop:kp50e", "modelCode": "BTP-KP50E", "productLine": "鲲鹏50", "modelName": "鲲鹏50智控游戏手柄 解限机联名款"}],
+      "officialScripts": ["kp50d2"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp50d2": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5154",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40 明末联动款"],
+      "models": [{"modelId": "betop:kp40d", "modelCode": "BTP-KP40D", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40 明末联动款"}],
+      "officialScripts": ["kp40b1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40b1": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5155",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40 明末联动款"],
+      "models": [{"modelId": "betop:kp40d", "modelCode": "BTP-KP40D", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40 明末联动款"}],
+      "officialScripts": ["kp40b1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40b1": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5158",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {
+            "inRuntimeCatalog": true,
+            "protocol": "betop-status15",
+            "verification": "BatteryVerified",
+            "note": "贡献者真机：有线 02 15 查询回 78% 充电中",
+            "evidence": ["betop181"]
+          }
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20 绝尘白"],
+      "models": [{"modelId": "betop:kp20d", "modelCode": "BTP-KP20D", "productLine": "鲲鹏20", "modelName": "北通鲲鹏20 绝尘白"}],
+      "officialScripts": ["kp20d"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp20d": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "BatteryVerified",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5159",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {
+            "inRuntimeCatalog": true,
+            "protocol": "betop-status15",
+            "verification": "BatteryVerified",
+            "note": "贡献者真机：2.4G 每秒广播 02 15 27 00 50 = 39% 未充电",
+            "evidence": ["betop182"]
+          }
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20 绝尘白"],
+      "models": [{"modelId": "betop:kp20d", "modelCode": "BTP-KP20D", "productLine": "鲲鹏20", "modelName": "北通鲲鹏20 绝尘白"}],
+      "officialScripts": ["kp20d"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp20d": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "BatteryVerified",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x515b",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40 御铠白"],
+      "models": [{"modelId": "betop:kp40d", "modelCode": "BTP-KP40D", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40 御铠白"}],
+      "officialScripts": ["kp40d"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp40d": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x515c",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15", "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40 御铠白"],
+      "models": [{"modelId": "betop:kp40d", "modelCode": "BTP-KP40D", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40 御铠白"}],
+      "officialScripts": ["kp40d"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp40d": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x515d",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40智控游戏手柄 风驰白"],
+      "models": [{"modelId": "betop:kp40f", "modelCode": "BTP-KP40F", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40智控游戏手柄 风驰白"}],
+      "officialScripts": ["kp40b1w"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40b1w": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x515e",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40智控游戏手柄 风驰白"],
+      "models": [{"modelId": "betop:kp40f", "modelCode": "BTP-KP40F", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40智控游戏手柄 风驰白"}],
+      "officialScripts": ["kp40b1w"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40b1w": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x515f",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70AI智控旗舰手柄"],
+      "models": [{"modelId": "betop:kp70b", "modelCode": "BTP-KP70B", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70AI智控旗舰手柄"}],
+      "officialScripts": ["kp70b"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70b": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5160",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70AI智控旗舰手柄"],
+      "models": [{"modelId": "betop:kp70b", "modelCode": "BTP-KP70B", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70AI智控旗舰手柄"}],
+      "officialScripts": ["kp70b"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70b": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5161",
+      "protocolFamily": "pangu",
+      "hidInterfaces": [{"usagePage": "0xff80", "usage": "0x01", "reportLength": 64}, {"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0xff80", "usage": "0x01", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通盘古智控游戏手柄"],
+      "models": [{"modelId": "betop:pg01a", "modelCode": "BTP-PG01A", "productLine": "盘古", "modelName": "北通盘古智控游戏手柄"}],
+      "officialScripts": ["pgv1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"pgv1": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "同一 PID 的两套身份接口页不一致，原因未查明",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5162",
+      "protocolFamily": "pangu",
+      "hidInterfaces": [{"usagePage": "0xff80", "usage": "0x01", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0xff80", "usage": "0x01", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0xff80", "usage": "0x01", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通盘古智控游戏手柄"],
+      "models": [{"modelId": "betop:pg01a", "modelCode": "BTP-PG01A", "productLine": "盘古", "modelName": "北通盘古智控游戏手柄"}],
+      "officialScripts": ["pgv1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"pgv1": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5163",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40鸣潮联名款"],
+      "models": [{"modelId": "betop:kp40mck", "modelCode": "BTP-KP40MCK", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40鸣潮联名款"}],
+      "officialScripts": ["kp40dk"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40dk": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5164",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40鸣潮联名款"],
+      "models": [{"modelId": "betop:kp40mck", "modelCode": "BTP-KP40MCK", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40鸣潮联名款"}],
+      "officialScripts": ["kp40dk"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40dk": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5165",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40鸣潮联名款"],
+      "models": [{"modelId": "betop:kp40mcf", "modelCode": "BTP-KP40MCF", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40鸣潮联名款"}],
+      "officialScripts": ["kp40df"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40df": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5166",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40鸣潮联名款"],
+      "models": [{"modelId": "betop:kp40mcf", "modelCode": "BTP-KP40MCF", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40鸣潮联名款"}],
+      "officialScripts": ["kp40df"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40df": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5169",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40 电掣黑"],
+      "models": [{"modelId": "betop:kp40f", "modelCode": "BTP-KP40F", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40 电掣黑"}],
+      "officialScripts": ["kp40b2"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40b2": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x516a",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": true, "protocol": "betop-status15-nocharge", "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x1",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40 电掣黑"],
+      "models": [{"modelId": "betop:kp40f", "modelCode": "BTP-KP40F", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40 电掣黑"}],
+      "officialScripts": ["kp40b2"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40b2": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x516d",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 午马限定款"],
+      "models": [{"modelId": "betop:kp70a1", "modelCode": "BTP-KP70A1", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 午马限定款"}],
+      "officialScripts": ["kp70a1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70a1": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x516e",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 午马限定款"],
+      "models": [{"modelId": "betop:kp70a1", "modelCode": "BTP-KP70A1", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 午马限定款"}],
+      "officialScripts": ["kp70a1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70a1": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x516f",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20战双帕弥什联名款"],
+      "models": [{"modelId": "betop:kp20dl", "modelCode": "BTP-KP20DL", "productLine": "鲲鹏20", "modelName": "北通鲲鹏20战双帕弥什联名款"}],
+      "officialScripts": ["kp20dl"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp20dl": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5170",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20战双帕弥什联名款"],
+      "models": [{"modelId": "betop:kp20dl", "modelCode": "BTP-KP20DL", "productLine": "鲲鹏20", "modelName": "北通鲲鹏20战双帕弥什联名款"}],
+      "officialScripts": ["kp20dl"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp20dl": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5173",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 6D升级款"],
+      "models": [{"modelId": "betop:kp70c", "modelCode": "BTP-KP70C", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 6D升级款"}],
+      "officialScripts": ["kp70c"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5174",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 6D升级款"],
+      "models": [{"modelId": "betop:kp70c", "modelCode": "BTP-KP70C", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 6D升级款"}],
+      "officialScripts": ["kp70c"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x518a",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 异环联名款"],
+      "models": [{"modelId": "betop:kp70c1", "modelCode": "BTP-KP70C1", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 异环联名款"}],
+      "officialScripts": ["kp70c1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c1": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x518b",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 异环联名款"],
+      "models": [{"modelId": "betop:kp70c1", "modelCode": "BTP-KP70C1", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 异环联名款"}],
+      "officialScripts": ["kp70c1"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c1": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x518c",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 异环联名款"],
+      "models": [{"modelId": "betop:kp70c2", "modelCode": "BTP-KP70C2", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 异环联名款"}],
+      "officialScripts": ["kp70c2"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c2": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x518d",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 异环联名款"],
+      "models": [{"modelId": "betop:kp70c2", "modelCode": "BTP-KP70C2", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 异环联名款"}],
+      "officialScripts": ["kp70c2"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c2": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5190",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20精英版-丁未"],
+      "models": [{"modelId": "betop:kp20eb", "modelCode": "BTP-KP20EB", "productLine": "鲲鹏20", "modelName": "北通鲲鹏20精英版-丁未"}],
+      "officialScripts": ["kp20eb"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp20eb": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5191",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {
+            "inRuntimeCatalog": true,
+            "protocol": "betop-status15",
+            "verification": "CatalogOnly",
+            "note": "上游 oitsukiii/betop-battery 在 BTP-KP20EB 真机验证过 02 15 查询，本机未复测",
+            "evidence": ["betop13"]
+          }
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏20精英版-丁未"],
+      "models": [{"modelId": "betop:kp20eb", "modelCode": "BTP-KP20EB", "productLine": "鲲鹏20", "modelName": "北通鲲鹏20精英版-丁未"}],
+      "officialScripts": ["kp20eb"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp20eb": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5194",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40 精英版"],
+      "models": [{"modelId": "betop:kp40e", "modelCode": "BTP-KP40E", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40 精英版"}],
+      "officialScripts": ["kp40e"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40e": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5195",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏40 精英版"],
+      "models": [{"modelId": "betop:kp40e", "modelCode": "BTP-KP40E", "productLine": "鲲鹏40", "modelName": "北通鲲鹏40 精英版"}],
+      "officialScripts": ["kp40e"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "unknown", "byScript": {"kp40e": "unknown"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x519b",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 异环联名款"],
+      "models": [{"modelId": "betop:kp70c3", "modelCode": "BTP-KP70C3", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 异环联名款"}],
+      "officialScripts": ["kp70c3"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c3": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x519c",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 异环联名款"],
+      "models": [{"modelId": "betop:kp70c3", "modelCode": "BTP-KP70C3", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 异环联名款"}],
+      "officialScripts": ["kp70c3"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c3": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x519d",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 异环联名款"],
+      "models": [{"modelId": "betop:kp70c4", "modelCode": "BTP-KP70C4", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 异环联名款"}],
+      "officialScripts": ["kp70c4"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c4": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x519e",
+      "protocolFamily": "kunpeng",
+      "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x20bc",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        },
+        {
+          "vid": "0x20dd",
+          "role": "dongle",
+          "hidInterfaces": [{"usagePage": "0x00ff", "usage": "0x03", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏70 异环联名款"],
+      "models": [{"modelId": "betop:kp70c4", "modelCode": "BTP-KP70C4", "productLine": "鲲鹏70", "modelName": "北通鲲鹏70 异环联名款"}],
+      "officialScripts": ["kp70c4"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {"kind": "byte", "offset": 4, "mask": "low4", "byScript": {"kp70c4": "low4"}, "evidence": ["appendixA", "charge41"]}
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "evidence": ["appendixA", "register"]
+    },
+{
+      "pid": "0x5350",
+      "protocolFamily": "kunpeng50-alt",
+      "hidInterfaces": [{"usagePage": "0xff00", "usage": "0x01", "reportLength": 64}],
+      "usbIdentities": [
+        {
+          "vid": "0x0517",
+          "role": "wired",
+          "hidInterfaces": [{"usagePage": "0xff00", "usage": "0x01", "reportLength": 64}],
+          "writeEncryption": "0x0",
+          "vigilWatt": {"inRuntimeCatalog": false, "protocol": null, "verification": "CatalogOnly"}
+        }
+      ],
+      "officialTitles": ["北通鲲鹏50 云翼白", "北通鲲鹏50 星穹紫", "鲲鹏50智控游戏手柄 解限机联名款"],
+      "models": [
+        {"modelId": "betop:kp50b", "modelCode": "BTP-KP50B", "productLine": "鲲鹏50"},
+        {"modelId": "betop:kp50c", "modelCode": "BTP-KP50C", "productLine": "鲲鹏50"},
+        {"modelId": "betop:kp50d", "modelCode": "BTP-KP50D", "productLine": "鲲鹏50"},
+        {"modelId": "betop:kp50e", "modelCode": "BTP-KP50E", "productLine": "鲲鹏50"}
+      ],
+      "officialScripts": ["kp50c", "kp50d1", "kp50d2", "kp50p"],
+      "officialBatterySupport": {
+        "level": {"kind": "byte", "offset": 2, "unit": "percent", "evidence": ["appendixA"]},
+        "charge": {
+          "kind": "byte",
+          "offset": 4,
+          "mask": "unknown",
+          "byScript": {"kp50c": "unknown", "kp50d1": "unknown", "kp50d2": "unknown", "kp50p": "unknown"},
+          "evidence": ["appendixA", "charge41"]
+        }
+      },
+      "officialStatus": "OfficialRegistered",
+      "vigilWattVerification": "CatalogOnly",
+      "notes": "厂商自己用多个脚本认领同一 PID，型号不能按 PID 反推；标题见 officialTitles；充电字节的掩码未在逆向报告里记录，未推定",
+      "evidence": ["appendixA", "register"]
+    }
+  ]
+}

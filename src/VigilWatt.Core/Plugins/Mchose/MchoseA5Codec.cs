@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Mchose;
 /// <summary>
 /// 功 能： 迈从 A5 V2 Ultra 的反码 Feature 电量协议（与同品牌 E2 状态帧鼠标协议是两条链路）。
 /// 2026/10/19 20:38:41 kaniu
-/// 帧结构、命令与真机样本见 docs/hardware/mchose.md §6。
+/// 帧结构、命令与真机样本见 docs/hardware/brands/mchose.md §6。
 /// </summary>
 internal static class MchoseA5Codec
 {
@@ -32,7 +32,7 @@ internal static class MchoseA5Codec
         if (frame.Length < PayloadLength + 1 || frame[0] != ReportId || frame[1] != 0xF9) return false;
         int vid = (frame[2] ^ 0xFF) | ((frame[3] ^ 0xFF) << 8);
         int pid = (frame[4] ^ 0xFF) | ((frame[5] ^ 0xFF) << 8);
-        // 接收器返回鼠标本体的 ID，不是 dongle ID。见 docs/hardware/mchose.md §6。
+        // 接收器返回鼠标本体的 ID，不是 dongle ID。见 docs/hardware/brands/mchose.md §6。
         if (vid != 0x41E4 || pid is not (0x1101 or 0x1102)) return false;
         int level = frame[11] ^ 0xFF;
         int charge = frame[12] ^ 0xFF;

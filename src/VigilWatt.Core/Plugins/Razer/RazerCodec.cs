@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Razer;
 /// 2026/10/24 23:45:00 imx1n
 ///
 /// 帧形态：90 字节 vendor feature report，report ID 0x00；hid.dll 缓冲多 1 字节（共 91）。
-/// 偏移、校验口径（XOR，不是 CRC-8）与缩放规则见 docs/hardware/razer.md。纯函数，便于单测。
+/// 偏移、校验口径（XOR，不是 CRC-8）与缩放规则见 docs/hardware/brands/razer.md。纯函数，便于单测。
 /// </summary>
 public static class RazerCodec
 {
@@ -46,7 +46,7 @@ public static class RazerCodec
     /// 已适配的 PID。注意雷蛇把「产品 PID」和「接收器 PID」分开：
     /// 毒蝰 V4 Pro 本体是 <c>0x00E5</c>，接收器是 <c>0x00E6</c>（Web 端配置表里的 dongleId），
     /// **无线使用时枚举出来的是接收器 PID**。两者都收，靠下面的 91 字节判据保证只认经典协议接口。
-    /// 新增型号：在这里加一行 + 在 docs/hardware/razer.md 记验证范围。
+    /// 新增型号：在这里加一行 + 在 docs/hardware/brands/razer.md 记验证范围。
     /// </summary>
     private static readonly Dictionary<ushort, Profile> Profiles = new()
     {

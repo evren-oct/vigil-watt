@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Plugins.Haute;
 /// <summary>
 /// 功 能： Haute42 Adapter 4DS 的固件识别、芯片 ID 与只读电量状态解析（纯函数，零 I/O）。
 /// 2026/10/19 20:38:46 kaniu
-/// 帧与真机边界见 docs/hardware/haute42.md。
+/// 帧与真机边界见 docs/hardware/devices/haute42.md。
 /// </summary>
 public static class HauteCodec
 {

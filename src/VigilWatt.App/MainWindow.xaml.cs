@@ -46,34 +46,21 @@ public sealed partial class MainWindow : Window
         AppWindow.Closing += (s, e) =>
         {
             e.Cancel = true;
-            AppWindow.Hide();
+            HideToTray();
         };
 
         // 初次进入设备页
         ContentFrame.Navigate(typeof(DevicesPage));
-        PrewarmSettingsPage();
+    }
+
+    /// <summary>隐藏到托盘并安排一次工作集修剪：用户 2026-11-25 明确，隐藏后要的就是任务管理器那个数字。</summary>
+    public void HideToTray()
+    {
+        AppWindow.Hide();
+        WorkingSetTrim.Queue();
     }
 
     /// <summary>
-    /// 预热设置页：XBF 解析与控件构造是一次性开销，先在窗口可见前付掉，首次点设置就不用等。
-    /// </summary>
-    private void PrewarmSettingsPage()
-    {
-        try
-        {
-            ContentFrame.Navigate(typeof(SettingsPage));
-            ContentFrame.Navigate(typeof(DevicesPage));
-            ContentFrame.BackStack.Clear();
-        }
-        catch (Exception ex)
-        {
-            // 预热失败不该拖垮启动；退回设备页即可，设置页之后照常按需构造
-            Log.Warn($"设置页预热失败，回退设备页: {ex.Message}");
-            try { ContentFrame.Navigate(typeof(DevicesPage)); } catch { /* 已尽力 */ }
-        }
-    }
-
-        /// <summary>
         /// 按用户设置 + 本机能力应用窗口背景材质（设置页改完也会调这里即时生效）。
         /// 三级回退：Mica（Win11）→ Acrylic（Win10 1809+）→ 纯色分层底。
         /// </summary>

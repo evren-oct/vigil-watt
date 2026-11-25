@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： EweadnKeyboardCodec —— 前行者 X87 键盘 2.4G 电量查询帧（33 字节 / 校验和在 [32]）。
 /// 2026/10/18 13:40:00 Admin
-/// 帧结构与实测依据见 docs/hardware/eweadn.md §1.1。
+/// 帧结构与实测依据见 docs/hardware/brands/eweadn.md §1.1。
 /// </summary>
 public class EweadnKeyboardCodecTests
 {

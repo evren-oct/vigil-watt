@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text;
 using VigilWatt.Core.Devices;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
@@ -11,7 +12,7 @@ namespace VigilWatt.Core.Plugins.Logitech;
 /// 功 能： 罗技品牌插件：PRO X 2 使用基类 Centurion 流程；其它设备保留既有 HID++ 流程。
 /// 2026/10/06 15:53:36 xliu
 /// 2026/10/23 20:58:09 nyamu
-/// 电量读取级联：Unified Battery 0x1004 → Battery Status 0x1000 → Battery Voltage 0x1001 → ADC Measurement 0x1F20 → HID++ 1.0 寄存器 0x07/0x0D（协议细节见 docs/hardware/logitech.md）。
+/// 电量读取级联：Unified Battery 0x1004 → Battery Status 0x1000 → Battery Voltage 0x1001 → ADC Measurement 0x1F20 → HID++ 1.0 寄存器 0x07/0x0D（协议细节见 docs/hardware/brands/logitech.md）。
 /// </summary>
 public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 {
@@ -29,6 +30,15 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
     /// <summary>空槽 Ping 超时后的负缓存：冷却期内不再写、不等（CR-62）。</summary>
     private static readonly TimeSpan EmptySlotCooldown = TimeSpan.FromMinutes(5);
+
+    /// <summary>DPI / 回报率刷新间隔：只有用户按 DPI 键才会变，没必要跟着电量节拍发请求。</summary>
+    private static readonly TimeSpan PointerRefreshInterval = TimeSpan.FromMinutes(2);
+
+    /// <summary>指针 feature 探测超时：不支持的 feature 要等满超时，压短以免拖慢整轮轮询（电量读仍是 3 秒）。</summary>
+    private static readonly TimeSpan PointerProbeTimeout = TimeSpan.FromMilliseconds(600);
+
+    /// <summary>指针 feature 的重试预算：休眠时首次探测会假阴性，探不到先重试，超预算才认定不支持。</summary>
+    private const int PointerProbeAttempts = 5;
 
     /// <summary>插件开关的键，与 <c>AppSettings.PluginEnabled</c> 对应（插件开关即写入开关，见 <see cref="WritesEnabled"/>）。</summary>
     public const string SettingsKey = "Logitech";
@@ -92,17 +102,36 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
     {
         public required DeviceStatus Status;
         public byte ProtocolMajor = 2;
-        public byte? UnifiedBatteryIdx;     // 0x1004 的 feature index
-        public byte? BatteryStatusIdx;      // 0x1000 的 feature index
-        public byte? BatteryVoltageIdx;     // 0x1001
-        public byte? AdcMeasurementIdx;     // 0x1F20
-        public byte? UnifiedWorkingFunc;    // 已验证可用的 Unified Battery func（0 或 1）
+        public FeatureSlot UnifiedBattery = new();  // 0x1004
+        public FeatureSlot BatteryStatus = new();   // 0x1000
+        public FeatureSlot BatteryVoltage = new();  // 0x1001
+        public FeatureSlot AdcMeasurement = new();  // 0x1F20
         public int? RegisterBattery;        // 1.0: 0x07 或 0x0D
         public ushort? WirelessPid;         // 配对寄存器 WPID，供电压曲线覆盖
+        public byte? DpiIdx;                // 0x2201 / 0x2202 的 feature index；0 = 已确认不支持
+        public bool DpiExtended;            // true = 走 0x2202（长报文）
+        public byte? ReportRateIdx;         // 0x8060 / 0x8061 的 feature index；0 = 已确认不支持
+        public bool ReportRateExtended;     // true = 走 0x8061（码表下标）
+        public int DpiProbeMisses;          // DPI feature 探测失败次数（到预算才放弃）
+        public int ReportRateProbeMisses;   // 回报率 feature 探测失败次数
+        public DateTimeOffset NextPointerAt; // 下一次指针遥测刷新时刻（低频，独立于电量节拍）
         public int ConsecutiveFailures;
         public bool WritesDisabled;         // 熔断停写中
         public DateTimeOffset WritesDisabledAt;
         public int BreakerTrips;            // 熔断次数 = 递增退避档位
+    }
+
+    /// <summary>电量 feature 下标缓存：&gt;0 下标、0 确认不支持、null 还没确认。返回 0 = 本轮用不了。</summary>
+    private sealed class FeatureSlot
+    {
+        public byte? Index;
+        private int _misses;
+
+        public byte Resolve(HidppIO io, byte devIdx, ushort featureId)
+        {
+            Index = HidppFeatureProbe.Next(Index, ResolveFeature(io, devIdx, featureId), ref _misses);
+            return Index ?? 0;
+        }
     }
 
     private sealed class ReceiverSession
@@ -114,8 +143,19 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         public bool DirectDevice;                       // true = 设备本体直连，false = 接收器
         public bool InitialScanDone;                    // 首次全槽扫描已完成
         public int NotReadyScans;                       // 连续"整轮一个都没应答"的次数（接收器刚插上时会这样）
+        public int? ReportedSlotCount;                  // 接收器自报的配对槽位容量（0xB5/0x03）；null = 没读到
+        public bool SlotCountProbed;                    // 每开一次句柄只探一次，避免每轮都白等超时
+        public bool ReceiverInfoUnavailable;            // 0xB5 超时过一次：本会话不再试它的其他子寄存器
         public readonly Dictionary<byte, DevEntry> Devices = new();
         public readonly Dictionary<byte, DateTimeOffset> EmptySlotUntil = new();
+
+        /// <summary>槽位扫描与链路推断共用的容量：自报值优先，读不到退回目录常量（CR-156）。</summary>
+        public int SlotCapacity => ReportedSlotCount ?? HidppCatalog.MaxSlots(Info.ProductId);
+
+        /// <summary>通知里出现但还没认过的槽位。**只能登记、不能就地发现**——发现要发请求，
+        /// 而通知回调就在等包循环里，就地发会把调用栈递归打穿（issue #55）。由监听线程下一拍处理。</summary>
+        public readonly ConcurrentDictionary<byte, byte> PendingDiscover = new();
+
         public Action<byte, byte[]>? NotifyHandler;
         public CancellationTokenSource? ListenCts;
         public Task? ListenTask;
@@ -175,6 +215,10 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
                 {
                     session.Io = new HidppIO(info.Open());
                     session.Io.WritesAllowed = () => WritesEnabled;
+                    // 新句柄 = 新会话：自报槽位可能来自另一个固件/接口，重新探一次
+                    session.SlotCountProbed = false;
+                    session.ReportedSlotCount = null;
+                    session.ReceiverInfoUnavailable = false;
                     Log.Info($"罗技 HID++ 接口打开: {info} report=0x{session.Io.ReportId:X2}");
                 }
                 catch (UnauthorizedAccessException ex)
@@ -280,6 +324,43 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         return gone;
     }
 
+    /// <summary>
+    /// 读接收器自报的配对槽位容量（HID++ 1.0 长寄存器 0xB5 子寄存器 0x03，参数区 [6]）。
+    /// 目录 `maxSlots` 是静态表、可能过时；自报值是这颗固件的事实，所以优先采用（Solaar / OpenLogi 同判据）。
+    /// 读不到就留 null，由目录兜底——不能因为读失败就少扫槽位。
+    /// 只对**目录登记过的接收器 PID** 探：设备本体 PID 不在接收器表里，对 0xFF 读 0xB5 只会白等一个超时。
+    /// 局限：短报文句柄（`PreferShort` 的 Unifying / Nano，`_longMessage == false`）凑不出 9 字节响应，
+    /// 这两族实际仍以目录值为准；要改得换到长同伴接口上发，代价大于收益（目录对这两族的登记本来就是对的）。
+    /// </summary>
+    private static void ProbeSlotCount(ReceiverSession session)
+    {
+        if (session.SlotCountProbed) return;
+        session.SlotCountProbed = true;
+
+        if (session.DirectDevice || session.Io is not { } io) return;
+        if (HidppCatalog.FindReceiver(session.Info.ProductId) == null) return;
+        // 本会话已确认这颗接收器不实现 0xB5（下面超时那次记的），别再为另一个子寄存器白等 800ms
+        if (session.ReceiverInfoUnavailable) return;
+
+        Span<byte> args = stackalloc byte[1] { HidppCodec.ReceiverInfoSubRegister };
+        var resp = io.Request(0xFF, 0x83B5, args, patchSw: false,
+            timeout: TimeSpan.FromMilliseconds(800));
+
+        if (resp != null && HidppCodec.TryParseReceiverSlotCount(resp, out var slots))
+        {
+            session.ReportedSlotCount = slots;
+            Log.Info($"罗技接收器自报配对槽位={slots}（目录={HidppCatalog.MaxSlots(session.Info.ProductId)}）" +
+                     $" pid=0x{session.Info.ProductId:X4}");
+            return;
+        }
+
+        // 失败是正常分支（部分接收器不实现 0xB5/0x03，Solaar 也把 C534 单列）：只留 Debug，别刷 Info。
+        // 没回包才记"不支持"：回包但解析不出说明这颗接收器答了，只是布局不同，不能连累别的子寄存器。
+        if (resp == null) session.ReceiverInfoUnavailable = true;
+        Log.Debug($"罗技接收器配对槽位读取失败，退回目录值 pid=0x{session.Info.ProductId:X4} " +
+                  $"resp={(resp == null ? "null" : Convert.ToHexString(resp))}");
+    }
+
     private void DiscoverDevices(ReceiverSession session)
     {
         var io = session.Io!;
@@ -295,7 +376,9 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
         if (!session.DirectDevice)
         {
-            int maxSlots = HidppCatalog.MaxSlots(session.Info.ProductId);
+            // 先问容量再扫槽：目录把某些族登记成 1~2 槽，若真实接收器有更多槽位，靠目录就永远扫不到
+            ProbeSlotCount(session);
+            int maxSlots = session.SlotCapacity;
             for (byte idx = 1; idx <= maxSlots; idx++)
             {
                 if (session.Devices.ContainsKey(idx)) continue;
@@ -370,14 +453,43 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         if (session.Io == null || session.DirectDevice) return;
         if (idx is 0 or 0xFF) return;
         if (session.Devices.ContainsKey(idx)) return;
-        int maxSlots = HidppCatalog.MaxSlots(session.Info.ProductId);
+        // 通知路径可能早于首轮扫描：容量还没探过就在这里补一次，否则 AddDevice 会拿不到自报值
+        ProbeSlotCount(session);
+        int maxSlots = session.SlotCapacity;
         if (idx > maxSlots) return;
         if (DeviceBlocklist.IsBlocked(SlotId(session, idx))) return;
-        session.EmptySlotUntil.Remove(idx);
+        // 空槽冷却对**所有**调用方都生效：曾经在这里先 Remove 再 Ping，等于通知路径完全绕过冷却，
+        // 每来一条通知就重探一次（issue #55 的放大器之一）。
+        if (session.EmptySlotUntil.TryGetValue(idx, out var until) && DateTimeOffset.Now < until) return;
+
         if (Ping(session.Io, idx, out var major, FastSlotTimeout))
+        {
+            session.EmptySlotUntil.Remove(idx);
             AddDevice(session, idx, major);
+        }
         else
+        {
             session.EmptySlotUntil[idx] = DateTimeOffset.Now + EmptySlotCooldown;
+        }
+    }
+
+    /// <summary>处理通知登记下来的待发现槽位：一拍只探一个，避免把监听线程长时间占住。</summary>
+    private void DrainPendingDiscover(ReceiverSession session)
+    {
+        if (session.PendingDiscover.IsEmpty) return;
+        foreach (var idx in session.PendingDiscover.Keys)
+        {
+            if (!session.PendingDiscover.TryRemove(idx, out _)) continue;
+            try
+            {
+                TryDiscoverSlot(session, idx);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"罗技补发现槽位异常 devIdx={idx}: {ex.Message}");
+            }
+            return;
+        }
     }
 
     /// <summary>设备 ID：接收器**端口无关**路径哈希 + 槽位（换 USB 口不产生新设备）。认领、黑名单、上报三处必须同一套规则。</summary>
@@ -389,17 +501,21 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         if (DeviceBlocklist.IsBlocked(SlotId(session, idx))) return;
 
         var io = session.Io!;
-        string name = ReadDeviceName(io, idx) ?? $"罗技设备 {idx}";
-        var kind = DeviceKind.Unknown;
+        // 0x0005 的下标因固件而异，两个调用（名字 / 类型）共用一次 GetFeature
+        byte nameIdx = ResolveFeature(io, idx, 0x0005);
+        string name = ReadDeviceName(io, idx, nameIdx) ?? $"罗技设备 {idx}";
         ushort? wpid = null;
-        if (!session.DirectDevice &&
-            TryReadPairingInfo(io, session.Info.ProductId, idx, out wpid, out var pairedKind))
-        {
-            kind = pairedKind;
-        }
-        if (kind == DeviceKind.Unknown)
-            kind = DeviceKindGuesser.Guess(name);
+        DeviceKind pairedKind = DeviceKind.Unknown;
+        if (!session.DirectDevice)
+            TryReadPairingInfo(session, io, idx, out wpid, out pairedKind);
 
+        // 类型优先级：0x0005 营销类型（权威）> 配对寄存器 > 按名字猜
+        var kind = ReadDeviceKind(io, idx, nameIdx);
+        if (kind == DeviceKind.Unknown) kind = pairedKind;
+        if (kind == DeviceKind.Unknown) kind = DeviceKindGuesser.Guess(name);
+
+        // 身份与连接共用同一份目录记录：两次查同一 PID 没有意义，也可能在目录重载时出现两套证据
+        var receiver = HidppCatalog.FindReceiver(session.Info.ProductId);
         var status = new DeviceStatus
         {
             Id = SlotId(session, idx),
@@ -407,6 +523,12 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             Source = DeviceSource.Hid24G,
             Kind = kind,
             Protocol = protocolMajor >= 2 ? "Logitech HID++ 2.0" : "Logitech HID++ 1.0",
+            // 认领到的是接收器接口（直连时才是本体）；两种都只表达"被认领接口"的身份
+            Usb = new UsbIdentity(session.Info.VendorId, session.Info.ProductId,
+                string.IsNullOrEmpty(session.Info.SerialNumber) ? null : session.Info.SerialNumber),
+            Receiver = LogitechReceiverIdentityPolicy.For(session.DirectDevice, receiver),
+            Connection = LogitechConnectionPolicy.For(
+                session.DirectDevice, receiver, idx, DateTimeOffset.Now, session.ReportedSlotCount),
         };
         var entry = new DevEntry
         {
@@ -414,23 +536,17 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             ProtocolMajor = protocolMajor,
             WirelessPid = wpid,
         };
-        // 预解析电量 feature 下标，后台通知才能按 feature 匹配（不必等下一轮 Poll）
+        // 预解析电量 feature，后台通知才能按 feature 匹配（不必等下一轮 Poll）；解析不出来的留 null，
+        // 轮询会再试、连续 3 次才认定不支持（CR-165）。仍按级联只探到第一个可用特征，省掉必然无用的 GetFeature。
         if (protocolMajor >= 2)
         {
-            entry.UnifiedBatteryIdx = ResolveFeature(io, idx, 0x1004);
-            if (entry.UnifiedBatteryIdx == 0)
-            {
-                entry.BatteryStatusIdx = ResolveFeature(io, idx, 0x1000);
-                if (entry.BatteryStatusIdx == 0)
-                {
-                    entry.BatteryVoltageIdx = ResolveFeature(io, idx, HidppCodec.FeatureBatteryVoltage);
-                    if (entry.BatteryVoltageIdx == 0)
-                        entry.AdcMeasurementIdx = ResolveFeature(io, idx, HidppCodec.FeatureAdcMeasurement);
-                }
-            }
+            if (entry.UnifiedBattery.Resolve(io, idx, 0x1004) == 0 &&
+                entry.BatteryStatus.Resolve(io, idx, 0x1000) == 0 &&
+                entry.BatteryVoltage.Resolve(io, idx, HidppCodec.FeatureBatteryVoltage) == 0)
+                entry.AdcMeasurement.Resolve(io, idx, HidppCodec.FeatureAdcMeasurement);
         }
         session.Devices[idx] = entry;
-        Log.Info($"发现罗技设备 devIdx={idx} proto={protocolMajor} kind={kind} wpid={(wpid is { } w ? w.ToString("X4") : "-")} name={name}");
+        Log.Info($"发现罗技设备 devIdx={idx} proto={protocolMajor} kind={kind} wpid={(wpid is { } w ? w.ToString("X4") : "-")} name={name} conn={status.Connection.Value?.ToString() ?? "Unknown"}/{status.Connection.Source}");
     }
 
     /// <summary>后台只读泵：零写入，收 Unified Battery 插拔电自发通知（与 Logi Battery Dashboard 同源）。</summary>
@@ -453,6 +569,8 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
                 try
                 {
                     io.PumpNotifications(TimeSpan.FromMilliseconds(500));
+                    // 通知回调只登记待发现槽位，真正的补发现在这里做（此时不在任何等包循环里）。
+                    DrainPendingDiscover(session);
                 }
                 catch (Exception ex)
                 {
@@ -486,19 +604,20 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
         if (!session.Devices.TryGetValue(devIdx, out var dev))
         {
-            TryDiscoverSlot(session, devIdx);
-            if (!session.Devices.TryGetValue(devIdx, out dev)) return;
+            // 未认过的槽位：只登记，绝不在这里发请求（见 ReceiverSession.PendingDiscover）。
+            session.PendingDiscover.TryAdd(devIdx, 0);
+            return;
         }
 
         byte feature = data[0];
         bool batteryFeature =
-            (dev.UnifiedBatteryIdx is { } u && feature == u) ||
-            (dev.BatteryStatusIdx is { } b && feature == b) ||
-            (dev.BatteryVoltageIdx is { } v && feature == v) ||
-            (dev.AdcMeasurementIdx is { } a && feature == a);
+            (dev.UnifiedBattery.Index is { } u && feature == u) ||
+            (dev.BatteryStatus.Index is { } b && feature == b) ||
+            (dev.BatteryVoltage.Index is { } v && feature == v) ||
+            (dev.AdcMeasurement.Index is { } a && feature == a);
         if (!batteryFeature) return;
 
-        if (dev.BatteryVoltageIdx is { } voltIdx && feature == voltIdx)
+        if (dev.BatteryVoltage.Index is { } voltIdx && feature == voltIdx)
         {
             var curve = HidppCatalog.CurveFor(dev.WirelessPid, adcFeature: false);
             if (!HidppCodec.TryParseBatteryVoltage(data, curve, out var pctV, out var chgV, out _))
@@ -507,7 +626,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             return;
         }
 
-        if (dev.AdcMeasurementIdx is { } adcIdx && feature == adcIdx)
+        if (dev.AdcMeasurement.Index is { } adcIdx && feature == adcIdx)
         {
             var curve = HidppCatalog.CurveFor(dev.WirelessPid, adcFeature: true);
             if (!HidppCodec.TryParseAdcMeasurement(data, curve, out var pctA, out var chgA, out _))
@@ -516,7 +635,12 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             return;
         }
 
-        if (!HidppCodec.TryParseBattery20(data, out var pct, out var chg)) return;
+        // 0x1004 与 0x1000 的充电状态码是两套枚举，按命中的 feature 选解码器
+        bool unified = dev.UnifiedBattery.Index is { } unifiedIdx && feature == unifiedIdx;
+        bool parsed = unified
+            ? HidppCodec.TryParseUnifiedBattery(data, out var pct, out var chg)
+            : HidppCodec.TryParseBatteryStatus(data, out pct, out chg);
+        if (!parsed) return;
         PushIfChanged(dev, pct, chg);
     }
 
@@ -539,7 +663,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         {
             if (session.Io == null) continue;
 
-            // 发现只在 Attach / 通知补槽里做；此处再扫会把空接收器的超时翻倍
+            // 发现只在 Attach 与监听线程的补发现里做；此处再扫会把空接收器的超时翻倍
             foreach (var (idx, dev) in session.Devices)
             {
                 try
@@ -557,6 +681,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
                         updated.Add(dev.Status);
                         dev.ConsecutiveFailures = 0;
                         dev.BreakerTrips = 0;
+                        RefreshPointer(session, idx, dev);
                     }
                     else
                     {
@@ -591,59 +716,25 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
         if (dev.ProtocolMajor >= 2)
         {
-            // 1) Unified Battery 0x1004
-            //    func 1 = GetStatus（电量% + 充电态）—— MX Master 3S 真机：90% / charging=1
-            //    func 0 = GetCapabilities（档位能力），**不能当电量**（真机会被误读成 15%）
-            //    优先 func 1；仅当 1 无响应时才回退 func 0（极旧固件）
-            var unifiedIdx = dev.UnifiedBatteryIdx ??= ResolveFeature(io, idx, 0x1004);
+            // 1) Unified Battery 0x1004：只有 func 1 = GetStatus 是电量；
+            //    func 0 是 GetCapabilities，当电量读会把档位数报成百分比（真机 15% 事故）
+            var unifiedIdx = dev.UnifiedBattery.Resolve(io, idx, 0x1004);
             if (unifiedIdx != 0)
             {
-                byte[] funcs = dev.UnifiedWorkingFunc.HasValue
-                    ? new byte[] { dev.UnifiedWorkingFunc.Value }
-                    : new byte[] { 1, 0 };
-                int? fallbackPct = null;
-                ChargingState fallbackChg = ChargingState.Unknown;
-                byte? fallbackFunc = null;
-                foreach (byte func in funcs)
+                var resp = io.Request(idx, HidppCodec.FeatureFunc(unifiedIdx, 1), ReadOnlySpan<byte>.Empty);
+                if (resp != null && HidppCodec.TryParseUnifiedBattery(resp, out var pct, out var chg))
                 {
-                    var resp = io.Request(idx, HidppCodec.FeatureFunc(unifiedIdx, func), ReadOnlySpan<byte>.Empty);
-                    if (resp == null || !HidppCodec.TryParseBattery20(resp, out var pct, out var chg))
-                        continue;
-
-                    // 已锁定工作 func：直接用
-                    if (dev.UnifiedWorkingFunc.HasValue)
-                    {
-                        ApplyBattery(status, pct, chg);
-                        return true;
-                    }
-
-                    // 探测期：func 1 立即采信；func 0 只作回退候选
-                    if (func == 1)
-                    {
-                        dev.UnifiedWorkingFunc = 1;
-                        ApplyBattery(status, pct, chg);
-                        return true;
-                    }
-
-                    fallbackPct = pct;
-                    fallbackChg = chg;
-                    fallbackFunc = 0;
-                }
-
-                if (fallbackPct.HasValue)
-                {
-                    dev.UnifiedWorkingFunc = fallbackFunc;
-                    ApplyBattery(status, fallbackPct.Value, fallbackChg);
+                    ApplyBattery(status, pct, chg);
                     return true;
                 }
             }
 
-            // 2) Battery Status 0x1000
-            var statusIdx = dev.BatteryStatusIdx ??= ResolveFeature(io, idx, 0x1000);
+            // 2) Battery Status 0x1000（状态码枚举与 0x1004 不同）
+            var statusIdx = dev.BatteryStatus.Resolve(io, idx, 0x1000);
             if (statusIdx != 0)
             {
                 var resp = io.Request(idx, HidppCodec.FeatureFunc(statusIdx, 0), ReadOnlySpan<byte>.Empty);
-                if (resp != null && HidppCodec.TryParseBattery20(resp, out var pct, out var chg))
+                if (resp != null && HidppCodec.TryParseBatteryStatus(resp, out var pct, out var chg))
                 {
                     ApplyBattery(status, pct, chg);
                     return true;
@@ -651,7 +742,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             }
 
             // 3) Battery Voltage 0x1001（G 系等只有毫伏、没有百分比特征）
-            var voltIdx = dev.BatteryVoltageIdx ??= ResolveFeature(io, idx, HidppCodec.FeatureBatteryVoltage);
+            var voltIdx = dev.BatteryVoltage.Resolve(io, idx, HidppCodec.FeatureBatteryVoltage);
             if (voltIdx != 0)
             {
                 var resp = io.Request(idx, HidppCodec.FeatureFunc(voltIdx, 0), ReadOnlySpan<byte>.Empty);
@@ -665,7 +756,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
             }
 
             // 4) ADC Measurement 0x1F20
-            var adcIdx = dev.AdcMeasurementIdx ??= ResolveFeature(io, idx, HidppCodec.FeatureAdcMeasurement);
+            var adcIdx = dev.AdcMeasurement.Resolve(io, idx, HidppCodec.FeatureAdcMeasurement);
             if (adcIdx != 0)
             {
                 var resp = io.Request(idx, HidppCodec.FeatureFunc(adcIdx, 0), ReadOnlySpan<byte>.Empty);
@@ -718,6 +809,110 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         return false;
     }
 
+    /// <summary>低频读 DPI / 回报率。只读、失败不影响在线判定；不支持的 feature 记 0 后不再重探。</summary>
+    private void RefreshPointer(ReceiverSession session, byte idx, DevEntry dev)
+    {
+        if (dev.ProtocolMajor < 2) return;
+        var now = DateTimeOffset.Now;
+        if (now < dev.NextPointerAt) return;
+        dev.NextPointerAt = now + PointerRefreshInterval;
+
+        var io = session.Io!;
+        var patch = new PointerTelemetry();
+
+        if (TryReadDpi(io, idx, dev, out int dpi))
+            patch = patch with { DpiX = TelemetryValue<int>.Reported(dpi, now) };
+
+        if (TryReadReportRate(io, idx, dev, out int hertz))
+            patch = patch with { ReportRateSettingHz = TelemetryValue<int>.Reported(hertz, now) };
+
+        if (!patch.HasAny) return;
+
+        bool changed = PointerTelemetry.ValueDiffers(dev.Status.Pointer, patch);
+        dev.Status.Pointer = PointerTelemetry.Merge(dev.Status.Pointer, patch);
+        if (changed)
+        {
+            Log.Info($"罗技指针遥测更新: {dev.Status.DisplayName} dpi={dev.Status.Pointer.DpiX.Value?.ToString() ?? "-"} rate={dev.Status.Pointer.ReportRateSettingHz.Value?.ToString() ?? "-"}Hz");
+            RaiseStatusPushed(dev.Status);
+        }
+    }
+
+    /// <summary>0x2201 优先（短响应），不支持且接口是长报文时退回 0x2202（func 5，长响应）。</summary>
+    private static bool TryReadDpi(HidppIO io, byte idx, DevEntry dev, out int dpi)
+    {
+        dpi = 0;
+        if (!EnsureDpiFeature(io, idx, dev)) return false;
+
+        byte func = dev.DpiExtended ? HidppPointerCodec.FuncGetDpiParameters : HidppPointerCodec.FuncGetSensorDpi;
+        var resp = io.Request(idx, HidppCodec.FeatureFunc(dev.DpiIdx.GetValueOrDefault(), func), new byte[] { 0, 0, 0 },
+            timeout: PointerProbeTimeout);
+        if (resp == null) return false;
+        return dev.DpiExtended
+            ? HidppPointerCodec.TryParseExtendedDpi(resp, out dpi)
+            : HidppPointerCodec.TryParseDpi(resp, out dpi);
+    }
+
+    /// <summary>0x8060 优先（毫秒），不支持时退回 0x8061（码表下标）。</summary>
+    private static bool TryReadReportRate(HidppIO io, byte idx, DevEntry dev, out int hertz)
+    {
+        hertz = 0;
+        if (!EnsureReportRateFeature(io, idx, dev)) return false;
+
+        byte func = dev.ReportRateExtended
+            ? HidppPointerCodec.FuncGetExtendedReportRate
+            : HidppPointerCodec.FuncGetReportRate;
+        var resp = io.Request(idx, HidppCodec.FeatureFunc(dev.ReportRateIdx.GetValueOrDefault(), func), new byte[] { 0, 0, 0 },
+            timeout: PointerProbeTimeout);
+        if (resp == null) return false;
+
+        if (dev.ReportRateExtended)
+            return HidppPointerCodec.TryParseExtendedReportRateHz(resp, out hertz);
+
+        if (!HidppPointerCodec.TryParseReportRateMs(resp, out int ms)) return false;
+        hertz = HidppPointerCodec.HertzFromMilliseconds(ms);
+        return hertz > 0;
+    }
+
+    /// <summary>解析 DPI feature 下标。查不到不永久拉黑：前几次给重试，过了预算才认定不支持（休眠时首次探测会假阴性）。</summary>
+    private static bool EnsureDpiFeature(HidppIO io, byte idx, DevEntry dev)
+    {
+        if (dev.DpiIdx is { } cached && (cached != 0 || dev.DpiProbeMisses >= PointerProbeAttempts))
+            return cached != 0;
+
+        byte index = ResolveFeature(io, idx, HidppPointerCodec.FeatureAdjustableDpi, PointerProbeTimeout);
+        bool extended = false;
+        if (index == 0 && io.IsLongMessage)
+        {
+            index = ResolveFeature(io, idx, HidppPointerCodec.FeatureExtendedAdjustableDpi, PointerProbeTimeout);
+            extended = index != 0;
+        }
+
+        dev.DpiIdx = index;
+        dev.DpiExtended = extended;
+        dev.DpiProbeMisses = index != 0 ? 0 : dev.DpiProbeMisses + 1;
+        return index != 0;
+    }
+
+    /// <summary>解析回报率 feature 下标；重试预算与 DPI 相同。</summary>
+    private static bool EnsureReportRateFeature(HidppIO io, byte idx, DevEntry dev)
+    {
+        if (dev.ReportRateIdx is { } cached && (cached != 0 || dev.ReportRateProbeMisses >= PointerProbeAttempts))
+            return cached != 0;
+
+        byte index = ResolveFeature(io, idx, HidppPointerCodec.FeatureReportRate, PointerProbeTimeout);
+        bool extended = false;
+        if (index == 0)
+        {
+            index = ResolveFeature(io, idx, HidppPointerCodec.FeatureExtendedReportRate, PointerProbeTimeout);
+            extended = index != 0;
+        }
+
+        dev.ReportRateIdx = index;
+        dev.ReportRateExtended = extended;
+        dev.ReportRateProbeMisses = index != 0 ? 0 : dev.ReportRateProbeMisses + 1;
+        return index != 0;
+    }
+
     private static void ApplyBattery(DeviceStatus status, int percent, ChargingState charging)
     {
         bool pctChanged = status.BatteryPercent != percent;
@@ -738,11 +933,15 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
     /// <summary>读接收器配对信息（HID++ 1.0 长寄存器 0xB5）：设备类型 + wireless PID。Unifying 子寄存器 0x20+(n-1)；Bolt 子寄存器 0x50+n。</summary>
     private static bool TryReadPairingInfo(
-        HidppIO io, ushort receiverPid, byte deviceIndex,
+        ReceiverSession session, HidppIO io, byte deviceIndex,
         out ushort? wirelessPid, out DeviceKind kind)
     {
         wirelessPid = null;
         kind = DeviceKind.Unknown;
+        // 0xB5 已确认不通（本会话超时过一次）：配对信息本来也读不到，跳过这次 800ms 空等
+        if (session.ReceiverInfoUnavailable) return false;
+
+        var receiverPid = session.Info.ProductId;
         var family = HidppCatalog.Family(receiverPid);
         byte subReg = family == ReceiverFamily.Bolt
             ? (byte)(0x50 + deviceIndex)
@@ -752,7 +951,11 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         // 0x83B5 = 长寄存器读 RECEIVER_INFO（0x2B5）
         var resp = io.Request(0xFF, 0x83B5, args, patchSw: false,
             timeout: TimeSpan.FromMilliseconds(800));
-        if (resp == null) return false;
+        if (resp == null)
+        {
+            session.ReceiverInfoUnavailable = true;
+            return false;
+        }
 
         if (family == ReceiverFamily.Bolt)
         {
@@ -778,10 +981,10 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
     }
 
     /// <summary>Root.GetFeature：查询特性 ID 对应的 feature index，0 = 不支持。</summary>
-    private static byte ResolveFeature(HidppIO io, byte devIdx, ushort featureId)
+    private static byte ResolveFeature(HidppIO io, byte devIdx, ushort featureId, TimeSpan? timeout = null)
     {
         Span<byte> args = stackalloc byte[2] { (byte)(featureId >> 8), (byte)featureId };
-        var resp = io.Request(devIdx, 0x0000, args);
+        var resp = io.Request(devIdx, 0x0000, args, timeout: timeout);
         return resp != null ? HidppCodec.ParseFeatureIndex(resp) : (byte)0;
     }
 
@@ -800,24 +1003,45 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         return false;
     }
 
-    private static string? ReadDeviceName(HidppIO io, byte devIdx)
+    /// <summary>Feature ID 0x0005 = DEVICE NAME/TYPE；<paramref name="nameIdx"/> 由调用方 ResolveFeature 得到（不要写死 0x05）。
+    /// func 1 回的是**一块**正文（长报文 16 字符），必须按块拼、别按字符拼（logitech.md §1.2）。</summary>
+    private static string? ReadDeviceName(HidppIO io, byte devIdx, byte nameIdx)
     {
-        // Feature ID 0x0005 = DEVICE NAME；下标因固件而异，必须先 GetFeature，不能写死 0x05
-        byte nameIdx = ResolveFeature(io, devIdx, 0x0005);
         if (nameIdx == 0) return null;
 
-        var resp = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 0), ReadOnlySpan<byte>.Empty); // GetCount
-        if (resp == null || resp.Length < 3 || resp[2] is 0 or > 32) return null;
-        int len = resp[2];
-        var chars = new char[len];
-        for (byte i = 0; i < len; i++)
+        var header = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 0), ReadOnlySpan<byte>.Empty); // GetCount
+        if (!HidppCodec.TryParseDeviceNameLength(header, out int length))
         {
-            var r = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 1), new byte[] { i }); // GetChar
-            if (r == null || r.Length < 3) return null;
-            chars[i] = (char)r[2];
+            // 两种失败都只表现为 name=null，留原始回包才能区分 0x8F 错误帧与字符数越界
+            Log.Info($"罗技设备名 GetCount 无效 devIdx={devIdx} nameIdx={nameIdx} " +
+                     $"resp={(header == null ? "null" : Convert.ToHexString(header))}");
+            return null;
         }
-        var name = new string(chars).Trim();
-        return name.Length == 0 ? null : name;
+
+        int chunkSize = io.IsLongMessage ? 16 : 3;
+        var sb = new StringBuilder(length);
+        for (int offset = 0; offset < length; offset += chunkSize)
+        {
+            int take = Math.Min(chunkSize, length - offset);
+            var resp = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 1), new[] { (byte)offset }); // GetDeviceName
+            if (!HidppCodec.TryParseDeviceNameChunk(resp, take, out var chunk)) return null;
+            sb.Append(chunk);
+        }
+
+        var name = sb.ToString().Trim();
+        // 坏字节（GetCount 回了垃圾值）拼出来的不可见串宁可不要，交给下一级兜底猜类型
+        if (name.Length == 0) return null;
+        foreach (var ch in name)
+            if (ch < ' ' || ch == (char)0x7F) return null;
+        return name;
+    }
+
+    /// <summary>0x0005 func 2 = getDeviceType，营销类型比配对寄存器准；读不到返回 Unknown 交给下一级兜底。</summary>
+    private static DeviceKind ReadDeviceKind(HidppIO io, byte devIdx, byte nameIdx)
+    {
+        if (nameIdx == 0) return DeviceKind.Unknown;
+        var resp = io.Request(devIdx, HidppCodec.FeatureFunc(nameIdx, 2), ReadOnlySpan<byte>.Empty);
+        return resp == null || resp.Length < 3 ? DeviceKind.Unknown : HidppCodec.MapDeviceTypeKind(resp[2]);
     }
 
     private static (int Percent, ChargingState State) MapTierBattery(byte tier, byte chargeStatus)

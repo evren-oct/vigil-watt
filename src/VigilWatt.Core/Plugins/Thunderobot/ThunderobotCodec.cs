@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Thunderobot;
 /// <summary>
 /// 功 能： 解析 ML903 NearLink Se 官方设备信息中的电量字段。
 /// 2026/10/18 14:55:00 KNA7022
-/// 电量标签取自官方 DLL，字段边界按此型号实机响应核对，详见 docs/hardware/ak870-ml903.md。
+/// 电量标签取自官方 DLL，字段边界按此型号实机响应核对，详见 docs/hardware/devices/ak870-ml903.md。
 /// </summary>
 public static class ThunderobotCodec
 {

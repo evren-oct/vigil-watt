@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G502",
+  "match": {
+    "displayNames": [
+      "G502",
+      "G502 HERO",
+      "G502 LIGHTSPEED",
+      "G502 SE",
+      "G502 Proteus Spectrum",
+      "G502 Proteus Core"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g502.png",
+      "image": "logitech-g502.png",
+      "source": "https://img.openmouse.app/logitech-g502.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

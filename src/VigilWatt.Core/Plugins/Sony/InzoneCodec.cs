@@ -11,7 +11,7 @@ namespace VigilWatt.Core.Plugins.Sony;
 /// **必须走控制传输 SET_REPORT（HidD_SetOutputReport）**；写中断 OUT 端点时设备只回显，
 /// 会把假数据当成真读数（这条坑值一整晚）。
 ///
-/// 帧格式见 docs/hardware/inzone-h9.md §2。
+/// 帧格式见 docs/hardware/devices/inzone-h9.md §2。
 /// </summary>
 public static class InzoneCodec
 {

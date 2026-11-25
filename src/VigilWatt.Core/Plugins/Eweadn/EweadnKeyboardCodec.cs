@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Eweadn;
 /// <summary>
 /// 功 能： 前行者 X87 键盘 2.4G 接收器的电量查询帧编解码——不碰句柄、不写日志，便于单测。
 /// 2026/10/18 13:40:00 Admin
-/// 帧结构、校验和位置与实测依据见 docs/hardware/eweadn.md §1.1。
+/// 帧结构、校验和位置与实测依据见 docs/hardware/brands/eweadn.md §1.1。
 /// </summary>
 internal static class EweadnKeyboardCodec
 {

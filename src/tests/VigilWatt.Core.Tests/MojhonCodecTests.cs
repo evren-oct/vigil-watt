@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// 功 能： MojhonCodec —— 墨将 A5 帧协议的纯编解码。
 /// 2026/10/26 00:45:00 workbuddy
 /// 全部用例帧取自本机真机 USBPcap 实录（captures/mojhon-e2b7-20261026.pcap），
-/// 35/35 帧校验通过，出处见 docs/hardware/mojhon.md §6.4。
+/// 35/35 帧校验通过，出处见 docs/hardware/brands/mojhon.md §6.4。
 /// </summary>
 public class MojhonCodecTests
 {
@@ -66,7 +66,7 @@ public class MojhonCodecTests
     /// <summary>
     /// 插上充电线后的真机应答：`a5 06 04 1f 01 cf`（31%，flag=0x01）、
     /// `a5 06 04 21 01 d1`（33%，flag=0x01）。与放电态的 0x00 构成 A/B 对照，
-    /// 见 docs/hardware/mojhon.md §7.2。
+    /// 见 docs/hardware/brands/mojhon.md §7.2。
     /// </summary>
     [Theory]
     [InlineData("a506041f01cf", 31)]

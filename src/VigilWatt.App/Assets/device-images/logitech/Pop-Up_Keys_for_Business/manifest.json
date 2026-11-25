@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Pop-Up Keys for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B374"
+    ],
+    "displayNames": [
+      "Pop-Up Keys for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "18f532a0-98bf-11ed-a8fc-0242ac120002.png",
+      "image": "18f532a0-98bf-11ed-a8fc-0242ac120002.png",
+      "source": "LogiOptions+ devices.json / 18f532a0-98bf-11ed-a8fc-0242ac120002.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "C922",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "085C",
+      "0883",
+      "0894"
+    ],
+    "displayNames": [
+      "C922"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c922.png",
+      "image": "c922.png",
+      "source": "LogiOptions+ devices.json / c922.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

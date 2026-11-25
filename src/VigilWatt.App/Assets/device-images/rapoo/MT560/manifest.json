@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "MT560",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4504",
+      "1872"
+    ],
+    "displayNames": [
+      "雷柏 MT560",
+      "MT560"
+    ]
+  },
+  "defaultColor": "Pure_Black",
+  "colors": [
+    {
+      "key": "Pure_Black",
+      "label": "素黑",
+      "thumbnail": "Pure_Black_thumb.png",
+      "image": "Pure_Black_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT560/thumb_Pure_Black.png"
+    },
+    {
+      "key": "Warm_Tea",
+      "label": "暖茶",
+      "thumbnail": "Warm_Tea_thumb.png",
+      "image": "Warm_Tea_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT560/thumb_Warm_Tea.png"
+    },
+    {
+      "key": "Gull_Blue",
+      "label": "鸥蓝",
+      "thumbnail": "Gull_Blue_thumb.png",
+      "image": "Gull_Blue_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT560/thumb_Gull_Blue.png"
+    },
+    {
+      "key": "Sprout_Green",
+      "label": "芽绿",
+      "thumbnail": "Sprout_Green_thumb.png",
+      "image": "Sprout_Green_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT560/thumb_Sprout_Green.png"
+    },
+    {
+      "key": "Indigo_Purple",
+      "label": "黛紫",
+      "thumbnail": "Indigo_Purple_thumb.png",
+      "image": "Indigo_Purple_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT560/thumb_Indigo_Purple.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Litra Glow",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "C900"
+    ],
+    "displayNames": [
+      "Litra Glow"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "litra_glow.png",
+      "image": "litra_glow.png",
+      "source": "LogiOptions+ devices.json / litra_glow.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -16,7 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Plugins\Betop\betop-catalog.json" />
+    <EmbeddedResource Include="Plugins\Betop\specs\betop.protocols.json" />
     <EmbeddedResource Include="Plugins\Logitech\logitech-hidpp.json" />
+    <EmbeddedResource Include="Plugins\Mchose\mchose-catalog.json" />
+    <EmbeddedResource Include="Plugins\Rapoo\rapoo-catalog.json" />
+    <EmbeddedResource Include="Plugins\Rapoo\specs\rapoo.protocols.json" />
+    <EmbeddedResource Include="Plugins\Mchose\specs\mchose.protocols.json" />
   </ItemGroup>
 
 </Project>

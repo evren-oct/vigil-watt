@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 68 Turbo 16K",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 68 Turbo 16K",
+      "Ace 68 Turbo 16K"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "3026",
+      "3027"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Turbo_wihteLine.png"
+    },
+    {
+      "key": "color-mist-white",
+      "label": "mist white",
+      "thumbnail": "color-mist-white_thumb.png",
+      "image": "color-mist-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Turbo_mistWhite.png"
+    },
+    {
+      "key": "color-mist-silver",
+      "label": "mist silver",
+      "thumbnail": "color-mist-silver_thumb.png",
+      "image": "color-mist-silver_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_68_Turbo-Mist_Silver_1e5ed192bb9f.png"
+    },
+    {
+      "key": "color-air-pink",
+      "label": "air pink",
+      "thumbnail": "color-air-pink_thumb.png",
+      "image": "color-air-pink_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Turbo_pink.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Turbo_blackLine.png"
+    },
+    {
+      "key": "color-mist-pink",
+      "label": "mist pink",
+      "thumbnail": "color-mist-pink_thumb.png",
+      "image": "color-mist-pink_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Turbo_mistPink.png"
+    },
+    {
+      "key": "color-red",
+      "label": "red",
+      "thumbnail": "color-red_thumb.png",
+      "image": "color-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Turbo_red.png"
+    },
+    {
+      "key": "color-turbo-orange",
+      "label": "turbo orange",
+      "thumbnail": "color-turbo-orange_thumb.png",
+      "image": "color-turbo-orange_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Turbo_org.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

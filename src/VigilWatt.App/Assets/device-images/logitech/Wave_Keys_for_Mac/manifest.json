@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Wave Keys for Mac",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B385"
+    ],
+    "displayNames": [
+      "Wave Keys for Mac"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "b4af29f8-d186-4bb3-98ad-340613d5bfb4.png",
+      "image": "b4af29f8-d186-4bb3-98ad-340613d5bfb4.png",
+      "source": "LogiOptions+ devices.json / b4af29f8-d186-4bb3-98ad-340613d5bfb4.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

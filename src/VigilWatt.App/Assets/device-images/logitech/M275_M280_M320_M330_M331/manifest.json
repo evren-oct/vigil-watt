@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M275/M280/M320/M330/M331",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4040",
+      "4057",
+      "4058"
+    ],
+    "displayNames": [
+      "M275/M280/M320/M330/M331"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m280.png",
+      "image": "m280.png",
+      "source": "LogiOptions+ devices.json / m280.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

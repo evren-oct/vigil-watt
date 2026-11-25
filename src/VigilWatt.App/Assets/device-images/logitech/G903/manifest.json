@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G903",
+  "match": {
+    "displayNames": [
+      "G903",
+      "G903 LIGHTSPEED"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g903.png",
+      "image": "logitech-g903.png",
+      "source": "https://img.openmouse.app/logitech-g903.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

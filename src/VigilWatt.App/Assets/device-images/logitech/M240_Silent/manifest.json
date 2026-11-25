@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M240 Silent",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B03A"
+    ],
+    "displayNames": [
+      "M240 Silent"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "eee246a7-c23c-434c-a7f2-6ca47bec1909.png",
+      "image": "eee246a7-c23c-434c-a7f2-6ca47bec1909.png",
+      "source": "LogiOptions+ devices.json / eee246a7-c23c-434c-a7f2-6ca47bec1909.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

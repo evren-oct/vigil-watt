@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Aula;
 /// <summary>
 /// 功 能： 解析狼蛛 G9 耳机 AB 47 4D 0x86 状态帧里的电量（纯函数，零 I/O）。
 /// 2026/10/19 23:50:00 contributor
-/// 帧布局与固件前置条件见 docs/hardware/aula.md §3。
+/// 帧布局与固件前置条件见 docs/hardware/brands/aula.md §3。
 /// </summary>
 internal static class AulaG9Codec
 {

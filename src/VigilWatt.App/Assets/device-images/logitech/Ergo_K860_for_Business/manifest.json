@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Ergo K860 for Business",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B364"
+    ],
+    "displayNames": [
+      "Ergo K860 for Business"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "ergo_k860_for_business.png",
+      "image": "ergo_k860_for_business.png",
+      "source": "LogiOptions+ devices.json / ergo_k860_for_business.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

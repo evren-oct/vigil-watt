@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Mix 87 I",
+  "match": {
+    "displayNames": [
+      "迈从 Mix 87 I",
+      "Mix 87 I"
+    ],
+    "vendorId": "41E4",
+    "productIds": [
+      "2122",
+      "2123"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Mix87_White.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Mix87_Black.png"
+    },
+    {
+      "key": "color-red",
+      "label": "red",
+      "thumbnail": "color-red_thumb.png",
+      "image": "color-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Mix87_Red.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

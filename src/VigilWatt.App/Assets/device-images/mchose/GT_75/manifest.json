@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "GT 75",
+  "match": {
+    "displayNames": [
+      "迈从 GT 75",
+      "GT 75"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "302D",
+      "302F"
+    ]
+  },
+  "defaultColor": "gt75-color-silver",
+  "colors": [
+    {
+      "key": "gt75-color-silver",
+      "label": "gt75 color silver",
+      "thumbnail": "gt75-color-silver_thumb.png",
+      "image": "gt75-color-silver_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/1.GT_75白银_2x_fu5jitaonhgarxin.png"
+    },
+    {
+      "key": "gt75-color-golden-dark",
+      "label": "gt75 color golden dark",
+      "thumbnail": "gt75-color-golden-dark_thumb.png",
+      "image": "gt75-color-golden-dark_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/2.GT_75黑金_2x_9qtyzndzlg0ltq63.png"
+    },
+    {
+      "key": "gt75-color-pink",
+      "label": "gt75 color pink",
+      "thumbnail": "gt75-color-pink_thumb.png",
+      "image": "gt75-color-pink_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/3.GT_75粉色_2x_g6az2uuh8zmtvbhz.png"
+    },
+    {
+      "key": "color-white-copy",
+      "label": "white copy",
+      "thumbnail": "color-white-copy_thumb.png",
+      "image": "color-white-copy_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/GT_75Test_vvla48ov7pi9h6ti.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

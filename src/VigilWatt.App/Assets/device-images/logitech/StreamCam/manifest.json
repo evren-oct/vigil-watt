@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "StreamCam",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0893"
+    ],
+    "displayNames": [
+      "StreamCam"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "streamcam_ext1.png",
+      "image": "streamcam_ext1.png",
+      "source": "LogiOptions+ devices.json / streamcam_ext1.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

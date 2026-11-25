@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K840",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "C33B"
+    ],
+    "displayNames": [
+      "K840"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k840.png",
+      "image": "k840.png",
+      "source": "LogiOptions+ devices.json / k840.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

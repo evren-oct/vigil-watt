@@ -24,17 +24,41 @@ public static class UiPalette
     public static readonly Color Source24G = FromRgb(0xAF, 0x52, 0xDE);
     public static readonly Color SourceSystem = FromRgb(0x30, 0xB0, 0xC7);
 
-    /// <summary>来源 → 徽标主色（文字色；胶囊底色用 <see cref="Tint"/> 压淡）。</summary>
-    public static Color SourceTag(DeviceSource source) => source switch
+    // 有线=钢蓝灰：比蓝牙蓝更暗更灰，不与它抢色相；徽标本身写着「有线」，颜色只做辅助。
+    public static readonly Color SourceWired = FromRgb(0x5E, 0x7C, 0x99);
+
+    /// <summary>徽标取色：按 <see cref="DeviceConnectionInfo.Tone"/> 取档，**未知用中性灰**，不借 2.4G 的紫。</summary>
+    public static Color ConnectionTag(TelemetryValue<ConnectionKind> connection, DeviceSource source)
+        => ConnectionTag(DeviceConnectionInfo.Tone(connection, source));
+
+    /// <summary>档位 → 颜色；未知与离线共用同一个灰，表示"没有信息"而不是"某种链路"。</summary>
+    public static Color ConnectionTag(ConnectionTone tone) => tone switch
     {
-        DeviceSource.Ble or DeviceSource.BluetoothClassic => SourceBluetooth,
-        DeviceSource.System => SourceSystem,
-        _ => Source24G,
+        ConnectionTone.Wired => SourceWired,
+        ConnectionTone.Wireless24G => Source24G,
+        ConnectionTone.Bluetooth => SourceBluetooth,
+        ConnectionTone.System => SourceSystem,
+        _ => Offline,
     };
 
     /// <summary>同色半透明底（徽标胶囊背景）。默认约 16% 不透明度——明暗主题下都够淡，不抢电量条。</summary>
     public static Color Tint(Color color, byte alpha = 0x28) =>
         Color.FromArgb(alpha, color.R, color.G, color.B);
+
+    // ---- 指针遥测标签色（设备列表卡片那行 DPI / 档位 / 回报率）----
+    // 只给标签上色、数值保持主题前景色：颜色当"路标"用，别让彩色数字跟右侧大号百分比抢注意力。
+    // 三个色相刻意避开来源徽标（蓝/紫/青）与电量状态色（红/琥珀/绿/蓝/灰），取更深的中间调，明暗主题都够对比。
+    public static readonly Color MetricDpi = FromRgb(0x1D, 0x9E, 0x75);
+    public static readonly Color MetricLevel = FromRgb(0xBA, 0x75, 0x17);
+    public static readonly Color MetricRate = FromRgb(0x53, 0x4A, 0xB7);
+
+    /// <summary>指标 → 标签色；未获取的项由调用方改用 <see cref="Offline"/>（灰），不上色。</summary>
+    public static Color Metric(PointerMetricKind kind) => kind switch
+    {
+        PointerMetricKind.Level => MetricLevel,
+        PointerMetricKind.Rate => MetricRate,
+        _ => MetricDpi,
+    };
 
     /// <summary>多系列图表循环取色（首位为主系列色）。</summary>
     public static readonly Color[] SeriesColors =

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K540/K545",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4076"
+    ],
+    "displayNames": [
+      "K540/K545"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k545.png",
+      "image": "k545.png",
+      "source": "LogiOptions+ devices.json / k545.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -1,6 +1,7 @@
 # 项目结构与架构
 
 > 配套阅读：[code-flow.md](code-flow.md)（运行时数据流）、[protocols.md](../hardware/protocols.md)（协议细节）。
+> 通用协议引擎的治理方向与专项约束见 [protocol-engine-roadmap.md](../architecture/protocol-engine-roadmap.md)；设备身份与能力边界见 [device-identity-and-capabilities.md](../architecture/device-identity-and-capabilities.md)。
 > 以下所有路径相对仓库根，行号会漂移，引用到方法级为止。
 
 ## 1. 总览
@@ -28,15 +29,17 @@ VigilWatt.sln
 │   │   ├── PluginUtils                # 共享工具（路径 FNV-1a 稳定哈希）
 │   │   ├── Logitech/                  # HID++ 1.0/2.0（接收器会话型）
 │   │   ├── Rapoo/RapooPlugin          # 雷柏 status-report7（纯被动零写入）
-│   │   ├── Mchose/MchosePlugin        # 0x13 会话协议（在用）+ QHW 0x4D（备用）
-│   │   ├── Betop/BetopPlugin          # 北通手柄：厂商接口 0x15 状态报告 + T9 被动流 + BetopCodec（纯逻辑）
-│   │   ├── Inphic/                    # 英菲克 report 0x03 被动状态帧
+│   │   ├── Mchose/MchosePlugin        # 0x13 会话 / 0x4D 通道（mchose-0x4d）/ CZ 分块读 / Gmouse / 耳机
+│   │   ├── Betop/BetopPlugin          # 北通手柄：厂商接口 0x15 状态报告 + 宙斯被动流（协议在 JSON）
+│   │   ├── Inphic/                    # 英菲克 ZHEN 被动帧 / IN9 feature 0x0C 刷新查询
 │   │   ├── Hecate/                    # HECATE report 0x04 被动状态帧
 │   │   ├── Delux/                     # DELUX 0x000A 被动状态帧
 │   │   ├── Aula/                      # F99 Pro 0x13 会话 + HERO 68 Air Bytech 8K 分片，共用品牌开关，默认关
 │   │   ├── Akg/                       # N9 Hybrid RACE 固定查询 + 控制输入读取，默认关
 │   │   └── Sony/                      # DualSense 蓝牙 HID 只读电量
 │   ├── Models/DeviceStatus            # 统一设备状态快照（Id/电量/充电/在线）
+│   ├── Models/PointerTelemetry        # 指针遥测（DPI/回报率）模型；见 project/pointer-telemetry.md
+│   ├── Media/DeviceImageCatalog       # 本地产品图清单（型号匹配；见 project/device-images.md）
 │   ├── Settings/AppSettings           # settings.json 读写
 │   ├── Storage/HistoryStore           # SQLite（Microsoft.Data.Sqlite）：写入/查询/按设备删除/VACUUM
 │   ├── Capture/                       # 设备诊断：USB/HID 只读采集（模型/分析/报告/打包/存储 + Hid 采集层）
@@ -56,6 +59,7 @@ VigilWatt.sln
     └── Services/
         ├── TrayService                # 托盘（纯 Win32 Shell_NotifyIcon）+ 全应用唯一退出通道
         ├── WidgetDisplayMode          # 小组件层级取值（Topmost/Normal/Desktop）+ 条数上限范围
+        ├── DeviceImageService         # 产品图包解析与位图缓存（只给详情页用）
         ├── LogLevelOptions            # 设置页日志级别下拉框的档位（关闭/详细/信息/警告/错误）
         ├── Native                     # App 侧 Win32 声明（托盘/菜单/光标/窗口属性/Z 序）
         └── AutostartService           # HKCU\...\Run 注册表自启
@@ -110,10 +114,12 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
 
 | 位置 | 内容 |
 |---|---|
-| `%LOCALAPPDATA%\VigilWatt\settings.json` | AppSettings（阈值/采样/保留天数/自启/小组件（开关/位置/显示方式/最多显示数）/插件开关（**即写入授权**）/MonitorSystemBattery/**LogLevel**/**LogRetentionDays**/按设备 ID 保存的名称与图标覆盖） |
+| `%LOCALAPPDATA%\VigilWatt\settings.json` | AppSettings（阈值/采样/保留天数/自启/小组件（开关/位置/显示方式/最多显示数）/插件开关（**即写入授权**）/MonitorSystemBattery/**LogLevel**/**LogRetentionDays**/按设备 ID 保存的名称、图标与产品图配色覆盖） |
 | `%LOCALAPPDATA%\VigilWatt\history.db` | SQLite `samples(device_id, name, percent, charging, ts)`，索引 (device_id, ts)。**ts = UTC 毫秒**（`DateTimeOffset.ToUnixTimeMilliseconds`） |
 | `%LOCALAPPDATA%\VigilWatt\logs\app-yyyy-MM-dd.log` | **按本地日期每天一个文件**的运行日志（协议原始报文也在）。行首为**本地时间**；文件首行是"时间基准"声明，用于与 history.db 的 UTC 时间对齐 |
 | `%LOCALAPPDATA%\VigilWatt\logs\log-error.txt` | 兜底文件：连续写日志失败时记录（带节流与上限），正常运行时不产生 |
+| `src/VigilWatt.App/Assets/device-images/` | 内置产品图缩略图（随包分发；详情页 Hero 用；不联网） |
+| `%LOCALAPPDATA%\VigilWatt\device-images\` | 用户产品图覆盖包（可选整机图；Debug 在 exe 旁 `data\device-images\`） |
 
 > 日志按日分文件，跨天自动切换；默认保留最近 **14 天**（`LogRetentionDays`，`0` = 不清理），超期文件在启动/跨天时清理。
 > 日志分级：`Debug < Info < Warn < Error`，外加 `Off`（全关）；默认 `Info`，在设置页选，**改后需重启应用生效**。
@@ -143,6 +149,42 @@ DeviceManager.Upsert() 是唯一的状态汇聚点（BLE 和插件都汇到它�
   离线墓碑先于插件建条目，`Kind` 只能按历史名猜（真机名一个关键字都没有 → 全 `Unknown`）；
   设备真正上线后插件声明的 `Kind`/`Protocol` **必须能覆盖**墓碑的猜测，否则图标在进程内**冻结**到永远。
   反向不成立——`Unknown` / 空串视为"本次未声明"，不得把已知类型洗掉。
+- **连接方式（`ConnectionKind`）与来源（`DeviceSource`）是两件事**：`DeviceStatus.Connection` 是
+  `TelemetryValue<ConnectionKind>`，带 `TelemetrySource` 与观测时刻；合并走 `MergePreferTrusted`
+  （设备上报 > 厂商 SDK > 推断，反向不覆盖，无值不清洗），**`Unknown` 值即便带了来源也不算链路**
+  （`DeviceStatusMerger.MergeConnection` 先归成空遥测），`Unknown` 与空遥测都表示"没有证据"。
+  `DeviceSource.Hid24G` 只是接入栈（哪个插件认领的），**不能推断成 2.4G**——只有 BLE / 经典蓝牙 /
+  本机三类来源本身就是传输事实。展示统一走 `Models/DeviceConnectionInfo`（标签 / 离线最后已知 / 取色档），
+  UI 不再各自拼文案。接收器体系（Unifying / Bolt / LIGHTSPEED）不是链路，属于 `ReceiverIdentity`。
+  体系标签是**第二个展示维度**：`DeviceConnectionInfo.ReceiverLabel` 只回目录登记的 `DisplayName`（Bolt / Unifying /
+  2.4G 接收器），返回 null 就不显示。**展示层不认识任何品牌**——新体系只在目录 JSON 加 `familyDisplay` / `roleDisplay`，
+  不改代码（`AGENTS.md` §10）。图标同理由目录声明：`ReceiverIconKey` 只回语义 key（`bolt` / `unifying` / `nano` /
+  `lightning` / `multi` / `wireless`），`App/Services/ReceiverIconFactory` 按 key 画内置几何，未知 key 回退 `wireless`。
+  `bolt` 与 `unifying` **直接复用 OpenLogi（MIT / Apache-2.0）`action-icons/` 下的官方 path 原文**，不做几何简化；
+  2026-11-11 用户明确授权推翻原先"不复刻厂商商标"的决定，理由是通用几何无法与 Nano / 27MHz 区分。WinUI 没有 WPF 的
+  `Geometry.Parse`，path 由工厂内一个只支持 M/L/H/V/C/Z 的私有解析器转成 `PathGeometry`（含 MIT 归属说明）。
+  范围仅限设备列表的小尺寸体系标签，不用于应用图标、安装包与宣传物料；`nano` / `lightning` / `multi` / `wireless` 仍是自绘几何。
+  设备列表在链路徽标右侧显示这枚次级标签，贴片与小组件暂不显示（空间按文案算）。
+  罗技**目录登记过的接收器族全量填身份**（Bolt / Unifying / LIGHTSPEED / Nano / Legacy27Mhz，条件是目录写了 `familyDisplay`）；
+  未收录 PID 与 Direct 路径保持 null。身份是"这颗 PID 属于哪一族"的目录事实，**不等于链路**——`LogitechReceiverIdentityPolicy`
+  与 `LogitechConnectionPolicy` 是两个独立策略，各自读目录记录，一个填体系标签、一个填 `Connection`。
+  链路门（`LogitechConnectionPolicy`，2026-11-11 由"仅 Bolt"放开到全 2.4G 族）的判据只有两项：**目录族属于 2.4G 体系
+  （Bolt / Unifying / LightSpeed / Nano）、且槽位落在容量内**，满足即 `Inferred(Wireless24G)`。
+  **容量优先取接收器自报值**（`0xB5/0x03` 参数区 `[6]`，`ProbeSlotCount` 每开一次句柄读一次），读不到才退回目录 `maxSlots`——
+  目录是静态表、可能过时，自报值是这颗固件的事实（Solaar / OpenLogi 同判据）。两者都没有（未收录 PID）就只能 Unknown。
+   **C548 真机（2026-11-11）**：`0xB5/0x03` 三次读取均无回包（同会话 Root.Ping 0.61s 正常），`ReportedSlotCount` 保持 null、
+   `SlotCapacity` 取目录 6 槽；这是已验证的兜底路径，不是"尚未验证"。
+  放开的依据是协议同源而非"放宽标准"：OpenLogi 的接收器注册表把 Nano / LightSpeed 一律记为 `ReceiverProtocol::Unifying`，
+  槽位枚举与寻址是同一套 HID++ 1.0 寄存器流程，只有 C548 走 Bolt 变体。
+  排除的两类是**没有证据**而非"没验证"：`Legacy27Mhz` 不在 2.4GHz 频段、`ConnectionKind` 也没有对应值；`Unknown` 族
+  目录本身没定性。Direct `0xFF`、空槽、越界槽位、未收录 PID 与 PID 缺失同样保持 Unknown。
+  该策略**不读 `0xB5` 配对寄存器**——那是设备类型 / WPID 的事，与链路无关（CR-153 与本门无关，不要再混为一谈）。
+  Slot Ping 只证明该槽位路径有 HID++ Root 响应，不证明设备在线或链路已直接确认，故来源固定 `Inferred`，**永不写 `DeviceReported`**。
+  罗技指针遥测走 HID++ `0x2201`（DPI）/ `0x8060`（回报率）只读查询，2 分钟一次，来源记 `DeviceReported`；
+  feature 不支持或读不到就留空（`Unknown`），**不按型号补默认 DPI / 回报率**（细节见 `hardware/logitech.md` §4）。
+   设备列表离线徽标统一走 `DeviceConnectionInfo.Badge`（`最后 X` / `离线`）并置灰，历史链路不再显示成当前连接。
+  **接收器"在位"不能推断链路**（设备可能只是插线充电）；但**正在读接收器的配置通道**时可以推断为 2.4G
+  ——有线数据不经过 dongle，这类推断记 `Inferred`，等设备自己上报再升级成 `DeviceReported`。
 - UI 侧 XAML 事件处理器开头判空（dev/runtime-pitfalls.md §4）；新增 XAML 属性先确认控件真有（dev/build.md §1）。
 - **新"非插件"数据源清单**（本机电量就是这么加的）：数据源不是 HID 接口、
   没有东西可"认领"时，不要硬塞进 `IBatteryPlugin`——照 `BluetoothClassicWatcher` /

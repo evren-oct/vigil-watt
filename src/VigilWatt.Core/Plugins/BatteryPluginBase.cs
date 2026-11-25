@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using VigilWatt.Core.Devices;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
@@ -20,6 +21,15 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>本插件处理的设备类型（UI 选图标用）。</summary>
     public abstract DeviceKind Kind { get; }
 
+    /// <summary>
+    /// 认领表里的互斥身份。默认等于 <see cref="Name"/>，但**同一品牌有多个插件类时必须各给一个**：
+    /// 迈从键鼠与 A5 共用 "Mchose" 这个设置键，只用名字会让两者的认领互斥失效。
+    /// </summary>
+    protected virtual string ClaimId => Name;
+
+    /// <summary>认领时提交的身份：Id 做互斥、Name 查设置页开关。</summary>
+    private ClaimOwner Claim => new(ClaimId, Name);
+
     /// <summary>新建设备时的来源。默认 2.4G；蓝牙 HID 插件自行覆写。</summary>
     protected virtual DeviceSource Source => DeviceSource.Hid24G;
 
@@ -41,6 +51,43 @@ public abstract class BatteryPluginBase : IBatteryPlugin
 
     /// <summary>供子类/基类被动监听推送轮询外的状态更新。</summary>
     protected void RaiseStatusPushed(DeviceStatus status) => StatusPushed?.Invoke(status);
+
+    /// <summary>指针遥测的补推间隔：值不变时也每 30 秒推一次，把最新 ObservedAt 同步进 DeviceManager。</summary>
+    private static readonly TimeSpan PointerPushInterval = TimeSpan.FromSeconds(30);
+
+    /// <summary>把解析出的指针遥测合并进设备状态。空 patch 直接 no-op；值变立即推，值不变每 30 秒补推一次刷新 ObservedAt。</summary>
+    protected bool SetPointerTelemetry(TrackedDevice dev, PointerTelemetry patch)
+    {
+        if (!patch.HasAny) return false;
+
+        bool valueChanged = PointerTelemetry.ValueDiffers(dev.Status.Pointer, patch);
+        dev.Status.Pointer = PointerTelemetry.Merge(dev.Status.Pointer, patch);
+
+        // 节流用单调时钟：系统时间回拨/跳变不能让补推停摆或连推（ObservedAt 仍走 DateTimeOffset）
+        long now = Stopwatch.GetTimestamp();
+        bool heartbeatDue = dev.LastPointerPushTicks == 0
+                            || Stopwatch.GetElapsedTime(dev.LastPointerPushTicks, now) >= PointerPushInterval;
+        if (valueChanged || heartbeatDue)
+        {
+            dev.LastPointerPushTicks = now;
+            RaiseStatusPushed(dev.Status);
+        }
+        return valueChanged;
+    }
+
+    /// <summary>
+    /// 合并帧里解析出的连接方式（有线/2.4G/蓝牙），来源记 DeviceReported。Unknown 是"这帧没带信息"，不覆盖已知值；
+    /// 值没变只更新观测时刻、不推事件（避免每帧一次无意义的设备变化）。
+    /// </summary>
+    protected bool SetConnection(TrackedDevice dev, ConnectionKind connection)
+    {
+        if (connection == ConnectionKind.Unknown) return false;
+        var next = TelemetryValue<ConnectionKind>.Reported(connection, DateTimeOffset.Now);
+        bool changed = dev.Status.Connection.Value != next.Value;
+        dev.Status.Connection = next;
+        if (changed) RaiseStatusPushed(dev.Status);
+        return changed;
+    }
 
     /// <summary>认领时没有读数是否标离线。默认 true，避免只剩 dongle 时假装在线。</summary>
     protected virtual bool NullPercentMeansOffline => true;
@@ -161,6 +208,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         public required BatteryReadingFilter Filter;
         /// <summary>子类在 PollDevice 里判定"设备已主动告知休眠/关机"时置位，基类随即标离线。</summary>
         public bool OfflineRequested;
+        /// <summary>上面那个请求的发出时刻：早于最近一次真实读数的请求视为过期（见 <see cref="ConsumeOfflineRequest"/>）。</summary>
+        public DateTimeOffset OfflineRequestedAt;
         /// <summary>本轮刚由探测建立（探测返回值就是最新读数）：本轮 Poll 跳过、下一轮起正常轮询。</summary>
         public bool FreshlyClaimed;
         /// <summary>插件要求下一轮重新探测本接口（物理身份变了等）：先释放旧句柄与认领，再重探。</summary>
@@ -169,6 +218,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         public readonly object IoGate = new();
         /// <summary>最近一次被动监听收到**任何**报文的时间（用于沉默离线；不是"解析成功"的时间）。</summary>
         public DateTimeOffset LastPassiveAt;
+        /// <summary>指针遥测最近一次推送的单调时间戳（<see cref="Stopwatch.GetTimestamp"/>；0 = 从未推送）。</summary>
+        public long LastPointerPushTicks;
         /// <summary>连续"读取立即返回 null"的次数：句柄失效的特征，用来触发退避（CR-75/76）。</summary>
         public int FastNullReads;
         /// <summary>
@@ -235,7 +286,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 gone.Handle.Dispose();
                 gone.Status.IsOnline = false;
                 gone.Status.LastUpdated = DateTimeOffset.Now;
-                _claims.Release(path, Name);
+                _claims.Release(path, Claim);
                 Log.Info($"{DisplayName} 设备已移除: {path}");
                 claimed.Add(gone.Status);
             }
@@ -250,7 +301,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             StopPassiveListen(dropped);
             dropped.Handle.Dispose();
             dropped.Status.IsOnline = false;
-            _claims.Release(path, Name);
+            _claims.Release(path, Claim);
             Log.Info($"{DisplayName} 同一设备的另一条接口已接管，释放: {path}");
         }
 
@@ -264,13 +315,13 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             if (!IsCandidate(info)) continue;
 
             // 永久移除的设备：连句柄都不开、帧也不发。只挡 Upsert 的话，插件照样会写帧。
-            if (DeviceBlocklist.IsBlocked(IdFor(info.DevicePath)))
+            if (DeviceBlocklist.IsBlocked(BlocklistId(info)))
             {
                 if (_devices.Remove(info.DevicePath, out var blocked))
                 {
                     StopPassiveListen(blocked);
                     blocked.Handle.Dispose();
-                    _claims.Release(info.DevicePath, Name);
+                    _claims.Release(info.DevicePath, Claim);
                     Log.Info($"{DisplayName} 设备已永久移除，释放接口: {info.DevicePath}");
                 }
                 continue;
@@ -284,7 +335,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                     // 不这么做的话，设备会在列表里永远离线，直到用户重启应用。
                     _devices.Remove(info.DevicePath);
                     known.Handle.Dispose();
-                    _claims.Release(info.DevicePath, Name);
+                    _claims.Release(info.DevicePath, Claim);
                     Log.Info($"{DisplayName} 句柄已失效，重新打开: {info.DevicePath}");
                 }
                 else
@@ -303,14 +354,14 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 stale.Status.IsOnline = false;
                 stale.Status.LastUpdated = DateTimeOffset.Now;
                 claimed.Add(stale.Status);
-                _claims.Release(info.DevicePath, Name);
+                _claims.Release(info.DevicePath, Claim);
             }
 
             if (_probeFailedAt.TryGetValue(info.DevicePath, out var failedAt) &&
                 DateTimeOffset.Now - failedAt < ResolveProbeCooldown(info))
                 continue;
 
-            if (!claims.TryClaim(info.DevicePath, Name)) continue;   // 已被其他插件认领
+            if (!claims.TryClaim(info.DevicePath, Claim)) continue;   // 已被其他插件认领
 
             toProbe.Add(info);
         }
@@ -345,7 +396,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 StopPassiveListen(dev);
                 dev.Handle.Dispose();
                 dev.Status.IsOnline = false;
-                _claims.Release(path, Name);
+                _claims.Release(path, Claim);
                 Log.Info($"{DisplayName} 设备已移除: {path}");
                 // DeviceManager 只收返回列表；不上报则拔出后条目永远在线。
                 gone.Add(dev.Status);
@@ -402,13 +453,20 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         return null;
     }
 
+    /// <summary>黑名单与设备状态必须同一把 ID 钥匙；读芯片 ID 抛异常时退回路径哈希（旧行为）。</summary>
+    private string BlocklistId(HidDeviceInfo info)
+    {
+        try { return BuildDeviceId(info); }
+        catch { return IdFor(info.DevicePath); }
+    }
+
     private void CommitProbes(ProbeOutcome[] outcomes, List<DeviceStatus> claimed)
     {
         foreach (var o in outcomes)
         {
             if (o.Result is not { } probe)
             {
-                _claims.Release(o.Info.DevicePath, Name);
+                _claims.Release(o.Info.DevicePath, Claim);
                 _probeFailedAt[o.Info.DevicePath] = DateTimeOffset.Now;
                 continue;
             }
@@ -426,7 +484,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             {
                 Log.Warn($"{DisplayName} 设备 ID 读取失败，本轮放弃: {o.Info.DevicePath}（{ex.Message}）");
                 o.Handle!.Dispose();
-                _claims.Release(o.Info.DevicePath, Name);
+                _claims.Release(o.Info.DevicePath, Claim);
                 _probeFailedAt[o.Info.DevicePath] = DateTimeOffset.Now;
                 continue;
             }
@@ -437,7 +495,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             {
                 Log.Info($"{DisplayName} 同一设备的另一条接口已认领，释放: {o.Info.DevicePath}（同 {duplicateOf}）");
                 o.Handle!.Dispose();
-                _claims.Release(o.Info.DevicePath, Name);
+                _claims.Release(o.Info.DevicePath, Claim);
                 continue;
             }
 
@@ -456,7 +514,12 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 Charging = charging,
                 // 无读数默认离线。子类把 NullPercentMeansOffline 覆写为 false 时保持在线。
                 IsOnline = percent.HasValue || !NullPercentMeansOffline,
+                Capabilities = CapabilitiesOf(o.Info),
+                Connection = ConnectionOfProbe(o.Info),
+                // 认领这一刻就把接口身份记下：之后只剩句柄，HidDeviceInfo 不再重新枚举
+                Usb = UsbIdentityOf(o.Info),
             };
+            FillIdentitySnapshot(status, o.Info);
             var dev = new TrackedDevice
             {
                 Info = o.Info, Handle = o.Handle!, Status = status, Protocol = protocol,
@@ -670,14 +733,12 @@ public abstract class BatteryPluginBase : IBatteryPlugin
         ConsumeOfflineRequest(dev);
     }
 
-    /// <summary>
-    /// 消费插件通过 <see cref="RequestOffline"/> 提交的"设备已休眠/关机"标记：立即标离线。
-    /// 这是零歧义证据（如北通 T9 占位帧），**不计入通信失败**。
-    /// </summary>
+    /// <summary>消费"设备已休眠/关机"标记并标离线；早于最近一次真实读数的过期请求作废（见 code-flow.md §4.2）。</summary>
     private bool ConsumeOfflineRequest(TrackedDevice dev)
     {
         if (!dev.OfflineRequested) return false;
         dev.OfflineRequested = false;
+        if (dev.Status.LastUpdated > dev.OfflineRequestedAt) return false;   // 过期：当它没发生，别动失败计数
         dev.ConsecutiveFailures = 0;
         MarkOffline(dev, "收到设备休眠/关机通知，立即标记离线");
         return true;
@@ -755,23 +816,31 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     }
 
     /// <summary>
-    /// 统一应用读数（过滤 + 更新字段）。<paramref name="push"/> = true 时若有变化则 RaiseStatusPushed。
-    /// 返回是否产生了应对外可见的状态变化。
+    /// 统一应用读数（过滤 + 更新字段）：电量与充电各自独立，null / Unknown 都不覆盖已知值（PR-2）。
+    /// <paramref name="push"/> = true 时若有变化则 RaiseStatusPushed；返回是否产生对外可见的变化。
     /// </summary>
     private bool TryApplyReading(TrackedDevice dev, int? percent, ChargingState charging, bool push)
     {
+        bool changed = false;
+
         if (percent.HasValue)
         {
             int baseline = dev.Filter.LastAcceptedPercent;
-            var verdict = dev.Filter.Evaluate(percent.Value, DateTimeOffset.Now);
+            // 离线→在线这一拍重新建基准：离线期间电量可能已经大变（充电/换电池/占位帧），
+            // 拿旧基准比对会被"变化超阈值需持续 5 分钟"挡住，界面卡在旧值（CR-124）。
+            var verdict = dev.Status.IsOnline
+                ? dev.Filter.Evaluate(percent.Value, DateTimeOffset.Now)
+                : dev.Filter.Reseed(percent.Value);
             if (verdict is ReadingVerdict.RejectAnomaly or ReadingVerdict.InvalidValue)
             {
-                Log.Warn($"{DisplayName} {dev.Status.DisplayName} 读数异常已过滤：" +
-                         $"{baseline}%→{percent}%，本轮不采用" +
-                         (verdict == ReadingVerdict.InvalidValue
-                             ? $"（数值无效，低于 {dev.Filter.MinValidPercent}%）"
-                             : $"（变化超过 {dev.Filter.MaxStepPercent} 点，需持续 " +
-                               $"{dev.Filter.PersistWindow.TotalMinutes:0} 分钟才采信）"));
+                Log.WarnThrottled($"anomaly:{dev.Info.DevicePath}",
+                    $"{DisplayName} {dev.Status.DisplayName} 读数异常已过滤：" +
+                    $"{baseline}%→{percent}%，本轮不采用" +
+                    (verdict == ReadingVerdict.InvalidValue
+                        ? $"（数值无效，低于 {dev.Filter.MinValidPercent}%）"
+                        : $"（变化超过 {dev.Filter.MaxStepPercent} 点，需持续 " +
+                          $"{dev.Filter.PersistWindow.TotalMinutes:0} 分钟才采信）"),
+                    TimeSpan.FromSeconds(30));
                 return false;
             }
             if (verdict == ReadingVerdict.AcceptConfirmed)
@@ -779,14 +848,19 @@ public abstract class BatteryPluginBase : IBatteryPlugin
                 Log.Warn($"{DisplayName} {dev.Status.DisplayName} 读数 {baseline}%→{percent}% " +
                          $"已持续 {dev.Filter.PersistWindow.TotalMinutes:0} 分钟，采信为真实变化");
             }
+
+            changed |= dev.Status.BatteryPercent != percent.Value;
+            dev.Status.BatteryPercent = percent.Value;
         }
+        // percent 为 null = 没有新的电量信息，保留旧值；"电量归零"必须由 0 表达，不能用 null 代替
 
-        bool changed = dev.Status.BatteryPercent != percent
-                    || dev.Status.Charging != charging
-                    || !dev.Status.IsOnline;
+        if (charging != ChargingState.Unknown)
+        {
+            changed |= dev.Status.Charging != charging;
+            dev.Status.Charging = charging;
+        }
+        // charging 为 Unknown = 没有新的充电信息，保留旧值；具体状态（含 Full）照常覆盖
 
-        dev.Status.BatteryPercent = percent;
-        dev.Status.Charging = charging;
         dev.Status.LastUpdated = DateTimeOffset.Now;
         if (!dev.Status.IsOnline)
         {
@@ -812,7 +886,7 @@ public abstract class BatteryPluginBase : IBatteryPlugin
             dev.Handle.Dispose();
         }
         _devices.Clear();
-        _claims?.ReleaseAll(Name);
+        _claims?.ReleaseAll(ClaimId);
         if (released > 0)
             Log.Info($"{DisplayName} 插件已卸载，释放 {released} 台设备");
     }
@@ -840,7 +914,12 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// 不等 <see cref="OfflinePolicy.MaxFailures"/> 次查询失败（那要几分钟）。
     /// 只认协议层**零歧义**的离线证据（宁可漏判不可误判）：迈从 0x02 状态通知帧就因语义存疑被降级为仅记录。
     /// </summary>
-    protected static void RequestOffline(TrackedDevice dev) => dev.OfflineRequested = true;
+    protected static void RequestOffline(TrackedDevice dev)
+    {
+        // 先写时刻再写标志：Poll 线程看到标志已置时，时刻一定已写好，否则会被误判过期而丢弃。
+        dev.OfflineRequestedAt = DateTimeOffset.Now;
+        dev.OfflineRequested = true;
+    }
 
     /// <summary>
     /// 插件在被动帧里发现"值得立刻核实"的信号时调用。它是**触发器不是证据**：基类不会因此标离线，
@@ -934,6 +1013,29 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// </summary>
     protected virtual DeviceKind ResolveKind(string protocol) => Kind;
 
+    /// <summary>本设备声明过的只读能力（默认空 = 全 Unverified）。纯配置查询，不许开句柄或发帧。</summary>
+    protected virtual CapabilitySet CapabilitiesOf(HidDeviceInfo info) => CapabilitySet.Empty;
+
+    /// <summary>目录是否已把该设备的电量读取标为 Supported（主动查询的唯一能力门控）。</summary>
+    protected bool BatteryReadVerified(HidDeviceInfo info)
+        => CapabilitiesOf(info).Of(DeviceCapability.BatteryRead) == CapabilityState.Supported;
+
+    /// <summary>认领落地时补填身份快照（默认不填）。只给 Probe 已拿到自报身份的插件覆写，同样不许发帧。</summary>
+    protected virtual void FillIdentitySnapshot(DeviceStatus status, HidDeviceInfo info) { }
+
+    /// <summary>
+    /// 认领落地时的连接方式（默认空）。能拿到就该在这里给：否则徽标会先显示"未知"，要等第一条帧才纠正。
+    /// 返回值自带来源——探测帧读到的用 <see cref="ProbeReported"/>，结构推断用 <see cref="TelemetryValue{T}.Inferred"/>。
+    /// </summary>
+    protected virtual TelemetryValue<ConnectionKind> ConnectionOfProbe(HidDeviceInfo info)
+        => TelemetryValue<ConnectionKind>.Unknown;
+
+    /// <summary>探测窗口读到的链路：有值即设备上报；Unknown 表示"没读到"，必须是空值而不是 Unknown 值。</summary>
+    protected static TelemetryValue<ConnectionKind> ProbeReported(ConnectionKind probed)
+        => probed == ConnectionKind.Unknown
+            ? TelemetryValue<ConnectionKind>.Unknown
+            : TelemetryValue<ConnectionKind>.Reported(probed, DateTimeOffset.Now);
+
     /// <summary>接口是否属于本插件（按 VID/usage/报告长度严格过滤——多滤不会漏设备，少滤可能碰别家硬件）。</summary>
     protected abstract bool IsCandidate(HidDeviceInfo info);
 
@@ -948,4 +1050,8 @@ public abstract class BatteryPluginBase : IBatteryPlugin
     /// <summary>默认显示名：产品字符串，空则用品牌名 + VID/PID。</summary>
     protected virtual string BuildDisplayName(HidDeviceInfo info)
         => string.IsNullOrEmpty(info.Product) ? $"{DisplayName} ({info.VidPid})" : info.Product;
+
+    /// <summary>接口枚举身份：只记 VID/PID/SN，不记型号——认领到的可能是接收器，反推型号必错。</summary>
+    private static UsbIdentity UsbIdentityOf(HidDeviceInfo info)
+        => new(info.VendorId, info.ProductId, string.IsNullOrEmpty(info.SerialNumber) ? null : info.SerialNumber);
 }

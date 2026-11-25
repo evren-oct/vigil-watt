@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 68 GT",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 68 GT",
+      "Ace 68 GT"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "3007",
+      "3009"
+    ]
+  },
+  "defaultColor": "color-sliver-feather",
+  "colors": [
+    {
+      "key": "color-sliver-feather",
+      "label": "sliver feather",
+      "thumbnail": "color-sliver-feather_thumb.png",
+      "image": "color-sliver-feather_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace68GTFeather_dxjdhxyuqeq6v9yk.png"
+    },
+    {
+      "key": "color-golden-sliver",
+      "label": "golden sliver",
+      "thumbnail": "color-golden-sliver_thumb.png",
+      "image": "color-golden-sliver_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace68GTGoldSliver_ocw863hamop0mpfc.png"
+    },
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68GT_white.png"
+    },
+    {
+      "key": "color-golden",
+      "label": "golden",
+      "thumbnail": "color-golden_thumb.png",
+      "image": "color-golden_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68GT_golden.png"
+    },
+    {
+      "key": "color-mist-pink",
+      "label": "mist pink",
+      "thumbnail": "color-mist-pink_thumb.png",
+      "image": "color-mist-pink_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68GT_pink.png"
+    },
+    {
+      "key": "color-cherry-red",
+      "label": "cherry red",
+      "thumbnail": "color-cherry-red_thumb.png",
+      "image": "color-cherry-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_68_GTCherryRed_ii34caaib3mpvzn0.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68GT_black.png"
+    },
+    {
+      "key": "gt68-color-black-dark",
+      "label": "gt68 color black dark",
+      "thumbnail": "gt68-color-black-dark_thumb.png",
+      "image": "gt68-color-black-dark_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace_68_GT黑金_2x_1_x4fds81xrpiaetlc.png"
+    },
+    {
+      "key": "color-glaze-purple",
+      "label": "glaze purple",
+      "thumbnail": "color-glaze-purple_thumb.png",
+      "image": "color-glaze-purple_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68GT_glaze-purple.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

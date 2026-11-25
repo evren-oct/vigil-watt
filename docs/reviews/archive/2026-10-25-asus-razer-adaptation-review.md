@@ -37,5 +37,5 @@ HID 保留上游 OpenRead/OpenReadWrite 权限分支，Feature 专用访问另�
 - 隔离调用实际编译插件的 21 项检查通过：候选接口、旧 V4 路径/名称/下界、新型号权限/类型/下界、发现冷却、默认关闭不认领。该检查未向硬件发帧。
 - 既有真机集成证据：键盘 95% / Keyboard，耳机 77% / Headset，鼠标 58% / Mouse，均 Discharging。
 - 默认关闭不认领；启用后的轮询、独立 SQLite 历史与 Detach 释放已验证。
-- 协议与硬件证据见 [ASUS](../../hardware/asus-rog.md)、[耳机](../../hardware/razer-headset.md)、[鼠标](../../hardware/razer-viper-se.md)。
+- 协议与硬件证据见 [ASUS](../../hardware/brands/asus-rog.md)、[耳机](../../hardware/devices/razer-headset.md)、[鼠标](../../hardware/devices/razer-viper-se.md)。
 - 无新增 BACKLOG 项。

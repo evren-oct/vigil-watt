@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Ajazz;
 /// <summary>
 /// 功 能： 解析黑爵 AK870 的 ROYUAN 接收器电量状态。
 /// 2026/10/18 14:45:00 KNA7022
-/// 协议来源和实机帧见 docs/hardware/ak870-ml903.md。
+/// 协议来源和实机帧见 docs/hardware/devices/ak870-ml903.md。
 /// </summary>
 public static class AjazzCodec
 {

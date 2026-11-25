@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature AI Edition M750",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B040"
+    ],
+    "displayNames": [
+      "Signature AI Edition M750"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "2cf9a81d-47cb-4736-9bc0-39e3143d71d3.png",
+      "image": "2cf9a81d-47cb-4736-9bc0-39e3143d71d3.png",
+      "source": "LogiOptions+ devices.json / 2cf9a81d-47cb-4736-9bc0-39e3143d71d3.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -1,0 +1,518 @@
+{
+ "version": "2026-11-08",
+ "source": "M HUB WEB cardList.json + Vb + zye (MCHOSE HUB 1.2.05)",
+ "transports": [
+  {
+   "vid": "0x3837",
+   "pid": "0x1014",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "官方 newMouseWirelessPids；多型号共用，型号由 0x0900 自报 VID/PID 决定"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x1016",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "官方 newMouseWirelessPids；多型号共用（V7 等），型号由 0x0900 决定"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x1018",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "通用 8K dongle：K7 V2 全系 / A7 V3 全系 / K5 Pro+Ultra / R7 Ultra 共用，**不是 K7 专属**。能力声明只覆盖 0x4D 通道本身（真机 100% / connect=2 / charge=0，见 mchose.md §3.3、§3.7）；型号仍由 0x0900 自报 VID/PID 决定",
+   "capabilities": {
+    "batteryRead": "supported",
+    "connectionRead": "supported",
+    "chargingRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x101C",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "官方 newMouseWirelessPids；K5 V2 等共用，型号由 0x0900 决定"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x101D",
+   "role": "dongle-wireless",
+   "protocol": "mchose-0x4d",
+   "note": "官方 newMouseWirelessPids；V7 Pro / G3 V3 / G3 S 共用，型号由 0x0900 决定"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x100C",
+   "role": "dongle-wireless",
+   "protocol": "mouse-a5",
+   "note": "A5 V2 Ultra 的接收器；本体是 0x41E4:0x1101/0x1102，走反码 Feature，见 mchose.md §6"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x100A",
+   "role": "dongle-wireless",
+   "protocol": "mouse-v2",
+   "note": "A7 V2 Pro 接收器；E2 被动帧 + 0x11/0x06 触发，贡献者真机验证",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3033",
+   "role": "dongle-cz",
+   "protocol": "cz-block",
+   "note": "官方通用 2.4G dongle（G87 V2 / G75 V2 / K87S / K99 V3），走 CZ 分块读，见 mchose.md §2.4",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x201B",
+   "role": "dongle-wireless",
+   "protocol": "keyboard-v1",
+   "note": "G87 V2 接收器；贡献者真机验证，走键盘 V1 会话",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2001",
+   "role": "dongle-wireless",
+   "protocol": "keyboard-v1",
+   "note": "G87 V1 的 dongle（本机真机，mchose.md §1：不开会话就对一切查询静音）。认领到这颗 PID 说明主机读的是接收器通道，有线数据不会经过接收器，故链路可推断为 2.4G（Inferred，不是设备上报）；键盘本体 PID 未登记，插线时保持未知",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  }
+ ],
+ "rateTables": {
+  "1k": [125, 500, 1000],
+  "8k": [125, 500, 1000, 2000, 4000, 8000]
+ },
+ "rateProfiles": {
+  "0x4035": { "0x4035": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4042": { "0x4042": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4026": { "0x4026": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4034": { "0x4034": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x403b": { "0x403b": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4027": { "0x4027": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x403c": { "0x403c": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4028": { "0x4028": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4030": { "0x4030": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4031": { "0x4031": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4032": { "0x4032": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x403d": { "0x403d": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4033": { "0x4033": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x403a": { "0x403a": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x403f": { "0x403f": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4040": { "0x4040": "8k", "0x101c": "8k" },
+  "0x4037": { "0x4037": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4038": { "0x4038": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x4036": { "0x4036": "8k", "0x1014": "8k", "0x1018": "8k" },
+  "0x402a": { "0x402a": "1k", "0x1016": "1k" },
+  "0x403e": { "0x403e": "1k", "0x101d": "1k" },
+  "0x4029": { "0x4029": "1k", "0x101d": "1k" },
+  "0x4041": { "0x4041": "1k", "0x101d": "1k" }
+ },
+  "deviceNotes": {
+    "0x19f5:0xff0f": "Ace 60 Pro 的贴牌 VID；分类器 VID 白名单不含 0x19F5，当前不可达（同型号见 0x41E4:0x2104）",
+    "0x19f5:0xff1b": "Ace 60 的贴牌 VID；分类器 VID 白名单不含 0x19F5，当前不可达（同型号见 0x41E4:0x2102）"
+  },
+ "devices": [
+  {
+   "vid": "0x19f5",
+   "pid": "0xff0f",
+   "model": "Ace 60 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x19f5",
+   "pid": "0xff1b",
+   "model": "Ace 60",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x291d",
+   "pid": "0x385d",
+   "model": "V9 Pro",
+   "protocol": "headset-v9",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3554",
+   "pid": "0xfa09",
+   "model": "G75 Pro",
+   "protocol": "keyboard-v1",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x200f",
+   "model": "K87S",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2019",
+   "model": "G87 V2",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x201f",
+   "model": "K99 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2022",
+   "model": "G75 V2",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2023",
+   "model": "K87 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2024",
+   "model": "K87 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2025",
+   "model": "G98 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x2026",
+   "model": "G98 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3009",
+   "model": "Ace 68 GT",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x300b",
+   "model": "Ace 68 Air 2",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x301a",
+   "model": "God 60",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3022",
+   "model": "Ace 60 Pro Nordic",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3025",
+   "model": "Ace 68 V2 III",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3027",
+   "model": "Ace 68 Turbo 16K",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3029",
+   "model": "Ace 68 Turbo 8K",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x302a",
+   "model": "Ace 68 III",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x302c",
+   "model": "Mix 87 III",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x302f",
+   "model": "GT 75",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x303d",
+   "model": "Ace 75 8K",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3041",
+   "model": "Ace 60 Pro ISO FR",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4026",
+   "model": "A5 V3 Ultra+",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4027",
+   "model": "K7 V2 Pro+",
+   "protocol": "mchose-0x4d"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4028",
+   "model": "K7 V2 Ultra+",
+   "protocol": "mchose-0x4d"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4029",
+   "model": "G3 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x402a",
+   "model": "V7",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4030",
+   "model": "A7 V3",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4031",
+   "model": "A7 V3 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4032",
+   "model": "A7 V3 Pro+",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4033",
+   "model": "A7 V3 Ultra+",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4034",
+   "model": "A5 V3 Ultra+(3955)",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4035",
+   "model": "A5 V3 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4036",
+   "model": "R7 Ultra",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4037",
+   "model": "K5 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4038",
+   "model": "K5 Ultra",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403a",
+   "model": "A7 V3-X",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403b",
+   "model": "K7 V2 Pro",
+   "protocol": "mchose-0x4d"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403c",
+   "model": "K7 V2 Ultra",
+   "protocol": "mchose-0x4d"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403d",
+   "model": "A7 V3 Ultra",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403e",
+   "model": "V7 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x403f",
+   "model": "A7 V3 Magnetic",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4040",
+   "model": "K5 V2",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4041",
+   "model": "G3 S",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4042",
+   "model": "A5 V3 Ultra",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x4245",
+   "model": "G3 V2",
+   "protocol": "gmouse",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x6045",
+   "model": "X9",
+   "protocol": "headset-x9",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2001",
+   "model": "G87",
+   "protocol": "keyboard-v1"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2102",
+   "model": "Ace 60",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2104",
+   "model": "Ace 60 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2113",
+   "model": "Ace 60X II",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2115",
+   "model": "Ace 68 I",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2117",
+   "model": "Ace 68 Pro",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2119",
+   "model": "Jet 75 I",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x211b",
+   "model": "Jet 75 II",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x211d",
+   "model": "Zero75X",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2121",
+   "model": "Ace 68 Air II",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2123",
+   "model": "Mix 87 I",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2127",
+   "model": "Ace 60X I",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x41e4",
+   "pid": "0x2133",
+   "model": "Ace 68 Air III",
+   "protocol": "qhw"
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x100c",
+   "model": "A5 V2 Ultra",
+   "protocol": "mouse-a5"
+  }
+ ]
+}

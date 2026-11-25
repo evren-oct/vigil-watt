@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Reach",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0948"
+    ],
+    "displayNames": [
+      "Reach"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "reach.png",
+      "image": "reach.png",
+      "source": "LogiOptions+ devices.json / reach.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

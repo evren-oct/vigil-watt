@@ -9,7 +9,7 @@ namespace VigilWatt.Core.Plugins.Lingbao;
 /// <summary>
 /// 功 能： 凌豹 (LINGBAO) 2.4G 插件：M5PRO Max 鼠标走 feature 查询，K98 键盘走 Compx 会话。
 /// 2026/10/24 17:42:00 L；2026/10/25 并入 K98（Bamlax）。
-/// 两套帧与验证边界见 docs/hardware/lingbao.md §1（M5PRO Max）与 §2（K98）；会写帧，故默认关闭。
+/// 两套帧与验证边界见 docs/hardware/brands/lingbao.md §1（M5PRO Max）与 §2（K98）；会写帧，故默认关闭。
 /// </summary>
 public sealed class LingbaoPlugin : BatteryPluginBase
 {

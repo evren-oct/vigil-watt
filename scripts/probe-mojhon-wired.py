@@ -7,7 +7,7 @@
 3. 同一条 `A5 04 <reg> <cks>` 读请求在有线通道上还能不能读到电量 / 型号标识？
 
 安全性：只发送 USBPcap 实录中官方助手用过的读请求（reg=0x04 电量、reg=0xE2 型号），
-寄存器号、字节、校验全部照抄 docs/hardware/mojhon.md §6，不做任何写配置、
+寄存器号、字节、校验全部照抄 docs/hardware/brands/mojhon.md §6，不做任何写配置、
 不做命令枚举、不改字节。
 
 用法：
@@ -90,7 +90,7 @@ kernel32.DeviceIoControl.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.c_v
                                      wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD,
                                      ctypes.POINTER(wintypes.DWORD), ctypes.c_void_p]
 
-# payload[1] 实测取值（docs/hardware/mojhon.md §6.8，仅有这两个）
+# payload[1] 实测取值（docs/hardware/brands/mojhon.md §6.8，仅有这两个）
 CHARGING_FLAG = {0x00: "未插充电线（放电）", 0x01: "正在充电"}
 
 
@@ -161,7 +161,7 @@ def read_descriptor(path):
 def build(reg, write_len):
     """按实录格式构造读请求并补齐到接口要求的写入长度。
 
-    ⚠️ 见 docs/hardware/mojhon.md §6.6：写入缓冲必须比 64 字节帧多 1 个前导
+    ⚠️ 见 docs/hardware/brands/mojhon.md §6.6：写入缓冲必须比 64 字节帧多 1 个前导
     `0x00` 填充字节，帧从下标 1 起；把帧放进下标 0（同样 65 字节）设备毫无反应。
     故这里是 `00 | A5 04 <reg> <cks> | 0…0`，不是 `A5 04 <reg> <cks> | 0…0`。
     """

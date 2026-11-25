@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G403",
+  "match": {
+    "displayNames": [
+      "G403",
+      "G403 HERO"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g403.png",
+      "image": "logitech-g403.png",
+      "source": "https://img.openmouse.app/logitech-g403.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "MT770L",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4C00",
+      "1C00"
+    ],
+    "displayNames": [
+      "雷柏 MT770L",
+      "MT770L"
+    ]
+  },
+  "defaultColor": "Dark_Grey",
+  "colors": [
+    {
+      "key": "Dark_Grey",
+      "label": "深灰",
+      "thumbnail": "Dark_Grey_thumb.png",
+      "image": "Dark_Grey_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT770L/thumb_Dark_Grey.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

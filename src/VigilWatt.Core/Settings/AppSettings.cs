@@ -67,6 +67,9 @@ public class AppSettings
     /// <summary>上次选中屏幕的友好名（如 "DELL S2719DC"）。只用于那块屏没插时仍能显示它的名字，不参与匹配。</summary>
     public string TaskbarBatteryScreenLabel { get; set; } = "";
 
+    /// <summary>贴片位置是否锁定。**默认 false**：与升级前行为一致；误拖由拖动阈值挡住，想彻底固定再自己打开。</summary>
+    public bool TaskbarBatteryLockPosition { get; set; } = false;
+
     /// <summary>启动后是否只留在托盘（不显示主窗口）。**默认 false**：启动就显示主界面，
     /// 否则双击后看不到窗口，很容易被误判成"没启动起来"。</summary>
     public bool StartMinimized { get; set; } = false;
@@ -85,7 +88,7 @@ public class AppSettings
         ["Betop"] = true,     // 北通手柄：发官方同款只读状态查询（cmd=0x5），默认开启
         ["Ajazz"] = false,
         ["Thunderobot"] = false,
-        ["Inphic"] = true,    // 英菲克 report 0x03 被动监听，不发送任何帧
+        ["Inphic"] = false,   // 英菲克：ZHEN 只被动读 report 0x03（零写入），但 IN9 需要发刷新帧，共用这一行开关故按"会写帧"处理（inphic.md §2）
         ["Darkrim"] = false,  // 寸渊影弑：发官方同款 GetBasicInfo(0x09) 才拿得到电量，会写帧（darkrim.md §1.6）
         ["GameSir"] = false,  // 盖世小鸡：要发心跳帧才能读到电量，属主动通信（gamesir.md §1.4）
         ["Hecate"] = false,   // HECATE/漫步者电竞：主动查询会向设备写帧，默认关闭需手动开启（hecate.md §3）
@@ -93,7 +96,7 @@ public class AppSettings
         ["Delux"] = false,    // 与英菲克同为 1D57:FA65，只读 0x000A；本机尚未扫到该接收器，默认关
         ["Aula"] = false,     // 狼蛛键盘电量查询需要发帧，默认关闭
         ["Akg"] = false,      // AKG 接收器电量查询需要发帧，默认关闭
-        ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/dualsense.md）
+        ["DualSense"] = true, // 索尼手柄蓝牙 HID 只读，不发送报告（见 docs/hardware/devices/dualsense.md）
         ["Ganss"] = false,   // GANSS GS3104T-Pro / 狼蛛 F108 Pro（同硅方案）：发固定查询帧才能读电量（会写），默认关闭
         ["Cherry"] = false,   // CHERRY PIXIU75：64 字节块通道读块 0x1A，要写帧，默认关闭
         ["Pulsar"] = false,   // 派世 X2 V2：17 字节 STATUS/POWER 查询，要写帧，默认关闭
@@ -106,6 +109,9 @@ public class AppSettings
         ["Vgn"] = false,        // VGN 蜻蜓：kc2 配置帧 / y2 电量查询都要写帧，默认关闭（vgn.md）
         ["Haute42Gaming"] = false, // Haute42 Adapter 4DS：只读 feature，零写入，默认关闭（haute42.md）
         ["Mojhon"] = false,     // 墨将烈风2 手柄：发 A5 帧读寄存器 0x04 取电量，要写帧，默认关闭（mojhon.md §6）
+        ["Flydigi"] = false,  // 飞智 APEX5：发官方同款心跳（帧出自官方 service_log），会写，默认关闭（flydigi.md §2）
+        ["Langtu"] = true,      // 狼途 T98：只听 2.4G 接收器主动推的状态帧，零写入，默认开启（langtu.md §1）
+        ["Ilovbee"] = true,     // ilovbee b98：只听 2.4G 接收器主动推的 20 字节帧，零写入，默认开启（ilovbee.md §1）
     };
 
     /// <summary>是否把本机（笔记本）电池也纳入监控。默认关闭——它是"另一类设备"，不像外设那样需要盯着，用户明确要时才开（见设置页「监控本机电量」）。

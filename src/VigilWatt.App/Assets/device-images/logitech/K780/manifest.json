@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K780",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "405B",
+      "B33B"
+    ],
+    "displayNames": [
+      "K780"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k780.png",
+      "image": "k780.png",
+      "source": "LogiOptions+ devices.json / k780.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

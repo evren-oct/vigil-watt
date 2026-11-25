@@ -52,6 +52,7 @@ internal static class Native
     // ---- 菜单 ----
     public const uint MF_STRING = 0x0;
     public const uint MF_SEPARATOR = 0x800;
+    public const uint MF_CHECKED = 0x8;
     public const uint MF_GRAYED = 0x1;
     public const uint TPM_RETURNCMD = 0x100;
     public const uint TPM_RIGHTBUTTON = 0x2;
@@ -166,6 +167,16 @@ internal static class Native
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr GetModuleHandleW(string? name);
+
+    // ---- 工作集修剪（隐藏到托盘后让任务管理器「内存」列回落，见 runtime-pitfalls.md §26）----
+    /// <summary>当前进程伪句柄，不需要 CloseHandle。</summary>
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GetCurrentProcess();
+
+    /// <summary>两个尺寸都传 -1 表示"尽量把驻留页还给系统"；只动工作集，提交量不变。</summary>
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool SetProcessWorkingSetSizeEx(
+        IntPtr hProcess, IntPtr minimumWorkingSetSize, IntPtr maximumWorkingSetSize, uint flags);
 
     // ---- 任务栏定位（任务栏电量贴片用）----
     // 贴片窗口靠"找任务栏窗口 → 读它的矩形 → 把自己摆进去"来定位，不是 deskband（Win11 已移除该机制）。
@@ -380,6 +391,13 @@ internal static class Native
 
     [DllImport("user32.dll")]
     public static extern bool SystemParametersInfoW(uint action, uint uiParam, ref uint pvParam, uint fWinIni);
+
+    /// <summary>系统拖动阈值（以按下点为中心的矩形），横向取 CX、竖向取 CY；默认都是 4px。</summary>
+    public const int SM_CXDRAG = 68;
+    public const int SM_CYDRAG = 69;
+
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
 
     [DllImport("user32.dll")]
     public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);

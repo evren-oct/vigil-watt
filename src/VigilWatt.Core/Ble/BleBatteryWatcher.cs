@@ -127,6 +127,8 @@ public sealed class BleBatteryWatcher : IDisposable
         bool wasOffline = !status.IsOnline;
         status.IsOnline = true;
         status.LastUpdated = DateTimeOffset.Now;
+        // 走到这里的设备只可能通过 BLE 被看到：链路是事实，不是推断，观测时刻跟着刷新
+        status.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Bluetooth, DateTimeOffset.Now);
 
         if (percent.HasValue)
         {

@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Plugins.Hecate;
 /// <summary>
 /// 功 能： HECATE Wireless Receiver（35BB:D3FB）鼠标插件 —— STATUS 判在线、POWER 读电量。
 /// 2026/10/23 20:22:34 22469
-/// 17 字节帧与派世同族（复用 <see cref="PulsarCodec"/>）；要写两条只读查询，故独立成插件、默认关闭，见 docs/hardware/hecate.md §2。
+/// 17 字节帧与派世同族（复用 <see cref="PulsarCodec"/>）；要写两条只读查询，故独立成插件、默认关闭，见 docs/hardware/brands/hecate.md §2。
 /// </summary>
 public sealed class HecateWirelessPlugin : BatteryPluginBase
 {

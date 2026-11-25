@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Alto Keys K98M",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B38E"
+    ],
+    "displayNames": [
+      "Alto Keys K98M"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "2dbc7b2a-4334-409f-b9f3-48349591ad00.png",
+      "image": "2dbc7b2a-4334-409f-b9f3-48349591ad00.png",
+      "source": "LogiOptions+ devices.json / 2dbc7b2a-4334-409f-b9f3-48349591ad00.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

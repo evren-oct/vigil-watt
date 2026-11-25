@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Brio",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "085E"
+    ],
+    "displayNames": [
+      "Brio"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "brio.png",
+      "image": "brio.png",
+      "source": "LogiOptions+ devices.json / brio.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

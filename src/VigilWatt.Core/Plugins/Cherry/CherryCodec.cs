@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Cherry;
 /// <summary>
 /// 功 能： CHERRY 无线键盘 64 字节厂商帧（report 0x04）的纯编解码，不碰句柄、不写日志，便于单测。
 /// 2026/10/18 17:24:10 sheng
-/// 帧布局与块表见 docs/hardware/cherry.md §1。
+/// 帧布局与块表见 docs/hardware/brands/cherry.md §1。
 /// </summary>
 internal static class CherryCodec
 {

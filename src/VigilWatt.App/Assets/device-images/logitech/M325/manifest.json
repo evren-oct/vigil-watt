@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M325",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4094"
+    ],
+    "displayNames": [
+      "M325"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m325.png",
+      "image": "m325.png",
+      "source": "LogiOptions+ devices.json / m325.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

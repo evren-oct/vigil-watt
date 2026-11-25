@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "ESM652PRO",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4633"
+    ],
+    "displayNames": [
+      "雷柏 ESM652PRO",
+      "ESM652PRO"
+    ]
+  },
+  "defaultColor": "Raspberry_Pink",
+  "colors": [
+    {
+      "key": "Raspberry_Pink",
+      "label": "绯焰风暴",
+      "thumbnail": "Raspberry_Pink_thumb.png",
+      "image": "Raspberry_Pink_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM652PRO/thumb_Raspberry_Pink.png"
+    },
+    {
+      "key": "Gray_Black_Red",
+      "label": "零号赤焰",
+      "thumbnail": "Gray_Black_Red_thumb.png",
+      "image": "Gray_Black_Red_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM652PRO/thumb_Gray_Black_Red.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

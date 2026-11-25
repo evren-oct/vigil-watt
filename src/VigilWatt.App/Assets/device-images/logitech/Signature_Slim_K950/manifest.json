@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Signature Slim K950",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B386"
+    ],
+    "displayNames": [
+      "Signature Slim K950"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "13d0841f-ede9-4461-86f8-53eb9bf307a2.png",
+      "image": "13d0841f-ede9-4461-86f8-53eb9bf307a2.png",
+      "source": "LogiOptions+ devices.json / 13d0841f-ede9-4461-86f8-53eb9bf307a2.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

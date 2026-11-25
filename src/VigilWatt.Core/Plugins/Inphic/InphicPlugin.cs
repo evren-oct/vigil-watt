@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Inphic;
 /// <summary>
 /// 功 能： 英菲克 2.4G 鼠标插件，只被动读取状态帧。
 /// 2026/10/14 20:41:17 20211
-/// 帧布局与实测边界见 docs/hardware/inphic.md §1。
+/// 帧布局与实测边界见 docs/hardware/brands/inphic.md §1。
 /// </summary>
 public sealed class InphicPlugin : BatteryPluginBase
 {

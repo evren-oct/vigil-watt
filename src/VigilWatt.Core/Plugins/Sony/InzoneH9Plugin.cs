@@ -9,7 +9,7 @@ namespace VigilWatt.Core.Plugins.Sony;
 /// 真机验证：客户端关闭状态下仍可读到 78%，音量 40 与设备一致。
 ///
 /// 与纯被动插件不同，**这个插件会向设备写帧**：开「索尼 INZONE」开关即授权发送电量查询帧。
-/// 帧格式与坑见 <see cref="InzoneCodec"/> 与 docs/hardware/inzone-h9.md。
+/// 帧格式与坑见 <see cref="InzoneCodec"/> 与 docs/hardware/devices/inzone-h9.md。
 /// </summary>
 public sealed class InzoneH9Plugin : BatteryPluginBase
 {

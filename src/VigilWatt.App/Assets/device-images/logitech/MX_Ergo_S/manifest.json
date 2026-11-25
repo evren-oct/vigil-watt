@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Ergo S",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B03E"
+    ],
+    "displayNames": [
+      "MX Ergo S"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "924b0645-1c6a-48ee-94ce-00591467404c.png",
+      "image": "924b0645-1c6a-48ee-94ce-00591467404c.png",
+      "source": "LogiOptions+ devices.json / 924b0645-1c6a-48ee-94ce-00591467404c.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

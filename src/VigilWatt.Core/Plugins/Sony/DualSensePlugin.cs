@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Sony;
 /// <summary>
 /// 功 能： DualSense 蓝牙电量被动监听插件。
 /// 2026/10/19 15:20:00 xliu
-/// 不发送输出或 Feature 报告，验证边界见 docs/hardware/dualsense.md。
+/// 不发送输出或 Feature 报告，验证边界见 docs/hardware/devices/dualsense.md。
 /// </summary>
 public sealed class DualSensePlugin : BatteryPluginBase
 {

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "M585/M590",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "406B",
+      "B01B"
+    ],
+    "displayNames": [
+      "M585/M590"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "m585.png",
+      "image": "m585.png",
+      "source": "LogiOptions+ devices.json / m585.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

@@ -10,7 +10,7 @@ namespace VigilWatt.Core.Plugins.Mojhon;
 /// 2026/10/26 00:45:00 workbuddy
 ///
 /// 全部协议依据来自 USBPcap 实录（captures/mojhon-e2b7-20261026.pcap），帧格式与取值见
-/// docs/hardware/mojhon.md §6；本文件不含任何推测字节。
+/// docs/hardware/brands/mojhon.md §6；本文件不含任何推测字节。
 /// </summary>
 public sealed class MojhonPlugin : BatteryPluginBase
 {
@@ -95,7 +95,7 @@ public sealed class MojhonPlugin : BatteryPluginBase
     }
 
     /// <summary>
-    /// 把 payload[1] 映射成充电状态。**只映射实测过的两个标志值**（docs/hardware/mojhon.md §7.2）：
+    /// 把 payload[1] 映射成充电状态。**只映射实测过的两个标志值**（docs/hardware/brands/mojhon.md §7.2）：
     /// 0x00 = 未接充电线、0x01 = 正在充电。其他取值从未观测到，一律 Unknown，不外推。
     /// 未充电时再走项目公用的收尾规则（<see cref="ChargingStateMap.FromChargingFlag"/>）：
     /// 100% ⇒ 已充满，其余 ⇒ 放电。满电这条已有实测支撑——2026-10-26 19:40 读到
@@ -136,7 +136,7 @@ public sealed class MojhonPlugin : BatteryPluginBase
     /// 以及 `{"type":"GamepadDeviceType_Gale2_Dongle","deviceIdMark":"C4_DONGLE",...,"webName":"R80"}`。
     /// 本机实测读寄存器 0xE2 回 `58 52 00` + `"C4_SERVER"`，故型号 = `GALE2`（烈风2）。
     /// 接收器单独在位（手柄关机）时报的是 `C4_DONGLE`，同属这一代产品，一并显示 GALE2。
-    /// 见 docs/hardware/mojhon.md §2.1。
+    /// 见 docs/hardware/brands/mojhon.md §4.1。
     /// </summary>
     private static readonly Dictionary<string, string> ModelByIdMark = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -204,7 +204,7 @@ public sealed class MojhonPlugin : BatteryPluginBase
     /// <summary>
     /// 把 64 字节帧装进接口要求的报文缓冲。
     ///
-    /// 两个口径对不上，实测结论如下（docs/hardware/mojhon.md §6.5）：
+    /// 两个口径对不上，实测结论如下（docs/hardware/brands/mojhon.md §6.5）：
     /// - 报告描述符声明的是 **64 字节 IN / 64 字节 OUT，且无任何 Report ID 项**（描述符 37 字节全文见文档）；
     /// - 但 `HidP_GetCaps` 报 `OutputReportLength = 65`，且 hidapi 拒绝 64 字节写入。
     ///

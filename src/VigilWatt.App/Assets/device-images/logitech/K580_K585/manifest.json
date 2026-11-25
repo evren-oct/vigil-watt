@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K580/K585",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4089",
+      "B35A"
+    ],
+    "displayNames": [
+      "K580/K585"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k580.png",
+      "image": "k580.png",
+      "source": "LogiOptions+ devices.json / k580.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

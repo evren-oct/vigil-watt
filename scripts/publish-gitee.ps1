@@ -1,4 +1,5 @@
 # Publish the complete Velopack dist folder as a Gitee Release.
+# 仅维护者手动运行；AI 不得执行本脚本（会创建 Release 并上传附件）。
 # Requires the version tag to exist on the Gitee remote, and a Gitee token with write access
 # (pass -Token, or set the GITEE_TOKEN env var). The token is sent via the Authorization
 # header, never in the URL query. $owner/$repository must match UpdateService.RepoUrl.

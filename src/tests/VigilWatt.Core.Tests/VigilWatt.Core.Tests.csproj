@@ -45,6 +45,8 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Akg\AkgN9Transport.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaHero68Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaHero68PacketAssembler.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaHero68Transport.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaPlugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Ajazz\AjazzCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\BatteryPluginBase.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\AppSettings.cs" />
@@ -58,13 +60,21 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\WriteBackoff.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV1Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseK7Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\Mchose0x4DCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseGmouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseV9ProCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseX9Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseA5Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseProtocol.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseActiveQueryPolicy.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchosePlugin.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseA5Plugin.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceIdentity.cs" />
+    <!-- 回报率"该不该发布"的判定是纯函数，四条边界（不一致/无表/越界/正常）必须能单测 -->
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseRatePolicy.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseSpecs.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Lingbao\LingbaoCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Compx\CompxSessionAck.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Vgn\VgnCodec.cs" />
@@ -74,7 +84,13 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaG9Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaL9Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Haute\HauteCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\ProtocolSpec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\ProtocolSpecLoader.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\FrameReader.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\QueryRunner.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Protocol\ProtocolEngine.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooDisplayName.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Rapoo\RapooDeviceIdentity.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Cherry\CherryCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Pulsar\PulsarCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Hecate\HecateCodec.cs" />
@@ -84,9 +100,14 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Razer\RazerKrakenCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Sony\InzoneCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Ganss\GanssCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Flydigi\FlydigiCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Langtu\LangtuT98Codec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Ilovbee\IlovbeeCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Sony\DualSenseCodec.cs" />
-    <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopCodec.cs" />
+    <!-- T9 开机瞬态的稳定判定（IsSettled）是纯计时逻辑，值得单测；BetopPlugin 只依赖已链接的 Hid/Log/Models -->
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopPlugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopDeviceIdentity.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopDisplayName.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Betop\BetopOfficialAppGuard.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Darkrim\DarkrimCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Darkrim\OfficialAppGuard.cs" />
@@ -94,6 +115,7 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnKeyboardCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Eweadn\EweadnMouseCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkFf05Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkPlugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Hid\HidDeviceScanner.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceDisplayDeduplicator.cs" />
@@ -102,6 +124,12 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Atk\AtkViaCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\HyperX\Cf2Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppFeatureProbe.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppPointerCodec.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\LogitechConnectionPolicy.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\LogitechReceiverIdentityPolicy.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\HidppNotificationQueue.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Logitech\CenturionCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Ble\ClassicDeviceName.cs" />
     <Compile Include="..\..\VigilWatt.Core\Ble\DualChannelId.cs" />
@@ -110,10 +138,23 @@
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceKindGuesser.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ClassicDeviceKindResolver.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceSourceInfo.cs" />
+    <!-- 连接方式（有线/2.4G）是纯枚举，徽标文案与合并规则都要能在单测里钉住 -->
+    <Compile Include="..\..\VigilWatt.Core\Models\ConnectionKind.cs" />
+    <!-- 连接展示的唯一口径（有值按链路、无值只许蓝牙/本机兜底）：两个 UI 面共用，必须能单测 -->
+    <Compile Include="..\..\VigilWatt.Core\Models\DeviceConnectionInfo.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatus.cs" />
+    <!-- 身份快照（USB / 协议自报 / 接收器）是纯 record struct，零 WinRT，合并规则必须能在单测里钉住 -->
+    <Compile Include="..\..\VigilWatt.Core\Models\DeviceIdentity.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Models\PointerTelemetry.cs" />
+    <!-- 卡片上那行 DPI / 档位 / 回报率的文案是纯函数（零 WinRT），展示状态必须能在单测里钉住 -->
+    <Compile Include="..\..\VigilWatt.Core\Models\PointerTelemetryFormatter.cs" />
+    <!-- 能力声明是纯数据模型（零 WinRT / 零 HID），测试直接链真源文件，不为它引入 ProjectReference -->
+    <Compile Include="..\..\VigilWatt.Core\Models\DeviceCapability.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\DeviceCustomization.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\DeviceStatusFormatter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Models\ChargingStateMap.cs" />
+    <!-- 设备图片包清单是纯文件/JSON 逻辑（零 WinRT），型号匹配与路径越界必须能在单测里钉住 -->
+    <Compile Include="..\..\VigilWatt.Core\Media\DeviceImageCatalog.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceStatusMerger.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceChangeDetector.cs" />
     <!-- 删除设备后的"该不该收这条上报"判定：黑名单/删除标记四种组合，写错就是删了又复活 -->
@@ -170,6 +211,45 @@
     <Compile Include="..\..\VigilWatt.Core\Capture\HtmlReportGenerator.cs" />
     <Compile Include="..\..\VigilWatt.Core\Capture\CapturePackageWriter.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mojhon\MojhonCodec.cs" />
+    <!-- 英菲克 IN9 的 feature 0x0C 帧：偏移固定、全 0 与截断边界只能靠真机帧字面量锁住 -->
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Inphic\InphicIn9Codec.cs" />
   </ItemGroup>
+
+  <!-- 分类器要查设备目录，资源名必须与 Core 项目一致（MchoseDeviceCatalog 按名字取流） -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Betop\betop-catalog.json">
+      <LogicalName>VigilWatt.Core.Plugins.Betop.betop-catalog.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Betop\specs\betop.protocols.json">
+      <LogicalName>VigilWatt.Core.Plugins.Betop.specs.betop.protocols.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Mchose\mchose-catalog.json">
+      <LogicalName>VigilWatt.Core.Plugins.Mchose.mchose-catalog.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Rapoo\rapoo-catalog.json">
+      <LogicalName>VigilWatt.Core.Plugins.Rapoo.rapoo-catalog.json</LogicalName>
+    </EmbeddedResource>
+    <!-- 协议规格：解释器按逻辑名取流，资源名必须与 Core 项目完全一致 -->
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Rapoo\specs\rapoo.protocols.json">
+      <LogicalName>VigilWatt.Core.Plugins.Rapoo.specs.rapoo.protocols.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Mchose\specs\mchose.protocols.json">
+      <LogicalName>VigilWatt.Core.Plugins.Mchose.specs.mchose.protocols.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\VigilWatt.Core\Plugins\Logitech\logitech-hidpp.json">
+      <LogicalName>VigilWatt.Core.Plugins.Logitech.logitech-hidpp.json</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- 工作区目录带 Low 完整性标签，NuGet 拷出的 testhost.exe 会继承它；testhost 启动后要
+       OpenProcess 父进程，Low IL 会被拒绝。每次构建提回 Medium，见 docs/dev/build.md §0。 -->
+  <Target Name="RestoreTestHostIntegrityLevel" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Exec Condition="Exists('$(TargetDir)testhost.exe')"
+          Command="icacls &quot;$(TargetDir)testhost.exe&quot; /setintegritylevel Medium"
+          ContinueOnError="true" />
+    <Exec Condition="Exists('$(TargetDir)testhost.x86.exe')"
+          Command="icacls &quot;$(TargetDir)testhost.x86.exe&quot; /setintegritylevel Medium"
+          ContinueOnError="true" />
+  </Target>
 
 </Project>

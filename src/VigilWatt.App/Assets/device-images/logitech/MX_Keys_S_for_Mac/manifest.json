@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Keys S for Mac",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B37C"
+    ],
+    "displayNames": [
+      "MX Keys S for Mac"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "dd45daa8-6f6e-4d63-9e0a-c0fc668fe932_mac.png",
+      "image": "dd45daa8-6f6e-4d63-9e0a-c0fc668fe932_mac.png",
+      "source": "LogiOptions+ devices.json / dd45daa8-6f6e-4d63-9e0a-c0fc668fe932_mac.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

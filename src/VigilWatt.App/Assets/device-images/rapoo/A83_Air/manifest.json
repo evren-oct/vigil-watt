@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "A83 Air",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4814",
+      "1914"
+    ],
+    "displayNames": [
+      "雷柏 A83 Air",
+      "A83 Air"
+    ]
+  },
+  "defaultColor": "Glass_Blue",
+  "colors": [
+    {
+      "key": "Glass_Blue",
+      "label": "雪青",
+      "thumbnail": "Glass_Blue_thumb.png",
+      "image": "Glass_Blue_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/A83%20Air/thumb_Glass_Blue.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

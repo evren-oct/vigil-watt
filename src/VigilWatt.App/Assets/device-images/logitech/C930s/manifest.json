@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "C930s",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "091B"
+    ],
+    "displayNames": [
+      "C930s"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c930s.png",
+      "image": "c930s.png",
+      "source": "LogiOptions+ devices.json / c930s.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

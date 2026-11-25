@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Craft",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4066",
+      "6B350",
+      "B350"
+    ],
+    "displayNames": [
+      "Craft"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "craft.png",
+      "image": "craft.png",
+      "source": "LogiOptions+ devices.json / craft.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

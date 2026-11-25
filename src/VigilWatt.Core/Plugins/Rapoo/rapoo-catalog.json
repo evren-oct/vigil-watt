@@ -1,0 +1,1783 @@
+{
+ "version": "2026-11-01",
+ "brand": "雷柏",
+ "source": "RAPOO HUB 网页驱动 AHUB 2.0 内嵌 manifest（hid.rapoo.cn/AHUB_WEB/dist/assets/js/index-BNoOd8Jm.js）",
+ "capsRule": "caps 只写本机真机验证过的能力；官方 manifest 声明但未验证的不写，见 docs/hardware/reference/rapoo-catalog.md §6",
+ "devices": [
+  {
+   "vid": "0x24ae",
+   "pid": "0x1914",
+   "model": "A83 Air",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x4814",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4814",
+   "model": "A83 Air",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x1914",
+   "wired": true
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x3026",
+   "model": "Ace 68 Turbo",
+   "kind": "keyboard",
+   "protocol": "gcome-ap",
+  },
+  {
+   "vid": "0x2e3c",
+   "pid": "0x5745",
+   "model": "ESK800-75RT",
+   "kind": "keyboard",
+   "protocol": "ohid",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x482a",
+   "model": "ESK900-75RT",
+   "kind": "keyboard",
+   "protocol": "ch585m",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x481b",
+   "model": "ESK900-83RT",
+   "kind": "keyboard",
+   "protocol": "ch585m",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x481a",
+   "model": "ESK900-98RT",
+   "kind": "keyboard",
+   "protocol": "ch585m",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x464d",
+   "model": "ESM612ACE",
+   "kind": "mouse",
+   "protocol": "status-report7",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4681",
+   "model": "ESM612MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4631",
+   "model": "ESM612PRO",
+   "kind": "mouse",
+   "protocol": "status-report7",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4637",
+   "model": "ESM622MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4632",
+   "model": "ESM622PRO",
+   "kind": "mouse",
+   "protocol": "status-report7",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4633",
+   "model": "ESM652PRO",
+   "kind": "mouse",
+   "protocol": "status-report7",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4640",
+   "model": "ESM672MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4635",
+   "model": "ESM672PRO",
+   "kind": "mouse",
+   "protocol": "status-report7",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1445",
+   "model": "ESPR5",
+   "kind": "base",
+   "protocol": "status-report7-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1458",
+   "model": "ESPR7",
+   "kind": "base",
+   "protocol": "status-report7-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1450",
+   "model": "ESPR7PRO",
+   "kind": "base",
+   "protocol": "status-report7-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x144e",
+   "model": "ESPR8",
+   "kind": "base",
+   "protocol": "status-report7-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1441",
+   "model": "ESPR8PRO",
+   "kind": "base",
+   "protocol": "status-report7-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1874",
+   "model": "MT550L",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x4506",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4506",
+   "model": "MT550L",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x1874",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1872",
+   "model": "MT560",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x4504",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4504",
+   "model": "MT560",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x1872",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1876",
+   "model": "MT750 PLUS",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x4507",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4507",
+   "model": "MT750 PLUS",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x1876",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1870",
+   "model": "MT760L",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x4500",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4500",
+   "model": "MT760L",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x1870",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1871",
+   "model": "MT760M",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x4503",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4503",
+   "model": "MT760M",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x1871",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1c00",
+   "model": "MT770L",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x4c00",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4c00",
+   "model": "MT770L",
+   "kind": "mouse",
+   "protocol": "telink-8273",
+   "pairedPid": "0x1c00",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4827",
+   "model": "P5 PLUS",
+   "kind": "base",
+   "protocol": "telink-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4825",
+   "model": "P6 PLUS",
+   "kind": "base",
+   "protocol": "telink-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1907",
+   "model": "V700diy-75",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x4807",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4807",
+   "model": "V700diy-75",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x1907",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   },
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x6204",
+   "model": "V700diy-75 LRV",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x7204",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   },
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x7204",
+   "model": "V700diy-75 LRV",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x6204",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   },
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1906",
+   "model": "V700diy-87",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x4806",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4806",
+   "model": "V700diy-87",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x1906",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   },
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1905",
+   "model": "V700diy-98",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x4805",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4805",
+   "model": "V700diy-98",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x1905",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   },
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1924",
+   "model": "V700diy-98 LRV",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x4824",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4824",
+   "model": "V700diy-98 LRV",
+   "kind": "keyboard",
+   "protocol": "telink-keyboard",
+   "pairedPid": "0x1924",
+   "override": {
+    "passive": {
+     "fields": {
+      "percent": {
+       "offset": 7
+      }
+     }
+    }
+   },
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x144d",
+   "model": "VPR8 PLUS",
+   "kind": "base",
+   "protocol": "status-report7-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x145a",
+   "model": "VPR8 RT MASTER",
+   "kind": "base",
+   "protocol": "status-report7-base",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1410",
+   "model": "VT0",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4610",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4610",
+   "model": "VT0",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1410",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14a1",
+   "model": "VT0 Air MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46a1",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46a1",
+   "model": "VT0 Air MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14a1",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1420",
+   "model": "VT0 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4620",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4620",
+   "model": "VT0 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1420",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x144a",
+   "model": "VT0 MAX MASTER",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x464a",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x464a",
+   "model": "VT0 MAX MASTER",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x144a",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1415",
+   "model": "VT1",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4615",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4615",
+   "model": "VT1",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1415",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1444",
+   "model": "VT1 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4644",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4644",
+   "model": "VT1 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1444",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1a11",
+   "model": "VT1 SE",
+   "kind": "mouse",
+   "protocol": "vt-ch584",
+   "pairedPid": "0x4a11",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4a11",
+   "model": "VT1 SE",
+   "kind": "mouse",
+   "protocol": "vt-ch584",
+   "pairedPid": "0x1a11",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b0a",
+   "model": "VT1S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b0a",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b0a",
+   "model": "VT1S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b0a",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x146a",
+   "model": "VT1S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x466a",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x466a",
+   "model": "VT1S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x146a",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1422",
+   "model": "VT2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4622",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4622",
+   "model": "VT2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1422",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b12",
+   "model": "VT2 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b12",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b12",
+   "model": "VT2 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b12",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1423",
+   "model": "VT2 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4623",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4623",
+   "model": "VT2 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1423",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1475",
+   "model": "VT2 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4675",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4675",
+   "model": "VT2 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1475",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b09",
+   "model": "VT2 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b09",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b09",
+   "model": "VT2 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b09",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b21",
+   "model": "VT2 RT MASTER V2",
+   "kind": "mouse",
+   "protocol": "lm20rt",
+   "pairedPid": "0x4b21",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b21",
+   "model": "VT2 RT MASTER V2",
+   "kind": "mouse",
+   "protocol": "lm20rt",
+   "pairedPid": "0x1b21",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b20",
+   "model": "VT2 RT V2",
+   "kind": "mouse",
+   "protocol": "lm20rt",
+   "pairedPid": "0x4b20",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b20",
+   "model": "VT2 RT V2",
+   "kind": "mouse",
+   "protocol": "lm20rt",
+   "pairedPid": "0x1b20",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1472",
+   "model": "VT2 ULTRA V2",
+   "kind": "mouse",
+   "protocol": "telink-3228c",
+   "pairedPid": "0x4672",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4672",
+   "model": "VT2 ULTRA V2",
+   "kind": "mouse",
+   "protocol": "telink-3228c",
+   "pairedPid": "0x1472",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1468",
+   "model": "VT2 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4668",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4668",
+   "model": "VT2 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1468",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14a4",
+   "model": "VT2K MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46a4",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46a4",
+   "model": "VT2K MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14a4",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b13",
+   "model": "VT2S Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "capabilities": {
+    "batteryRead": "supported"
+   },
+   "pairedPid": "0x4b13",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b13",
+   "model": "VT2S Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "capabilities": {
+    "batteryRead": "supported"
+   },
+   "pairedPid": "0x1b13",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1476",
+   "model": "VT2S MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4676",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4676",
+   "model": "VT2S MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1476",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b04",
+   "model": "VT2S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b04",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b04",
+   "model": "VT2S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b04",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x145d",
+   "model": "VT2S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x465d",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x465d",
+   "model": "VT2S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x145d",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1412",
+   "model": "VT3",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "capabilities": {
+    "batteryRead": "supported",
+    "dpiRead": "supported",
+    "dpiLevelRead": "supported",
+    "rateRead": "unverified"
+   },
+   "pairedPid": "0x4612",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4612",
+   "model": "VT3",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1412",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b0c",
+   "model": "VT3 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b0c",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b0c",
+   "model": "VT3 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b0c",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1417",
+   "model": "VT3 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4617",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4617",
+   "model": "VT3 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1417",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x146d",
+   "model": "VT3 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x466d",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x466d",
+   "model": "VT3 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x146d",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b06",
+   "model": "VT3 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b06",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b06",
+   "model": "VT3 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b06",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14a5",
+   "model": "VT3 PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46a5",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46a5",
+   "model": "VT3 PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14a5",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1462",
+   "model": "VT3 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4662",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4662",
+   "model": "VT3 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1462",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1411",
+   "model": "VT3S",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4611",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4611",
+   "model": "VT3S",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1411",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b0d",
+   "model": "VT3S Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b0d",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b0d",
+   "model": "VT3S Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b0d",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14a2",
+   "model": "VT3S Air Max",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46a2",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46a2",
+   "model": "VT3S Air Max",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14a2",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1421",
+   "model": "VT3S MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4621",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4621",
+   "model": "VT3S MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1421",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x144b",
+   "model": "VT3S MAX MASTER",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x464b",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x464b",
+   "model": "VT3S MAX MASTER",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x144b",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x146e",
+   "model": "VT3S MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x466e",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x466e",
+   "model": "VT3S MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x146e",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b07",
+   "model": "VT3S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b07",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b07",
+   "model": "VT3S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b07",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14a6",
+   "model": "VT3S PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46a6",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46a6",
+   "model": "VT3S PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14a6",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1464",
+   "model": "VT3S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4664",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4664",
+   "model": "VT3S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1464",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b14",
+   "model": "VT4 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b14",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b14",
+   "model": "VT4 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b14",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1477",
+   "model": "VT4 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4677",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4677",
+   "model": "VT4 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1477",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b03",
+   "model": "VT4 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b03",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b03",
+   "model": "VT4 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b03",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x145b",
+   "model": "VT4 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x465b",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x465b",
+   "model": "VT4 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x145b",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1451",
+   "model": "VT6",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4651",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4651",
+   "model": "VT6",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1451",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1452",
+   "model": "VT6 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4652",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4652",
+   "model": "VT6 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1452",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4832",
+   "model": "VT68",
+   "kind": "keyboard",
+   "protocol": "gcome-ap",
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1413",
+   "model": "VT7",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4613",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4613",
+   "model": "VT7",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1413",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b0e",
+   "model": "VT7 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b0e",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b0e",
+   "model": "VT7 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b0e",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1416",
+   "model": "VT7 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4616",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4616",
+   "model": "VT7 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1416",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1470",
+   "model": "VT7 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4670",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4670",
+   "model": "VT7 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1470",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b05",
+   "model": "VT7 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b05",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b05",
+   "model": "VT7 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b05",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14a7",
+   "model": "VT7 PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46a7",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46a7",
+   "model": "VT7 PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14a7",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1a00",
+   "model": "VT7 SE",
+   "kind": "mouse",
+   "protocol": "vt-ch584",
+   "pairedPid": "0x4a00",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4a00",
+   "model": "VT7 SE",
+   "kind": "mouse",
+   "protocol": "vt-ch584",
+   "pairedPid": "0x1a00",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1460",
+   "model": "VT7 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4660",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4660",
+   "model": "VT7 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1460",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b0f",
+   "model": "VT7S Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b0f",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b0f",
+   "model": "VT7S Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b0f",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1471",
+   "model": "VT7S MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4671",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4671",
+   "model": "VT7S MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1471",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b02",
+   "model": "VT7S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b02",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b02",
+   "model": "VT7S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b02",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14a8",
+   "model": "VT7S PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46a8",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46a8",
+   "model": "VT7S PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14a8",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1459",
+   "model": "VT7S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4659",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4659",
+   "model": "VT7S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1459",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b15",
+   "model": "VT8 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b15",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b15",
+   "model": "VT8 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b15",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1478",
+   "model": "VT8 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4678",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4678",
+   "model": "VT8 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1478",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b0b",
+   "model": "VT8 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b0b",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b0b",
+   "model": "VT8 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b0b",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x146c",
+   "model": "VT8 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x466c",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x466c",
+   "model": "VT8 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x146c",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1414",
+   "model": "VT9",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4614",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4614",
+   "model": "VT9",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1414",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b10",
+   "model": "VT9 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b10",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b10",
+   "model": "VT9 Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b10",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1418",
+   "model": "VT9 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4618",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4618",
+   "model": "VT9 MAX",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1418",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1473",
+   "model": "VT9 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4673",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4673",
+   "model": "VT9 MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1473",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b08",
+   "model": "VT9 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b08",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b08",
+   "model": "VT9 MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b08",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14a9",
+   "model": "VT9 PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46a9",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46a9",
+   "model": "VT9 PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14a9",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1466",
+   "model": "VT9 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4666",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4666",
+   "model": "VT9 V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1466",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b11",
+   "model": "VT9S Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b11",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b11",
+   "model": "VT9S Air MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b11",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1474",
+   "model": "VT9S MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4674",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4674",
+   "model": "VT9S MAX MASTER V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1474",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1b01",
+   "model": "VT9S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4b01",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4b01",
+   "model": "VT9S MAX V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1b01",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x14aa",
+   "model": "VT9S PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x46aa",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x46aa",
+   "model": "VT9S PRO V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x14aa",
+   "wired": true
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x1453",
+   "model": "VT9S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x4653",
+   "wired": false
+  },
+  {
+   "vid": "0x24ae",
+   "pid": "0x4653",
+   "model": "VT9S V2",
+   "kind": "mouse",
+   "protocol": "status-report7",
+   "pairedPid": "0x1453",
+   "wired": true
+  }
+ ]
+}

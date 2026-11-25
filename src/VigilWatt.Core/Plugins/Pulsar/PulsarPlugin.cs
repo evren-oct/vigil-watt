@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Pulsar;
 /// <summary>
 /// 功 能： 派世 (Pulsar) X2 V2 无线鼠标（dongle 3554:F508）插件 —— STATUS 判在线、POWER 读电量与充电位。
 /// 2026/10/18 17:24:10 sheng
-/// 帧与字段见 <see cref="PulsarCodec"/>；本机实测 20% / 3570 mV，见 docs/hardware/pulsar.md §1。
+/// 帧与字段见 <see cref="PulsarCodec"/>；本机实测 20% / 3570 mV，见 docs/hardware/brands/pulsar.md §1。
 /// </summary>
 public sealed class PulsarPlugin : BatteryPluginBase
 {

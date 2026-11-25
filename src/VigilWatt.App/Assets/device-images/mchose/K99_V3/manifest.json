@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "K99 V3",
+  "match": {
+    "displayNames": [
+      "迈从 K99 V3",
+      "K99 V3"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "2010",
+      "201F",
+      "2020",
+      "3033"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K99_V3-white.png"
+    },
+    {
+      "key": "color-golden-white",
+      "label": "golden white",
+      "thumbnail": "color-golden-white_thumb.png",
+      "image": "color-golden-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K99_V3-golden-white.png"
+    },
+    {
+      "key": "color-sky-blue",
+      "label": "sky blue",
+      "thumbnail": "color-sky-blue_thumb.png",
+      "image": "color-sky-blue_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K99_V3-sky-blue.png"
+    },
+    {
+      "key": "color-blue3",
+      "label": "blue3",
+      "thumbnail": "color-blue3_thumb.png",
+      "image": "color-blue3_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K99_V3-blue3.png"
+    },
+    {
+      "key": "color-black-golden",
+      "label": "black golden",
+      "thumbnail": "color-black-golden_thumb.png",
+      "image": "color-black-golden_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K99_V3-black-golden.png"
+    },
+    {
+      "key": "color-orange",
+      "label": "orange",
+      "thumbnail": "color-orange_thumb.png",
+      "image": "color-orange_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K99_V3-orange.png"
+    },
+    {
+      "key": "color-peach-side",
+      "label": "peach side",
+      "thumbnail": "color-peach-side_thumb.png",
+      "image": "color-peach-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K99_V3-peach-side.png"
+    },
+    {
+      "key": "color-black-side",
+      "label": "black side",
+      "thumbnail": "color-black-side_thumb.png",
+      "image": "color-black-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/K99_V3-black-side.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

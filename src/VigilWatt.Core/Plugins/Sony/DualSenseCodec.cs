@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Sony;
 /// <summary>
 /// 功 能： DualSense 蓝牙完整输入报告的校验及电量解析。
 /// 2026/10/19 15:20:00 xliu
-/// 协议来源与估算范围见 docs/hardware/dualsense.md。
+/// 协议来源与估算范围见 docs/hardware/devices/dualsense.md。
 /// </summary>
 internal static class DualSenseCodec
 {

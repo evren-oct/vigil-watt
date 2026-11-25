@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Master 3S",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B034",
+      "B043"
+    ],
+    "displayNames": [
+      "MX Master 3S"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_master_3s.png",
+      "image": "mx_master_3s.png",
+      "source": "LogiOptions+ devices.json / mx_master_3s.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

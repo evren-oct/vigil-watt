@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "K400 Plus",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "404D"
+    ],
+    "displayNames": [
+      "K400 Plus"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "k400_plus.png",
+      "image": "k400_plus.png",
+      "source": "LogiOptions+ devices.json / k400_plus.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

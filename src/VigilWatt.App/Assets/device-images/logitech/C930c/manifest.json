@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "C930c",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0891"
+    ],
+    "displayNames": [
+      "C930c"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "c930c.png",
+      "image": "c930c.png",
+      "source": "LogiOptions+ devices.json / c930c.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

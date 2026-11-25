@@ -24,6 +24,48 @@ public class DeviceChangeDetectorTests
     };
 
     [Fact]
+    public void C14_连接方式变化只刷新徽标_不产生电量采样()
+    {
+        var stored = Device(80);
+        var incoming = Device(80);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, DateTimeOffset.Now);
+
+        Assert.True(DeviceChangeDetector.HasConnectionChanged(stored, incoming));
+        Assert.False(DeviceChangeDetector.HasChanged(stored, incoming));   // 插拔线不该写历史
+
+        // 无值是"这轮没带信息"，不是变化——否则轮询会每拍都触发刷新
+        Assert.False(DeviceChangeDetector.HasConnectionChanged(stored, Device(80)));
+    }
+
+    [Fact]
+    public void C15_只有来源升级不制造设备变化事件()
+    {
+        var stored = Device(80);
+        stored.Connection = TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wireless24G, DateTimeOffset.Now);
+
+        var incoming = Device(80);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wireless24G, DateTimeOffset.Now);
+
+        // 值一样、只是证据变强：展示不变，不该让列表/小组件重画一次
+        Assert.False(DeviceChangeDetector.HasConnectionChanged(stored, incoming));
+        Assert.False(DeviceChangeDetector.HasChanged(stored, incoming));
+    }
+
+    [Fact]
+    public void C16_带来源的Unknown不触发连接变化()
+    {
+        var stored = Device(80);
+        stored.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Wired, DateTimeOffset.Now);
+
+        var incoming = Device(80);
+        incoming.Connection = TelemetryValue<ConnectionKind>.Reported(ConnectionKind.Unknown, DateTimeOffset.Now);
+
+        // Unknown 不是一条链路：既不该刷新徽标，也不该写历史
+        Assert.False(DeviceChangeDetector.HasConnectionChanged(stored, incoming));
+        Assert.False(DeviceChangeDetector.HasChanged(stored, incoming));
+    }
+
+    [Fact]
     public void C1_数据源原地改写_快照能识别出变化()
     {
         // 模拟首建：库里存快照，数据源继续持有自己的实例
@@ -101,5 +143,67 @@ public class DeviceChangeDetectorTests
     public void C8_无上次读数时不算骤降()
     {
         Assert.False(DeviceChangeDetector.IsImplausibleDrop(null, 1, 20));
+    }
+
+    // ── 指针遥测（PR-A）────────────────────────────────────────────
+
+    private static readonly DateTimeOffset T0 = new(2026, 11, 3, 12, 0, 0, TimeSpan.Zero);
+
+    private static DeviceStatus WithDpi(int dpi, DateTimeOffset at, TelemetrySource source = TelemetrySource.DeviceReported)
+    {
+        var device = Device(80);
+        device.Pointer = new PointerTelemetry
+        {
+            DpiX = source == TelemetrySource.DeviceReported
+                ? TelemetryValue<int>.Reported(dpi, at)
+                : TelemetryValue<int>.Inferred(dpi, at),
+        };
+        return device;
+    }
+
+    [Fact]
+    public void C9_Clone复制指针遥测()
+    {
+        var source = WithDpi(1600, T0);
+        var clone = source.Clone();
+
+        source.Pointer = WithDpi(3200, T0).Pointer;
+
+        Assert.Equal(1600, clone.Pointer.DpiX.Value);
+        Assert.Equal(T0, clone.Pointer.DpiX.ObservedAt);
+    }
+
+    [Fact]
+    public void C10_指针值变化算变化()
+    {
+        Assert.True(DeviceChangeDetector.HasPointerChanged(WithDpi(1600, T0), WithDpi(3200, T0)));
+    }
+
+    [Fact]
+    public void C11_只有观测时间前进不算变化()
+    {
+        Assert.False(DeviceChangeDetector.HasPointerChanged(
+            WithDpi(1600, T0), WithDpi(1600, T0 + TimeSpan.FromSeconds(3))));
+    }
+
+    [Fact]
+    public void C12_来源变化算变化()
+    {
+        Assert.True(DeviceChangeDetector.HasPointerChanged(
+            WithDpi(1600, T0, TelemetrySource.Inferred), WithDpi(1600, T0)));
+    }
+
+    [Fact]
+    public void C13_incoming没带指针信息不算变化()
+    {
+        Assert.False(DeviceChangeDetector.HasPointerChanged(WithDpi(1600, T0), Device(80)));
+        Assert.False(DeviceChangeDetector.HasPointerChanged(Device(80), Device(80)));
+    }
+
+    [Fact]
+    public void C14_指针变化不进入电量变化判定()
+    {
+        // 这条钉住"DPI 变化不写电量历史"：HasChanged 只认电量/充电/在线
+        Assert.False(DeviceChangeDetector.HasChanged(WithDpi(1600, T0), WithDpi(3200, T0)));
     }
 }

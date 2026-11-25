@@ -102,4 +102,17 @@ public static class RemainingTimeEstimator
         if (hours > 0) return minutes > 0 ? $"{hours}小时{minutes}分钟" : $"{hours}小时";
         return $"{minutes}分钟";
     }
+
+    /// <summary>
+    /// 带总小时数的写法：「2天6小时（54小时）」。天数不好心算成小时，补一个总数给要汇算的场合。
+    /// 2026/11/11 22:25:00 20211
+    /// 不足一天不补括号（本来就是小时）；总数与 <see cref="Format"/> 同源，两个数字才对得上。
+    /// </summary>
+    public static string FormatWithTotalHours(TimeSpan remaining)
+    {
+        string text = Format(remaining);
+        int totalMinutes = Math.Max(1, (int)Math.Round(remaining.TotalMinutes));
+        // Format 在天级已经截掉分钟，这里也按同一份分钟数取整，避免出现"2天6小时（55小时）"
+        return totalMinutes < 24 * 60 ? text : $"{text}（{totalMinutes / 60}小时）";
+    }
 }

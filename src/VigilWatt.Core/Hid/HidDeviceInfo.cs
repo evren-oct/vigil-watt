@@ -153,7 +153,7 @@ public sealed class HidDeviceHandle : IDisposable
     /// <summary>
     /// 读该接口**输出报文**的 report ID（由 caps 的 ReportID 字段给出）。0 = 该接口不使用 report ID；读不到返回 null。
     /// **绝不能硬编码**（北通 T9 三个厂商集合 1/4/5、鲲鹏20 是 2）：写一个该接口没有的 report ID，驱动直接报 ERROR_INVALID_FUNCTION。
-    /// 用户态拿不到原始报告描述符（hid.dll 不导出 HidP_GetReportDescriptor），故走 caps。详见 docs/hardware/betop.md §1.3。
+    /// 用户态拿不到原始报告描述符（hid.dll 不导出 HidP_GetReportDescriptor），故走 caps。详见 docs/hardware/brands/betop.md §1.3。
     /// </summary>
     public byte? GetOutputReportId()
     {
@@ -181,7 +181,7 @@ public sealed class HidDeviceHandle : IDisposable
     ///
     /// 和 <see cref="WriteOutput"/> 不是一条路：后者写中断 OUT 端点。多数设备两条都能走，
     /// 但索尼 INZONE 这类只认控制传输——写中断端点时设备会把报文**原样回显**，
-    /// 看上去像"有应答"，实际是假阳性（2026-10-24 H9 II 实测，见 docs/hardware/inzone-h9.md）。
+    /// 看上去像"有应答"，实际是假阳性（2026-10-24 H9 II 实测，见 docs/hardware/devices/inzone-h9.md）。
     /// </summary>
     public bool SendOutputReport(byte[] report)
     {

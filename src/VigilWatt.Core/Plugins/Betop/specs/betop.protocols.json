@@ -1,0 +1,88 @@
+{
+  "version": "2026-11-18",
+  "vendors": ["0x20BC", "0x20DD"],
+  "protocols": {
+
+    // 鲲鹏20/40/50/70 的 0x15 状态报告：2.4G 广播页纯听，有线静默接口发查询。
+    // 判据是完整三元组（0x00FF/0x03/64）；page/usage 颠倒的扫描结果也兼容。
+    "betop-status15": {
+      "kind": "gamepad",
+      "implementation": "data",
+      "pollable": true,
+      "probeWindowMs": 3000,
+      "interface": {
+        "inputLength": 64,
+        "anyOf": [
+          { "usagePage": 255, "usage": 3 },
+          { "usagePage": 3, "usage": 255 }
+        ]
+      },
+      "passive": {
+        "reportId": [2],
+        "tryOffsets": [0, 1],
+        "length": { "min": 64 },
+        "prefix": [ { "offset": 1, "value": 21 } ],
+        "requirePercent": true,
+        "fields": {
+          "percent": { "offset": 2 },
+          "charge":  { "offset": 4, "mask": 15, "nonZero": true }
+        }
+      },
+      "active": {
+        "query": {
+          "header": "15",
+          "reportIdFromCaps": true,
+          "padToInterfaceOutputLength": true,
+          "fallbackLength": 64
+        },
+        "windowMs": 2000,
+        "attempts": 1,
+        "response": {
+          "reportId": [2],
+          "tryOffsets": [0, 1],
+          "length": { "min": 64 },
+          "prefix": [ { "offset": 1, "value": 21 } ],
+          "requirePercent": true,
+          "fields": {
+            "percent": { "offset": 2 },
+            "charge":  { "offset": 4, "mask": 15, "nonZero": true }
+          }
+        }
+      }
+    },
+
+    // 官方只记录了部分型号的充电掩码；unknown / mixed / none-documented 一律不解析充电。
+    "betop-status15-nocharge": {
+      "extends": "betop-status15",
+      "passive": { "fields": { "charge": null } },
+      "active": { "response": { "fields": { "charge": null } } }
+    },
+
+    // 宙斯族（T9 / 宙斯 Pro / 永劫无间）：0xFF00/24 被动位域，不回答 0x15 查询。
+    "betop-zeus-keyevent": {
+      "kind": "gamepad",
+      "implementation": "data",
+      "pollable": false,
+      "probeWindowMs": 2000,
+      "interface": {
+        "inputLength": 24,
+        "anyOf": [
+          { "usagePage": 65280, "usage": [1, 2, 3] },
+          { "usagePage": [1, 2, 3], "usage": 65280 }
+        ]
+      },
+      "passive": {
+        "reportId": [4],
+        "length": { "min": 24 },
+        "validPercent": { "min": 0 },
+        "chargeWhenMissing": "discharging",
+        "fields": {
+          "percent": { "offset": 1, "mask": 7, "map": [0, 50, 80, 100, 100] },
+          "link":    { "offset": 23,
+                       "table": { "0x50": "down", "0x10": "down" },
+                       "onMiss": "up" }
+        }
+      }
+    }
+  }
+}

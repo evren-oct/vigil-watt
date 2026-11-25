@@ -66,7 +66,9 @@ internal static class HidppCatalog
                 pid,
                 ParseFamily(r.Family),
                 r.MaxSlots is > 0 and <= 6 ? r.MaxSlots : 6,
-                ParsePreference(r.ReportPreference));
+                ParsePreference(r.ReportPreference),
+                string.IsNullOrWhiteSpace(r.FamilyDisplay) ? null : r.FamilyDisplay!.Trim(),
+                string.IsNullOrWhiteSpace(r.FamilyIcon) ? null : r.FamilyIcon!.Trim());
         }
 
         var curves = new Dictionary<string, IReadOnlyList<VoltagePoint>>(StringComparer.OrdinalIgnoreCase);
@@ -163,6 +165,12 @@ internal static class HidppCatalog
         [JsonPropertyName("family")]
         public string? Family { get; set; }
 
+        [JsonPropertyName("familyDisplay")]
+        public string? FamilyDisplay { get; set; }
+
+        [JsonPropertyName("familyIcon")]
+        public string? FamilyIcon { get; set; }
+
         [JsonPropertyName("maxSlots")]
         public int MaxSlots { get; set; }
 
@@ -184,7 +192,9 @@ internal readonly record struct ReceiverInfo(
     ushort ProductId,
     ReceiverFamily Family,
     int MaxSlots,
-    HidppReportPreference ReportPreference);
+    HidppReportPreference ReportPreference,
+    string? DisplayName = null,
+    string? IconKey = null);
 
 internal enum ReceiverFamily
 {

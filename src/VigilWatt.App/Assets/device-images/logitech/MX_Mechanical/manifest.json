@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Mechanical",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B366"
+    ],
+    "displayNames": [
+      "MX Mechanical"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_mechanical.png",
+      "image": "mx_mechanical.png",
+      "source": "LogiOptions+ devices.json / mx_mechanical.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

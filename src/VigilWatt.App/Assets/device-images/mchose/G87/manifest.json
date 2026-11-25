@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "G87",
+  "match": {
+    "vendorId": "41E4",
+    "productIds": [
+      "2001"
+    ],
+    "displayNames": [
+      "迈从 G87",
+      "MCHOSE 2.4G Wireless-G87"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "白色",
+      "thumbnail": "G87_white.png",
+      "image": "G87_white.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_white.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87WhiteFull_b3933ff72b9f.png"
+    },
+    {
+      "key": "color-white-line",
+      "label": "白色线条",
+      "thumbnail": "G87_whiteLine.png",
+      "image": "G87_whiteLine.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_whiteLine.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87WhiteLineFull_b529c7f5550f.png"
+    },
+    {
+      "key": "color-blue2",
+      "label": "蓝色",
+      "thumbnail": "G87_blue.png",
+      "image": "G87_blue.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_blue.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87BlueFull_43492d4bcaf4.png"
+    },
+    {
+      "key": "color-star-blue",
+      "label": "天蓝",
+      "thumbnail": "G87_skyBlue.png",
+      "image": "G87_skyBlue.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_skyBlue.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87SkyBlueFull_2a88e08f8f55.png"
+    },
+    {
+      "key": "color-blue3",
+      "label": "云蓝",
+      "thumbnail": "G87_cloudBlue.png",
+      "image": "G87_cloudBlue.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_cloudBlue.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87CloudBlueFull_905c6597aa0b.png"
+    },
+    {
+      "key": "color-cyan",
+      "label": "青色",
+      "thumbnail": "G87_cyan.png",
+      "image": "G87_cyan.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_cyan.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87CyanFull_96955b7cc97a.png"
+    },
+    {
+      "key": "color-black-side",
+      "label": "黑色侧刻",
+      "thumbnail": "G87_blackSide.png",
+      "image": "G87_blackSide.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_blackSide.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87BlackSideFull_54b28f57d837.png"
+    },
+    {
+      "key": "color-black",
+      "label": "黑色",
+      "thumbnail": "G87_black.png",
+      "image": "G87_black.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_black.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87BlackFull_689dfd0af2a6.png"
+    },
+    {
+      "key": "color-black-line",
+      "label": "黑色线条",
+      "thumbnail": "G87_blackLine.png",
+      "image": "G87_blackLine.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_blackLine.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87BlackLineFull_bb4722be5cc1.png"
+    },
+    {
+      "key": "color-peach-side",
+      "label": "桃粉侧刻",
+      "thumbnail": "G87_peachLine.png",
+      "image": "G87_peachLine.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_peachLine.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87PeachLineFull_232f78393ce7.png"
+    },
+    {
+      "key": "color-pink-side",
+      "label": "粉色侧刻",
+      "thumbnail": "G87_pinkSide.png",
+      "image": "G87_pinkSide.png",
+      "thumbnailSource": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G87_pinkSide.png",
+      "imageSource": "https://cdn.mchose.com.cn/configCenter/static/images/G87PinkSideFull_01718a2db8cd.png"
+    }
+  ],
+  "source": "MCHOSE HUB 1.2.05 local store + cdn.mchose.com.cn",
+  "capturedAt": "2026-11-12",
+  "licenseNote": "厂商产品图，仅本机展示使用；不提交到仓库、不随安装包分发。"
+}

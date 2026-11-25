@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 60",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 60",
+      "Ace 60"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace60White_06e6d57a9a2f.png"
+    },
+    {
+      "key": "color-white-line",
+      "label": "white line",
+      "thumbnail": "color-white-line_thumb.png",
+      "image": "color-white-line_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace60_whiteLine.png"
+    },
+    {
+      "key": "color-black-light",
+      "label": "black light",
+      "thumbnail": "color-black-light_thumb.png",
+      "image": "color-black-light_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace60BlackLight_b3f9b9dd51bc.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace60Black_c0b834016a14.png"
+    },
+    {
+      "key": "color-black-line",
+      "label": "black line",
+      "thumbnail": "color-black-line_thumb.png",
+      "image": "color-black-line_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/static/images/Ace60BlackLine_230da829208e.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

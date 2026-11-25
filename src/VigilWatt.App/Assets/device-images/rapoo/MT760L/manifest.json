@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "MT760L",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4500",
+      "1870"
+    ],
+    "displayNames": [
+      "雷柏 MT760L",
+      "MT760L"
+    ]
+  },
+  "defaultColor": "Elegant_Brew_Black",
+  "colors": [
+    {
+      "key": "Elegant_Brew_Black",
+      "label": "雅酿黑",
+      "thumbnail": "Elegant_Brew_Black_thumb.png",
+      "image": "Elegant_Brew_Black_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT760/thumb_Elegant_Brew_Black.png"
+    },
+    {
+      "key": "Rose_Pink",
+      "label": "蔷薇粉",
+      "thumbnail": "Rose_Pink_thumb.png",
+      "image": "Rose_Pink_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT760/thumb_Rose_Pink.png"
+    },
+    {
+      "key": "Mica_Gray",
+      "label": "云母灰",
+      "thumbnail": "Mica_Gray_thumb.png",
+      "image": "Mica_Gray_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/MT760/thumb_Mica_Gray.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

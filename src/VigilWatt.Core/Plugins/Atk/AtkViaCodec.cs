@@ -3,7 +3,7 @@ namespace VigilWatt.Core.Plugins.Atk;
 /// <summary>
 /// 功 能： ATK 键盘走标准 VIA 协议读电量的报文构造与解析。
 /// 2026/10/20 10:20:00 MOSS
-/// 协议与验证范围见 docs/hardware/atk.md §3。
+/// 协议与验证范围见 docs/hardware/brands/atk.md §7。
 /// </summary>
 public static class AtkViaCodec
 {

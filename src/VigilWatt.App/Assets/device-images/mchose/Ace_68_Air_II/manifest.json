@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 68 Air II",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 68 Air II",
+      "Ace 68 Air II"
+    ],
+    "vendorId": "41E4",
+    "productIds": [
+      "2120",
+      "2121"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Air_white.png"
+    },
+    {
+      "key": "color-air-white",
+      "label": "air white",
+      "thumbnail": "color-air-white_thumb.png",
+      "image": "color-air-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Air_transparent_white.png"
+    },
+    {
+      "key": "color-air-pink",
+      "label": "air pink",
+      "thumbnail": "color-air-pink_thumb.png",
+      "image": "color-air-pink_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Air_pink.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Air_black.png"
+    },
+    {
+      "key": "color-red",
+      "label": "red",
+      "thumbnail": "color-red_thumb.png",
+      "image": "color-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace68Air_red.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

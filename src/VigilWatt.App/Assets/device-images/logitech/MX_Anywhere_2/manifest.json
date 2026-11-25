@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Anywhere 2",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "404A",
+      "4063",
+      "4072",
+      "B013",
+      "B018",
+      "B01F"
+    ],
+    "displayNames": [
+      "MX Anywhere 2"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_anywhere_2.png",
+      "image": "mx_anywhere_2.png",
+      "source": "LogiOptions+ devices.json / mx_anywhere_2.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

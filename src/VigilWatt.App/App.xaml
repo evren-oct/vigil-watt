@@ -25,6 +25,43 @@
                 <Setter Property="Padding" Value="14,10" />
             </Style>
 
+            <!-- 详情页卡片：比 KPI 卡高一点，事实格要呼吸 -->
+            <Style x:Key="AppDetailCardStyle" TargetType="Border" BasedOn="{StaticResource AppCardStyle}">
+                <Setter Property="Padding" Value="14,12,14,14" />
+            </Style>
+
+            <!-- 详情页 Hero：全应用唯一超过 18 号的文字，22 号设备名 -->
+            <Style x:Key="AppHeroNameStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                <Setter Property="MaxLines" Value="1" />
+            </Style>
+
+            <!-- 电量数字借统计页 KPI 的 24，不新增档位 -->
+            <Style x:Key="AppBatteryFigureStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="24" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+
+            <!-- 指标数值借页面标题的 18，仅此处当数据用 -->
+            <Style x:Key="AppMetricValueStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+
+            <!-- 事实格：标签在上（11 三级灰）、值在下（13 主文字色） -->
+            <Style x:Key="AppFactLabelStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
+            </Style>
+            <Style x:Key="AppFactValueStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+
             <Style x:Key="AppPageTitleStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="18" />
                 <Setter Property="FontWeight" Value="SemiBold" />

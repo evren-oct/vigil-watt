@@ -7,12 +7,15 @@ namespace VigilWatt.Core.Plugins.Mchose;
 /// <summary>
 /// 功 能： 迈从 A5 V2 Ultra 鼠标插件（反码 Feature `0x11` 查询），与键鼠插件共用一个品牌开关。
 /// 2026/10/19 20:38:41 kaniu
-/// 帧与真机样本见 docs/hardware/mchose.md §6；会写帧，故默认关闭。
+/// 帧与真机样本见 docs/hardware/brands/mchose.md §6；会写帧，故默认关闭。
 /// </summary>
 public sealed class MchoseA5Plugin : BatteryPluginBase
 {
     /// <summary>与 <see cref="MchosePlugin"/> 共用品牌开关：设置页按 Name 去重，迈从只出一行（AGENTS.md §9）。</summary>
     public override string Name => "Mchose";
+
+    /// <summary>认领身份必须与主插件分开，否则两个插件对同一接口的互斥与释放会互相踩（CR-145）。</summary>
+    protected override string ClaimId => "Mchose#A5";
 
     public override string DisplayName => "迈从";
     public override string DisplayNameEn => "MCHOSE";
@@ -36,6 +39,7 @@ public sealed class MchoseA5Plugin : BatteryPluginBase
     protected override async Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
         HidDeviceHandle handle)
     {
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, MchoseMouseProtocol.CatalogProtocol)) return null;
         var read = await MchoseMouseProtocol.QueryAsync(handle, WritesEnabled).ConfigureAwait(false);
         return read is { } value
             ? (MchoseMouseProtocol.Name, value.Percent, value.Charging)
@@ -48,6 +52,7 @@ public sealed class MchoseA5Plugin : BatteryPluginBase
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
         if (!CanWrite(dev)) return null;
+        if (!MchoseActiveQueryPolicy.Allows(dev.Info, MchoseMouseProtocol.CatalogProtocol)) return null;
 
         var read = MchoseMouseProtocol.QueryAsync(dev.Handle, WritesEnabled).GetAwaiter().GetResult();
         if (read.HasValue)
@@ -63,4 +68,8 @@ public sealed class MchoseA5Plugin : BatteryPluginBase
 
     /// <summary>产品名是泛化的「MCHOSE 2.4G Wireless」，型号只能写死。</summary>
     protected override string BuildDisplayName(HidDeviceInfo info) => "迈从 A5 V2 Ultra";
+
+    /// <summary>测试接缝：直接跑真实探测路径，验证未验证 A5 零写入。</summary>
+    internal (string Protocol, int? Percent, ChargingState Charging)? ProbeForTest(HidDeviceHandle handle)
+        => Probe(handle);
 }

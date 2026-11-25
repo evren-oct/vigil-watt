@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 雷蛇 Kraken V4 查询帧、真机应答与错误帧的回归测试。
 /// 2026/10/19 22:26:14 kaniu
-/// 样本取自 Synapse 4 记录与真机应答（docs/hardware/razer-kraken.md §2）。
+/// 样本取自 Synapse 4 记录与真机应答（docs/hardware/devices/razer-kraken.md §2）。
 /// </summary>
 public class RazerKrakenCodecTests
 {

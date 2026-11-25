@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G PRO",
+  "match": {
+    "displayNames": [
+      "G PRO",
+      "G PRO HERO"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g-pro.png",
+      "image": "logitech-g-pro.png",
+      "source": "https://img.openmouse.app/logitech-g-pro.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

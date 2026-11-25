@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Brio 300",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "0942"
+    ],
+    "displayNames": [
+      "Brio 300"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "brio_3xx_ext1.png",
+      "image": "brio_3xx_ext1.png",
+      "source": "LogiOptions+ devices.json / brio_3xx_ext1.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

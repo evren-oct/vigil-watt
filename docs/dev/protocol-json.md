@@ -1,0 +1,361 @@
+# 协议 JSON 怎么写（数据化的边界）
+
+> 雷柏与迈从的帧解析已从 C# 搬到 JSON：解释器在 `src/VigilWatt.Core/Plugins/Protocol/`，
+> 数据在 `Plugins/<品牌>/specs/*.protocols.json` 与 `Plugins/<品牌>/*-catalog.json`。
+> **新增设备先想"能不能只改 JSON"**，改不动才写代码。
+> 高层边界、兼容原则与加载失败规则见 [protocol-definition-standard.md](../architecture/protocol-definition-standard.md)；字段词表与写法仍以本文为准。
+
+## 1. 切分线
+
+| 进 JSON | 留代码 |
+|---|---|
+| vid / pid / 型号 / kind / role / group / pairedPid / wired / capabilities | 去抖（`chargeDebounce` 只开开关，算法在解释器里） |
+| 接口指纹：usagePage / usage / 长度 / pathContains / reportId | 无效帧怎么处理（丢读数 / 标离线 / 请求核实） |
+| 查询帧模板（十六进制串 + 总长） | 链路位 → 离线候选 |
+| 字段：偏移 / 类型 / 位宽 / mask / xor | 握手、会话、状态机、轮询策略 |
+| 充电码 → 枚举 的映射表 | 校验和算法 |
+| 有效取值范围 min / max / not | 显示名启发式 |
+
+判断口径：**"这个值是什么意思"进 JSON，"知道意思之后做什么"留代码。**
+
+## 2. 加一台设备（最常见，1 行）
+
+`Plugins/<品牌>/*-catalog.json` 的 `devices` 数组加一条：
+
+```jsonc
+{ "vid": "0x24AE", "pid": "0x4B99", "model": "VT9", "kind": "mouse",
+  "protocol": "status-report7", "pairedPid": "0x4B9A", "wired": true }
+```
+
+`pairedPid` 非 0 时两组条目都要写 `wired`，且**恰有一条 true**；加载期校验，漏写直接报错。
+有线/无线的官方顺序是 `productId:[有线, 无线]`，不要按 PID 大小猜（V700diy-75 LRV 是反例）。
+
+同型号偏移差一位时，只覆盖那一个字段：
+
+```jsonc
+{ "vid": "0x24AE", "pid": "0x4805", "model": "V700diy-98", "kind": "keyboard",
+  "protocol": "telink-keyboard", "override": { "passive": { "fields": { "percent": { "offset": 7 } } } } }
+```
+
+`override` 是**结构化深合并**，叠在"已展开 extends"的协议上；只写要改的叶子，其余继承。
+
+### 2.1 设备能力声明（`capabilities`，PR-C 起）
+
+`capabilities` 写在**设备条目**上，**不在协议里**：同一套 `status-report7` 被 98 台鼠标共用，
+能力若挂在协议上，VT3 的真机验证结果会顺带漏给所有同族设备。
+
+```jsonc
+{ "vid": "0x24AE", "pid": "0x1412", "model": "VT3", "kind": "mouse", "protocol": "status-report7",
+  "capabilities": {
+    "batteryRead": "supported",
+    "dpiRead": "supported",
+    "dpiLevelRead": "supported",
+    "rateRead": "unverified"       // 只有单点观测，证据不足；省略也是同一结果
+  } }
+```
+
+**语义**：VigilWatt **针对这个型号、在当前适配与连接方式下已经实现并验证**的功能。
+不是厂商理论能力，也不是"能读就能写"。
+
+| 能力 | 含义 |
+|---|---|
+| `batteryRead` | 读电量 |
+| `dpiRead` | 读当前生效 DPI 数值 |
+| `dpiLevelRead` | 读 DPI 档位索引（不是 DPI 值，也不是档位总数） |
+| `rateRead` | 读设备**保存的**回报率设置值，不是实测 USB/HID 吞吐率 |
+| `dpiWrite` | 写 DPI |
+| `rateWrite` | 写回报率 |
+| `connectionRead` | 读当前数据链路（有线 / 2.4G）。M2-3 起，迈从 0x4D 的 `payload[10]` 已真机读到 |
+| `chargingRead` | 读充电状态（未充 / 充电中 / 已充满）。M2-3 起，迈从 0x4D 的 `payload[11]` 已真机读到 |
+
+| 状态 | 含义 |
+|---|---|
+| `supported` | 已实现，且有足够证据（真机读数 / 被单测钉住的解析） |
+| `unsupported` | 已确认当前 VigilWatt 适配不提供该能力 |
+| `unverified` | 尚未验证或证据不足。**默认态**：没实现不等于已确认不支持 |
+
+- 只写已验证的几项即可，其余省略即 `unverified`；`"capabilities": {}` 与省略等价。
+- **唯一合法位置是 `devices[].capabilities`**：`ProtocolDto` 里没有这个字段，`ProtocolSpecLoader` 会对 DTO 未知字段严格拒绝（加载失败，而不是静默忽略）；`capabilities` 放错层仍由现有专门检查给出更具体的路径提示。
+  加载器对**协议对象**和**设备 `override`** 的**任意层级**（嵌套对象、数组元素都算，字段名不区分大小写）都直接报错：
+  协议层带协议名 + 字段路径（如 `passive.capabilities`、`interface.anyOf[0].capabilities`），
+  `override` 层带 `VID:PID` + 字段路径（如 `override.passive.fields.capabilities`）。
+  两处都跳过 `map` / `mapValue` 的值——它们是数字取值表，不是协议字段。
+- **大小写**：字段名 `capabilities` 不区分大小写；**能力名区分大小写**，`batteryRead` 写成 `BatteryRead` 会报错。
+- **严格加载**：`ProtocolSpecLoader` 已对协议 DTO、设备 DTO、嵌套 DTO 与 `override` 对应的 DTO 开启
+  `JsonUnmappedMemberHandling.Disallow`。拼写错误（如 `capabilites`）或已废弃字段会在加载期报错；
+  设备条目的错误带 `VID:PID`、条目序号与 JSON Path。
+- 严格模式只覆盖 `ProtocolSpecLoader` 自己反序列化的 DTO。`MchoseDeviceCatalog` 等其它 JSON 加载器
+  尚未统一严格化；顶层研究字段（`officialDevices`、`deviceNotes`、`transports` 等）由各自读取方处理，
+  不属于当前 DTO 校验范围。
+- **不继承**：`extends`、设备 `override`、共享协议引用都不会把能力带过去，每条设备各自声明。
+- 与旧 `caps` 的区别：雷柏旧 `caps` 已从运行时 JSON 移除，历史证据保留在
+  [hardware/rapoo-catalog.md](../hardware/reference/rapoo-catalog.md) §6.1；`capabilities` 才是当前正式声明，
+  两者**不自动映射**，设备条目上再写 `caps` 会被严格加载拒绝。
+- 查询入口 `ProtocolEngine.CapabilityOf(info, capability)`：纯配置查询——不开句柄、不发帧、不动解析状态；
+  非法枚举值抛异常而不是回落到默认值。整块取用 `CapabilitiesOf(info)`（PR-D 起由插件在**认领落地时**
+  写进 `DeviceStatus.Capabilities`，UI 靠它区分"能读但还没读到"与"不支持"）。
+- **判据与认领同源**：VID/PID 命中目录后还要过设备 `interface` 指纹。未收录、接口不符（同一只鼠标的
+  鼠标集合 / 底座集合、底座 PID 的另一条 collection）、`implementation: none` 三种情况一律 `unverified`——
+  能力只对"本插件认领的那条接口"成立，不会因为 VID/PID 相同就跨接口继承。
+
+### 2.2 目录角色与身份组（北通 P1 起）
+
+`devices[]` 还支持两个**可选**字段，目前只有北通目录使用：
+
+```jsonc
+{ "vid": "0x20bc", "pid": "0x5158", "model": "鲲鹏20", "kind": "gamepad",
+  "role": "controller", "group": "kunpeng20", "pairedPid": "0x5159", "wired": true }
+```
+
+- `role`：`controller` / `dongle` / `dock`。只描述这颗 PID 在目录里的角色，**不参与认领**；
+  空串 = 未声明。
+- `group`：同型号多通道归一键。只有**显式声明**才归一；不按型号系列、不按 PID 数值、不跨 VID 推导。
+  空串 = 不归一，走路径哈希。`pairedPid` 仍只管有线/无线配对与摘接收器，不自动产生 `group`。
+
+当前只有北通 `5158/5159` 声明 `group=kunpeng20`；规则与验证状态见
+[hardware/reference/betop-catalog.md](../hardware/reference/betop-catalog.md) §4。
+
+**`officialDevices[]` 是目录之外的只读登记表（北通 P1-A 起）**：同一份 `*-catalog.json` 里可以有这个顶层键，
+加载器**完全忽略**它——不进 `Devices`、不参与 `Resolve`、不影响认领与显示名。它只用来记厂商注册表
+（型号代码、官方标题、接口三元组、电量/充电字节、证据指针、官方与 VigilWatt 两套状态）。
+
+- 想**让设备被认领**，只能写进 `devices[]`；写进 `officialDevices[]` 没有任何运行时效果。
+- 别把未验证型号先塞进 `devices[]` 占位：目录优先，`devices[]` 一有记录就会按它认领，
+  并顶掉 fallback 的通用显示名（北通 66 个 PID 的取舍见
+  [betop-official-client.md](../hardware/reference/betop-official-client.md) §10.3）。
+- 键名不要改：顶层研究字段不进入 DTO 严格校验，改名不会报错，只会静默变成一份没人读的数据。
+
+### 2.3 设备备注：`deviceNotes`
+
+设备条目的 `note` 已迁到顶层 `deviceNotes`，键为 `VID:PID`（如 `"0x20bc:0x5073"`），值为原备注文本。
+北通与迈从目录已按此格式落盘；`transports[].note` 仍留在各自通道条目上，不并入 `deviceNotes`。
+
+`deviceNotes` 是研究/说明数据，不参与认领、显示名、能力或协议解析；`ProtocolSpecLoader` 不读取它，
+因此也不在 DTO 严格校验范围内。`devices[].note` 已不再允许，写回会被设备 DTO 的严格加载拒绝。
+
+## 3. 加一套协议（形态固定时，约 20–30 行）
+
+`specs/*.protocols.json` 的 `protocols` 里加一条。可用词表：
+
+```jsonc
+{
+  "kind": "mouse",                    // mouse/keyboard/headset/speaker/gamepad/unknown
+  "pollable": false,                  // 有没有主动查询命令
+  "chargeDebounce": false,            // 连续两帧才判充电（雷柏鼠标用）
+  "probeWindowMs": 5000,
+  "implementation": "data",           // data / code / none（none = 目录收录但没适配）
+  "codeFamily": "MchosePlugin",       // 仅 implementation=code 时必填，填**真实存在的**类型名
+  "extends": "status-report7",        // 可选：继承另一套，只写差异
+
+  "interface": {                      // 认领判据，字段间是 AND
+    "usagePage": 65280,               // 数字 / [65280] 任一 / {"min":65280} / {"eq":19} / {"not":[19]}
+    "usage": [2, 14],
+    "inputLength": { "min": 7 },
+    "outputLength": { "min": 7 },
+    "featureLength": { "eq": 0 },
+    "reportId": { "eq": 85 },         // 接口的输出 report ID（HidDeviceInfo.OutputReportId）
+    "pathContains": "&mi_00&col05#",
+    "anyOf": [ { "usagePage": 65280 }, { "usage": 65280 } ]   // 任一组命中（组内仍 AND）
+  },
+
+  "passive": {                        // 被动帧；与 active 至少有一个
+    "tryOffsets": [0, 1],             // Windows 缓冲带不带 report ID，两种偏移都试
+    "reportId": [7, 8],
+    "length": { "min": 19 },
+    "xor": 255,                       // 整帧取反后再解析
+    "prefix": [ { "offset": 1, "value": 176 } ],   // 这些位置必须等于这些值
+    "fullAt": 100,                    // 电量达到它就判"已充满"，优先于充电位
+    "validPercent": { "min": 1, "max": 100 },
+    "fields": {
+      "percent":  { "offset": 8, "type": "u8" },
+      "charge":   { "offset": 7, "type": "u8",
+                    "map": { "1": "discharging", "2": "charging" },
+                    "onMiss": "discharging" },        // 也支持 "on": "nonzero" / "zero"
+      "link":     { "offset": 18, "bit": 7, "connectedWhen": 1,
+                    "onlyWhenMode": "wireless2g" },   // 有线时 bit 恒 0 不算断链
+      "linkMode": { "offset": 1, "mask": 15, "map": { "0": "wireless2g", "2": "wired" } },
+
+      // 指针遥测（可选，五个字段独立）：只在这套协议确有这些字段时才写
+      "dpiX":     { "offset": 3, "type": "u16", "min": 50, "max": 26000 },
+      "dpiY":     { "offset": 5, "type": "u16", "min": 50, "max": 26000 },
+      "dpiLevel": { "offset": 2, "type": "u8", "min": 0, "max": 6 },   // 档位索引，不是 DPI
+      "dpiLevelCount": { "offset": 9, "type": "u8" },
+      "rateHz":   { "offset": 11, "type": "u8",
+                    "mapValue": { "1": 1000, "132": 2000 } }   // 码 → 数值（与 charge 的 map 不同）
+    }
+  },
+
+  "active": {                         // 主动查询；写失败一律当"不是这条通道"
+    "query": { "length": 65, "hex": "00 55 30 A5 0B 2E 01 01 01", "pad": 0 },
+    "windowMs": 1200,
+    "attempts": 2,
+    "rejectQueryEcho": true,          // 有的接收器把主机写入回显进输入队列
+    "response": { /* 与 passive 同构 */ }
+  }
+}
+```
+
+`type` 的闭集合：`u8` `u16` `u24` `u32` `bit4` `bit`。**没有表达式、没有算术、没有条件**——
+出现这类需求就该写 `codeFamily`。
+
+### 3.0 位域：`mask`
+
+`percent` 与 `charge` 支持 `mask`（1..255，缺省 255 = 整字节），取值先与运算再判：
+`percent` 比 `min`/`max`、`charge` 查 `map` 或判 `on`。用于**电量与标志位同处一字节**的协议：
+
+```jsonc
+"fields": {
+  "percent": { "offset": 41, "mask": 127 },                          // 低 7 位 = 电量
+  "charge":  { "offset": 41, "mask": 128, "on": "nonzero",           // bit7 = 充电中
+               "onMiss": "unknown" }
+}
+```
+
+`mask: 0` 会把所有取值抹平，属配置错误，加载期直接抛。满电仍由 `fullAt` 判，不要试图用
+`mask` 表达"充满"——那是条件，不是字段。
+
+### 3.1 指针遥测字段（PR-B 起）
+
+`dpiX` / `dpiY` / `dpiLevel` / `dpiLevelCount` / `rateHz` 五个字段独立可选，缺哪个就是"这套协议没有"。
+它们**只填遥测，不影响电量/充电/链路**，规则见 [project/pointer-telemetry.md](../project/pointer-telemetry.md)。
+
+- `min` / `max`：取值域，越界给 `Unknown`（雷柏用 `min: 50` 挡住休眠零帧的 `0`）。
+- `mapValue`：码 → 数值（`int → int`），**映射表里没有的码给 `Unknown`，不拿 0 冒充**。
+  注意它与 `charge` 的 `map`（码 → 枚举）不是一回事。
+- 来源固定是 `DeviceReported`：**码表属于协议本身**，查表不降级成 `Inferred`。
+- 观测时刻由解释器在边界处盖（`ProtocolEngine.Parse`），JSON 里不写时间。
+- **字段放哪取决于证据范围**：同一族逐字节相同就写协议本体（`status-report7` 现在就是这样，
+  全族产出遥测）；只有某台设备偏移不同才放设备目录的 `override`。能力声明仍按设备三态，
+  未验证型号保持 `Unverified`——协议级解析不等于能力已验。
+
+### 3.2 电量映射、充电缺省与链路码表
+
+```jsonc
+"passive": {
+  "validPercent": { "min": 0 },
+  "requirePercent": true,                 // 只报状态的帧：0 / 越界不算有效帧
+  "chargeWhenMissing": "discharging",     // 没有 charge 字段时的默认值；缺省 unknown
+  "fields": {
+    "percent": { "offset": 1, "mask": 7, "map": [0, 50, 80, 100, 100] },
+    "link":    { "offset": 23, "table": { "0x50": "down", "0x10": "down" }, "onMiss": "up" }
+  }
+}
+```
+
+- `percent.map`：数组 = 下标 → 百分比；对象 = 原始码 → 百分比。未命中给 `null`，不拿 0 冒充；
+  命中值再按 `validPercent` 校验。离散等级（宙斯 `[0,50,80,100,100]`）用它。
+- `chargeWhenMissing`：协议没有 `charge` 字段时返回什么（`unknown` / `discharging` / `charging` / `full`）。
+  宙斯用 `discharging`（旧口径），`betop-status15-nocharge` 保持默认 `unknown`。
+- `link.table`：按整字节（或 `mask` 截位）查表，未命中返回 `onMiss`；`table` 非空时忽略 `bit`。
+  码表型链路（`0x50` / `0x10` = down）用它，比逐值登记 bit 更稳。
+- `requirePercent`：`true` 时电量 0 / 越界直接判“不是有效状态帧”，探测继续等下一帧；
+  只给“只报状态”的帧打开，别给需要链路/遥测的休眠帧打开。
+
+### 3.3 查询模板：固定字节与动态模板
+
+旧写法保持不动（雷柏 / 迈从）：
+
+```jsonc
+"query": { "length": 65, "hex": "00 55 30 A5", "pad": 0 }
+```
+
+新写法从接口 caps 派生 report ID 和长度（北通）：
+
+```jsonc
+"query": {
+  "header": "15",
+  "reportIdFromCaps": true,
+  "padToInterfaceOutputLength": true,
+  "fallbackLength": 64
+}
+```
+
+- `null` report ID → 不发帧；`0` → 无 ID 前缀；`>0` → `[rid, header, 0…]`；
+- 长度取 `Info.OutputReportLength`，`< 2` 时用 `fallbackLength`；
+- 固定写法与动态模板**二选一**，同时写 `hex` / `length` / `pad` 与动态字段会在加载期报错。
+
+## 4. 校验（加载期就报错）
+
+`ProtocolSpecLoader` 在插件构造时校验，失败直接抛异常（`DeviceManager` 会跳过该插件并记 Error）：
+
+- `TryOffsets[0]` 或字段 offset 为负（与有没有帧长无关，不含回退分支）
+- 字段宽度越界（只在有可靠帧长下界时，不含运行时回退分支）
+- `active.query` 长于 `interface.outputLength` 的精确值
+- `type` 不在闭集合、`map` 的键不是数字、`kind` 拼错
+- 设备引用了不存在的协议、`extends` 成环
+- `implementation=code` 但没给 `codeFamily`
+- `active.query.hex` 超出 `query.length`
+- `capabilities` 不是对象、能力名拼错（大小写敏感）、状态不是 `supported`/`unsupported`/`unverified`、
+  状态值不是字符串。报错带设备 `VID:PID` 与 `capabilities.<字段名>`，**不许静默变成 `unverified`**
+- 协议 DTO、设备 DTO、嵌套 DTO 或 `override` 出现未知字段（含旧 `caps`、拼错的 `capabilites`）
+
+> `codeFamily` 必须是真实类型：抽族前填插件名（如 `MchosePlugin`），**不要预留不存在的族名**——数据里写了个找不到的类，下一个人会去翻文件。
+
+宁可启动失败，不要静默不认领。加载期校验不改 `FrameReader` 的回退顺序，也不改 `IntMatch.Matches`。
+
+### 4.1 帧字段边界
+
+`passive` 和 `active.response` 用同一套检查。帧长**只**认这一帧自己的 `FrameSpec.Length`，禁止退回到 `interface.inputLength`。
+
+`InputLength` 是 HID 接口声明的报告长度，不保证这次实际读到多少字节。拿它当帧长，会把「声明很长、实际是短帧」或「声明很短、缓冲更长」判错。
+
+负数和帧长是两道检查。`TryOffsets[0] < 0`，以及 `percent` / `charge` / `link` / `linkMode` / `prefix` 的 `offset < 0`，没有可靠帧长也拒绝；正的主分支不能把负的字段偏移加回合法范围。后面的 `tryOffsets` 回退分支不在加载期查。只有拿到下界之后，才用 `long` 检查 `TryOffsets[0] + offset + width` 是否超出该下界。没有可靠下界时跳过的是这段宽度检查。迈从 Gmouse 的 response 没有 `length`，正偏移因此不会被卡宽度，不要为了让宽度检查跑起来补一个长度。
+
+下界取 `Length` 能接受的最小值，优先级与 `IntMatch.Matches` 相同（`Any` 非 null 优先于 `Eq` / `Min`）：
+
+| `length` | 用来卡偏移的长度 |
+|---|---|
+| `{"eq": N}` 或数字 `N` | 精确长度 N |
+| `{"min": N}`（没有 `Eq`，也没有 `Any`） | 最小长度 N，字段必须放进最短的合法帧 |
+| `[N, M, …]`（非空） | 集合里的最小值 |
+| 没写、只有 `max` / `not`、或 `[]` | 没有可靠下界，跳过宽度检查（负偏移仍拒绝） |
+
+`[]` 是空的 `Any`：任何长度都匹配失败，下界是「没有」，不是退回 `Eq` / `Min`。`{"any": []}` 这种对象写法加载器不认，仍然报「空对象」。
+
+宽度用 `long` 相加：`int` 在接近 `int.MaxValue` 时会回绕成负数，越界会被当成合法。只拿 `TryOffsets[0]` 做主分支；后面的偏移是运行时回退（Windows 缓冲带不带 report ID），加载期不排序、不去重，也不按最坏的那条分支拒绝。没写 `tryOffsets`，或写成 `[]`，都归一成 `[0, 1]`；空数组若留在规格里，读取时一条分支都不会试。
+
+检查的位置：`percent`、`charge`、`link`、`linkMode`、`prefix`。宽度按 `type`（`u16` / `u24` / `u32` 为 2 / 3 / 4，其余 1 字节）。
+
+### 4.2 主动查询
+
+`active.query` 的字节数只在 `interface.outputLength` 写了 `eq` 时，按这个精确长度卡上界（查询帧可以更短，不能更长）。`outputLength.min` 只说明接口至少这么长，实际输出报告可能更长，不能当成查询帧的长度。
+
+## 5. 什么时候必须写代码
+
+四类**有状态**的协议留在 C#（`codeFamily`）：会话握手、型号密码门、半字段事件、通知后读。
+它们仍然**不许有硬编码**：vid/pid 进目录、偏移与命令码进 JSON，代码里只剩流程。
+
+## 6. 改 JSON 之后必须跑
+
+```
+dotnet build VigilWatt.sln -c Debug
+dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~Rapoo"
+```
+
+雷柏的真机帧与身份用例在 `RapooSpecTests` / `RapooIdentityTests`（R1–R53）：偏移改错会被它们挡住。
+
+## 7. 新设备“只加 JSON”的边界
+
+新增设备先对照这张表：前 8 行只改 JSON，不需要写 C#。
+
+| 变化 | 只改 JSON | 需要 `codeFamily` |
+|---|---|---|
+| 新 PID / 型号 / 显示名 / role / group / capabilities | `devices[]` | — |
+| 同帧布局，只换充电掩码 / 码表 | `devices[].override` 或新协议 | — |
+| 新接口 page / usage / 报文长 | 新协议 `interface` | — |
+| 新帧偏移 / 掩码 / 前缀 / xor / 长度 | 新协议 `passive` / `active.response` | — |
+| 离散电量等级 | `percent.map` | — |
+| 新链路码表 | `link.table` | — |
+| 新查询帧 / report ID / 长度 / 探测窗口 / 重试 | `active.query` / `windowMs` / `attempts` | — |
+| 没有充电位时的默认状态 | `chargeWhenMissing` | — |
+| 握手 / 会话 / 密码门 | — | 是 |
+| 校验和 / CRC / 加密 | — | 是 |
+| 多帧组合 / 跨报告状态机 | — | 是 |
+| 同一 PID 多接口、每口不同布局 | — | 是 |
+| 同一接口多 report ID、每 ID 不同布局 | — | 是 |
+| 电压 → 百分比 / 线性换算 | — | 是 |
+| 大端 / 有符号 / 跨字节位域 | — | 是 |
+| 不同离线策略 / 轮询节拍 / 稳定窗口 / 满电口径 | — | 插件级 |
+
+“帧怎么读、码怎么映射、设备叫什么”全部 JSON；“流程、校验、多帧状态机、换算”才写代码。
+新设备如果落在前 8 行，不需要改 C#。

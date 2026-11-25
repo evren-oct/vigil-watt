@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "G75 V2",
+  "match": {
+    "displayNames": [
+      "迈从 G75 V2",
+      "G75 V2"
+    ],
+    "vendorId": "3837",
+    "productIds": [
+      "2010",
+      "2021",
+      "2022",
+      "3033"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G75V2_8K_White.png"
+    },
+    {
+      "key": "color-black-side",
+      "label": "black side",
+      "thumbnail": "color-black-side_thumb.png",
+      "image": "color-black-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G75V2_8K_Black.png"
+    },
+    {
+      "key": "color-peach-side",
+      "label": "peach side",
+      "thumbnail": "color-peach-side_thumb.png",
+      "image": "color-peach-side_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/G75V2_8K_Pink.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

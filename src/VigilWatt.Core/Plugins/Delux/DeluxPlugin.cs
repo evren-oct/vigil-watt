@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Delux;
 /// <summary>
 /// 功 能： DELUX M900 Pro 2.4G 鼠标插件，只被动读取 5 字节状态帧。
 /// 2026/10/19 15:10:00 xliu
-/// 帧布局见 docs/hardware/delux.md §1。通道 usage 0x000A/0x0000，与英菲克集合不同。
+/// 帧布局见 docs/hardware/brands/delux.md §1。通道 usage 0x000A/0x0000，与英菲克集合不同。
 /// </summary>
 public sealed class DeluxPlugin : BatteryPluginBase
 {

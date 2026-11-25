@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 狼蛛 G9 / L9 与 VGN V98 Pro 三条协议帧的解析回归（PR #31）。
 /// 2026/10/25 00:00:00 xliu
-/// 帧布局见 docs/hardware/aula.md §3 §4、docs/hardware/vgn.md §3；样本由贡献者提供，本机无设备。
+/// 帧布局见 docs/hardware/brands/aula.md §3 §4、docs/hardware/brands/vgn.md §3；样本由贡献者提供，本机无设备。
 /// </summary>
 public class AulaG9L9AndVgnV98Tests
 {

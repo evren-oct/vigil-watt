@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Jet 75 II",
+  "match": {
+    "displayNames": [
+      "迈从 Jet 75 II",
+      "Jet 75 II"
+    ],
+    "vendorId": "41E4",
+    "productIds": [
+      "211A",
+      "211B"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Jet75_white.png"
+    },
+    {
+      "key": "color-black-line",
+      "label": "black line",
+      "thumbnail": "color-black-line_thumb.png",
+      "image": "color-black-line_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Jet75_blackLine.png"
+    },
+    {
+      "key": "color-white-line",
+      "label": "white line",
+      "thumbnail": "color-white-line_thumb.png",
+      "image": "color-white-line_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Jet75_whiteLine.png"
+    },
+    {
+      "key": "color-red",
+      "label": "red",
+      "thumbnail": "color-red_thumb.png",
+      "image": "color-red_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Jet75_red.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "PRO X2 SUPERSTRIKE",
+  "match": {
+    "displayNames": [
+      "PRO X2 SUPERSTRIKE"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-pro-x2-superstrike.png",
+      "image": "logitech-pro-x2-superstrike.png",
+      "source": "https://img.openmouse.app/logitech-pro-x2-superstrike.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

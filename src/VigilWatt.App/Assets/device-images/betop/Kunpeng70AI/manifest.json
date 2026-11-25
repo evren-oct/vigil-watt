@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "brand": "BETOP",
+  "model": "鲲鹏70 AI旗舰",
+  "match": {
+    "vendorId": "20BC",
+    "productIds": [
+      "512f",
+      "5130"
+    ],
+    "displayNames": [
+      "北通 鲲鹏70 AI旗舰",
+      "鲲鹏70 AI旗舰"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "BetopGame 2.6.2 (20261111.asar) /third/clientv2/img/handle_kp70_img.png"
+    }
+  ],
+  "source": "BetopGame 2.6.2 (20261111.asar) /third/clientv2/img/handle_kp70_img.png",
+  "capturedAt": "2026-11-18",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

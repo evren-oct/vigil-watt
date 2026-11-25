@@ -15,7 +15,7 @@ internal readonly record struct HecateStatus(
 /// <summary>
 /// 功 能： 解析 HECATE report 0x04 电量状态帧。
 /// 2026/10/19 14:55:00 xliu
-/// 帧布局见 docs/hardware/hecate.md §1。0x01 在此品牌表示充电，与英菲克相反。
+/// 帧布局见 docs/hardware/brands/hecate.md §1。0x01 在此品牌表示充电，与英菲克相反。
 /// </summary>
 internal static class HecateCodec
 {
@@ -59,7 +59,7 @@ internal static class HecateCodec
     /// 2026/10/21 00:00:00 xliu
     /// 实测（1.2.2/1.2.3，Connect 完全关闭）：5/5 成功、延迟 &lt;1ms，电量与充电标志
     /// 与官方 Connect 显示一致。命令 ID 0x1A 来自 Connect 主程序命令表
-    /// （04 00 00 {1A,18,19,17,16,0B}，见 docs/hardware/hecate.md §2）。
+    /// （04 00 00 {1A,18,19,17,16,0B}，见 docs/hardware/brands/hecate.md §2）。
     /// </summary>
     public static byte[] CreateQuery()
     {

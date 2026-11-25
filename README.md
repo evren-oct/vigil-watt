@@ -37,11 +37,11 @@
 - 保存电量历史，提供 24 小时、7 天和 30 天统计，并可按设备管理记录。
 - 可设置开机启动。
 
-**设备协议开关：** 华硕、MCHOSE、Logitech、雷蛇与索尼 INZONE 插件默认关闭，因为读取需要发送查询帧；可在设置中按品牌启用。其他纯被动插件不会主动向设备写入。
+**设备协议开关：** 需要发查询帧的品牌默认关闭（华硕、迈从、罗技、雷蛇、索尼 INZONE、ATK、CHERRY 等）；纯被动插件默认开启。可在设置中按品牌启用。
 
 ## 设备诊断：给未适配的设备采证据
 
-手里有台读不到电量的设备，不用会抓包也能帮它被支持——主窗口第 5 项「设备诊断」采一包原始证据发给维护者就行。
+手里有台读不到电量的设备，不用会抓包也能帮它被支持——主窗口第 4 项「设备诊断」采一包原始证据发给维护者就行。
 
 1. **选任务**：「未知设备调查（找新协议）」列出系统里全部 HID 设备，未适配的排前面；「已支持设备诊断（排查读数）」只列插件正在认领的设备。设备按物理设备聚合，不会把一台接收器的十个接口平铺成十行。
 2. **选接口**：每个接口都标出有没有输入通道，已适配的设备直接推荐插件实际认领的那个；选中即自动预检，右栏只列需要你注意的项。
@@ -58,7 +58,7 @@
 
 ## 下载与使用
 
-从 [GitHub Releases](https://github.com/evren-oct/vigil-watt/releases) 下载，或使用 [Gitee 镜像](https://gitee.com/YGWG-LX/vigil-watt/releases)：
+从 [GitHub Releases](https://github.com/evren-oct/vigil-watt/releases) 下载；[Gitee Releases](https://gitee.com/YGWG-LX/vigil-watt/releases) 是镜像备份：
 
 - `VigilWattApp-win-Setup.exe`：当前用户安装版，包含 Velopack 自动更新。
 - `VigilWattApp-win-Portable.zip`：免安装便携版。
@@ -71,54 +71,24 @@
 
 ## 设备支持
 
-下表区分已验证设备与已实现但尚待对应设备验证的协议：
+下表只列维护者本机已验证的设备；完整清单（贡献者真机、仅实现待验、不支持）见 **[docs/hardware/support-matrix.md](docs/hardware/support-matrix.md)**。
 
-| 设备 / 协议 | 当前状态 |
+| 设备 | 状态 |
 |---|---|
-| 华硕 ROG Strix Scope II 96 Wireless · Omni 接收器 | 本机 95%、未充电已验证；默认关闭，见 [asus-rog.md](docs/hardware/asus-rog.md) |
-| 雷蛇 BlackShark V2 Pro (2023) · 1532:0555 | 本机 79%、未充电已验证；与鼠标共用雷蛇开关，见 [razer-headset.md](docs/hardware/razer-headset.md) |
-| 雷蛇 Kraken V4 耳机（接收器 `1532:056C`）· 64 字节 `0x02` 查询 | 已实现，默认关闭；会写帧，与鼠标共用雷蛇开关。贡献者声明，维护者未复测 |
-| 雷蛇 Viper V3 Pro SE · 无线接收器 `1532:00DF` | 本机电量查询已验证；默认关闭，见 [razer-viper-se.md](docs/hardware/razer-viper-se.md) |
-| 迈从 G87 · 2.4G `0x13` | 本机验证 |
-| 迈从新代 dongle · QHW（如 `3837:3033`） | 已实现，待对应设备验证 |
-| 迈从 G87 V2 / A7 V2 Pro · 鼠标 V2 被动帧 | 已实现，默认关闭；贡献者真机，本机只复测 G87 V1 不回归 |
-| 迈从 K7 V2 Ultra+ · `0x0900` 查询 + `0x0600` 事件 | 贡献者真机验证；与迈从键盘共用开关 |
-| 迈从 G3 V2 · Gmouse 主动查询（`3837:4245`） | 贡献者真机验证；与迈从键盘共用开关 |
-| 迈从 G75 Pro · `3554:FA09`，与狼蛛 F99 Pro 同指纹，靠会话 ACK 型号分流 | 已实现，默认关闭；会写帧。贡献者真机 36%，维护者未复测，见 [mchose.md](docs/hardware/mchose.md) |
-| 北通 T9 / 鲲鹏20（2.4G 广播 + 有线查询）· 厂商接口被动流 | T9 真机验证；鲲鹏20 两通道贡献者真机，维护者未复测 |
-| 罗技 Bolt（C548 + MX Master 3S）· HID++ | 真机验证通过 |
-| 雷蛇毒蝰 V4 Pro（接收器）· 经典 90 字节 feature 协议 | 本机验证，默认关闭；会写帧 |
-| 索尼 INZONE H9 II（接收器）· `0xFF04` 控制传输查询 | 本机验证，默认关闭；会写帧 |
-| 雷柏 VT3 二代 · 被动 `status-report7` | 本机验证 |
-| 英菲克 ZHEN · 被动 report `0x03` | 真机验证 |
-| HECATE G5M Pro · 被动 report `0x04` + 主动查询 `04 00 00 1A` | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
-| AULA F99 Pro · `0x13` 会话/推送 | 已实现，默认关闭；贡献者真机，维护者未复测 |
-| 狼蛛 G9 耳机 / L9 Ultra 鼠标 · 被动状态帧 / `0x81` 查询 | 已实现；与 F99 Pro 共用狼蛛开关（设置页一行）。贡献者声明，维护者未复测 |
-| AULA HERO 68 Air · 8K 接收器 Bytech 分片查询 | 默认关闭；贡献者真机验证 10% 放电/充电，与 F99 Pro 共用狼蛛开关 |
-| AKG N9 Hybrid · 接收器 RACE 电量查询 | 默认关闭；贡献者真机读取 50%，充电状态未知 |
-| 凌豹 M5PRO Max（`3151:402D`）· 官方驱动同款 `F7` 状态查询 | 已实现，默认关闭；会写帧。贡献者真机 88%/95%，维护者未复测 |
-| 凌豹 K98（`3554:FA09`）· `0x13` 会话/推送 | 已实现，默认关闭；与 AULA 同 VID/PID，按会话型号码 `0x0212` 区分。贡献者真机，维护者未复测 |
-| VGN 蜻蜓 F1 V5 Turbo+ / F2 大师+ / V98 Pro · kc2 配置帧 / y2 查询 / `0x1A` 查询 | 已实现，默认关闭；会写帧。插线后按序列号只留一条接口。贡献者真机，维护者未复测 |
-| DELUX M900 Pro · 被动 5 字节状态帧 | 已实现，默认关闭；与英菲克同 VID/PID，本机未扫到接收器 |
-| DualSense · 蓝牙 HID 被动电量 | 已实现，默认开启；贡献者真机，维护者未复测 |
-| Haute42 Adapter 4DS（DualSense 适配器）· 只读 feature `0xF9` | 已实现，默认关闭；零写入。适配器自报 DualSense 号，靠固件串认出来。贡献者声明，维护者未复测 |
-| GANSS GS3104T-Pro / 狼蛛 F108 Pro · 33 字节查询帧 | 已实现，默认关闭；会写帧。两者同指纹共用一行开关。贡献者真机，维护者未复测 |
-| MCHOSE V9 Pro / X9 耳机 · 64 字节查询帧 | 已实现，默认关闭；会写帧，与迈从键鼠共用开关。V9 Pro 贡献者真机，X9 贡献者声明，维护者均未复测 |
-| MCHOSE A5 V2 Ultra · 反码 Feature `0x11` 查询 | 已实现，默认关闭；会写帧，与迈从键鼠共用开关。贡献者声明，维护者未复测 |
-| CHERRY PIXIU75 · 64 字节块协议（块 `0x1A`） | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
-| 派世 Pulsar X2 V2 · 17 字节 STATUS/POWER | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
-| 黑爵 AK870 · feature `F7` 状态查询 | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
-| 雷神 ML903 NearLink Se · `0xA0` 设备信息 TLV | 已实现，默认关闭；会写帧。贡献者真机，维护者未复测 |
-| ATK / VXE 无线鼠标 / A98 Pro 键盘 · 17 字节查询帧 / VIA | 已实现，默认关闭；会写帧。鼠标两条型号真机验证，键盘为贡献者声明 |
-| VXE R1 Nearlink · 接收器 `373B:10C9` | 本机无线与有线本体 `10C7` 充电均已验证；共用 ATK 开关，默认关闭，见 [atk.md §9](docs/hardware/atk.md) |
-| HyperX Cloud Flight 2 · 2.4G 被动推送帧 | 已实现，默认开启；零写入。CF2 飓风炫彩版真机验证 |
-| 墨将 烈风2 GALE2（2.4G 接收器 / 有线，同为 `E2B7:122C`）· 厂商通道 `A5` 读帧 | 已实现，默认关闭；会写帧。2.4G 与有线两种形态均已真机验证，充放电标志经插拔 A/B 对照 |
-| 经典蓝牙 · HFP 网关节点属性 | EDIFIER W820NB 已验证 |
-| 本机电池 · `GetSystemPowerStatus` | 已接入，可选开启 |
+| 迈从 G87 · 2.4G `0x13` | 本机已验证 |
+| 罗技 Bolt（C548 + MX Master 3S）· HID++ | 本机已验证 |
+| 罗技 PRO X 2 LIGHTSPEED | 本机已验证（USB 有线未验） |
+| 雷柏 VT3 二代 · 被动 `status-report7` | 本机已验证 |
+| 北通 T9 · 被动流 | 本机已验证 |
+| 英菲克 ZHEN / IN9 | 本机已验证 |
+| HECATE G3M Pro 升级版 | 本机已验证（充电位未验） |
+| ATK F1 Pro Max | 本机已验证 |
+| EDIFIER W820NB · HFP 网关 | 本机已验证 |
+| 本机电池 | 本机已验证（可选） |
 
 弱水时砂炽天使 2.4G（`38FF:0001`）经主机侧与 RoseLink 检查确认没有电量通道，因此不支持显示电量。其他型号是否可用取决于其协议是否已适配。
 
-上表里标着「贡献者真机」的适配，都来自社区贡献者的抓包与真机验证。谁做了什么见 **[CONTRIBUTORS.md](CONTRIBUTORS.md)**。
+完整清单里标着「贡献者真机」的适配，都来自社区贡献者的抓包与真机验证。谁做了什么见 **[CONTRIBUTORS.md](CONTRIBUTORS.md)**。
 
 ## 构建
 
@@ -152,6 +122,7 @@ scripts/                # 构建、打包及临时调试脚本
 | 想了解 | 查看 |
 |---|---|
 | 全部文档与问题速查 | [docs/README.md](docs/README.md) |
+| 全部文档清单（自动生成） | [docs/INDEX.md](docs/INDEX.md) |
 | 协议参考来源、实现依据和验证范围 | [docs/hardware/sources.md](docs/hardware/sources.md) |
 | 协议帧、设备兼容性与已证伪路径 | [docs/hardware/protocols.md](docs/hardware/protocols.md) |
 | 硬件读写安全规则 | [docs/hardware/safety.md](docs/hardware/safety.md) |

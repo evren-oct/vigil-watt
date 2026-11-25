@@ -8,7 +8,7 @@ namespace VigilWatt.Core.Plugins.Aula;
 /// <summary>
 /// 功 能： 在狼蛛写入开关内执行 HERO 68 Air 固定查询和逐片 ACK。
 /// 2026/10/23 20:05:00 30149
-/// 不重发超时命令；熔断交由 BatteryPluginBase，见 docs/hardware/aula.md §2。
+/// 不重发超时命令；熔断交由 BatteryPluginBase，见 docs/hardware/brands/aula.md §2。
 /// </summary>
 internal sealed class AulaHero68Transport(HidDeviceHandle handle, Func<bool> writesEnabled)
 {

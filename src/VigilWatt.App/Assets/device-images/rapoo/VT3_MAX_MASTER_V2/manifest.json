@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "VT3 MAX MASTER V2",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "466D",
+      "146D"
+    ],
+    "displayNames": [
+      "雷柏 VT3 MAX MASTER V2",
+      "VT3 MAX MASTER V2"
+    ]
+  },
+  "defaultColor": "Metallic_Iridescent",
+  "colors": [
+    {
+      "key": "Metallic_Iridescent",
+      "label": "幻境蓝",
+      "thumbnail": "Metallic_Iridescent_thumb.png",
+      "image": "Metallic_Iridescent_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/VT3%20MAX%20MASTER%20V2/thumb_Metallic_Iridescent.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

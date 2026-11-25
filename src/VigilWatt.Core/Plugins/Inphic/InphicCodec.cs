@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Inphic;
 /// <summary>
 /// 功 能： 解析英菲克 report 0x03 电量状态帧。
 /// 2026/10/14 20:41:17 20211
-/// 帧布局见 docs/hardware/inphic.md §1。
+/// 帧布局见 docs/hardware/brands/inphic.md §1。
 /// </summary>
 internal static class InphicCodec
 {

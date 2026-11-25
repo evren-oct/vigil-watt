@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Anywhere",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "1017"
+    ],
+    "displayNames": [
+      "MX Anywhere"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_anywhere.png",
+      "image": "mx_anywhere.png",
+      "source": "LogiOptions+ devices.json / mx_anywhere.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

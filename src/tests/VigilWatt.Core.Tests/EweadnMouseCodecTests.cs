@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： EweadnMouseCodec —— 前行者 S9 鼠标贝盈协议 feature report 0x03 电量帧（63 字节）。
 /// 2026/10/18 13:40:00 Admin
-/// 帧结构与实测依据见 docs/hardware/eweadn.md §1.2。
+/// 帧结构与实测依据见 docs/hardware/brands/eweadn.md §1.2。
 /// </summary>
 public class EweadnMouseCodecTests
 {

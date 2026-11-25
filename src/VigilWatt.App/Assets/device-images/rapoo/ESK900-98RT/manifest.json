@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "ESK900-98RT",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "481A"
+    ],
+    "displayNames": [
+      "雷柏 ESK900-98RT",
+      "ESK900-98RT"
+    ]
+  },
+  "defaultColor": "Infernal_Asura",
+  "colors": [
+    {
+      "key": "Infernal_Asura",
+      "label": "炼狱修罗",
+      "thumbnail": "Infernal_Asura_thumb.png",
+      "image": "Infernal_Asura_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-98RT/thumb_Infernal_Asura.png"
+    },
+    {
+      "key": "Blaze_Wing_Star",
+      "label": "炽翼星魂",
+      "thumbnail": "Blaze_Wing_Star_thumb.png",
+      "image": "Blaze_Wing_Star_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-98RT/thumb_Blaze_Wing_Star.png"
+    },
+    {
+      "key": "Hacker_Agent",
+      "label": "骇客特工",
+      "thumbnail": "Hacker_Agent_thumb.png",
+      "image": "Hacker_Agent_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-98RT/thumb_Hacker_Agent.png"
+    },
+    {
+      "key": "Abyss_Ranger",
+      "label": "暗渊游侠",
+      "thumbnail": "Abyss_Ranger_thumb.png",
+      "image": "Abyss_Ranger_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-98RT/thumb_Abyss_Ranger.png"
+    },
+    {
+      "key": "Zero_Flame",
+      "label": "零号赤焰",
+      "thumbnail": "Zero_Flame_thumb.png",
+      "image": "Zero_Flame_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESK900-98RT/thumb_Zero_Flame.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

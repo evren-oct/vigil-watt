@@ -29,6 +29,9 @@ public sealed class TaskbarPillWindow : IDisposable
     private const double EdgeGapDip = 6;
     private const double TipGapDip = 4;
 
+    /// <summary>系统拖动阈值读不到时的兜底（DIP）：4 与 Windows 默认 SM_CXDRAG 一致。</summary>
+    private const double DragThresholdFallbackDip = 4;
+
     /// <summary>交给非托管代码的回调必须静态压住，否则被 GC 回收后窗口再来消息就是访问已释放内存。</summary>
     private static readonly Native.WndProcDele StaticProc = WndProc;
     private static readonly Native.WndProcDele TipProc = TipWndProc;
@@ -60,6 +63,7 @@ public sealed class TaskbarPillWindow : IDisposable
     private int _dragStartCursor, _dragStartOffset;
     private int _dragIdleTicks, _pollX, _pollY;
     private bool _btnWasDown;   // 上轮询左键状态，用于检测按下边缘
+    private bool _locked;       // 位置锁定：锁定时不响应拖动，轮询也停掉
     private bool _taskbarHorizontal = true;
     private PixelRect _taskbarRect, _trayRect;
     private int _refreshQueued;
@@ -85,12 +89,13 @@ public sealed class TaskbarPillWindow : IDisposable
         _onInvalidate = onInvalidate;
         LoadOffsetFromSettings();
 
-        // 拖动轮询表常驻运行（20Hz）：Win11 任务栏 XAML 输入管理器会吃掉子窗口的鼠标消息，
+        // 拖动轮询表（20Hz，锁定时不启动）：Win11 任务栏 XAML 输入管理器会吃掉子窗口的鼠标消息，
         // 不能靠 WM_LBUTTONDOWN 启动拖动，只能轮询检测（runtime-pitfalls.md §16.5.1）。
         _dragTimer = _dispatcher.CreateTimer();
         _dragTimer.Interval = TimeSpan.FromMilliseconds(DragIdleTickMs);
         _dragTimer.Tick += (_, _) => OnDragTick();
-        _dragTimer.Start();
+        _locked = App.Services.Settings.TaskbarBatteryLockPosition;
+        SyncDragTimer();
 
         EnsureWindow();
 
@@ -133,8 +138,32 @@ public sealed class TaskbarPillWindow : IDisposable
     public void RefreshFromSettings()
     {
         LoadOffsetFromSettings();
+        _locked = App.Services.Settings.TaskbarBatteryLockPosition;
+        SyncDragTimer();
         _needRender = true;
         Update();
+    }
+
+    /// <summary>应用锁定状态：锁定时停掉拖动轮询（常驻 20Hz 读全局按键只为支持拖动）。</summary>
+    public void SetLockPosition(bool locked)
+    {
+        _locked = locked;
+        SyncDragTimer();
+    }
+
+    /// <summary>按锁定状态启停拖动轮询；正在拖的立刻收尾，避免锁定瞬间留下半截偏移。</summary>
+    private void SyncDragTimer()
+    {
+        if (_locked)
+        {
+            EndDrag();
+            _btnWasDown = false;
+            _dragTimer.Stop();
+            return;
+        }
+        if (_disposed) return;
+        _dragTimer.Interval = TimeSpan.FromMilliseconds(DragIdleTickMs);
+        _dragTimer.Start();
     }
 
     /// <summary>重置到默认位置：offset=0，按当前 DPI 绑定。</summary>
@@ -679,7 +708,7 @@ public sealed class TaskbarPillWindow : IDisposable
 
     private void OnLButtonDown()
     {
-        if (_dragging) return;   // 轮询可能已经先检测到并启动了
+        if (_dragging || _locked) return;   // 轮询可能已经先检测到并启动了
 
         HideTip();
         _hoverId = null;
@@ -710,7 +739,7 @@ public sealed class TaskbarPillWindow : IDisposable
     /// </summary>
     private void OnDragTick()
     {
-        if (_disposed) return;
+        if (_disposed || _locked) return;
 
         bool btnDown = (Native.GetAsyncKeyState(Native.VK_LBUTTON) & 0x8000) != 0;
         var p = Native.GetCursorPos();
@@ -748,7 +777,14 @@ public sealed class TaskbarPillWindow : IDisposable
             _dragIdleTicks = 0;
             _dragTimer.Interval = TimeSpan.FromMilliseconds(DragTickMs);
 
-            int next = _dragStartOffset + ((_taskbarHorizontal ? p.X : p.Y) - _dragStartCursor);
+            int delta = (_taskbarHorizontal ? p.X : p.Y) - _dragStartCursor;
+            if (Math.Abs(delta) < DragThresholdPx)
+            {
+                _btnWasDown = true;
+                return;
+            }
+
+            int next = _dragStartOffset + delta;
             if (next == _offsetPx)
             {
                 _btnWasDown = true;
@@ -759,6 +795,17 @@ public sealed class TaskbarPillWindow : IDisposable
         }
 
         _btnWasDown = btnDown;
+    }
+
+    /// <summary>拖动阈值（物理像素）：取系统 SM_CXDRAG/SM_CYDRAG，读不到才按 DIP 兜底。
+    /// 低于它只当单击——否则点一下（双击开窗口 / 看提示）就会把位置改掉并落盘。</summary>
+    private int DragThresholdPx
+    {
+        get
+        {
+            int sys = Native.GetSystemMetrics(_taskbarHorizontal ? Native.SM_CXDRAG : Native.SM_CYDRAG);
+            return sys > 0 ? sys : Math.Max(1, (int)Math.Round(DragThresholdFallbackDip * Scale));
+        }
     }
 
     /// <summary>光标当前是否落在贴片矩形内（屏幕坐标）。</summary>
@@ -789,7 +836,9 @@ public sealed class TaskbarPillWindow : IDisposable
         {
             var p = Native.GetCursorPos();
             // 只沿任务栏方向拖：横向任务栏走 X，竖向走 Y（斜着拖不会把贴片拽离任务栏）
-            _offsetPx = _dragStartOffset + ((_taskbarHorizontal ? p.X : p.Y) - _dragStartCursor);
+            int delta = (_taskbarHorizontal ? p.X : p.Y) - _dragStartCursor;
+            if (Math.Abs(delta) < DragThresholdPx) return;   // 与轮询路径同一条阈值，别绕过去
+            _offsetPx = _dragStartOffset + delta;
             ApplyPosition();
             return;
         }
@@ -1019,7 +1068,7 @@ public sealed class TaskbarPillWindow : IDisposable
     {
         HideTip();
         var p = Native.GetCursorPos();
-        AppPopupMenu.Show(_hwnd, p.X, p.Y);
+        AppPopupMenu.Show(_hwnd, p.X, p.Y, _locked, locked => App.Services.TaskbarBattery?.SetLockPosition(locked));
     }
 
     // ---------- 环境 ----------

@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.GameSir;
 /// <summary>
 /// 功 能： 盖世小鸡 (GameSir) G7 Pro CE 2.4G 手柄插件：心跳开流 + 突发读电量。
 /// 2026/10/19 21:45:00 zc165
-/// 帧布局与"心跳维持状态流"的实测依据见 docs/hardware/gamesir.md §1。
+/// 帧布局与"心跳维持状态流"的实测依据见 docs/hardware/brands/gamesir.md §1。
 /// </summary>
 public sealed class GameSirPlugin : BatteryPluginBase
 {

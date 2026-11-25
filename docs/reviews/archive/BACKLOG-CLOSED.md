@@ -7,6 +7,14 @@
 
 | 编号 | 结论 |
 |---|---|
+| CR-72 | issue #11 已关闭，按 2026-11-24 口径随 Issue 关闭；断电死锁现象未单独修复，不再单列。 |
+| CR-107 | issue #67 已关闭；显示配置切换导致贴片重叠已由 `b3006fa` 的四道防线收口，残留单点成因不再跟踪。 |
+| CR-123 | issue #41 已关闭；三个子问题未单独修复，按口径随 Issue 关闭。 |
+| CR-132 | issue #71 已关闭；ATK A9 Ultra Max 2.0 `0x11FE` 已登记，本体 PID 未知不再单列。 |
+| CR-133 | issue #40 已关闭；狼途 T98 零写入被动帧已落地，充电位仍 `Unknown`，随 Issue 关闭。 |
+| CR-135 | issue #83 已关闭；西伯利亚 X7 单点样本未再补，随 Issue 关闭；新采集以 open issue #94 为准。 |
+| CR-136 | issue #82 已关闭；飞智冰原狼3 采错接口未再重采，随 Issue 关闭。 |
+| CR-69 | 删除离线设备（连带清历史 + 永久移除黑名单）、忽略设备、展示去重已落地；社区 PR #16 的「只显示在线」「电量条对齐」不纳入。 |
 | CR-99 | 2026-10-24 使用真实 DeviceManager 原生一分钟节拍完成首次认领及五轮自然轮询：初次第 14 次读取返回长度 0，其后各轮第 1 次返回长度 0，均读取 100%，未失败或熔断。原始日志与边界见 `hardware/akg.md` §3。原分支编号 CR-94 与 dev 的迈从条目重号，合入时迁为 CR-99。 |
 | CR-95 | AKG 空闲态确认及响应阶段对瞬时空读、其它报告 ID 有界重试；持续失败不写入或不重发，格式错误仍立即停止。回归覆盖恢复、耗尽窗口及等待中关闭开关。 |
 | CR-96 | AKG 只在本轮按有效区域跳过相邻重复快照，空闲态及新查询重置比较；回归覆盖重复分片、尾部旧缓存变化及连续两轮相同电量。无事务号的剩余歧义见 `hardware/akg.md` §2。 |
@@ -72,15 +80,29 @@
 | CR-76 | 与 CR-75 同一修法落地。Inphic/Hecate/Delux 的读窗口 `continue` 有 deadline 兜住（不无限循环），未改 |
 | CR-77 | `MarkOffline` 注释改为"插件内软离线的唯一落地点"，并注明拔出走 `ReconcileRemovals`（不该盖 `LastUpdated`）。行为本来就对，是注释过满 |
 | CR-68 | 未采用 PR #14 的按显示名去重，改为按 MAC 判定自研实现：`Ble/DualChannelId` 归一 `btc:`/`ble:` 端点，`DeviceManager.AbsorbDualChannel` 收敛到经典那条。PR #14 的 `Devices` getter 副作用与 `NormalizeName` 大小写问题随之不适用 |
-| CR-86 | 历史库时间戳按本地时区读回（`HistoryStore.LocalTime`）：离线设备的「更新于」原先显示成 UTC，比本地时间少 8 小时。见 runtime-pitfalls.md §21 |
+| CR-179 | 历史库时间戳按本地时区读回（`HistoryStore.LocalTime`）：离线设备的「更新于」原先显示成 UTC，比本地时间少 8 小时。见 runtime-pitfalls.md §21 |
 | CR-108 | 半开探活的闸门改成 opt-in 本身：`IBatteryPlugin` 新增 `HasHalfOpenProbe`（= 覆写了 `BreakerProbeInterval`），`DeviceManager.DiscoverOnlyAsync` 的探活循环不再按 `SupportsDiscoveryProbe`/`SupportsFastDiscovery` 过滤。原写法下"只覆写间隔、没开发现 flag"的插件会静默空转（无帧、无日志）。线上零变化：唯一开探活的 ATK 两个 flag 本来就都开着。新增用例 `NudgeHalfOpenWorksWithoutDiscoveryFlags` 钉住语义 |
 | CR-109 | `SupportsDiscoveryProbe` 的注释口径按实现改写：`ProbeCooldown` 小于 15 秒才吃得到每个节拍，大于 15 秒不会多写帧、只是部分节拍被挡住白跑（VGN 就是 20 秒）。VGN 的冷却值未动——它没有被动监听，有效节拍 30 秒已够用，降到 10 秒是写入预算变更 |
 | CR-111 | `NudgeHalfOpen` 的 XML 注释压回 `AGENTS.md` §2 配额（原约 10 行），并补上"只在 `_passGate` 内调用"的线程前提。压缩前先把「与 CR-53 通道的分工」「闸门不是那两个 flag」两句补进 `runtime-pitfalls.md` §23，避免信息丢失 |
+| CR-125 | 2026-10-31 决定不入库：`hardware/inphic.md` §2 的来源行补「三份 pcapng 为维护者本机留存、未入库，关键帧已摘录在下方」，序号递增 / 重启从 `01` 起 / 充电位 `[19]` 三条结论仍可按文内摘录复核 |
+| CR-129 | changelog 2026-10-31 的北通三条压回「改了什么 + 为什么」两句 + 指针，时间线与样本表留在 `hardware/betop.md` §1.4.2 / §1.4.3 |
+| CR-130 | `hardware/betop.md` §1.4.2 样本数改为「246 条里 byte[1] 从未出现 `0x00`：`0x02` 168 条、`0x03` 73 条，另有 `0x04` / `0x0C`」，消除「只出现」与「还有」的同句冲突 |
+| CR-131 | `code-flow.md` §4.2 的 `LastUpdated` 措辞改为「最近一次读数；`MarkOffline` 幂等、只在真正翻转在线状态时写一次」，与 `BatteryPluginBase.cs:557` 一致；过期判定逻辑未动 |
+| CR-127 | 删掉 `InphicIn9Codec.TryParseModel` 及 `ModelOffset` / `ModelLength` / `using System.Text`，同步删掉 `ReadsModelStringForDiagnostics` 用例。型号串对排错没有增量价值——原始帧本来就由 `Log.Hex` 完整打进日志。IN9 用例 19 → 18 |
+| CR-128 | `BetopSettleTests.cs` 文件头用户名 `workbuddy` 改为 `20211`（Windows 用户名），符合 `comment-style.md` §7 |
+| CR-150 | 2026-11-16 已修：`RapooDeviceIdentity` 用「目录型号 + 序列号」归一有线/无线 ID，`SkipPathsForThisPass` 同轮优先保留有线；目录 172 条配对记录补 `wired`，加载期校验每组恰一条；黑名单改用同一 ID。VT2S Air MAX V2 真机同 SN 已验证，其余 85 组待真机复看。见 `hardware/brands/rapoo.md` §4.4。 |
 
 ## wontfix
 
 | 编号 | 为什么不修 |
 |---|---|
+| CR-57 | Win10 小组件投影判据已过时（本机 Win11）；不做 |
+| CR-70 | BLE 大改未纳入；通用 GATT 已够用，不做 |
+| CR-71 | 与 CR-39 同源；贴片避让托盘等 CR-39 真机结论，不单独立项 |
+| CR-102 | 插件级策略按型号分化不做通用化；现有拆类方案足够 |
+| CR-113 | ATK 充电虚高属固件电压估电量，codec 不修正；展示层平滑不做 |
+| CR-114 | 不新增插件学习名持久化；用户手动改名已覆盖 |
+| CR-141 | 插件按需下载已被作者部分否决；保留“插件认领设备”方案 |
 | CR-30 | HID 枚举改只读打开会改变能看见的设备。每分钟几十次打开不值得换这个风险 |
 | CR-31 | 更新源由用户自己填，下载前有确认。签名属于发布流程 |
 | CR-32 | GitHub token 已在 `.gitignore`。分享仓库目录前先删那个文件 |
@@ -89,3 +111,9 @@
 | CR-51 | 日志按用户要求一天一个文件，大小靠保留天数限制 |
 | CR-64 | 反复打开主窗口抬高的是工作集，不是泄漏。判泄漏只看私有提交。见 `memory-growth-2026-10-12.md` |
 | CR-78 | 原判断有误：`RunExclusiveAsync` 已 catch `WaitAsync` 的 `ObjectDisposedException` 并 return，`Release` 也有 catch。剩下的 `Detach` 与在跑 `Poll` 并发由插件内 try/catch 兜住，退出时不影响用户 |
+| CR-145 | `MchoseA5Plugin` 与 `MchosePlugin` 同名导致认领互斥失效。已把 `DeviceClaimRegistry` 的 owner 拆成 `ClaimOwner(Id, PluginName)`：Id 做互斥、PluginName 查设置开关；A5 覆写 `ClaimId = "Mchose#A5"`。A5 接收器 `3837:100C` 也进了目录，主插件按身份让路，不再靠形态猜。回归见 `PluginUtilsTests.R2b`、`MchoseInterfaceClassifierTests` |
+| CR-144 | 迈从 gmouse / V9 / X9 已迁进解释器：帧模板、窗口、重试次数在 `specs/mchose.protocols.json`，`MchosePlugin` 只剩 `TrySpec` 一次调用；三个 codec 改成薄壳（保留 `IsSupportedInterface` 与既有断言），35 条 codec 用例现在钉的是 JSON 偏移。接口形态判据仍在 `MchoseInterfaceClassifier`，见 CR-16 |
+| CR-146 | **原判断有误，撤回**：目录优先下 `0x2E3C:0x5745` 是会被查到的，`implementation: "none"` 正确地拒绝认领；`vendors` 白名单只影响"未收录设备"的形态回落，不影响已收录条目 |
+| CR-147 | `"qhw-push"` 不再进设备协议名：协议名统一记 `qhw`，"只拿到被动推送"另记在 `_pushOnly`（按路径）。`PollDevice` / `TryParsePassiveInput` 改查显式状态，UI 副标题也不会再显示内部标记 |
+| CR-148 | `capabilities` 写在设备 `override` 里会被静默丢弃：它先深合并进协议对象，再在 `ProtocolDto` 反序列化时丢掉（`ProtocolDto` 没有该字段）。已在 `ReadDevices` 合并前拒绝，报错带 `VID:PID` 与完整字段路径（含嵌套对象与数组元素），`map` / `mapValue` 的取值表不参与扫描；设备条目顶层 `capabilities` 与现有 7 条 `passive.fields` override 不受影响。回归见 `ProtocolSpecLoaderTests.LoadFromJson_Override*`，规则见 `dev/protocol-json.md` §2.1 |
+| CR-143 | 2026-11-08 复核：**合并 `qhw` / `mouse-k7` 后问题已消失**。`Claim0x4D` 恒返回协议名 `mchose-0x4d`，插件里已没有任何路径产出 `qhw`，而 `ResolveKind` 把 `mchose-0x4d` 映射到 `DeviceKind.Mouse`；只剩 `cz-block` 落 `Keyboard`，那批是 CZ 族键盘，本就正确。**无需再缓存 `DeviceKind`** |

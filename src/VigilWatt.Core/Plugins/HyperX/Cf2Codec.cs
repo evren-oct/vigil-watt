@@ -5,7 +5,7 @@ using VigilWatt.Core.Models;
 /// <summary>
 /// 功 能： HyperX CF2 状态帧的纯解析——不碰句柄、不写日志，便于单测。
 /// 2026/10/20 22:08:00 Yang
-/// 帧结构、充电阶段字段的证伪过程见 docs/hardware/hyperx-cf2.md §4。
+/// 帧结构、充电阶段字段的证伪过程见 docs/hardware/brands/hyperx-cf2.md §4。
 /// </summary>
 internal static class Cf2Codec
 {

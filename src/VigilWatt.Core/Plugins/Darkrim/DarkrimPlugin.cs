@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Darkrim;
 /// <summary>
 /// 功 能： 寸渊影弑 (DARKRIM) 2.4G 耳机插件：被动优先 + 一条官方同款只读查询。
 /// 2026/10/19 19:40:00 zc165
-/// 帧格式、CRC、查询帧与"为什么必须查询"见 docs/hardware/darkrim.md §1。
+/// 帧格式、CRC、查询帧与"为什么必须查询"见 docs/hardware/brands/darkrim.md §1。
 /// </summary>
 public sealed class DarkrimPlugin : BatteryPluginBase
 {

@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.GameSir;
 /// <summary>
 /// 功 能： 盖世小鸡 (GameSir) G7 Pro CE 手柄状态流的纯帧解析——不碰句柄，便于单测。
 /// 2026/10/19 19:50:00 zc165
-/// 字段偏移取自官方 Connect 1.16.5 的解析逻辑，依据见 docs/hardware/gamesir.md §1。
+/// 字段偏移取自官方 Connect 1.16.5 的解析逻辑，依据见 docs/hardware/brands/gamesir.md §1。
 /// </summary>
 internal static class GameSirCodec
 {

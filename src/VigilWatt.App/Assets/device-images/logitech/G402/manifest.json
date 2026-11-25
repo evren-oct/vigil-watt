@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G402",
+  "match": {
+    "displayNames": [
+      "G402",
+      "G402 Hyperion Fury"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g402.png",
+      "image": "logitech-g402.png",
+      "source": "https://img.openmouse.app/logitech-g402.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

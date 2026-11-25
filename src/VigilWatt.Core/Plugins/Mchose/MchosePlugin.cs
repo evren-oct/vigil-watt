@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using VigilWatt.Core.Hid;
 using VigilWatt.Core.Models;
+using VigilWatt.Core.Plugins.Protocol;
 using VigilWatt.Core.Utils;
 
 namespace VigilWatt.Core.Plugins.Mchose;
@@ -8,7 +9,7 @@ namespace VigilWatt.Core.Plugins.Mchose;
 /// <summary>
 /// 功 能： 迈从 (MCHOSE) 2.4G 插件。
 /// 2026/10/06 15:53:36 xliu
-/// 帧结构见 <see cref="MchoseV1Codec"/> 与 docs/hardware/mchose.md §1。
+/// 帧结构见 <see cref="MchoseV1Codec"/> 与 docs/hardware/brands/mchose.md §1。
 /// </summary>
 public sealed class MchosePlugin : BatteryPluginBase
 {
@@ -21,14 +22,17 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>一个插件同时管键盘与鼠标（罗技先例）：声明 Unknown，具体图标由 <see cref="ResolveKind"/> 按协议给。</summary>
     public override DeviceKind Kind => DeviceKind.Unknown;
 
+    /// <summary>形态固定的协议（Gmouse / V9 / X9）走解释器；有状态的四套仍在下面用代码实现。</summary>
+    private static ProtocolEngine Engine => MchoseSpecs.Engine;
+
     /// <summary>键盘 V1 会话协议（report 0x13）。</summary>
     private const string ProtocolKeyboardV1 = "keyboard-v1";
 
     /// <summary>鼠标 V2 世代：纯被动 E2 状态帧 + 0x11/0x06 触发上报。</summary>
     private const string ProtocolMouseV2 = "mouse-v2";
 
-    /// <summary>K7 V2 Ultra+：64 字节 output 0x4D，0x0900 查询 + 0x0600 事件（帧与判据见 <see cref="MchoseK7Codec"/>）。</summary>
-    private const string ProtocolMouseK7 = "mouse-k7";
+    /// <summary>0x4D 协议（原 qhw 与 mouse-k7 合并）：帧构造与解析全在 <see cref="Mchose0x4DCodec"/>。</summary>
+    private const string Protocol0x4D = Mchose0x4DCodec.ProtocolName;
 
     /// <summary>Gmouse 世代鼠标（G3 V2）：65 字节主动查询帧（55 30 A5…），判据与帧见 <see cref="MchoseGmouseCodec"/>。</summary>
     private const string ProtocolGmouse = "gmouse";
@@ -39,8 +43,11 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>X9 耳机：与 V9 Pro 同帧结构（判据见 <see cref="MchoseX9Codec"/>），VID 却与键鼠同号段。</summary>
     private const string ProtocolHeadsetX9 = "headset-x9";
 
-    private const byte QhwReportId = 0x4D;
-    private const ushort CmdGetBattery = 0x0904;  // 2308
+    /// <summary>CZ 分块读（官方 web 驱动对通用 dongle 用的通道，帧在 mchose.protocols.json）。</summary>
+    private const string ProtocolCzBlock = "cz-block";
+
+    /// <summary>探测"只拿到被动推送"的内部标记——只在 <see cref="Claim0x4D"/> 内部用，不进设备协议名。</summary>
+    private const string ProtocolPushOnly = "push-only";
 
     /// <summary>无效电量下界（0/1 是设备休眠/关机的占位值），单一来源在 <see cref="MchoseV1Codec"/>。</summary>
     private const byte InvalidPercentFloor = MchoseV1Codec.InvalidPercentFloor;
@@ -55,8 +62,9 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <b>CountPollFailures = false</b>：轮询**确实会发帧**，但 <c>PollDevice</c> 返回 null 有三种可能
     /// （真的没应答 / 用户关了写入许可 / 熔断停写中），基类分不出来，故改由插件在发过帧的分支
     /// 自己报账（<c>ReportPollFailure</c>）。
-    /// 迈从协议里**根本没有"连接状态"字段**（不像雷柏有 bit7、北通有占位帧），所以失败计数是它
-    /// 唯一能判离线的物理依据。
+    /// 迈从键盘协议里没有"连接状态"字段（不像雷柏有 bit7、北通有占位帧），所以失败计数是它
+    /// 唯一能判离线的物理依据。**0x4D 通道例外**：`0x0900` 的 `payload[10]` 就是连接状态，
+    /// 但它只用来刷徽标（M2-3 起），**仍不拿它当离线判据**——设备在睡时 dongle 照样回这一帧（mchose.md §3.3、§3.5）。
     /// </summary>
     protected override OfflinePolicy Offline { get; } = new()
     {
@@ -81,22 +89,19 @@ public sealed class MchosePlugin : BatteryPluginBase
 
     protected override bool IsCandidate(HidDeviceInfo info)
     {
-        if (info.VendorId == Logitech.LogitechPlugin.LogitechVid) return false;
-        if (info.VendorId == Rapoo.RapooPlugin.RapooVid) return false;
-        // 北通接收器也有 usage 0xFF00 / 0x00FF 的 vendor 接口（两代 VID），但它不是迈从协议，勿发 QHW/0x13 帧
-        if (info.VendorId == Betop.BetopPlugin.BetopVid || info.VendorId == Betop.BetopPlugin.BetopVidNew) return false;
-        // 英菲克接收器也暴露 64 字节 vendor 输出接口；避免误发迈从会话/查询帧
-        if (info.VendorId == Inphic.InphicPlugin.InphicVid) return false;
-        // HECATE 的厂商集合同样是 64 字节进出，不能当成迈从接口
-        if (info.VendorId == Hecate.HecatePlugin.HecateVid) return false;
-        // AULA F99 Pro 与迈从 G75 共用 3554:FA09 的 20 字节 0x13 接口，只能靠会话 ACK 的型号密码区分；
-        // 这里放行这条精确指纹，认领阶段由 TryKeyboardV1 按型号裁决（aula.md §1.1）
-        if (info.VendorId == Aula.AulaPlugin.AulaVid && !IsSharedWithAula(info)) return false;
-        // 品牌排除之后，判据全在分类器里（耳机先分流、键鼠白名单、厂商用法、报告长度），有单测覆盖
-        if (Classify(info) != MchoseInterfaceKind.None) return true;
+        // 判据全在分类器里：它是**正向 VID 白名单**（0x291D / 0x3837 / 0x41E4），别家 VID 必然判 None。
+        // 原来这里逐个排除罗技/雷柏/北通/英菲克/HECATE/AULA，与白名单等价、纯冗余，且让本插件硬依赖 6 个别家命名空间。
+        // 与 AULA 共用指纹的例外见 docs/hardware/brands/aula.md §1.1。
+        if (Classify(info) is var kind and not MchoseInterfaceKind.None)
+            // A5 的 Feature 通道归 MchoseA5Plugin（同品牌另一个插件类），主插件不认领
+            return kind != MchoseInterfaceKind.MouseA5;
         // 与 AULA 共用的 3554:FA09：分类器按 VID 白名单必然判 None，这里单独放行，归属交给 Probe 按 ACK 型号定
         return IsSharedWithAula(info);
     }
+
+    /// <summary>测试接缝：直接跑真实探测路径，验证未验证接口零写入。</summary>
+    internal (string Protocol, int? Percent, ChargingState Charging)? ProbeForTest(HidDeviceHandle handle)
+        => Probe(handle);
 
     /// <summary>把 <see cref="HidDeviceInfo"/> 摊成分类器要的字段，避免判据在两处各写一遍。</summary>
     private static MchoseInterfaceKind Classify(HidDeviceInfo info)
@@ -115,11 +120,64 @@ public sealed class MchosePlugin : BatteryPluginBase
         => protocol switch
         {
             ProtocolMouseV2 => DeviceKind.Mouse,
-            ProtocolMouseK7 => DeviceKind.Mouse,
+            Protocol0x4D => DeviceKind.Mouse,
             ProtocolGmouse => DeviceKind.Mouse,
             ProtocolHeadsetV9 or ProtocolHeadsetX9 => DeviceKind.Headset,
             _ => DeviceKind.Keyboard,
         };
+
+    /// <summary>
+    /// 认领落地用探测窗口那一帧的连接方式（否则徽标先显示未知）。没有该字段的族（键盘/CZ/gmouse/A5/耳机）
+    /// 若认领到的是**登记过的 dongle**，链路可推定为 2.4G：有线数据不会经过接收器。
+    /// </summary>
+    protected override TelemetryValue<ConnectionKind> ConnectionOfProbe(HidDeviceInfo info)
+    {
+        if (KnownProbeConnection.TryGetValue(info.DevicePath, out var probed))
+            return ProbeReported(probed);
+        return MchoseDeviceCatalog.TryGetTransport(info.VendorId, info.ProductId, out _)
+            ? TelemetryValue<ConnectionKind>.Inferred(ConnectionKind.Wireless24G, DateTimeOffset.Now)
+            : TelemetryValue<ConnectionKind>.Unknown;
+    }
+
+    /// <summary>
+    /// 能力只来自目录里写过的传输通道（当前仅 `3837:1018` 有真机读数）；其余一律 Unverified，
+    /// 不从 0x4D 协议族外推。纯配置查询，不开句柄不发帧。
+    /// </summary>
+    protected override CapabilitySet CapabilitiesOf(HidDeviceInfo info)
+    {
+        var transport = MchoseDeviceCatalog.CapabilitiesOf(info);
+        return transport.IsEmpty ? Engine.CapabilitiesOf(info) : transport;
+    }
+
+    /// <summary>认领时补身份快照：自报身份来自 Probe 阶段的 0x0900，通道身份来自目录登记的 dongle 角色。</summary>
+    protected override void FillIdentitySnapshot(DeviceStatus status, HidDeviceInfo info) => ApplyIdentity(status, info);
+
+    /// <summary>把已学到的自报身份与通道身份合进快照；没有信息就保持原值（Merge 不会用 null 清洗）。</summary>
+    private bool ApplyIdentity(DeviceStatus status, HidDeviceInfo info)
+    {
+        bool changed = false;
+
+        if (KnownIdentityByPath.TryGetValue(info.DevicePath, out var identity))
+        {
+            var merged = ReportedIdentity.Merge(status.Reported, identity.ToReportedIdentity());
+            if (merged != status.Reported) { status.Reported = merged; changed = true; }
+        }
+
+        if (ReceiverIdentityOf(info) is { } receiver)
+        {
+            var merged = ReceiverIdentity.Merge(status.Receiver, receiver);
+            if (merged != status.Receiver) { status.Receiver = merged; changed = true; }
+        }
+
+        return changed;
+    }
+
+    /// <summary>传输通道身份：只有目录登记过的 dongle PID 才有；本体接口返回 null，它本来就不是接收器。</summary>
+    private static ReceiverIdentity? ReceiverIdentityOf(HidDeviceInfo info)
+        => MchoseDeviceCatalog.TryGetTransport(info.VendorId, info.ProductId, out var t)
+           && !string.IsNullOrWhiteSpace(t.Role)
+            ? new ReceiverIdentity(t.Role, Family: null, DisplayName: t.DisplayName, IconKey: t.IconKey)
+            : null;
 
     /// <summary>显示名：接收器产品名常是泛化的「MCHOSE 2.4G Wireless」，识别出型号时用型号替换；
     /// 加「迈从」前缀方便设备列表一眼认品牌。型号来源见 <see cref="KnownModelByPath"/>。</summary>
@@ -133,6 +191,12 @@ public sealed class MchosePlugin : BatteryPluginBase
 
         var product = string.IsNullOrEmpty(info.Product) ? "" : info.Product.Replace("MCHOSE", "").Trim();
         var model = KnownModelByPath.TryGetValue(info.DevicePath, out var m) ? m : "";
+        // 0x4D 设备自报的配对身份最可靠（USB 枚举到的只是 dongle），优先于目录里按 dongle PID 查到的空值
+        if (model.Length == 0 && KnownIdentityByPath.TryGetValue(info.DevicePath, out var identity))
+            model = identity.Model;
+        // CZ 族没有会话密码，型号名只能来自设备目录；目录也没有就退回产品名
+        if (model.Length == 0 && MchoseDeviceCatalog.TryGet(info.VendorId, info.ProductId, out var catalogEntry))
+            model = catalogEntry.Model;
         var name = model.Length > 0 && product.Contains("2.4G") ? model
                  : product.Length > 0 ? product
                  : model;
@@ -143,10 +207,16 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// 接口路径 → 已判定协议（进程内学习）。**只在探测成功后写入，失败不抹掉**：
     /// 同一条路径永远是同一个型号，而探测失败最常见的原因是"键盘在睡"，说明不了协议变了。
     /// </summary>
-    private static readonly ConcurrentDictionary<string, string> KnownProtocolByPath = new();
+    private readonly ConcurrentDictionary<string, string> KnownProtocolByPath = new();
 
     /// <summary>接口路径 → 会话 ACK 密码段识别出的型号名（<see cref="BuildDisplayName"/> 用；识别不出就没有条目）。</summary>
-    private static readonly ConcurrentDictionary<string, string> KnownModelByPath = new();
+    private readonly ConcurrentDictionary<string, string> KnownModelByPath = new();
+
+    /// <summary>接口路径 → 0x4D 设备自报的身份（USB 与协议身份分开存，见 <see cref="MchoseDeviceIdentity"/>）。</summary>
+    private readonly ConcurrentDictionary<string, MchoseDeviceIdentity> KnownIdentityByPath = new();
+
+    /// <summary>接口路径 → 探测窗口里 `0x0900` 读到的连接方式，只供认领落地用；无效应答不写入。</summary>
+    private readonly ConcurrentDictionary<string, ConnectionKind> KnownProbeConnection = new();
 
     /// <summary>
     /// 日志去重 key = <c>路径|用途</c>。配合 <see cref="Log.Once"/> / <see cref="Log.ResetOnce"/>
@@ -155,19 +225,89 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// </summary>
     private static string LogKey(HidDeviceHandle handle, string what) => $"{handle.Info.DevicePath}|{what}";
 
-    private const string LogKeyQhwSkip = "qhw-skip";          // "这条通道不是 QHW"
-    private const string LogKeyQhwNoPermit = "qhw-no-permit"; // "没开写入许可，跳过主动查询"
+    /// <summary>0x4D 认领：协议名统一记 <c>mchose-0x4d</c>，"只能被动听"另记在 <see cref="_pushOnly"/>。</summary>
+    private (string Protocol, int? Percent, ChargingState Charging)? Claim0x4D(
+        string path, (string Protocol, int? Percent, ChargingState Charging)? read)
+    {
+        if (read is not { } r) return null;
+        KnownProtocolByPath[path] = Protocol0x4D;
+        if (r.Protocol == ProtocolPushOnly) _pushOnly[path] = true;
+        else _pushOnly.TryRemove(path, out _);
+        return (Protocol0x4D, r.Percent, r.Charging);
+    }
+
+    /// <summary>协议层拿不到 <see cref="TrackedDevice"/>（protected 嵌套类型），只能摊成值。</summary>
+    private static DeviceRef RefOf(TrackedDevice dev)
+        => new(dev.Status.Id, dev.Info.DevicePath, dev.Info.VendorId, dev.Info.ProductId);
+
+    /// <summary>
+    /// 每轮扫描前清掉已经不在的接口的探测缓存。**空扫描当枚举失败**，不动任何缓存——
+    /// 否则一次 API 抖动会让所有设备重探、把写入量放大一倍（与基类的口径一致）。
+    /// </summary>
+    public override async Task<IReadOnlyList<DeviceStatus>> AttachAsync(
+        IReadOnlyList<HidDeviceInfo> availableDevices, DeviceClaimRegistry claims)
+    {
+        if (availableDevices.Count > 0)
+        {
+            var alive = availableDevices.Select(d => d.DevicePath)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            PruneKeys(KnownProtocolByPath, alive);
+            PruneKeys(KnownModelByPath, alive);
+            PruneIdentities(alive);
+            PruneFlags(_pushOnly, alive);
+            PruneConnections(alive);
+            PruneFlags(PointerProbeAttempts, alive);
+            Engine.Prune(availableDevices);
+        }
+        return await base.AttachAsync(availableDevices, claims).ConfigureAwait(false);
+    }
+
+    private static void PruneFlags<T>(ConcurrentDictionary<string, T> map, HashSet<string> alive)
+    {
+        foreach (var key in map.Keys.Where(k => !alive.Contains(k)).ToList())
+            map.TryRemove(key, out _);
+    }
+
+    private static void PruneKeys(ConcurrentDictionary<string, string> map, HashSet<string> alive)
+    {
+        foreach (var key in map.Keys.Where(k => !alive.Contains(k)).ToList())
+            map.TryRemove(key, out _);
+    }
+
+    private void PruneIdentities(HashSet<string> alive)
+    {
+        foreach (var key in KnownIdentityByPath.Keys.Where(k => !alive.Contains(k)).ToList())
+            KnownIdentityByPath.TryRemove(key, out _);
+    }
+
+    private void PruneConnections(HashSet<string> alive)
+    {
+        foreach (var key in KnownProbeConnection.Keys.Where(k => !alive.Contains(k)).ToList())
+            KnownProbeConnection.TryRemove(key, out _);
+    }
+
+    /// <summary>插件被禁用/卸载时清空全部按设备保存的状态（缓存是实例字段，但插件可能被反复启用）。</summary>
+    public override void Detach()
+    {
+        KnownProtocolByPath.Clear();
+        KnownModelByPath.Clear();
+        KnownIdentityByPath.Clear();
+        KnownProbeConnection.Clear();
+        PointerProbeAttempts.Clear();
+        _pushOnly.Clear();
+        Engine.Reset();
+        base.Detach();
+    }
+
+    private const string LogKey0x4DNoPermit = "0x4d-no-permit"; // "没开写入许可，跳过主动查询"
+    private const string LogKey0x4DUnverified = "0x4d-unverified"; // "目录未验证，跳过主动查询"
+    private const string LogKey0x4DSilent = "0x4d-silent";      // "写成功但没有有效读数，交还后续判据"
     private const string LogKeyKbV1Silent = "kbv1-silent";    // "keyboard-v1 问了两次都不应答"
     private const string LogKeyKbV1ModelUnknown = "kbv1-model-unknown"; // "共用指纹但型号不在迈从表，交给 AULA"
     private const string LogKeyMouseSilent = "mouse-silent";  // "鼠标探测没等到 E2 帧"
     private const string LogKeyMousePokeFail = "mouse-poke-fail"; // "触发帧写失败（接口无输出通道）"
-    private const string LogKeyX9Silent = "x9-silent"; // "X9 查询没等到电量响应"
 
-    private const string LogKeyV9Silent = "v9-silent"; // "V9 Pro 查询没等到电量响应"
-    private const string LogKeyK7NoPermit = "k7-no-permit"; // "没开写入许可，跳过 K7 主动查询"
-    private const string LogKeyK7Asleep = "k7-asleep";      // "K7 只回 1 字节 0xFF，鼠标多半在睡"
-    private const string LogKeyGmouseNoPermit = "gmouse-no-permit"; // "没开写入许可，跳过 Gmouse 主动查询"
-    private const string LogKeyGmouseSilent = "gmouse-silent";      // "Gmouse 查询没等到电量响应"
+    private const string LogKey0x4DAsleep = "0x4d-asleep";  // "只回 1 字节 0xFF，鼠标多半在睡"
 
     /// <summary>协议探测：共用指纹（AULA/G75）→ 鼠标 V2（被动等 E2）→ 官方 QHW（新世代）→ 键盘 V1 会话协议（G87 / G87 V2）。</summary>
     protected override (string Protocol, int? Percent, ChargingState Charging)? Probe(HidDeviceHandle handle)
@@ -190,43 +330,49 @@ public sealed class MchosePlugin : BatteryPluginBase
             handle.Info.UsagePage, handle.Info.Usage, handle.Info.InputReportLength,
             handle.Info.OutputReportLength, handle.Info.FeatureReportLength, handle.Info.OutputReportId);
 
-        // 耳机必须排在下面「≥60 字节只走鼠标」之前：它的输出同样是 64 字节，
-        // 落到鼠标分支会往耳机发 0x11/0x06 触发帧。判据是完整接口匹配，抢不走键盘/鼠标的通道。
-        if (kind == MchoseInterfaceKind.HeadsetV9)
+        // A5 的 Feature 通道归 MchoseA5Plugin；主插件在这里就退出，绝不往上写 0x4D 帧
+        if (kind == MchoseInterfaceKind.MouseA5) return null;
+
+        // 耳机与 Gmouse 的帧模板、窗口、重试次数都在 JSON 里，交给解释器；抢在下面「≥60 字节只走鼠标」之前。
+        if (kind is MchoseInterfaceKind.HeadsetV9 or MchoseInterfaceKind.HeadsetX9 or MchoseInterfaceKind.Gmouse)
         {
-            var headset = TryHeadsetV9(handle);
-            if (headset != null) KnownProtocolByPath[path] = ProtocolHeadsetV9;
-            return headset;
+            var spec = TrySpec(handle);
+            if (spec != null) KnownProtocolByPath[path] = spec.Value.Protocol;
+            return spec;
         }
 
-        if (kind == MchoseInterfaceKind.HeadsetX9)
+        // 0x4D 通道同样是 64 字节，但它说的是 0x4D 帧，不是 V2 世代那套 E2 状态帧——
+        // 落到下面等于白等两轮再发一条无意义的触发帧。
+        // 已知通道（精确指纹或目录登记的通用 dongle）**写成功即认领**：鼠标睡着时 dongle 仍回 1 字节 FF，
+        // 那是"有应答无读数"，不该因此丢掉设备（原 K7 行为，保留）。
+        if (kind == MchoseInterfaceKind.Mouse0x4D)
         {
-            var x9 = TryHeadsetX9(handle);
-            if (x9 != null) KnownProtocolByPath[path] = ProtocolHeadsetX9;
-            return x9;
+            return Claim0x4D(path, Try0x4D(handle, requireReading: false));
         }
 
-        // K7 的命令通道同样是 64 字节，但它说的是 0x4D 帧，不是 V2 世代那套 E2 状态帧——
-        // 落到下面等于白等两轮再发一条无意义的触发帧。指纹已精确命中，直接交给 K7 协议。
-        if (kind == MchoseInterfaceKind.MouseK7)
+        // 目录命中 QHW 的设备（CZ 族键盘、共用 dongle）：直接走 0x4D，不必先等 E2 帧。
+        // 这条通道的把握不如上一条，**必须真的解析出读数才认领**（原 QHW 行为，保留）。
+        if (kind == MchoseInterfaceKind.Qhw)
         {
-            var k7 = TryMouseK7(handle);
-            if (k7 != null) KnownProtocolByPath[path] = ProtocolMouseK7;
-            return k7;
+            return Claim0x4D(path, Try0x4D(handle, requireReading: true));
         }
 
-        // Gmouse 主动查询接口（usagePage 0xFF01/usage 0x10）：先于 MouseV2 判定，发 Gmouse 查询帧而非 E2 触发帧。
-        // 它同样是 ≥60 字节，但应答的是 AA 30 前缀帧，落到 V2 分支会白等被动 E2。
-        if (kind == MchoseInterfaceKind.Gmouse)
-        {
-            var gm = TryGmouse(handle);
-            if (gm != null) KnownProtocolByPath[path] = ProtocolGmouse;
-            return gm;
-        }
-
-        // ≥60 的接口只可能是鼠标接收器：它不是 0x13 会话通道，在这条通道上发键盘帧没有意义
+        // ≥60 的接口只可能是鼠标接收器：它不是 0x13 会话通道，在这条通道上发键盘帧没有意义。
+        // **必须先试 0x4D**：它与 V2 同为 ≥60 字节、接口形态区分不了，而 0x4D 写失败会立即返回、
+        // 不会拖慢 E2 路径；反过来先等 E2 会把 0x4D 设备永久卡在这条分支（2026-11-01 修）。
         if (kind == MchoseInterfaceKind.MouseV2)
         {
+            var first = Claim0x4D(path, Try0x4D(handle, requireReading: true));
+            if (first != null) return first;
+
+            // 官方通用 dongle（0x3837:0x3033）对 0x4D 静默，走的是 CZ 分块读。只有接口指纹命中 JSON 规格
+            // 才会发帧，其余接收器在这里拿不到规格、一个字节都不写。见 hardware/mchose.md §2.4。
+            if (TrySpec(handle) is { } cz)
+            {
+                KnownProtocolByPath[path] = cz.Protocol;
+                return cz;
+            }
+
             var mouse = TryMouseV2(handle);
             if (mouse != null) KnownProtocolByPath[path] = ProtocolMouseV2;
             return mouse;
@@ -241,12 +387,8 @@ public sealed class MchosePlugin : BatteryPluginBase
         if (KnownProtocolByPath.TryGetValue(path, out var known))
             return TryKnownProtocol(handle, known);
 
-        var qhw = TryQhw(handle);
-        if (qhw != null)
-        {
-            KnownProtocolByPath[path] = qhw.Value.Protocol;
-            return qhw;
-        }
+        var first0x4D = Claim0x4D(path, Try0x4D(handle, requireReading: true));
+        if (first0x4D != null) return first0x4D;
 
         var kbV1 = TryKeyboardV1(handle, IsSharedWithAula(handle.Info));
         if (kbV1.HasValue)
@@ -258,41 +400,63 @@ public sealed class MchosePlugin : BatteryPluginBase
         return null;
     }
 
-    /// <summary>按已判定的协议只试那一条通道（避免每次探测都先空等 QHW 3 秒）。</summary>
-    private static (string Protocol, int? Percent, ChargingState Charging)? TryKnownProtocol(HidDeviceHandle handle, string known)
+    /// <summary>按已判定的协议只试那一条通道（避免每次探测都先空等 0x4D 窗口）。</summary>
+    private (string Protocol, int? Percent, ChargingState Charging)? TryKnownProtocol(
+        HidDeviceHandle handle, string known)
         => known switch
         {
-            "qhw" or "qhw-push" => TryQhw(handle),
+            Protocol0x4D => Claim0x4D(handle.Info.DevicePath, Try0x4D(handle, requireReading: false)),
             ProtocolKeyboardV1 => TryKeyboardV1(handle, IsSharedWithAula(handle.Info)) is { } kb
                 ? (ProtocolKeyboardV1, kb.Percent, kb.Charging)
                 : null,
             ProtocolMouseV2 => TryMouseV2(handle),
-            ProtocolMouseK7 => TryMouseK7(handle),
-            ProtocolGmouse => TryGmouse(handle),
-            ProtocolHeadsetV9 => TryHeadsetV9(handle),
-            ProtocolHeadsetX9 => TryHeadsetX9(handle),
+            ProtocolGmouse or ProtocolHeadsetV9 or ProtocolHeadsetX9 or ProtocolCzBlock => TrySpec(handle),
             _ => null,
         };
+
+    /// <summary>形态固定的协议交给解释器：帧模板、窗口、重试次数全在 JSON 里，这里只剩一次调用。</summary>
+    private (string Protocol, int? Percent, ChargingState Charging)? TrySpec(HidDeviceHandle handle)
+    {
+        var spec = Engine.Resolve(handle.Info);
+        var activeAllowed = spec is not null && MchoseActiveQueryPolicy.Allows(handle.Info, spec.Name);
+        var reading = Engine.ProbeAsync(handle, IsWritesEnabled(SettingsKey), activeAllowed)
+            .GetAwaiter().GetResult();
+        if (reading is not { } r || r.Protocol != ProtocolCzBlock) return reading;
+
+        var (percent, charging) = MchoseSpecs.ResolveFull(r.Percent, r.Charging);
+        return (r.Protocol, percent, charging);
+    }
 
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
         // 熔断 / 未开写入 / 纯推送协议：读数交给后台被动监听。这几条都没发帧，故不计失败。
         // mouse-v2 的读数是接收器自发 E2 推送，这里发帧只会干扰鼠标。
-        if (!CanWrite(dev) || dev.Protocol is "qhw-push" or ProtocolMouseV2)
+        if (!CanWrite(dev) || _pushOnly.ContainsKey(dev.Info.DevicePath) || dev.Protocol == ProtocolMouseV2)
             return null;
 
-        // K7 的记账规则与其它协议不同——"只回 1 字节 0xFF"也算应答，故整段交给 PollMouseK7 自己数，
+        // 0x4D 的记账规则与其它协议不同——"只回 1 字节 0xFF"也算应答，故整段交给 Poll0x4D 自己数，
         // 不走下面那套"有读数算应答 / 无读数算失败"的通用规则（理由见该方法注释）。
-        if (dev.Protocol == ProtocolMouseK7)
-            return PollMouseK7(dev);
+        if (dev.Protocol == Protocol0x4D)
+            return Poll0x4D(dev);
+
+        // 形态固定的协议由解释器发帧与解析；"没发帧"与"发了没应答"必须分开，否则会被误记成失败
+        if (dev.Protocol is ProtocolGmouse or ProtocolHeadsetV9 or ProtocolHeadsetX9 or ProtocolCzBlock)
+        {
+            var outcome = Engine.Poll(dev.Handle, RefOf(dev), dev.Protocol, IsWritesEnabled(SettingsKey),
+                activeAllowed: MchoseActiveQueryPolicy.Allows(dev.Info, dev.Protocol));
+            if (outcome.Attempt == PollAttempt.NotAttempted) return null;
+            if (outcome.Attempt == PollAttempt.Answered) ReportPollAnswered(dev);
+            else ReportPollFailure(dev);
+            if (outcome.Attempt != PollAttempt.Answered) return null;
+
+            return dev.Protocol == ProtocolCzBlock
+                ? MchoseSpecs.ResolveFull(outcome.Percent, outcome.Charging)
+                : (outcome.Percent, outcome.Charging);
+        }
 
         var read = dev.Protocol switch
         {
-            "qhw" => PollQhw(dev),
             ProtocolKeyboardV1 => PollKeyboardV1(dev),
-            ProtocolHeadsetV9 => PollHeadsetV9(dev),
-            ProtocolHeadsetX9 => PollHeadsetX9(dev),
-            ProtocolGmouse => PollGmouse(dev),
             _ => null,
         };
 
@@ -345,70 +509,143 @@ public sealed class MchosePlugin : BatteryPluginBase
             return null;
         }
 
-        if (dev.Protocol is "qhw" or "qhw-push")
+        if (dev.Protocol == Protocol0x4D)
         {
+            // 设备自报的 0x0600 电源事件优先（带的是设备真状态）；CZ 的 FA FB 07 推送只是 dongle 侧兜底。
+            if (Mchose0x4DCodec.TryParseStatusEvent(input, out var evt))
+            {
+                // 档位与电源是两类事件：先各自落地，纯档位事件不能因为缺电源字段被整条丢掉
+                if (evt.DpiIndex is { } stage) ApplyDpiStage(dev, stage, input);
+                if (evt.Percent is null && evt.ChargeStatus is null) return null;   // 纯档位事件不碰电量/充电
+
+                // 事件一次只带一个字段（电量帧 / 充电帧是两条不同的帧），缺的那个沿用当前值，
+                // 否则会把另一项冲成 Unknown。连历史电量都没有就没什么可报的，等下一帧。
+                int? percent = evt.Percent ?? dev.Status.BatteryPercent;
+                if (!percent.HasValue) return null;
+                var charging = evt.ChargeStatus is { } raw
+                    ? Mchose0x4DCodec.ToChargingState(raw, percent.Value)
+                    : dev.Status.Charging;
+
+                Log.Debug($"迈从 0x4D 状态事件: 电量={evt.Percent?.ToString() ?? "(未带)"} " +
+                          $"充电={evt.ChargeStatus?.ToString() ?? "(未带)"} " +
+                          $"档位={evt.DpiIndex?.ToString() ?? "(未带)"} 原始={Log.Hex(input)}");
+                return (percent, charging, Offline: false);
+            }
+
             var cz = ParseCzPush(input);
             if (cz.HasValue)
                 return (cz.Value.Percent,
                     cz.Value.Charging ? ChargingState.Charging : ChargingState.Discharging,
                     Offline: false);
-        }
 
-        if (dev.Protocol == ProtocolMouseK7)
-        {
-            if (!MchoseK7Codec.TryParseStatusEvent(input, out var evt)) return null;
-
-            // 0x0600 事件一次只带一个字段（电量帧 / 充电帧是两条不同的帧），缺的那个沿用当前值，
-            // 否则会把另一项冲成 Unknown。连历史电量都没有就没什么可报的，等下一帧。
-            int? percent = evt.Percent ?? dev.Status.BatteryPercent;
-            if (!percent.HasValue) return null;
-            var charging = evt.ChargeStatus is { } raw ? MapK7Charge(raw, percent.Value) : dev.Status.Charging;
-
-            Log.Debug($"迈从 K7 状态事件: 电量={evt.Percent?.ToString() ?? "(未带)"} " +
-                      $"充电={evt.ChargeStatus?.ToString() ?? "(未带)"} 原始={Log.Hex(input)}");
-            return (percent, charging, Offline: false);
+            return null;
         }
 
         return null;
     }
 
-    private static byte _seq = 1;
+    /// <summary>只拿到被动推送的接口（按路径）：这类设备不发查询帧，读数交给后台监听。</summary>
+    private readonly ConcurrentDictionary<string, bool> _pushOnly = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>构造官方 QHW 帧：[0x4D, ver=1, flags=3, len, cmdLo, cmdHi, biz=0, seq, payload…, XOR 校验]，补零到接口输出长度。</summary>
-    private static byte[] BuildQhwFrame(HidDeviceHandle handle, ushort command, params byte[] payload)
-    {
-        int outLen = Math.Max(handle.Info.OutputReportLength, payload.Length + 10);
-        var frame = new byte[outLen];
-        frame[0] = QhwReportId;
-        frame[1] = 0x01;                      // version
-        frame[2] = 0x03;                      // flags
-        frame[3] = (byte)payload.Length;      // length
-        frame[4] = (byte)(command & 0xFF);    // cmd lo
-        frame[5] = (byte)(command >> 8);      // cmd hi
-        frame[6] = 0x00;                      // bizCode
-        frame[7] = _seq++;                    // sequence
-        for (int i = 0; i < payload.Length; i++) frame[8 + i] = payload[i];
-        byte xor = 0;
-        for (int i = 1; i < 8 + payload.Length; i++) xor ^= frame[i]; // 官方: 255 & d[1..] 逐字节异或
-        frame[8 + payload.Length] = xor;
-        return frame;
-    }
+    /// <summary>等设备应答的窗口。官方 <c>waitCommand</c> 默认 3 s；真机 6.5 小时长跑没丢过帧，1.2 s 够用且不拖慢发现节拍。</summary>
+    private static readonly TimeSpan ReplyWindow = TimeSpan.FromSeconds(1.2);
 
-    /// <summary>解析 QHW 响应。返回 (充电状态字节, 电量%) 或 null（非电量响应）。</summary>
-    private static (byte ChargeRaw, int Percent)? ParseQhwBatteryResponse(byte[] input, ushort command)
+    /// <summary>
+    /// 0x4D 探测/轮询的公共读写会话：发一条 <c>0x0900</c>，在窗口内收应答。
+    /// <paramref name="requireReading"/> = false 时**写成功即算认领**（返回 null 读数），用于已知 0x4D 通道：
+    /// 鼠标睡着时 dongle 仍回 1 字节 FF，那是"有应答无读数"，不该把设备丢掉。
+    /// </summary>
+    private (string Protocol, int? Percent, ChargingState Charging)? Try0x4D(
+        HidDeviceHandle handle, bool requireReading)
     {
-        // Windows ReadInput 缓冲 [0]=report ID；兼容无 ID 前缀（[0]=0）两种布局
-        foreach (int off in new[] { 0, 1 })
+        // 输出通道装不下 64 字节帧：写进去只会越界，直接判"不是这条通道"
+        if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return null;
+
+        // 未授权写入时只能被动等推送（正常情况下走不到：插件开关即授权）；保留作纵深防御
+        if (!IsWritesEnabled(SettingsKey))
         {
-            if (input.Length < off + 10) continue;
-            if (input[off] != QhwReportId || input[off + 1] != 0x01) continue;
-            if (input[off + 4] != (command & 0xFF) || input[off + 5] != (command >> 8)) continue;
-            byte charge = input[off + 8];
-            byte pct = input[off + 9];
-            if (pct <= InvalidPercentFloor || pct > 100 || charge > 2) return null;   // ≤1 = 休眠/关机占位帧，无效
-            return (charge, pct);
+            var passive = ListenCzPush(handle, TimeSpan.FromSeconds(3));
+            if (passive.HasValue)
+            {
+                var (pct0, chg0) = passive.Value;
+                return (ProtocolPushOnly, pct0, chg0 ? ChargingState.Charging : ChargingState.Discharging);
+            }
+            Log.Once(LogLevel.Info, LogKey(handle, LogKey0x4DNoPermit),
+                $"迈从 0x4D: 未开启写入许可，跳过主动查询: {handle.Info.DevicePath}");
+            return null;
         }
-        return null;
+        Log.ResetOnce(LogKey(handle, LogKey0x4DNoPermit));
+
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, Protocol0x4D))
+        {
+            Log.Once(LogLevel.Debug, LogKey(handle, LogKey0x4DUnverified),
+                $"迈从 0x4D: 目录未验证，跳过主动查询: {handle.Info.DevicePath}");
+            return null;
+        }
+
+        var query = Mchose0x4DCodec.BuildDeviceInfoQuery();
+        bool wrote = false;
+        byte[]? lastAnswer = null;
+
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            // quiet：非 0x4D 通道的描述符里没有 report 0x4D，写失败正是"不是这条通道"的判据
+            if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true))
+            {
+                Log.Debug($"迈从 0x4D 第{attempt}次写失败: {handle.Info.DevicePath}");
+                return null;
+            }
+            wrote = true;
+
+            var deadline = DateTime.UtcNow + ReplyWindow;
+            while (DateTime.UtcNow < deadline)
+            {
+                var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
+                if (input == null) continue;
+
+                // 这颗 dongle 会把自己的 output 报告原样回显成一条输入帧；回显不是应答，必须跳过
+                if (input.AsSpan().SequenceEqual(query)) continue;
+                lastAnswer = input;
+
+                if (Mchose0x4DCodec.TryParseDeviceInfo(input, out int percent, out byte charge, out byte connect))
+                {
+                    Log.ResetOnce(LogKey(handle, LogKey0x4DAsleep));
+                    Log.Info($"迈从 0x4D 设备信息: 电量={percent} 充电状态={charge} 连接状态={connect} " +
+                             $"原始={Log.Hex(input)}");
+                    RememberIdentity(handle, input);
+                    // 认领落地要用这一帧：否则徽标会先按来源显示成 2.4G，等第一条轮询才纠正
+                    KnownProbeConnection[handle.Info.DevicePath] = Mchose0x4DCodec.ToConnectionKind(connect);
+                    return (Protocol0x4D, percent, Mchose0x4DCodec.ToChargingState(charge, percent));
+                }
+
+                // dongle 侧兜底：CZ 电量推送（FA FB 07）也可能在这条通道上出现
+                var push = ParseCzPush(input);
+                if (push.HasValue)
+                {
+                    Log.Info($"迈从 0x4D 收到 CZ 电量推送: 电量={push.Value.Percent} 充电={push.Value.Charging} " +
+                             $"原始={Log.Hex(input)}");
+                    return (ProtocolPushOnly, push.Value.Percent,
+                        push.Value.Charging ? ChargingState.Charging : ChargingState.Discharging);
+                }
+            }
+            Thread.Sleep(150);
+        }
+
+        if (!wrote) return null;
+
+        // 没读到有效应答：把握不足的通道要交还给后续判据（CZ 分块读 / E2），不能占着不放
+        if (requireReading)
+        {
+            Log.Once(LogLevel.Debug, LogKey(handle, LogKey0x4DSilent),
+                $"迈从 0x4D 无有效读数（可能是别的通道，回落到后续判据）: {handle.Info.DevicePath} " +
+                $"最后应答={(lastAnswer == null ? "(无)" : Log.Hex(lastAnswer))}");
+            return null;
+        }
+
+        Log.Once(LogLevel.Info, LogKey(handle, LogKey0x4DAsleep),
+            $"迈从 0x4D 三次都没拿到设备信息（鼠标多半在睡，唤醒后会由 0x0600 事件补上；" +
+            $"恢复应答后会再记一条）: {handle.Info.DevicePath} 最后应答={(lastAnswer == null ? "(无)" : Log.Hex(lastAnswer))}");
+        return (Protocol0x4D, null, ChargingState.Unknown);
     }
 
     /// <summary>解析 CZ 通道电量推送 [0xFA, 0xFB, 0x07, 电量%, 充电标志]（官方 handleMessage 分支）。</summary>
@@ -423,112 +660,6 @@ public sealed class MchosePlugin : BatteryPluginBase
             if (pct <= InvalidPercentFloor || pct > 100 || chg > 2) return null;   // ≤1 = 休眠/关机占位帧，无效
             return (pct, chg == 1);
         }
-        return null;
-    }
-
-    private static ChargingState MapCharging(byte chargeRaw)
-    {
-        return chargeRaw switch
-        {
-            1 => ChargingState.Charging,
-            2 => ChargingState.Full,
-            0 => ChargingState.Discharging,
-            _ => ChargingState.Unknown,
-        };
-    }
-
-    /// <summary>发送官方握手帧（数据 AA 55 AA 55 AA 55，report 0x4D）。</summary>
-    /// <param name="quiet">
-    /// 写失败时不记 WARN。**只有"把握手当通道判据"的探测路径该传 true**——非 QHW 通道的描述符里
-    /// 没有 report 0x4D，写必然失败，这正是"不是这条通道"的判据；已知 QHW 设备上的握手写失败是真故障。
-    /// </param>
-    private static bool SendQhwHandshake(HidDeviceHandle handle, bool quiet = false)
-    {
-        var handshake = new byte[handle.Info.OutputReportLength];
-        handshake[0] = QhwReportId;
-        byte[] data = { 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55 };
-        Array.Copy(data, 0, handshake, 1, data.Length);
-        return handle.WriteOutput(handshake, TimeSpan.FromMilliseconds(500), quiet);
-    }
-
-    /// <summary>
-    /// 官方 QHW 电量查询（M HUB WEB 时序：握手 → getBattery(0x0904)）。
-    /// 握手放最前：非 QHW dongle 会在握手写入处立即失败并快速退出，不再先空等被动监听。
-    /// </summary>
-    private static (string Protocol, int? Percent, ChargingState Charging)? TryQhw(HidDeviceHandle handle)
-    {
-        // 未授权写入时只能被动等推送（正常情况下走不到：插件开关即授权）；保留作纵深防御
-        if (!IsWritesEnabled(SettingsKey))
-        {
-            var passive = ListenCzPush(handle, TimeSpan.FromSeconds(3));
-            if (passive.HasValue)
-            {
-                var (pct0, chg0) = passive.Value;
-                return ("qhw-push", pct0, chg0 ? ChargingState.Charging : ChargingState.Discharging);
-            }
-            // 只在状态变化时记：关掉写入许可后设备永远不会被认领，逐次记录会无限刷屏。
-            Log.Once(LogLevel.Info, LogKey(handle, LogKeyQhwNoPermit),
-                $"迈从 qhw: 未开启写入许可，跳过主动查询: {handle.Info.DevicePath}");
-            return null;
-        }
-
-        // 许可已开：清掉"没许可"的记过标记，下次再关掉时会重新记一条
-        Log.ResetOnce(LogKey(handle, LogKeyQhwNoPermit));
-
-        // 官方时序：先握手。非 QHW dongle（如本机 G87）握手写会立即以 ERROR_INVALID_PARAMETER 失败，
-        // 这里直接返回，省掉旧版"先空等 3 秒被动监听"的浪费（对照实验已确认结果相同）。
-        // quiet: true —— 写失败在这里是**预期结果**（"不是 QHW 通道"的判据）；否则发现节拍每 15 秒
-        // 就刷一条看着像故障的 WARN。INFO/Debug 也只记第一次，避免设备一直睡着时重复刷屏。
-        if (!SendQhwHandshake(handle, quiet: true))
-        {
-            Log.Once(LogLevel.Debug, LogKey(handle, LogKeyQhwSkip),
-                $"迈从 qhw 握手写失败（非 QHW 通道，快速跳过；同路径后续不再重复记录）: {handle.Info.DevicePath}");
-            return null;
-        }
-
-        // 握手成功说明是 QHW 通道：清掉"不是 QHW"的标记，先给一小段时间收 CZ 自发电量推送
-        Log.ResetOnce(LogKey(handle, LogKeyQhwSkip));
-        var result = ListenCzPush(handle, TimeSpan.FromSeconds(1));
-        if (result.HasValue)
-        {
-            var (pct, charging) = result.Value;
-            return ("qhw-push", pct, charging ? ChargingState.Charging : ChargingState.Discharging);
-        }
-
-        var frame = BuildQhwFrame(handle, CmdGetBattery);
-        for (int attempt = 1; attempt <= 2; attempt++)
-        {
-            if (!handle.WriteOutput(frame, TimeSpan.FromMilliseconds(500)))
-            {
-                Log.Debug($"迈从 qhw 第{attempt}次写失败: {handle.Info.DevicePath}");
-                return null;
-            }
-
-            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
-            while (DateTime.UtcNow < deadline)
-            {
-                var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
-                if (input == null) continue;
-
-                var push = ParseCzPush(input);
-                if (push.HasValue)
-                {
-                    Log.Info($"迈从 qhw 收到 CZ 电量推送: 电量={push.Value.Percent} 充电={push.Value.Charging} 原始={Log.Hex(input)}");
-                    return ("qhw-push", push.Value.Percent,
-                        push.Value.Charging ? ChargingState.Charging : ChargingState.Discharging);
-                }
-
-                var parsed = ParseQhwBatteryResponse(input, CmdGetBattery);
-                if (parsed.HasValue)
-                {
-                    Log.Info($"迈从 qhw getBattery 解析: 电量={parsed.Value.Percent} 状态字节={parsed.Value.ChargeRaw} 原始={Log.Hex(input)}");
-                    return ("qhw", parsed.Value.Percent, MapCharging(parsed.Value.ChargeRaw));
-                }
-
-                Log.Debug($"迈从 qhw 收到非匹配报文: {Log.Hex(input)}");
-            }
-        }
-        Log.Info($"迈从 qhw 无电量响应: {handle.Info.DevicePath}");
         return null;
     }
 
@@ -554,9 +685,10 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// 鼠标 V2 探测：先纯被动等 E2 状态帧（接收器约 10 秒推一次）；等不到才发一次触发帧
     /// （0x11/0x06，官方驱动同款）。触发帧构造见 <see cref="MchoseMouseCodec.BuildPokeFrame"/>。
     /// </summary>
-    private static (string Protocol, int? Percent, ChargingState Charging)? TryMouseV2(HidDeviceHandle handle)
+    private (string Protocol, int? Percent, ChargingState Charging)? TryMouseV2(HidDeviceHandle handle)
     {
         if (!IsWritesEnabled(SettingsKey)) return null;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, ProtocolMouseV2)) return null;
 
         var push = ListenE2(handle, TimeSpan.FromSeconds(3));
         if (!push.HasValue)
@@ -600,91 +732,23 @@ public sealed class MchosePlugin : BatteryPluginBase
     }
 
     // ══════════════════════════════════════════════════════════════════
-    //  K7 V2 Ultra+（3837:1018，output 0x4D 单通道）
-    //  帧格式与字段表见 MchoseK7Codec；依据是官方 M HUB 的 i1e / _K / LA，不是猜的。
+    //  0x4D（原 qhw / mouse-k7 合并）：帧格式与字段表见 Mchose0x4DCodec
     // ══════════════════════════════════════════════════════════════════
 
-    /// <summary>K7 查询的应答等待窗口。实测 dongle 回包在 1 秒内，鼠标在睡时会回 1 字节 0xFF。</summary>
-    private static readonly TimeSpan K7ReplyWindow = TimeSpan.FromSeconds(1.2);
-
     /// <summary>
-    /// K7 探测：发一条 <c>0x0900</c> 读设备信息，最多 3 次。
-    ///
-    /// 与其它协议的关键差别：**"只回 0xFF" 也是协议确认成功**。0xFF 的含义是"鼠标在睡 / 2.4G 暂时
-    /// 联系不上"，官方 <c>hgt()</c> 对它的处理也正是重试 + 容忍无读数。所以即使这轮拿不到电量，
-    /// 只要帧写得进去就返回 <c>("mouse-k7", null, Unknown)</c> 把设备认领下来——读数交给后续轮询与
-    /// <c>0x0600</c> 事件帧；认领后 <c>IsOnline</c> 为 false（在位但不可读），鼠标一动就会被事件帧翻回在线。
-    ///
-    /// 反过来，**写失败就直接返回 null**：这颗 dongle 只有一条 output 通道，写不进去说明不是它。
-    /// </summary>
-    private static (string Protocol, int? Percent, ChargingState Charging)? TryMouseK7(HidDeviceHandle handle)
-    {
-        if (handle.Info.OutputReportLength < MchoseK7Codec.FrameLength) return null;
-
-        if (!IsWritesEnabled(SettingsKey))
-        {
-            Log.Once(LogLevel.Info, LogKey(handle, LogKeyK7NoPermit),
-                $"迈从 K7: 未开启写入许可，跳过主动查询: {handle.Info.DevicePath}");
-            return null;
-        }
-        Log.ResetOnce(LogKey(handle, LogKeyK7NoPermit));
-
-        var query = MchoseK7Codec.BuildDeviceInfoQuery();
-        bool wrote = false;
-        byte[]? lastAnswer = null;
-
-        for (int attempt = 1; attempt <= 3; attempt++)
-        {
-            if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true))
-            {
-                // quiet：非 K7 通道写失败是预期结果（"不是这条通道"的判据），逐次 WARN 只会掩盖真故障
-                Log.Debug($"迈从 K7 第{attempt}次写失败: {handle.Info.DevicePath}");
-                return null;
-            }
-            wrote = true;
-
-            var deadline = DateTime.UtcNow + K7ReplyWindow;
-            while (DateTime.UtcNow < deadline)
-            {
-                var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
-                if (input == null) continue;
-
-                // 这颗 dongle 会把自己的 output 报告原样回显成一条输入帧；回显不是应答，必须跳过
-                if (input.AsSpan().SequenceEqual(query)) continue;
-                lastAnswer = input;
-
-                if (MchoseK7Codec.TryParseDeviceInfo(input, out int percent, out byte charge, out byte connect))
-                {
-                    Log.ResetOnce(LogKey(handle, LogKeyK7Asleep));
-                    Log.Info($"迈从 K7 设备信息: 电量={percent} 充电状态={charge} 连接状态={connect} " +
-                             $"原始={Log.Hex(input)}");
-                    return (ProtocolMouseK7, percent, MapK7Charge(charge, percent));
-                }
-            }
-            Thread.Sleep(150);
-        }
-
-        if (!wrote) return null;
-
-        Log.Once(LogLevel.Info, LogKey(handle, LogKeyK7Asleep),
-            $"迈从 K7 三次都没拿到设备信息（鼠标多半在睡，唤醒后会由 0x0600 事件补上；" +
-            $"恢复应答后会再记一条）: {handle.Info.DevicePath} 最后应答={(lastAnswer == null ? "(无)" : Log.Hex(lastAnswer))}");
-        return (ProtocolMouseK7, null, ChargingState.Unknown);
-    }
-
-    /// <summary>
-    /// K7 轮询：一次 <c>0x0900</c>，最多重试 2 次。
+    /// 0x4D 轮询：一条 <c>0x0900</c>，最多重试 2 次。
     ///
     /// **记账由本方法自己做**，规则是"dongle 回了任何 0x4D 帧就算有应答"，<b>包含</b>只回 1 字节 0xFF 的
     /// "鼠标在睡"。若按普通失败记，睡着的鼠标连续三轮就会被判离线并熔断停写，之后醒了也不会再被问——
-    /// 这是这颗 dongle 与其它协议最大的不同，也是它不能走 <see cref="PollDevice"/> 通用记账的原因。
+    /// 这是 0x4D 通道与其它协议最大的不同，也是它不能走 <see cref="PollDevice"/> 通用记账的原因。
     /// </summary>
-    private (int? Percent, ChargingState Charging)? PollMouseK7(TrackedDevice dev)
+    private (int? Percent, ChargingState Charging)? Poll0x4D(TrackedDevice dev)
     {
         var handle = dev.Handle;
-        if (handle.Info.OutputReportLength < MchoseK7Codec.FrameLength) return null;
+        if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return null;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, Protocol0x4D)) return null;
 
-        var query = MchoseK7Codec.BuildDeviceInfoQuery();
+        var query = Mchose0x4DCodec.BuildDeviceInfoQuery();
         bool answered = false;
         byte[]? lastAnswer = null;
 
@@ -692,28 +756,34 @@ public sealed class MchosePlugin : BatteryPluginBase
         {
             if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500)))
             {
-                Log.Debug($"迈从 K7 轮询第{attempt}次写失败: {handle.Info.DevicePath}");
+                Log.Debug($"迈从 0x4D 轮询第{attempt}次写失败: {handle.Info.DevicePath}");
                 continue;
             }
 
-            var deadline = DateTime.UtcNow + K7ReplyWindow;
+            var deadline = DateTime.UtcNow + ReplyWindow;
             while (DateTime.UtcNow < deadline)
             {
                 var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
                 if (input == null) continue;
                 if (input.AsSpan().SequenceEqual(query)) continue;   // 写回显，不是应答
 
-                if (MchoseK7Codec.LooksLikeReply(input))
+                if (Mchose0x4DCodec.LooksLikeReply(input))
                 {
                     answered = true;
                     lastAnswer = input;
                 }
 
-                if (MchoseK7Codec.TryParseDeviceInfo(input, out int percent, out byte charge, out byte connect))
+                if (Mchose0x4DCodec.TryParseDeviceInfo(input, out int percent, out byte charge, out byte connect))
                 {
                     ReportPollAnswered(dev);
-                    Log.Info($"迈从 K7 轮询: 电量={percent} 充电状态={charge} 连接状态={connect}");
-                    return (percent, MapK7Charge(charge, percent));
+                    Log.Info($"迈从 0x4D 轮询: 电量={percent} 充电状态={charge} 连接状态={connect}");
+                    RememberIdentity(handle, input);
+                    // 自报身份可能这一拍才拿到（认领时设备在睡），拿到就立刻落进状态
+                    if (ApplyIdentity(dev.Status, handle.Info)) RaiseStatusPushed(dev.Status);
+                    // 连接方式只刷新徽标：Unknown 不覆盖已知值，也不参与在线判定（在线仍只看有无应答）
+                    SetConnection(dev, Mchose0x4DCodec.ToConnectionKind(connect));
+                    ReadPointerOnce(dev);   // 回报率发布一次；DPI 配置只记日志
+                    return (percent, Mchose0x4DCodec.ToChargingState(charge, percent));
                 }
             }
         }
@@ -722,8 +792,8 @@ public sealed class MchosePlugin : BatteryPluginBase
         {
             // dongle 在、只是鼠标在睡：算有应答，只是这轮没读数
             ReportPollAnswered(dev);
-            Log.Once(LogLevel.Debug, LogKey(handle, LogKeyK7Asleep),
-                $"迈从 K7 轮询只收到拒绝应答（鼠标多半在睡，唤醒后自动恢复；恢复后会再记一条）: " +
+            Log.Once(LogLevel.Debug, LogKey(handle, LogKey0x4DAsleep),
+                $"迈从 0x4D 轮询只收到拒绝应答（鼠标多半在睡，唤醒后自动恢复；恢复后会再记一条）: " +
                 $"{handle.Info.DevicePath} 最后应答={(lastAnswer == null ? "(无)" : Log.Hex(lastAnswer))}");
         }
         else
@@ -734,194 +804,211 @@ public sealed class MchosePlugin : BatteryPluginBase
     }
 
     /// <summary>
-    /// K7 的充电状态字节：0 未充电 / 1 充电中 / 2 已充满。未充电且 100% 按"已充满"收尾——
-    /// 这条收尾规则全项目共用 <see cref="ChargingStateMap.FromChargingFlag"/>。
+    /// 记下 `0x0900` 自报的配对身份（只读解析，**不改认领**）。型号只来自目录，目录没有就留空——
+    /// dongle PID 被多款共用，不能反推型号（mchose.md §3.3、mchose-catalog.md §1.3）。
     /// </summary>
-    private static ChargingState MapK7Charge(byte chargeStatus, int percent) => chargeStatus switch
+    private void RememberIdentity(HidDeviceHandle handle, byte[] frame)
     {
-        0 => ChargingStateMap.FromChargingFlag(charging: false, percent),
-        1 => ChargingStateMap.FromChargingFlag(charging: true, percent),
-        2 => ChargingState.Full,
-        _ => ChargingState.Unknown,
-    };
+        if (!Mchose0x4DCodec.TryParseDeviceIdentity(frame, out ushort vid, out ushort pid)) return;
 
-    // ══════════════════════════════════════════════════════════════════
-    //  Gmouse 主动查询（3837:4245，usagePage 0xFF01/usage 0x10，65 字节）
-    //  帧格式与字段表见 MchoseGmouseCodec；依据是官方 M HUB 网页端 /gmouse。
-    // ══════════════════════════════════════════════════════════════════
+        var model = MchoseDeviceCatalog.TryGet(vid, pid, out var entry) ? entry.Model : "";
+        var identity = MchoseDeviceIdentity.FromUsb(handle.Info).WithReported(vid, pid, model);
+        var path = handle.Info.DevicePath;
 
-    /// <summary>Gmouse 查询的应答等待窗口。实测 dongle 回包在 1 秒内。</summary>
-    private static readonly TimeSpan GmouseReplyWindow = TimeSpan.FromSeconds(1.2);
+        // 每轮都解析，只在身份变化时落库与记日志（轮询 60 秒一次，否则日志会被同一行刷满）
+        if (KnownIdentityByPath.TryGetValue(path, out var known) && known == identity) return;
+        KnownIdentityByPath[path] = identity;
 
-    /// <summary>Gmouse 探测：主动查询最多 2 次，拿到电量才认领（它没有被动推送可等）。</summary>
-    private static (string Protocol, int? Percent, ChargingState Charging)? TryGmouse(HidDeviceHandle handle)
+        var transport = MchoseDeviceCatalog.TryGetTransport(handle.Info.VendorId, handle.Info.ProductId, out var t)
+            ? t.Role
+            : "(未登记)";
+        Log.Info($"迈从身份: 自报={vid:X4}:{pid:X4} 型号={(model.Length == 0 ? "(目录未收录)" : model)} " +
+                 $"通道={transport} 枚举={handle.Info.VidPid}");
+    }
+
+    /// <summary>
+    /// 把 <c>0x0600</c> bit0 的活动档位落到指针遥测。**存协议原值（0 基）**——官方 UI 显示 index+1 是它的展示选择。
+    /// </summary>
+    private void ApplyDpiStage(TrackedDevice dev, byte stage, byte[] raw)
     {
-        if (!IsWritesEnabled(SettingsKey))
+        Log.Info($"迈从 0x4D 档位事件: stage={stage} 设备={dev.Info.VidPid} 原始={Log.Hex(raw)}");
+        SetPointerTelemetry(dev, new PointerTelemetry
         {
-            Log.Once(LogLevel.Info, LogKey(handle, LogKeyGmouseNoPermit),
-                $"迈从 Gmouse: 未开启写入许可，跳过主动查询: {handle.Info.DevicePath}");
-            return null;
-        }
-        Log.ResetOnce(LogKey(handle, LogKeyGmouseNoPermit));
-
-        var result = QueryGmouse(handle);
-        return result.HasValue ? (ProtocolGmouse, result.Value.Percent, result.Value.Charging) : null;
+            DpiLevel = TelemetryValue<int>.Reported(stage, DateTimeOffset.Now),
+        });
     }
 
-    /// <summary>写查询帧等应答；无应答只在状态变化时记一条 Debug（鼠标不在位时每 15 秒重探，逐次记会刷满日志）。</summary>
-    private static (int Percent, ChargingState Charging)? QueryGmouse(HidDeviceHandle handle)
+    /// <summary>接口路径 → 取证状态：≥0 是已尝试轮数，<see cref="PointerProbeDone"/> 表示已成功收工。</summary>
+    private readonly ConcurrentDictionary<string, int> PointerProbeAttempts = new(StringComparer.OrdinalIgnoreCase);
+
+    private const int PointerProbeDone = -1;
+    private const int PointerProbeMaxAttempts = 3;
+
+    /// <summary>
+    /// 认领后读回报率与 DPI 配置。**最多 3 轮**、两项都成功才收工——睡着的设备不该因为第一次没应答就永久放弃。
+    /// </summary>
+    private void ReadPointerOnce(TrackedDevice dev)
     {
-        for (int attempt = 1; attempt <= 2; attempt++)
+        var handle = dev.Handle;
+        var path = handle.Info.DevicePath;
+
+        int attempts = PointerProbeAttempts.GetOrAdd(path, 0);
+        if (attempts < 0 || attempts >= PointerProbeMaxAttempts) return;
+        PointerProbeAttempts[path] = attempts + 1;
+        bool lastChance = attempts + 1 >= PointerProbeMaxAttempts;
+
+        bool rateOk = TryReadPerformance(handle, out var rate, out var rateRaw);
+        if (rateOk) ReportRate(dev, rate, rateRaw);
+        else LogProbeFailure(lastChance,
+            $"迈从 0x4D 性能配置读取无应答（命令 0x0002，设备 {handle.Info.VidPid}）: {path}");
+
+        bool dpiOk = TryReadDpi(handle, 0, Mchose0x4DCodec.DirectionX, out var xAxis, out var xRaw);
+        if (!dpiOk)
         {
-            if (!handle.WriteOutput(MchoseGmouseCodec.CreateQuery(), TimeSpan.FromMilliseconds(500), quiet: true))
+            LogProbeFailure(lastChance,
+                $"迈从 0x4D DPI 读取无应答（命令 0x0003 档 0 方向 X，设备 {handle.Info.VidPid}）: {path}");
+        }
+        else
+        {
+            Log.Info($"迈从 0x4D DPI(X): 设备={handle.Info.VidPid} 档={xAxis.ProfileIndex} " +
+                     $"档数={xAxis.DpiSum} 当前档={xAxis.ActiveIndex} 有Y={xAxis.HasY} " +
+                     $"值=[{string.Join(",", xAxis.Values)}] 原始={Log.Hex(xRaw)}");
+
+            // 只有 X 解析成功且设备声明有独立 Y 轴才发第二条；Y 失败只丢 Y，不影响 X
+            if (Mchose0x4DCodec.ShouldReadYAxis(xParsed: true, xAxis.HasY))
             {
-                // quiet：非 Gmouse 通道写失败是预期结果（"不是这条通道"的判据）
-                Log.Debug($"迈从 Gmouse 第{attempt}次写失败: {handle.Info.DevicePath}");
-                return null;
-            }
-
-            var deadline = DateTime.UtcNow + GmouseReplyWindow;
-            while (DateTime.UtcNow < deadline)
-            {
-                var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
-                if (input == null) continue;
-
-                if (!MchoseGmouseCodec.TryParse(input, out int percent, out bool charging))
-                {
-                    if (Log.IsEnabled(LogLevel.Debug)) Log.Debug($"迈从 Gmouse 忽略非电量响应: {Log.Hex(input)}");
-                    continue;
-                }
-
-                Log.ResetOnce(LogKey(handle, LogKeyGmouseSilent));
-                Log.Info($"迈从 Gmouse 电量查询: 电量={percent} 充电={charging} 原始={Log.Hex(input)}");
-                // 走公共收尾规则：100% 且未充电判 Full，与 K7/V1/QHW 口径一致
-                return (percent, ChargingStateMap.FromChargingFlag(charging, percent));
+                if (TryReadDpi(handle, xAxis.ProfileIndex, Mchose0x4DCodec.DirectionY, out var yAxis, out var yRaw))
+                    Log.Info($"迈从 0x4D DPI(Y): 设备={handle.Info.VidPid} 档={yAxis.ProfileIndex} " +
+                             $"值=[{string.Join(",", yAxis.Values)}] 原始={Log.Hex(yRaw)}");
+                else
+                    Log.Debug($"迈从 0x4D DPI(Y) 读取无应答，X 结果保留: {path}");
             }
         }
 
-        Log.Once(LogLevel.Debug, LogKey(handle, LogKeyGmouseSilent),
-            $"迈从 Gmouse 查询无响应（鼠标多半在关机/休眠；恢复应答后会再记一条）: {handle.Info.DevicePath}");
-        return null;
+        if (rateOk && dpiOk) PointerProbeAttempts[path] = PointerProbeDone;
     }
 
-    /// <summary>Gmouse 轮询：只发一条查询帧。失败记账仍由 <see cref="PollDevice"/> 在发过帧的分支里报。</summary>
-    private static (int? Percent, ChargingState Charging)? PollGmouse(TrackedDevice dev)
+    /// <summary>失败日志：最后一轮记 Info（取证要看得见），中间轮记 Debug（别刷屏）。</summary>
+    private static void LogProbeFailure(bool lastChance, string message)
     {
-        if (!IsWritesEnabled(SettingsKey)) return null;
-        var result = QueryGmouse(dev.Handle);
-        return result.HasValue ? (result.Value.Percent, result.Value.Charging) : null;
+        if (lastChance) Log.Info(message);
+        else Log.Debug(message);
     }
 
     /// <summary>
-    /// V9 Pro 耳机探测：发一条固定查询帧（见 <see cref="MchoseV9ProCodec"/>），750 毫秒内解析响应。
-    /// 耳机与键鼠共用同一个插件开关——插件开关是**品牌级**的写入授权（`AGENTS.md` §9），不按型号再分一档。
+    /// 记 <c>0x0002</c> 取证行并按判定发布；不发布时已有值原样保留，<c>ReportRateMeasuredHz</c> 永远不填。
     /// </summary>
-    private static (string Protocol, int? Percent, ChargingState Charging)? TryHeadsetV9(HidDeviceHandle handle)
+    private void ReportRate(TrackedDevice dev, MchoseRateIndices indices, byte[] raw)
     {
-        if (!IsWritesEnabled(SettingsKey)) return null;
-        var percent = QueryHeadsetV9(handle);
-        return percent.HasValue ? (ProtocolHeadsetV9, percent, ChargingState.Unknown) : null;
+        var identity = KnownIdentityByPath.TryGetValue(dev.Info.DevicePath, out var known) ? known : default;
+
+        if (!identity.HasReported)
+        {
+            Log.Info($"迈从 0x4D 回报率: 设备={dev.Info.VidPid} 自报=(未知) 命令=0x0002 " +
+                     $"profile={indices.ProfileIndex} usb={indices.UsbRateIndex} g={indices.GRateIndex} " +
+                     $"dpi={indices.DpiIndex} 不发布=型号不明 原始={Log.Hex(raw)}");
+            return;
+        }
+
+        var decision = MchoseRatePolicy.Decide(identity.ReportedProductId!.Value, dev.Info.ProductId,
+            indices.UsbRateIndex, indices.GRateIndex, out int hz, out string table);
+
+        string outcome = decision switch
+        {
+            MchoseRateDecision.Publish => $"发布={hz}Hz 表={table}",
+            MchoseRateDecision.IndicesDiffer => "不发布=两个 index 不一致（语义未确认）",
+            MchoseRateDecision.NoTable => "不发布=目录里没有这张表",
+            _ => $"不发布=index {indices.UsbRateIndex} 超出表 {table} 范围",
+        };
+
+        Log.Info($"迈从 0x4D 回报率: 设备={dev.Info.VidPid} 自报={identity.ReportedProductId:X4} 命令=0x0002 " +
+                 $"profile={indices.ProfileIndex} usb={indices.UsbRateIndex} g={indices.GRateIndex} " +
+                 $"dpi={indices.DpiIndex} {outcome} 原始={Log.Hex(raw)}");
+
+        if (decision != MchoseRateDecision.Publish) return;
+
+        SetPointerTelemetry(dev, new PointerTelemetry
+        {
+            ReportRateSettingHz = TelemetryValue<int>.Inferred(hz, DateTimeOffset.Now),
+        });
     }
 
-    /// <summary>
-    /// V9 Pro 轮询：只发一条查询帧。失败记账仍由 <see cref="PollDevice"/> 在发过帧的分支里
-    /// 调 <see cref="BatteryPluginBase.ReportPollFailure"/>——本插件把 `CountPollFailures` 置了 false。
-    /// </summary>
-    private static (int? Percent, ChargingState Charging)? PollHeadsetV9(TrackedDevice dev)
+    /// <summary>发一条 <c>0x0002</c> 并等应答。**只读**，且只认这个命令的应答。</summary>
+    private static bool TryReadPerformance(HidDeviceHandle handle, out MchoseRateIndices indices, out byte[] raw)
     {
-        if (!IsWritesEnabled(SettingsKey)) return null;
-        var percent = QueryHeadsetV9(dev.Handle);
-        return percent.HasValue ? (percent, ChargingState.Unknown) : null;
-    }
+        indices = default;
+        raw = [];
+        if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return false;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, Protocol0x4D)) return false;
 
-    /// <summary>
-    /// 写查询帧并等响应。**充电语义未知**，调用方一律给 <see cref="ChargingState.Unknown"/>，不猜。
-    /// 无应答只在状态变化时记一条 Debug：耳机不在位时每 15 秒重探一次，逐次记录会把日志刷满。
-    /// </summary>
-    private static int? QueryHeadsetV9(HidDeviceHandle handle)
-    {
-        if (!handle.WriteOutput(MchoseV9ProCodec.CreateQuery(), TimeSpan.FromMilliseconds(500)))
-            return null;
+        var query = Mchose0x4DCodec.BuildPerformanceQuery();
+        if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true)) return false;
 
-        var deadline = DateTime.UtcNow + TimeSpan.FromMilliseconds(750);
+        var deadline = DateTime.UtcNow + ReplyWindow;
         while (DateTime.UtcNow < deadline)
         {
-            var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
+            var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
             if (input == null) continue;
-            if (!MchoseV9ProCodec.TryParse(input, out int percent))
+            if (input.AsSpan().SequenceEqual(query)) continue;   // 写回显，不是应答
+
+            if (Mchose0x4DCodec.TryParsePerformance(input, out indices))
             {
-                if (Log.IsEnabled(LogLevel.Debug)) Log.Debug($"迈从 V9 Pro 忽略非电量响应: {Log.Hex(input)}");
-                continue;
+                raw = input;
+                return true;
             }
-            Log.ResetOnce(LogKey(handle, LogKeyV9Silent));
-            Log.Info($"迈从 V9 Pro 电量查询: 电量={percent} 标志=0x{input[3]:X2} 原始={Log.Hex(input)}");
-            return percent;
         }
-
-        Log.Once(LogLevel.Debug, LogKey(handle, LogKeyV9Silent),
-            $"迈从 V9 Pro 查询无响应（耳机多半在关机/休眠；恢复应答后会再记一条）: {handle.Info.DevicePath}");
-        return null;
+        return false;
     }
 
-    /// <summary>X9 耳机探测：发一条固定查询帧（见 <see cref="MchoseX9Codec"/>），750 毫秒内解析响应。</summary>
-    private static (string Protocol, int? Percent, ChargingState Charging)? TryHeadsetX9(HidDeviceHandle handle)
+    /// <summary>发一条 <c>0x0003</c> 并等应答。**只读**：绝不发 <c>0x01xx</c> 写方向。</summary>
+    private static bool TryReadDpi(HidDeviceHandle handle, byte profile, byte direction,
+        out MchoseDpiReading reading, out byte[] raw)
     {
-        if (!IsWritesEnabled(SettingsKey)) return null;
-        var read = QueryHeadsetX9(handle);
-        return read.HasValue ? (ProtocolHeadsetX9, read.Value.Percent, read.Value.Charging) : null;
-    }
+        reading = default;
+        raw = [];
+        if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return false;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, Protocol0x4D)) return false;
 
-    /// <summary>X9 轮询：只发一条查询帧，失败记账仍由 <see cref="PollDevice"/> 负责。</summary>
-    private static (int? Percent, ChargingState Charging)? PollHeadsetX9(TrackedDevice dev)
-    {
-        if (!IsWritesEnabled(SettingsKey)) return null;
-        var read = QueryHeadsetX9(dev.Handle);
-        return read.HasValue ? (read.Value.Percent, read.Value.Charging) : null;
-    }
+        var query = Mchose0x4DCodec.BuildDpiQuery(profile, direction);
+        if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true)) return false;
 
-    /// <summary>写 X9 查询帧并等响应；无应答只在状态变化时记一条 Debug。</summary>
-    private static (int Percent, ChargingState Charging)? QueryHeadsetX9(HidDeviceHandle handle)
-    {
-        if (!handle.WriteOutput(MchoseX9Codec.CreateQuery(), TimeSpan.FromMilliseconds(500)))
-            return null;
-
-        var deadline = DateTime.UtcNow + TimeSpan.FromMilliseconds(750);
+        var deadline = DateTime.UtcNow + ReplyWindow;
         while (DateTime.UtcNow < deadline)
         {
-            var input = handle.ReadInput(TimeSpan.FromMilliseconds(300));
+            var input = handle.ReadInput(TimeSpan.FromMilliseconds(250));
             if (input == null) continue;
-            if (!MchoseX9Codec.TryParse(input, out int percent, out var charging))
-            {
-                if (Log.IsEnabled(LogLevel.Debug)) Log.Debug($"迈从 X9 忽略非电量响应: {Log.Hex(input)}");
-                continue;
-            }
-            Log.Once(LogLevel.Info, LogKey(handle, LogKeyX9Silent),
-                $"迈从 X9 电量查询: 电量={percent} 状态={charging} 原始={Log.Hex(input)}");
-            return (percent, charging);
-        }
+            if (input.AsSpan().SequenceEqual(query)) continue;   // 写回显，不是应答
 
-        Log.Once(LogLevel.Debug, LogKey(handle, LogKeyX9Silent),
-            $"迈从 X9 查询无响应（耳机多半在关机/休眠；恢复应答后会再记一条）: {handle.Info.DevicePath}");
-        return null;
+            if (Mchose0x4DCodec.TryParseDpi(input, out reading))
+            {
+                raw = input;
+                return true;
+            }
+        }
+        return false;
     }
+
+    // Gmouse / V9 / X9 三套主动查询的帧模板、窗口与重试次数都在 specs/mchose.protocols.json，
+    // 由 Plugins/Protocol/ 的解释器执行（原 QueryGmouse / QueryHeadsetV9 / QueryHeadsetX9 已删）。
 
     /// <summary>
     /// 键盘 V1 协议（本机 dongle 41E4:2001 实测打通，G87 V2 接收器 3837:201B 同协议；与官方 M HUB WEB 抓包一致）。
     /// 帧格式与解析全部在 <see cref="MchoseV1Codec"/>（纯函数，有单测）；帧结构见
-    /// docs/hardware/mchose.md §1。会话必须先开，否则 dongle 不响应；被崩溃进程占住会话时
+    /// docs/hardware/brands/mchose.md §1。会话必须先开，否则 dongle 不响应；被崩溃进程占住会话时
     /// 所有人都会静音，需重新插拔释放。
     ///
     /// "无响应"只在状态变化时记日志：发现节拍每 15 秒重探一次，键盘睡着时逐次记录会把 app.log
     /// 刷满且无新信息。成功一次就 <see cref="Log.ResetOnce"/>。
     /// </summary>
-    private static (int? Percent, ChargingState Charging)? TryKeyboardV1(HidDeviceHandle handle)
+    private (int? Percent, ChargingState Charging)? TryKeyboardV1(HidDeviceHandle handle)
         => TryKeyboardV1(handle, requireKnownModel: false);
 
     /// <summary><paramref name="requireKnownModel"/> = true 用于与 AULA 共用的 3554:FA09 指纹：
     /// 只有会话 ACK 的型号密码落在迈从表里才认领，否则把接口留给 AulaPlugin（aula.md §1.1）。</summary>
-    private static (int? Percent, ChargingState Charging)? TryKeyboardV1(HidDeviceHandle handle, bool requireKnownModel)
+    private (int? Percent, ChargingState Charging)? TryKeyboardV1(HidDeviceHandle handle, bool requireKnownModel)
     {
         if (!IsWritesEnabled(SettingsKey)) return null;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, ProtocolKeyboardV1)) return null;
 
         // 开会话（官方时序），失败不影响下一步——实测 dongle 记住会话状态
         SendKeyboardV1Frame(handle, MchoseV1Codec.SessionCmd, 0x01);
@@ -1058,6 +1145,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     private static (int? Percent, ChargingState Charging)? PollKeyboardV1(TrackedDevice dev)
     {
         if (!IsWritesEnabled(SettingsKey)) return null;
+        if (!MchoseActiveQueryPolicy.Allows(dev.Info, ProtocolKeyboardV1)) return null;
 
         if (!SendKeyboardV1Frame(dev.Handle, MchoseV1Codec.BatteryQueryCmd, 0x01)) return null;
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(1.2);
@@ -1071,50 +1159,4 @@ public sealed class MchosePlugin : BatteryPluginBase
         return null;
     }
 
-    /// <summary>qhw 轮询：握手一次 → getBattery 一条 → 解析（含 CZ 推送兜底）。</summary>
-    private static (int? Percent, ChargingState Charging)? PollQhw(TrackedDevice dev)
-    {
-        if (!IsWritesEnabled(SettingsKey)) return null;
-
-        if (!dev.HandshakeSent)
-        {
-            if (!SendQhwHandshake(dev.Handle))
-            {
-                Log.Debug($"迈从 qhw 轮询握手写失败: {dev.Handle.Info.DevicePath}");
-                return null;
-            }
-            dev.HandshakeSent = true;
-        }
-
-        var frame = BuildQhwFrame(dev.Handle, CmdGetBattery);
-        if (!dev.Handle.WriteOutput(frame, TimeSpan.FromMilliseconds(500)))
-        {
-            Log.Debug($"迈从 qhw 轮询写失败: {dev.Handle.Info.DevicePath}");
-            return null;
-        }
-
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
-        while (DateTime.UtcNow < deadline)
-        {
-            var input = dev.Handle.ReadInput(TimeSpan.FromMilliseconds(300));
-            if (input == null) continue;
-
-            var push = ParseCzPush(input);
-            if (push.HasValue)
-            {
-                Log.Info($"迈从 qhw 轮询收到 CZ 推送: 电量={push.Value.Percent} 充电={push.Value.Charging}");
-                return (push.Value.Percent,
-                    push.Value.Charging ? ChargingState.Charging : ChargingState.Discharging);
-            }
-
-            var parsed = ParseQhwBatteryResponse(input, CmdGetBattery);
-            if (parsed.HasValue)
-            {
-                Log.Info($"迈从 qhw 轮询解析: 电量={parsed.Value.Percent} 状态字节={parsed.Value.ChargeRaw}");
-                return (parsed.Value.Percent, MapCharging(parsed.Value.ChargeRaw));
-            }
-        }
-        Log.Debug($"迈从 qhw 轮询无响应: {dev.Handle.Info.DevicePath}");
-        return null;
-    }
 }

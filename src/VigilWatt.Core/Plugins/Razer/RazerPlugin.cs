@@ -86,7 +86,7 @@ public sealed class RazerPlugin : BatteryPluginBase
         for (int i = 0; i < 8; i++)
             if (handle.ReadInput(TimeSpan.FromMilliseconds(1)) == null) break;
 
-        // 一笔有界会话取得授权后须在 finally 归还远程模式；见 docs/hardware/razer-headset.md。
+        // 一笔有界会话取得授权后须在 finally 归还远程模式；见 docs/hardware/devices/razer-headset.md。
         bool Write(byte[] frame) => authorized && handle.WriteOutput(frame, TimeSpan.FromMilliseconds(500));
         bool opened = false;
         try

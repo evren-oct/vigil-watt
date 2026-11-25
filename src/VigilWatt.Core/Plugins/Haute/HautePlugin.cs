@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Plugins.Haute;
 /// <summary>
 /// 功 能： Haute42 Adapter 4DS 接 DualSense 时的纯读取电量插件（适配器在 USB 上自报 054C:0CE6）。
 /// 2026/10/19 20:38:47 kaniu
-/// 零写入；与 DualSense 插件按"蓝牙 / USB"互斥，帧见 docs/hardware/haute42.md。
+/// 零写入；与 DualSense 插件按"蓝牙 / USB"互斥，帧见 docs/hardware/devices/haute42.md。
 /// </summary>
 public sealed class HautePlugin : BatteryPluginBase
 {

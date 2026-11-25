@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "brand": "MCHOSE",
+  "model": "Ace 60X II",
+  "match": {
+    "displayNames": [
+      "迈从 Ace 60X II",
+      "Ace 60X II"
+    ],
+    "vendorId": "41E4",
+    "productIds": [
+      "2112",
+      "2113"
+    ]
+  },
+  "defaultColor": "color-white",
+  "colors": [
+    {
+      "key": "color-white",
+      "label": "white",
+      "thumbnail": "color-white_thumb.png",
+      "image": "color-white_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace60X_white.png"
+    },
+    {
+      "key": "color-white-line",
+      "label": "white line",
+      "thumbnail": "color-white-line_thumb.png",
+      "image": "color-white-line_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace60X_wihteLine.png"
+    },
+    {
+      "key": "color-black",
+      "label": "black",
+      "thumbnail": "color-black_thumb.png",
+      "image": "color-black_thumb.png",
+      "source": "https://cdn.mchose.com.cn/configCenter/assets/img/keyboard/Ace60X_black.png"
+    }
+  ],
+  "source": "MCHOSE HUB cardList.json"
+}

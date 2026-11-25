@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Keys Mini",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B369"
+    ],
+    "displayNames": [
+      "MX Keys Mini"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_keys_mini.png",
+      "image": "mx_keys_mini.png",
+      "source": "LogiOptions+ devices.json / mx_keys_mini.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

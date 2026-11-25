@@ -6,6 +6,7 @@ obj/
 publish/
 # 安装包产物（scripts/build-installer.ps1 输出：Setup.exe + RELEASES + nupkg）
 dist/
+dist-beta/
 # Gitee 发布令牌（scripts/publish-gitee.ps1 由人工读进 GITEE_TOKEN），绝不入库
 .vpk-gitee-token
 *.log
@@ -14,3 +15,5 @@ dist/
 .workbuddy/
 .workbuddy-ai/
 .zcode/
+# CodeGraph 索引：codegraph.db 约 22MB，其自带 .gitignore 也写明"local to each machine, not for committing"
+.codegraph/

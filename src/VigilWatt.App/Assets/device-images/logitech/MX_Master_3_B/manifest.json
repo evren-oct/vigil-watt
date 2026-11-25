@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "MX Master 3 B",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B028"
+    ],
+    "displayNames": [
+      "MX Master 3 B"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "mx_master_3_for_business.png",
+      "image": "mx_master_3_for_business.png",
+      "source": "LogiOptions+ devices.json / mx_master_3_for_business.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

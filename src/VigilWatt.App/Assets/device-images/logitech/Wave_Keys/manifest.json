@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Wave Keys",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "B383"
+    ],
+    "displayNames": [
+      "Wave Keys"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "7f20555f-5e08-4917-9a20-466bc2ba9d9d.png",
+      "image": "7f20555f-5e08-4917-9a20-466bc2ba9d9d.png",
+      "source": "LogiOptions+ devices.json / 7f20555f-5e08-4917-9a20-466bc2ba9d9d.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

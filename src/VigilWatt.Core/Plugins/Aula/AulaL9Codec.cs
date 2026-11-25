@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Aula;
 /// <summary>
 /// 功 能： 解析狼蛛 L9 Ultra 鼠标 0x81 状态回包的电量（纯函数，零 I/O）。
 /// 2026/10/19 23:50:00 contributor
-/// 帧布局见 docs/hardware/aula.md §4；电量在 0x81 回包而非 0x85。
+/// 帧布局见 docs/hardware/brands/aula.md §4；电量在 0x81 回包而非 0x85。
 /// </summary>
 internal static class AulaL9Codec
 {

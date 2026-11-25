@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "brand": "RAPOO",
+  "model": "ESM622MAX",
+  "match": {
+    "vendorId": "24AE",
+    "productIds": [
+      "4637"
+    ],
+    "displayNames": [
+      "雷柏 ESM622MAX",
+      "ESM622MAX"
+    ]
+  },
+  "defaultColor": "Gray_Black_Red",
+  "colors": [
+    {
+      "key": "Gray_Black_Red",
+      "label": "零号赤焰",
+      "thumbnail": "Gray_Black_Red_thumb.png",
+      "image": "Gray_Black_Red_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM622MAX/thumb_Gray_Black_Red.png"
+    },
+    {
+      "key": "Black_Gray_Orange",
+      "label": "炼狱修罗",
+      "thumbnail": "Black_Gray_Orange_thumb.png",
+      "image": "Black_Gray_Orange_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM622MAX/thumb_Black_Gray_Orange.png"
+    },
+    {
+      "key": "White_Black_Yellow",
+      "label": "炽翼星魂",
+      "thumbnail": "White_Black_Yellow_thumb.png",
+      "image": "White_Black_Yellow_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM622MAX/thumb_White_Black_Yellow.png"
+    },
+    {
+      "key": "Black_Purple_Green",
+      "label": "暗渊游侠",
+      "thumbnail": "Black_Purple_Green_thumb.png",
+      "image": "Black_Purple_Green_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM622MAX/thumb_Black_Purple_Green.png"
+    },
+    {
+      "key": "Phantom_Green",
+      "label": "墨影雾冰",
+      "thumbnail": "Phantom_Green_thumb.png",
+      "image": "Phantom_Green_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM622MAX/thumb_Phantom_Green.png"
+    },
+    {
+      "key": "Black_Gray_Green",
+      "label": "骇客特工",
+      "thumbnail": "Black_Gray_Green_thumb.png",
+      "image": "Black_Gray_Green_thumb.png",
+      "source": "https://hid.rapoo.cn/AHUB_WEB/dist/manifests/ESM622MAX/thumb_Black_Gray_Green.png"
+    }
+  ],
+  "source": "RAPOO AHUB 2.0 (hid.rapoo.cn/AHUB_WEB/dist)",
+  "capturedAt": "2026-11-16",
+  "licenseNote": "厂商产品图，版权归厂商；当前按个人自用处理，缩略图随包分发。"
+}

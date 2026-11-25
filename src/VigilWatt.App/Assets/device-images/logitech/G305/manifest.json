@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "G305",
+  "match": {
+    "displayNames": [
+      "G305",
+      "G304",
+      "G305 Lightspeed Wireless Gaming Mouse",
+      "G304 Lightspeed Wireless Gaming Mouse"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "logitech-g305.png",
+      "image": "logitech-g305.png",
+      "source": "https://img.openmouse.app/logitech-g305.png"
+    }
+  ],
+  "source": "OpenMouse device artwork (img.openmouse.app)"
+}

@@ -18,19 +18,37 @@ public sealed partial class AboutPage : Page
     private const string GitHubUrl = "https://github.com/evren-oct/vigil-watt";
 
     private bool _notesRendered;
+    private bool _hooked;
 
     public AboutPage()
     {
         InitializeComponent();
-        App.UpdateStatusChanged += status => DispatcherQueue.TryEnqueue(() =>
-            UpdateStatusText.Text = status);
-        UpdateDownloadUi.ProgressChanged += OnUpdateProgressChanged;
         NavigationCacheMode = NavigationCacheMode.Required;
         Loaded += OnPageLoaded;
+        Unloaded += OnPageUnloaded;
     }
+
+    /// <summary>订阅跟着 Loaded/Unloaded 走（runtime-pitfalls.md §19）：页面缓存复用，构造期订阅会漏。</summary>
+    private void OnPageUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (!_hooked) return;
+        _hooked = false;
+        App.UpdateStatusChanged -= OnUpdateStatusChanged;
+        UpdateDownloadUi.ProgressChanged -= OnUpdateProgressChanged;
+    }
+
+    private void OnUpdateStatusChanged(string status) => DispatcherQueue.TryEnqueue(() =>
+        UpdateStatusText.Text = status);
 
     private void OnPageLoaded(object sender, RoutedEventArgs e)
     {
+        if (!_hooked)
+        {
+            _hooked = true;
+            App.UpdateStatusChanged += OnUpdateStatusChanged;
+            UpdateDownloadUi.ProgressChanged += OnUpdateProgressChanged;
+        }
+
         VersionText.Text = GetType().Assembly.GetName().Version?.ToString(3) ?? "—";
         UpdateStatusText.Text = string.IsNullOrEmpty(App.UpdateStatusMessage)
             ? "检查更新"

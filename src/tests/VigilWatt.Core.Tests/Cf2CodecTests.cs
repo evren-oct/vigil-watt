@@ -7,7 +7,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： Cf2Codec —— HyperX CF2 状态帧（FB 09 充电事件 / FB 13 电量 / FB 0A 在线）解析。
 /// 2026/10/20 22:28:00 Yang
-/// 帧结构与充电阶段字段的证伪记录见 docs/hardware/hyperx-cf2.md §4。
+/// 帧结构与充电阶段字段的证伪记录见 docs/hardware/brands/hyperx-cf2.md §4。
 /// </summary>
 public class Cf2CodecTests
 {

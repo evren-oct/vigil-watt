@@ -71,7 +71,8 @@ DiscoverOnlyAsync
 - `Attach` 返回值立即 `Upsert` → **新设备探测出来就进 UI**，不等整轮扫描结束；
 - 基类给本轮新认领的设备打 `FreshlyClaimed` 标记，**本轮 `Poll` 跳过**（探测值即最新读数），下一轮起正常轮询；
 - 雷柏 `IsCandidate` 收敛到"输入长度 ==19"（协议文档里状态报表就是 19 字节那一条）——旧版放行 19/32/33，本机 0x0011/32B 与 0x000E/33B 两条 vendor 通道从不发 0x07，每次首扫各白等一整个窗口；收敛后一个 dongle 只剩唯一候选，探测窗口 7s→5s；
-- 迈从 `TryQhw` 改官方时序（**先握手**，非 QHW dongle 写入立即失败即快速退出，省掉旧版先空等 3s 被动监听），并按接口路径缓存已判定协议。
+- 迈从 `Try0x4D`（原 `TryQhw`，M2-2 合并后改名）按接口路径缓存已判定协议。2026-11-08 起**不再发握手**：
+  官方只对 WCH 四款（V7 / V7 Pro / G3 V3 / G3 S）发 `AA 55 AA 55 AA 55`，不是通用步骤；改成一条 `0x0900`。
 
 **探测失败冷却（`ProbeCooldown`）必须明显小于轮询周期**：失败发生在轮询开始后几秒处，冷却若等于一整轮，
 下一拍只剩 5x 秒会被判"冷却未过"而整轮跳过，实际重试间隔翻倍（雷柏 3 分钟 → 4 分钟、北通 1 分钟 → 2 分钟，
@@ -165,7 +166,7 @@ HID 侧没有插拔事件。**两个方向的目标不同**：
 
 **经典蓝牙电量与类型信号（ClassicDevNodeReader，电量 2026-10-06 打通、类型信号 2026-10-09 并入）**：AEP 属性（`System.Devices.AepBattery_Level` 等）在本机全部无效，但 Windows 设置页显示的耳机电量另有来源——**HFP 免手操作音频网关设备节点的 PnP 属性 `DEVPKEY_Device_BatteryLevel`**（`{104EA319-6EE2-4701-BD47-8DDBF425BBE5},2`，BYTE）。`ClassicDevNodeReader` 用 SetupAPI（`SetupDiGetClassDevsW` → `SetupDiEnumDeviceInfo` → `SetupDiGetDeviceInstanceIdW` → `SetupDiGetDevicePropertyW`）枚举 `BTHENUM\*` 节点，**按设备 MAC 归并**出三样东西：电量（HFP 网关节点）、Windows 设备类别（父节点 `DEVPKEY_DeviceDisplay_Category`）、服务 UUID（子节点实例 ID 前缀）；watcher 侧用 `MacFromAepId`（AEP ID 形如 `Bluetooth#Bluetooth<适配器MAC>-<设备MAC>`，取最后一段）对上号。整表结果缓存 5 秒；`RefreshBattery()` 挂在轮询尾部（`PollOnceAsync` 的 `_classic.RefreshBattery()`）每分钟重读，有变化才通知。实测 EDIFIER W820NB 读数与设置页一致。排查手法见 scripts/probe-devnode-battery.py、scripts/probe-classic-kind.py。
 
-## 3.1 本机电量流（SystemBatteryWatcher，2026-10-08 新增）
+### 3.1 本机电量流（SystemBatteryWatcher，2026-10-08 新增）
 
 **不是插件**。系统电量没有 HID 接口可"认领"，也不是设备事件源，所以照 `BluetoothClassicWatcher` 的范式做成事件式数据源：
 
@@ -218,10 +219,11 @@ BatteryPluginBase.Attach(hidDevices, claims)
     │   ├── 守卫：输出/输入 < 20 字节 → 放弃
     │   ├── KnownProtocolByPath 命中 → 只试那一条通道，**失败直接返回、不清记忆**
     │   │   （2026-10-08 实修：旧代码失败即 TryRemove 并回落完整探测，于是每 15 秒发现节拍
-    │   │    都白写一次 QHW 握手 + 重试一遍 keyboard-v1，写入翻倍、WARN 刷屏）
-    │   ├── TryQhw：                    # 新世代 dongle 协议（本机不命中）
-    │   │   握手 0x4D+AA55… → getBattery(0x0904) → 解析（未授权写入时退化为被动监听 CZ 推送 3s）
-    │   │   握手写用 quiet: true —— 非 QHW 通道必然 ERROR_INVALID_PARAMETER，那是判据不是故障
+    │   │    都白写一次 0x4D 查询 + 重试一遍 keyboard-v1，写入翻倍、WARN 刷屏）
+    │   ├── Try0x4D：                   # 0x4D 通道（原 qhw / mouse-k7 已于 M2-2 合并）
+    │   │   一条 0x0900（flags=1 / seq=0 / XOR[2..7+len] / 64 字节）→ 解析 payload[10..13]
+    │   │   已知通道（0x1018 精确指纹）写成功即认领；把握不足的通道必须解析出读数才认领
+    │   │   （未授权写入时退化为被动监听 CZ 推送 3s）
     │   └── TryKeyboardV1：             # 本机 G87 dongle 协议 ✅
     │       SendKeyboardV1Frame(0x05,0x01) 开会话 → 收 ACK/推送
     │       SendKeyboardV1Frame(0x4A,0x01) 查电量 → [5]=% [6]=充电标志
@@ -232,7 +234,7 @@ BatteryPluginBase.Attach(hidDevices, claims)
 **探测期的日志一律"状态变化才记"**（`Log.Once` / `Log.ResetOnce`，key = `MchosePlugin.LogKey(handle, 用途)`
 即 `路径|用途`；2026-10-08 加，2026-10-10 收拢到 `Log` 公共入口）：发现节拍每 15 秒重探一次，
 而设备睡着 / 未授权写入时这些路径**永远走不到成功**，逐次记录会把日志文件刷满且没有新信息。
-现在三个位置各只记第一次——"这条通道不是 QHW"、"未授权写入"、"keyboard-v1 两次询问无响应"，
+现在三个位置各只记第一次——"这条通道不是 0x4D"、"未授权写入"、"keyboard-v1 两次询问无响应"，
 恢复正常时 `Log.ResetOnce` 清标记，于是"好了之后又出问题"会重新记一条（与北通占位帧同一记法）。
 
 ### 4.2 轮询（Poll，基类骨架 + 子类 PollDevice）
@@ -245,11 +247,17 @@ BatteryPluginBase.Attach(hidDevices, claims)
 
 | 路径 | 触发方式 | 延迟 | 谁在用 |
 |---|---|---|---|
-| `RequestOffline` | 子类发现**零歧义**离线证据 | **立即** | 北通 T9 占位帧（`byte23=0x50`） |
+| `RequestOffline` | 子类发现**零歧义**离线证据 | **立即** | 北通 T9 占位帧（`byte23=0x50`）与全 0 空帧（`byte23=0x10`） |
 | `MarkOfflineCandidate` + `OfflinePolicy.Confirm` | 被动帧里的**有歧义**证据 | 确认窗口（雷柏 **6s**） | 雷柏 `[18].bit7=0`（RF 断链位） |
 | `OfflinePolicy.Silence` | 接口**彻底不说话** | 阈值 + 最多约 500ms（被动监听空闲 tick；轮询仍保留兜底） | 雷柏 / 英菲克 |
 | `OfflinePolicy.MaxFailures` 次查询失败 → 熔断 | 主动查询类插件（发过帧却没应答） | ~3 分钟 | 迈从 / 北通主动路径 |
 | `RequestConfirm` → 空闲 tick 立刻核实 | 被动帧里的**触发器**（**不是证据**） | **秒级** | 迈从 `0A` 状态通知 `payload=0x00` |
+
+**`RequestOffline` 的过期作废（2026-10-31 修）**：设备已经离线时，被动帧仍会**反复**提交这个标记
+（`MarkOffline` 幂等，既不报错也不记日志），标记就一直挂着；等设备开机、被动帧已经把在线写回来之后，
+下一拍轮询才消费它 → 刚上线的设备立刻被打回离线（北通 T9 实测：20% 上线 10 秒后变离线）。
+现在 `RequestOffline` 记发出时刻 `OfflineRequestedAt`，`ConsumeOfflineRequest` 发现
+`Status.LastUpdated`（最近一次读数；`MarkOffline` 幂等，只在真正翻转在线状态时写一次）**晚于**它就直接丢弃。
 
 **第③层参数集中在 `OfflinePolicy`（`Plugins/OfflinePolicy.cs`，2026-10-08 收敛）**：
 `Silence` / `Confirm` / `MaxFailures` / `CountPollFailures` 四个参数装在一个 `record` 里，

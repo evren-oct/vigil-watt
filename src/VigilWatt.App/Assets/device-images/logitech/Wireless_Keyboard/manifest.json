@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "brand": "Logitech",
+  "model": "Wireless Keyboard",
+  "match": {
+    "vendorId": "046D",
+    "productIds": [
+      "4075"
+    ],
+    "displayNames": [
+      "Wireless Keyboard"
+    ]
+  },
+  "defaultColor": "default",
+  "colors": [
+    {
+      "key": "default",
+      "label": "默认",
+      "thumbnail": "generic-keyboard.png",
+      "image": "generic-keyboard.png",
+      "source": "LogiOptions+ devices.json / generic-keyboard.png"
+    }
+  ],
+  "source": "LogiOptions+ devices.json"
+}

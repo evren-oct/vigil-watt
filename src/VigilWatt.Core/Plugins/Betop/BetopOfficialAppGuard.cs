@@ -5,7 +5,7 @@ namespace VigilWatt.Core.Plugins.Betop;
 /// <summary>
 /// 功 能： 观测北通官方软件（Electron，userData 为 %APPDATA%\BetopGame）是否在跑，只记状态变化。
 /// 2026/10/25 19:40:12 xliu
-/// 本轮只观测不拦认领：官方软件与 dongle 身份抖动是否相关尚无证据，见 docs/hardware/betop.md §1.9。
+/// 本轮只观测不拦认领：官方软件与 dongle 身份抖动是否相关尚无证据，见 docs/hardware/brands/betop.md §1.9。
 /// </summary>
 internal static class BetopOfficialAppGuard
 {

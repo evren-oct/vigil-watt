@@ -11,16 +11,24 @@ internal static class AppPopupMenu
 {
     private const uint IdOpen = 1;
     private const uint IdExit = 2;
+    private const uint IdLock = 3;
     private const string ForegroundKey = "popup-menu-foreground";
 
-    /// <summary>在屏幕坐标弹出"打开主窗口 / 退出"。**模态**：返回时用户已选中或已取消。</summary>
-    public static void Show(IntPtr owner, int x, int y)
+    /// <summary>在屏幕坐标弹出"打开主窗口 / 退出"。**模态**：返回时用户已选中或已取消。
+    /// 传 <paramref name="lockPosition"/> 时多一项可勾选的"锁定位置"（只有贴片有位置可锁）。</summary>
+    public static void Show(IntPtr owner, int x, int y, bool? lockPosition = null, Action<bool>? onLockToggled = null)
     {
         var menu = Native.CreatePopupMenu();
         if (menu == IntPtr.Zero) return;
 
         try
         {
+            if (lockPosition.HasValue)
+            {
+                uint flags = Native.MF_STRING | (lockPosition.Value ? Native.MF_CHECKED : 0);
+                Native.AppendMenuW(menu, flags, (IntPtr)IdLock, "锁定位置");
+                Native.AppendMenuW(menu, Native.MF_SEPARATOR, IntPtr.Zero, null);
+            }
             Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdOpen, "打开主窗口");
             Native.AppendMenuW(menu, Native.MF_SEPARATOR, IntPtr.Zero, null);
             Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdExit, "退出");
@@ -38,6 +46,7 @@ internal static class AppPopupMenu
 
             if (cmd == IdOpen) TrayService.ShowMainWindow();
             else if (cmd == IdExit) TrayService.ExitApplication();
+            else if (cmd == IdLock && lockPosition.HasValue) onLockToggled?.Invoke(!lockPosition.Value);
         }
         catch (Exception ex)
         {

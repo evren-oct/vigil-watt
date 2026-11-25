@@ -6,7 +6,7 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： 寸渊影弑让位检测的回归——官方客户端在跑时必须放弃认领。
 /// 2026/10/23 19:10:00 zc165
-/// 背景见 docs/hardware/darkrim.md §1.7。
+/// 背景见 docs/hardware/brands/darkrim.md §1.7。
 /// </summary>
 public class DarkrimOfficialGuardTests : IDisposable
 {

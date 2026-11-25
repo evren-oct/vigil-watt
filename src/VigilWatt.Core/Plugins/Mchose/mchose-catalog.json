@@ -51,17 +51,43 @@
   },
   {
    "vid": "0x3837",
+   "pid": "0x100A",
+   "role": "dongle-wireless",
+   "protocol": "mouse-v2",
+   "note": "A7 V2 Pro 接收器；E2 被动帧 + 0x11/0x06 触发，贡献者真机验证",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3837",
    "pid": "0x3033",
    "role": "dongle-cz",
    "protocol": "cz-block",
-   "note": "官方通用 2.4G dongle（G87 V2 / G75 V2 / K87S / K99 V3），走 CZ 分块读，见 mchose.md §2.4"
+   "note": "官方通用 2.4G dongle（G87 V2 / G75 V2 / K87S / K99 V3），走 CZ 分块读，见 mchose.md §2.4",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
+  },
+  {
+   "vid": "0x3837",
+   "pid": "0x201B",
+   "role": "dongle-wireless",
+   "protocol": "keyboard-v1",
+   "note": "G87 V2 接收器；贡献者真机验证，走键盘 V1 会话",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
   },
   {
    "vid": "0x41e4",
    "pid": "0x2001",
    "role": "dongle-wireless",
    "protocol": "keyboard-v1",
-   "note": "G87 V1 的 dongle（本机真机，mchose.md §1：不开会话就对一切查询静音）。认领到这颗 PID 说明主机读的是接收器通道，有线数据不会经过接收器，故链路可推断为 2.4G（Inferred，不是设备上报）；键盘本体 PID 未登记，插线时保持未知"
+   "note": "G87 V1 的 dongle（本机真机，mchose.md §1：不开会话就对一切查询静音）。认领到这颗 PID 说明主机读的是接收器通道，有线数据不会经过接收器，故链路可推断为 2.4G（Inferred，不是设备上报）；键盘本体 PID 未登记，插线时保持未知",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
   }
  ],
  "rateTables": {
@@ -114,13 +140,19 @@
    "vid": "0x291d",
    "pid": "0x385d",
    "model": "V9 Pro",
-   "protocol": "headset-v9"
+   "protocol": "headset-v9",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
   },
   {
    "vid": "0x3554",
    "pid": "0xfa09",
    "model": "G75 Pro",
-   "protocol": "keyboard-v1"
+   "protocol": "keyboard-v1",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
   },
   {
    "vid": "0x3837",
@@ -384,13 +416,19 @@
    "vid": "0x3837",
    "pid": "0x4245",
    "model": "G3 V2",
-   "protocol": "gmouse"
+   "protocol": "gmouse",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
   },
   {
    "vid": "0x3837",
    "pid": "0x6045",
    "model": "X9",
-   "protocol": "headset-x9"
+   "protocol": "headset-x9",
+   "capabilities": {
+    "batteryRead": "supported"
+   }
   },
   {
    "vid": "0x41e4",

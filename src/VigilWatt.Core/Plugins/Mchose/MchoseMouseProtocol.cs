@@ -10,6 +10,7 @@ namespace VigilWatt.Core.Plugins.Mchose;
 internal static class MchoseMouseProtocol
 {
     public const string Name = "mchose-mouse-feature11";
+    public const string CatalogProtocol = "mouse-a5";
 
     public static bool IsReceiver(HidDeviceInfo info)
         => info.VendorId == MchoseA5Codec.VendorId && info.ProductId == MchoseA5Codec.ProductId;

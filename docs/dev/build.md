@@ -10,6 +10,10 @@
    复制 `VigilWatt.Core.dll` 到 App 输出目录时也会报 `MSB3027` / `MSB3021`。
    持有文件的是**沙箱宿主进程**，不是 `VigilWatt.App.exe`，沙箱内看不到、也不该去杀。
 2. `dotnet test ...`：vstest 在 90 秒内连不上 testhost，报“测试运行已中止”。
+3. `dotnet test ...` 启动 testhost 后立刻报 `Win32Exception (5)`，栈在
+   `OpenProcess` → `EnsureWatchingForExit` → `SetParentProcessExitCallback`：
+   工作区目录带 Low 完整性标签，NuGet 拷出的 `testhost.exe` 继承了它；testhost 启动后要
+   `OpenProcess` 父进程，Low IL 会被拒绝。这不是测试断言失败，也不是缺运行时。
 
 **正确做法**：申请沙箱外执行权限，然后原样运行标准命令：
 
@@ -19,7 +23,13 @@ dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedNa
 ```
 
 **不要**为了绕过沙箱去改 `OutDir` / `BaseOutputPath`、复制测试产物到工作区外、或反复重试。
+测试工程已用 `RestoreTestHostIntegrityLevel` 在每次 Build 后把输出目录里的
+`testhost.exe` / `testhost.x86.exe` 提回 Medium；不要改工作区目录本身的标签，也不要用
+`--arch x64`、`.runsettings` 或改 SDK 目录里的 `testhost.exe.config` 绕，这些都不解决 Low IL。
+
 2026-11-19 已验证沙箱外标准命令 `dotnet build VigilWatt.sln -c Debug` 一次成功，**0 警告 0 错误**。
+2026-11-24 已验证：`testhost.exe` 为 Medium 时全量测试 **1982 通过 / 1 跳过 / 0 失败**；
+新增的构建目标在故意把 testhost 降回 Low 后仍能自动恢复为 Medium。
 
 ## 1. XamlCompiler 静默崩溃（最阴的坑）
 
@@ -176,7 +186,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 - `Program.cs`：自定义入口（csproj `DISABLE_XAML_GENERATED_MAIN` 关掉了 XAML 生成的 Main）。`VelopackApp.Build().Run()` 必须最先跑——安装/更新/卸载钩子进程带 `--veloapp-*` 参数被拉起，在这里被消费后直接退出，所以 `App.OnLaunched` 的单实例互斥不会误杀钩子进程，也不用改。
 - 卸载清理：`OnBeforeUninstallFastCallback` 里调 `AutostartService.SetEnabled(false)` 删 HKCU Run 自启动残留。
 - `Services/UpdateService.cs` + 关于页"软件更新"区：更新源是 Velopack **内置的 `GithubSource` / `GiteaSource`**，不是自写适配器——Gitee 的 `/api/v1` 与 `/api/v5` 返回一致（2026-10-14 实测：同仓库同键同值），而 `GiteaSource` 的 API 基址正是硬编码的 `{host}/api/v1/`，所以直接可用。**GitHub 优先，8 秒内没结果或抛错就回退 Gitee**（`ProbeTimeout`）；检查成功后源固定，delta 包必须从给出清单的那个源继续下载。两个仓库 URL 是常量，`publish-gitee.ps1` 必须与 `UpdateService` 里的 Gitee 地址指向同一个仓库；两边的 Release 资产由维护者手动上传并保持一致。启动时检查一次，关于页保留手动检查。运行副本未安装时不执行安装更新。
-- 版本号唯一来源：`VigilWatt.App.csproj` 的 `<Version>`，exe FileVersion、设置页显示、安装包版本都从它来。
+- 版本号唯一来源：`VigilWatt.App.csproj` 的 `<Version>`，exe FileVersion、设置页显示、安装包版本都从它来；Beta 打包用 `-Version 1.4.0-beta.1` 显式覆盖，避免 FileVersion 丢掉预发布后缀。
 
 ### 更新说明（release notes）
 
@@ -195,6 +205,21 @@ powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1
 ### 已验证（2026-10-06）
 
 安装（静默）→ 目录/快捷方式/卸载条目正确、数据目录不冲突；自动更新（把 1.0.1 nupkg 丢进 `packages\` 后启动 1.0.0 → 自动升级重启到 1.0.1）；卸载 → 安装目录/快捷方式/卸载条目/HKCU Run 残留全部清掉，用户数据保留。
+
+### Beta 预发布（2026-11-24 起）
+
+Beta 用独立通道，避免和正式版互相更新：
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 -Version 1.4.0-beta.1 -Channel beta -OutputDir dist-beta
+```
+
+- `-Version` 必须显式传完整 SemVer2（含 `-beta.N`），脚本不会再把预发布截成三段。
+- `-Channel beta` 让包元数据写 `channel=beta`，产物是 `releases.beta.json` / `RELEASES-beta` / `assets.beta.json`。
+- 预发布构建的 `UpdateService` 只查 `beta` 通道 + prerelease 资产；正式版仍只查默认 `win` 稳定通道 + stable 资产。
+- 正式版客户端还有一道运行时保护：即使发布时误把 Beta 标成正式版，也会忽略带预发布后缀的目标版本。
+- 上传时 **必须把 GitHub/Gitee Release 标成 Pre-release**，并把 `dist-beta\` 全部产物传齐。不要把 beta 资产混进 1.3.1 的正式 Release。
+- 这样 1.3.1 不会看到/更新到 Beta；Beta 也不会被 1.3.1 的稳定清单降级。手动运行 1.3.1 安装包仍可能覆盖同 `packId` 的 Beta，这属于用户手动操作，不是自动更新。
 
 ### 发布上传（维护者手动：GitHub 主下载，Gitee 镜像）
 

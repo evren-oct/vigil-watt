@@ -6,12 +6,13 @@
 
 ## 1. 当前状态
 
-- 当前安装包 **1.3.1**（`dist/`，本机试装；尚未上传正式 Release）。发版规则见 `dev/build.md` §8；更新源 GitHub 优先、8 秒不通回退 Gitee。**上传由维护者手动完成（GitHub 主下载、Gitee 镜像），AI 只做本机打包。**
+- 当前正式安装包 **1.3.1**（`dist/`，本机试装；尚未上传正式 Release）；Beta **1.4.0-beta.1** 已本机打包到 `dist-beta/`（`beta` 通道，未上传）。发版规则见 `dev/build.md` §8；更新源 GitHub 优先、8 秒不通回退 Gitee。**上传由维护者手动完成（GitHub 主下载、Gitee 镜像），AI 只做本机打包。**
 - **本机已验证**：迈从 G87、迈从通用 dongle `3837:3033`、罗技 Bolt + MX Master 3S、罗技 PRO X 2、雷柏 VT3 / VT2S Air Max、北通 T9、英菲克 ZHEN / IN9、HECATE G3M Pro 升级版、ATK F1 Pro Max、VXE R1、EDIFIER W820NB、本机电池。逐台状态、默认开关与文档入口见 [support-matrix.md](../hardware/support-matrix.md)。
 - 其余机型均为贡献者真机或仅实现待验，本机未复测；不要把贡献者读数当成维护者结论。协议与验证边界见各品牌文档。
 - 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），拖动走 16ms 轮询；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。选屏见 `dev/monitor-identity.md`。
 - 页面已缓存（`NavigationCacheMode = Required`），订阅跟 `Loaded`/`Unloaded`；设置页可搜索；日志按日 `logs\app-日期.log`；插件开关即写入授权，没有第二套「写入许可」。
 - 罗技 ReceiverIdentity 已全量开放，连接推断覆盖 Bolt / Unifying / LIGHTSPEED / Nano；C548 的 `0xB5/0x03` 真机无回包，容量走目录 6 槽；`0x0005` 设备名改按块读、上限 64，待真机复验（CR-163）。细节见 `hardware/logitech.md` §1。
+- 迈从主动查询已加目录能力白名单：未登记/未验证接口零写入；G87、G87 V2、CZ、0x4D、Gmouse、V9/X9、G75 Pro 保持查询。见 `hardware/safety.md` §3 与 `reviews/beta-1-release-readiness-audit.md`。
 - 设备列表支持右键改名/图标、忽略、删除离线设备与恢复；剩余时间估算至少 3 个时间点且有净下降才显示；贴片可按显示名筛选设备。见 `code-flow.md` §5。
 - 详情页 Hero 已接产品图（迈从 / 罗技 / 雷柏 / 北通），列表 / 贴片 / 小组件不显示产品图；接入规则见 `project/device-images.md`。
 - 设备诊断页（主窗口第 4 项）是未适配设备的 USB/HID 只读采集；流程与边界见 `project/capture.md`。
@@ -35,7 +36,7 @@
 7. **设备页 / 诊断页真机复核**：诊断页的 Feature 读取（勾选后实际 GET_REPORT）、采集中拔设备、记录上限截断、另存为对话框与剪贴板（非打包 WinUI）——本机只验到被动监听拿到真实报文，清单在 `capture.md` §7；设备页「忽略此设备」要复看托盘/贴片/小组件是否同步消失、恢复是否立刻回来、重启后是否仍被忽略；**卡片上那行 DPI / 档位 / 回报率（PR-D）**要看是否显示、拔掉与休眠后整行是否消失、用官方软件改 DPI 后是否跟着变（`pointer-telemetry.md` §8）；小组件同一行还要看 1~5 台混排（有指标的行更高）时最后一行有没有被切、贴片悬停提示三行是否不折行。罗技 C548 的离线行真实截图与深色主题对比未做（用户 2026-11-11 跳过深色；离线文案/取色已有单测）。
 8. **本机无设备的真机复核**：墨将 GALE2 应用内验证（开关默认关、须用本仓库源码构建，看列表条目与电量/充电标志是否与官方助手一致，边看边插拔接收器确认有线↔2.4G 切换那 0.5 秒是否闪离线，mojhon.md §7.5、§9）；狼途 T98 看默认开、插线电量爬升，`Silence = 300 秒` 需一份真实休眠样本确认不误判离线（langtu.md §2）；ATK `11FE` 要补本体 PID，否则插数据线会多一条记录（atk.md §10.3）；ilovbee 要一份**插上充电器后静置 3 分钟**的采集，确认 `[7] bit0` 是否保持、`[6]` 是否爬升（ilovbee.md §3）。另：雷柏 VT3 有线 `0x4612` 没声明 `capabilities`（无独立真机记录），要用就插线验一次再补（`hardware/rapoo-catalog.md` §6.2）。 迈从 0x4D 的 DPI / 回报率代码与审计已完成、**零真机样本**，`DpiRead` / `DpiLevelRead` / `RateRead` 仍 `Unverified`；插上 0x4D 鼠标后看日志里 `迈从 0x4D 回报率 / DPI(X) / DPI(Y)` 三行即可取证（`hardware/mchose.md` §3.9）。
 9. **雷柏本轮真机复核**：插线后只留一条且优先有线（同 SN 归一）；VT3 之外至少一台看 DPI/档位/回报率；详情页 Hero 看雷柏产品图与配色切换（96 款 / 296 色）。旧历史/自定义名/黑名单会按新 ID 重记，未做迁移。
-10. **协议引擎治理**：M1 文档收尾完成，M2 主动查询安全治理进行中；写入点盘点、自动门控方案与手动目标探测设计稿已完成，见 `docs/reviews/2026-11-23-active-query-write-audit.md`、`docs/reviews/2026-11-23-active-query-gate-design.md` 与 `docs/reviews/2026-11-24-manual-target-probing-design.md`。当前只有北通完成设备级先行门控；全面实施先补能力声明，避免误停现有设备。
+10. **协议引擎治理**：M1 文档收尾完成，M2 主动查询安全治理进行中；写入点盘点、自动门控方案与手动目标探测设计稿已完成，见 `docs/reviews/2026-11-23-active-query-write-audit.md`、`docs/reviews/2026-11-23-active-query-gate-design.md` 与 `docs/reviews/2026-11-24-manual-target-probing-design.md`。北通、迈从已完成设备级先行门控；全面实施先补能力声明，避免误停现有设备。
 
 ## 5. 给下一个 AI 的注意事项
 

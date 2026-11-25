@@ -14,8 +14,8 @@ namespace VigilWatt.Core.Plugins.Mchose;
 /// </summary>
 internal static class MchoseDeviceCatalog
 {
-    /// <summary>目录条目：型号名可能为空串，协议族为 <c>MchoseInterfaceClassifier.KindFromProtocol</c> 认得的名字。</summary>
-    public readonly record struct Entry(string Model, string Protocol);
+    /// <summary>目录条目：型号名可能为空串，协议族为 <c>MchoseInterfaceClassifier.KindOfProtocol</c> 认得的名字。</summary>
+    public readonly record struct Entry(string Model, string Protocol, CapabilitySet Capabilities);
 
     /// <summary>传输通道条目：说明这颗 PID 是哪种 dongle 以及它承载的协议，**不携带型号**（同 PID 多型号共用）。</summary>
     public readonly record struct TransportEntry(
@@ -71,7 +71,8 @@ internal static class MchoseDeviceCatalog
         {
             if (!TryParseHex(d.Vid, out var vid) || !TryParseHex(d.Pid, out var pid)) continue;
             if (string.IsNullOrWhiteSpace(d.Protocol)) continue;
-            map[(vid, pid)] = new Entry(d.Model?.Trim() ?? "", d.Protocol.Trim());
+            map[(vid, pid)] = new Entry(d.Model?.Trim() ?? "", d.Protocol.Trim(),
+                ReadCapabilities(d.Capabilities, vid, pid));
         }
         return map;
     }
@@ -160,7 +161,7 @@ internal static class MchoseDeviceCatalog
         {
             if (!ProtocolSpecLoader.CapabilityNames.TryGetValue(name, out var capability))
                 throw new InvalidOperationException(
-                    $"mchose-catalog.json: 传输通道 {vid:X4}:{pid:X4} 的 capabilities.{name} 不是已知能力" +
+                    $"mchose-catalog.json: 条目 {vid:X4}:{pid:X4} 的 capabilities.{name} 不是已知能力" +
                     $"（可选：{string.Join(" / ", ProtocolSpecLoader.CapabilityNames.Keys)}）");
             pairs.Add(new(capability, ParseCapabilityState(state, name, vid, pid)));
         }
@@ -174,7 +175,7 @@ internal static class MchoseDeviceCatalog
             "unsupported" => CapabilityState.Unsupported,
             "unverified" => CapabilityState.Unverified,
             var other => throw new InvalidOperationException(
-                $"mchose-catalog.json: 传输通道 {vid:X4}:{pid:X4} 的 capabilities.{field} 状态 \"{other}\" 非法" +
+                $"mchose-catalog.json: 条目 {vid:X4}:{pid:X4} 的 capabilities.{field} 状态 \"{other}\" 非法" +
                 "（supported / unsupported / unverified）"),
         };
 
@@ -203,6 +204,7 @@ internal static class MchoseDeviceCatalog
         [JsonPropertyName("pid")] public string? Pid { get; set; }
         [JsonPropertyName("model")] public string? Model { get; set; }
         [JsonPropertyName("protocol")] public string? Protocol { get; set; }
+        [JsonPropertyName("capabilities")] public Dictionary<string, string>? Capabilities { get; set; }
     }
 
     private sealed class TransportDto

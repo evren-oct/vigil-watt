@@ -5,6 +5,8 @@
 
 ## 2026-11-24
 
+- **Beta 打包通道**：`build-installer.ps1` 增加 `-Version` / `-Channel` / `-OutputDir`；预发布构建只查 `beta` 通道与 prerelease 源，正式版仍走 `win` 稳定通道并在运行时忽略预发布目标。本机已打 `1.4.0-beta.1` 到 `dist-beta/`，未上传。
+- **迈从主动查询白名单**：未登记/未验证接口不再发 0x4D / 0x11 / 键盘会话帧；已验证 G87、G87 V2、CZ、0x4D、Gmouse、V9/X9、G75 Pro 保持查询。新增 `MchoseActiveQueryPolicy` 与 Fake Handle 零写入测试，见 `hardware/safety.md` §3。
 - **手动目标探测设计**：补充 `TargetSelection` / `DeviceIdentity` / `ProbeResult` 的分离，明确插件预登记 `ProbePlan`、一次性只读授权、`ProbeVerified` 仅作实例级证据、失败保持 `unverified`；不新增通用 `ActiveQueryPolicy`。见 `reviews/2026-11-24-manual-target-probing-design.md`。
 - **M2 方案修订**：自动查询与手动探测分离；自动门控按插件逐点补齐，手动探测复用现有插件/解析器/门控，不新增独立协议框架。能力覆盖审计见 `reviews/2026-11-24-active-query-capability-coverage.md`，当前未提交、待审查。
 

@@ -87,7 +87,7 @@ public static class MchoseInterfaceClassifier
         // 目录优先：VID/PID 精确命中时直接给协议族，不必靠形态猜（新设备靠这张表免适配）。
         // 耳机由上面的精确判据负责，这里跳过，避免同一条接口被重复认领。
         if (MchoseDeviceCatalog.TryGet(vendorId, productId, out var entry)
-            && KindFromProtocol(entry.Protocol) is var catalogKind
+            && KindOfProtocol(entry.Protocol) is var catalogKind
             && catalogKind is not (MchoseInterfaceKind.None
                 or MchoseInterfaceKind.HeadsetV9 or MchoseInterfaceKind.HeadsetX9)
             && MatchesShape(catalogKind, usagePage, usage, inputLength, outputLength))
@@ -122,8 +122,8 @@ public static class MchoseInterfaceClassifier
         return MchoseInterfaceKind.None;
     }
 
-    /// <summary>目录里的协议族名 → 枚举；未知协议返回 None，由调用方回落形态判定。</summary>
-    private static MchoseInterfaceKind KindFromProtocol(string protocol) => protocol switch
+    /// <summary>协议名 → 接口形态；未知协议返回 None，由调用方回落形态判定。</summary>
+    public static MchoseInterfaceKind KindOfProtocol(string protocol) => protocol switch
     {
         "keyboard-v1" => MchoseInterfaceKind.KeyboardV1,
         "qhw" => MchoseInterfaceKind.Qhw,
@@ -131,6 +131,9 @@ public static class MchoseInterfaceClassifier
         "gmouse" => MchoseInterfaceKind.Gmouse,
         "headset-v9" => MchoseInterfaceKind.HeadsetV9,
         "headset-x9" => MchoseInterfaceKind.HeadsetX9,
+        "mouse-v2" => MchoseInterfaceKind.MouseV2,
+        "cz-block" => MchoseInterfaceKind.MouseV2,
+        "mouse-a5" => MchoseInterfaceKind.MouseA5,
         _ => MchoseInterfaceKind.None,
     };
 

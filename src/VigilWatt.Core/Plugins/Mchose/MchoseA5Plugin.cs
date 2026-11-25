@@ -39,6 +39,7 @@ public sealed class MchoseA5Plugin : BatteryPluginBase
     protected override async Task<(string Protocol, int? Percent, ChargingState Charging)?> ProbeAsync(
         HidDeviceHandle handle)
     {
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, MchoseMouseProtocol.CatalogProtocol)) return null;
         var read = await MchoseMouseProtocol.QueryAsync(handle, WritesEnabled).ConfigureAwait(false);
         return read is { } value
             ? (MchoseMouseProtocol.Name, value.Percent, value.Charging)
@@ -51,6 +52,7 @@ public sealed class MchoseA5Plugin : BatteryPluginBase
     protected override (int? Percent, ChargingState Charging)? PollDevice(TrackedDevice dev)
     {
         if (!CanWrite(dev)) return null;
+        if (!MchoseActiveQueryPolicy.Allows(dev.Info, MchoseMouseProtocol.CatalogProtocol)) return null;
 
         var read = MchoseMouseProtocol.QueryAsync(dev.Handle, WritesEnabled).GetAwaiter().GetResult();
         if (read.HasValue)
@@ -66,4 +68,8 @@ public sealed class MchoseA5Plugin : BatteryPluginBase
 
     /// <summary>产品名是泛化的「MCHOSE 2.4G Wireless」，型号只能写死。</summary>
     protected override string BuildDisplayName(HidDeviceInfo info) => "迈从 A5 V2 Ultra";
+
+    /// <summary>测试接缝：直接跑真实探测路径，验证未验证 A5 零写入。</summary>
+    internal (string Protocol, int? Percent, ChargingState Charging)? ProbeForTest(HidDeviceHandle handle)
+        => Probe(handle);
 }

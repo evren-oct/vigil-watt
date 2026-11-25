@@ -45,6 +45,8 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Akg\AkgN9Transport.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaHero68Codec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaHero68PacketAssembler.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaHero68Transport.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Aula\AulaPlugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Ajazz\AjazzCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\BatteryPluginBase.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\AppSettings.cs" />
@@ -66,6 +68,9 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseMouseProtocol.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseInterfaceClassifier.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceCatalog.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseActiveQueryPolicy.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchosePlugin.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseA5Plugin.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseDeviceIdentity.cs" />
     <!-- 回报率"该不该发布"的判定是纯函数，四条边界（不一致/无表/越界/正常）必须能单测 -->
     <Compile Include="..\..\VigilWatt.Core\Plugins\Mchose\MchoseRatePolicy.cs" />
@@ -235,5 +240,16 @@
       <LogicalName>VigilWatt.Core.Plugins.Logitech.logitech-hidpp.json</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+
+  <!-- 工作区目录带 Low 完整性标签，NuGet 拷出的 testhost.exe 会继承它；testhost 启动后要
+       OpenProcess 父进程，Low IL 会被拒绝。每次构建提回 Medium，见 docs/dev/build.md §0。 -->
+  <Target Name="RestoreTestHostIntegrityLevel" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Exec Condition="Exists('$(TargetDir)testhost.exe')"
+          Command="icacls &quot;$(TargetDir)testhost.exe&quot; /setintegritylevel Medium"
+          ContinueOnError="true" />
+    <Exec Condition="Exists('$(TargetDir)testhost.x86.exe')"
+          Command="icacls &quot;$(TargetDir)testhost.x86.exe&quot; /setintegritylevel Medium"
+          ContinueOnError="true" />
+  </Target>
 
 </Project>

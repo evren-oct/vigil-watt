@@ -13,8 +13,8 @@
 
 ## 2026-10-31
 
-- **YyingnLL / haloneko**（[issue #40](https://github.com/evren-oct/vigil-watt/issues/40)，接 2026-10-29 那次「只取 IN9」的欠账）：**补收狼途 T98**。新增 `LangtuT98Plugin` / `LangtuT98Codec`（`1A2C:8FFF`，`0xFF02/0x02` 65 字节被动状态帧，`AA 55` + `0x0E` 双条件认帧，`0xFF` 插拔哨兵丢弃），零写入、默认开、7 项 codec 单测。**未纳入**：`MI_03 Col05` 的 3 字节通知帧（实测全程静音、含义未知）；充电状态一律 `Unknown`——issue 已证伪 `[7]` 是充电位。**本机无此键盘，未真机复测**；`Offline.Silence = 300 秒` 是按 issue 的「休眠静音 4 分钟」推的，没有第二份休眠样本（CR-133）。
-- **ATK A9 Ultra Max 2.0**（[issue #71](https://github.com/evren-oct/vigil-watt/issues/71)，实测帧由社区用户 `3605` 提供）：只登记接收器 PID `0x11FE` 与配对组，**编解码零改动**——帧与 `11D9`/`1303` 同构，四条实测帧校验和全部通过，另加一条负向钉住二代 dongle 的主动推送帧（cmd `0x0A`）不被当成电量。**未纳入**：本体 PID（社区只给了接收器），故插数据线时仍会多一条记录（CR-132 / CR-177 同类）。**本机无此鼠标，未真机复测**。
+- **YyingnLL / haloneko**（[issue #40](https://github.com/evren-oct/vigil-watt/issues/40)，接 2026-10-29 那次「只取 IN9」的欠账）：**补收狼途 T98**。新增 `LangtuT98Plugin` / `LangtuT98Codec`（`1A2C:8FFF`，`0xFF02/0x02` 65 字节被动状态帧，`AA 55` + `0x0E` 双条件认帧，`0xFF` 插拔哨兵丢弃），零写入、默认开、7 项 codec 单测。**未纳入**：`MI_03 Col05` 的 3 字节通知帧（实测全程静音、含义未知）；充电状态一律 `Unknown`——issue 已证伪 `[7]` 是充电位。**本机无此键盘，未真机复测**；`Offline.Silence = 300 秒` 是按 issue 的「休眠静音 4 分钟」推的，没有第二份休眠样本（CR-133，已归档）。
+- **ATK A9 Ultra Max 2.0**（[issue #71](https://github.com/evren-oct/vigil-watt/issues/71)，实测帧由社区用户 `3605` 提供）：只登记接收器 PID `0x11FE` 与配对组，**编解码零改动**——帧与 `11D9`/`1303` 同构，四条实测帧校验和全部通过，另加一条负向钉住二代 dongle 的主动推送帧（cmd `0x0A`）不被当成电量。**未纳入**：本体 PID（社区只给了接收器），故插数据线时仍会多一条记录（CR-132，已归档；与 CR-177 同类）。**本机无此鼠标，未真机复测**。
 
 ## 2026-10-29
 

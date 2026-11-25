@@ -99,6 +99,10 @@ public sealed class MchosePlugin : BatteryPluginBase
         return IsSharedWithAula(info);
     }
 
+    /// <summary>测试接缝：直接跑真实探测路径，验证未验证接口零写入。</summary>
+    internal (string Protocol, int? Percent, ChargingState Charging)? ProbeForTest(HidDeviceHandle handle)
+        => Probe(handle);
+
     /// <summary>把 <see cref="HidDeviceInfo"/> 摊成分类器要的字段，避免判据在两处各写一遍。</summary>
     private static MchoseInterfaceKind Classify(HidDeviceInfo info)
         => MchoseInterfaceClassifier.Classify(info.VendorId, info.ProductId, info.DevicePath,
@@ -296,6 +300,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     }
 
     private const string LogKey0x4DNoPermit = "0x4d-no-permit"; // "没开写入许可，跳过主动查询"
+    private const string LogKey0x4DUnverified = "0x4d-unverified"; // "目录未验证，跳过主动查询"
     private const string LogKey0x4DSilent = "0x4d-silent";      // "写成功但没有有效读数，交还后续判据"
     private const string LogKeyKbV1Silent = "kbv1-silent";    // "keyboard-v1 问了两次都不应答"
     private const string LogKeyKbV1ModelUnknown = "kbv1-model-unknown"; // "共用指纹但型号不在迈从表，交给 AULA"
@@ -412,7 +417,10 @@ public sealed class MchosePlugin : BatteryPluginBase
     /// <summary>形态固定的协议交给解释器：帧模板、窗口、重试次数全在 JSON 里，这里只剩一次调用。</summary>
     private (string Protocol, int? Percent, ChargingState Charging)? TrySpec(HidDeviceHandle handle)
     {
-        var reading = Engine.ProbeAsync(handle, IsWritesEnabled(SettingsKey)).GetAwaiter().GetResult();
+        var spec = Engine.Resolve(handle.Info);
+        var activeAllowed = spec is not null && MchoseActiveQueryPolicy.Allows(handle.Info, spec.Name);
+        var reading = Engine.ProbeAsync(handle, IsWritesEnabled(SettingsKey), activeAllowed)
+            .GetAwaiter().GetResult();
         if (reading is not { } r || r.Protocol != ProtocolCzBlock) return reading;
 
         var (percent, charging) = MchoseSpecs.ResolveFull(r.Percent, r.Charging);
@@ -434,7 +442,8 @@ public sealed class MchosePlugin : BatteryPluginBase
         // 形态固定的协议由解释器发帧与解析；"没发帧"与"发了没应答"必须分开，否则会被误记成失败
         if (dev.Protocol is ProtocolGmouse or ProtocolHeadsetV9 or ProtocolHeadsetX9 or ProtocolCzBlock)
         {
-            var outcome = Engine.Poll(dev.Handle, RefOf(dev), dev.Protocol, IsWritesEnabled(SettingsKey));
+            var outcome = Engine.Poll(dev.Handle, RefOf(dev), dev.Protocol, IsWritesEnabled(SettingsKey),
+                activeAllowed: MchoseActiveQueryPolicy.Allows(dev.Info, dev.Protocol));
             if (outcome.Attempt == PollAttempt.NotAttempted) return null;
             if (outcome.Attempt == PollAttempt.Answered) ReportPollAnswered(dev);
             else ReportPollFailure(dev);
@@ -567,6 +576,13 @@ public sealed class MchosePlugin : BatteryPluginBase
         }
         Log.ResetOnce(LogKey(handle, LogKey0x4DNoPermit));
 
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, Protocol0x4D))
+        {
+            Log.Once(LogLevel.Debug, LogKey(handle, LogKey0x4DUnverified),
+                $"迈从 0x4D: 目录未验证，跳过主动查询: {handle.Info.DevicePath}");
+            return null;
+        }
+
         var query = Mchose0x4DCodec.BuildDeviceInfoQuery();
         bool wrote = false;
         byte[]? lastAnswer = null;
@@ -672,6 +688,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     private (string Protocol, int? Percent, ChargingState Charging)? TryMouseV2(HidDeviceHandle handle)
     {
         if (!IsWritesEnabled(SettingsKey)) return null;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, ProtocolMouseV2)) return null;
 
         var push = ListenE2(handle, TimeSpan.FromSeconds(3));
         if (!push.HasValue)
@@ -729,6 +746,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     {
         var handle = dev.Handle;
         if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return null;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, Protocol0x4D)) return null;
 
         var query = Mchose0x4DCodec.BuildDeviceInfoQuery();
         bool answered = false;
@@ -921,6 +939,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         indices = default;
         raw = [];
         if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return false;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, Protocol0x4D)) return false;
 
         var query = Mchose0x4DCodec.BuildPerformanceQuery();
         if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true)) return false;
@@ -948,6 +967,7 @@ public sealed class MchosePlugin : BatteryPluginBase
         reading = default;
         raw = [];
         if (handle.Info.OutputReportLength < Mchose0x4DCodec.FrameLength) return false;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, Protocol0x4D)) return false;
 
         var query = Mchose0x4DCodec.BuildDpiQuery(profile, direction);
         if (!handle.WriteOutput(query, TimeSpan.FromMilliseconds(500), quiet: true)) return false;
@@ -988,6 +1008,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     private (int? Percent, ChargingState Charging)? TryKeyboardV1(HidDeviceHandle handle, bool requireKnownModel)
     {
         if (!IsWritesEnabled(SettingsKey)) return null;
+        if (!MchoseActiveQueryPolicy.Allows(handle.Info, ProtocolKeyboardV1)) return null;
 
         // 开会话（官方时序），失败不影响下一步——实测 dongle 记住会话状态
         SendKeyboardV1Frame(handle, MchoseV1Codec.SessionCmd, 0x01);
@@ -1124,6 +1145,7 @@ public sealed class MchosePlugin : BatteryPluginBase
     private static (int? Percent, ChargingState Charging)? PollKeyboardV1(TrackedDevice dev)
     {
         if (!IsWritesEnabled(SettingsKey)) return null;
+        if (!MchoseActiveQueryPolicy.Allows(dev.Info, ProtocolKeyboardV1)) return null;
 
         if (!SendKeyboardV1Frame(dev.Handle, MchoseV1Codec.BatteryQueryCmd, 0x01)) return null;
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(1.2);

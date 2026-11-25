@@ -1,9 +1,11 @@
 ﻿# 打安装包：dotnet publish（self-contained）+ vpk pack（Velopack），产物在 dist\。
 # 产物：VigilWattApp-win-Setup.exe（仅当前用户安装、无 UAC、自动建开始菜单+桌面快捷方式）
 #       releases.win.json + RELEASES + *.nupkg（Velopack 更新清单与全量/增量包）
-# 用法：powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 [-Version 1.0.1]
+# 用法：powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 [-Version 1.0.1] [-Channel beta] [-OutputDir dist-beta]
 param(
-    [string]$Version = ""
+    [string]$Version = "",
+    [string]$Channel = "",
+    [string]$OutputDir = "dist"
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,7 +17,9 @@ cmd /c "taskkill /IM VigilWatt.App.exe /F >nul 2>&1"
 # 2) 发布 self-contained（含 Windows App SDK 运行时，目标机器无需装任何依赖）
 $publishDir = Join-Path $root "publish"
 $csproj = Join-Path $root "src\VigilWatt.App\VigilWatt.App.csproj"
-dotnet publish $csproj -c Release -p:Platform=x64 -o $publishDir
+$publishArgs = @($csproj, "-c", "Release", "-p:Platform=x64", "-o", $publishDir)
+if ($Version -ne "") { $publishArgs += "-p:Version=$Version" }
+dotnet publish @publishArgs
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish 失败" }
 
 # 3) 版本号：默认从发布 exe 的 FileVersion 读（单一来源是 csproj 的 <Version>）。
@@ -23,7 +27,7 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish 失败" }
 $exe = Join-Path $publishDir "VigilWatt.App.exe"
 if ($Version -eq "") { $Version = (Get-Item $exe).VersionInfo.FileVersion }
 $parts = $Version.Split('.')
-if ($parts.Length -gt 3) { $Version = ($parts[0..2] -join '.') }
+if ($Version -notmatch '-' -and $parts.Length -gt 3) { $Version = ($parts[0..2] -join '.') }
 Write-Host "==> 打包版本: $Version"
 
 # 4) 更新说明：截 docs\project\release-notes.md 里当前版本那一段（格式契约见该文件头）。
@@ -42,7 +46,7 @@ else {
 # 5) Velopack 打包。packId 必须用 VigilWattApp 而不是 VigilWatt：
 #    Velopack 默认装到 %LocalAppData%\<packId>，叫 VigilWatt 会和应用数据目录
 #    %LOCALAPPDATA%\VigilWatt（settings.json/history.db/logs）撞车，升级时数据被清。
-$dist = Join-Path $root "dist"
+$dist = Join-Path $root $OutputDir
 $vpkArgs = @(
     "pack"
     "--packId", "VigilWattApp"
@@ -54,13 +58,15 @@ $vpkArgs = @(
     "--runtime", "win-x64"
     "--outputDir", $dist
 )
+if ($Channel -ne "") { $vpkArgs += @("--channel", $Channel) }
 if ($notes) { $vpkArgs += @("--releaseNotes", $notesFile) }
 vpk @vpkArgs
 if ($LASTEXITCODE -ne 0) { throw "vpk pack 失败" }
 
-$feed = Join-Path $dist "releases.win.json"
-if (-not (Test-Path -LiteralPath $feed)) { throw "vpk pack 未生成 releases.win.json 更新清单" }
+$channelName = if ($Channel -ne "") { $Channel } else { "win" }
+$feed = Join-Path $dist "releases.$channelName.json"
+if (-not (Test-Path -LiteralPath $feed)) { throw "vpk pack 未生成 releases.$channelName.json 更新清单" }
 
-$setup = Get-ChildItem $dist -Filter "*-win-Setup.exe" | Select-Object -First 1
+$setup = Get-ChildItem $dist -Filter "*-Setup.exe" | Select-Object -First 1
 Write-Host "==> 完成。安装包: $($setup.FullName)"
 Write-Host "    更新产物由维护者手动上传到 GitHub Releases（主下载）与 Gitee Releases（镜像）；本脚本只打包，不上传"

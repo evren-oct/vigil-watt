@@ -2,7 +2,7 @@
 
 > 本文件由 `python scripts/gen-doc-index.py` 生成，不要手改。
 > 新增/移动文档后重跑；`--check` 会在过期时退出码 1。日期取 git 最后提交，未入库文件用文件时间。
-> 共 97 份 Markdown；最后生成：2026-11-24。
+> 共 97 份 Markdown；最后生成：2026-11-25。
 
 ## architecture
 
@@ -19,14 +19,14 @@
 
 | 文档 | 标题 | 状态 | 最后提交 |
 |---|---|---|---|
-| [build.md](dev/build.md) | 构建与环境坑 | — | 2026-11-23 |
+| [build.md](dev/build.md) | 构建与环境坑 | — | 2026-11-25 |
 | [comment-style.md](dev/comment-style.md) | 注释规范 | — | 2026-11-11 |
 | [logging.md](dev/logging.md) | 日志设计 | 已实施（2026-10-09 起；2026-10-10 改为按日分文件） | 2026-10-16 |
 | [monitor-identity.md](dev/monitor-identity.md) | 显示器身份与名称（任务栏贴片选屏） | — | 2026-10-26 |
 | [plugin-standard.md](dev/plugin-standard.md) | 厂商插件架构标准 | — | 2026-11-24 |
 | [protocol-json.md](dev/protocol-json.md) | 协议 JSON 怎么写（数据化的边界） | — | 2026-11-23 |
 | [review-standard.md](dev/review-standard.md) | 代码审查标准与流程 | — | 2026-11-19 |
-| [runtime-pitfalls.md](dev/runtime-pitfalls.md) | 运行时坑 | — | 2026-11-23 |
+| [runtime-pitfalls.md](dev/runtime-pitfalls.md) | 运行时坑 | — | 2026-11-25 |
 | [ui-style.md](dev/ui-style.md) | 界面视觉规则 | — | 2026-11-12 |
 | [vendor-onboarding-process.md](dev/vendor-onboarding-process.md) | 新厂商接入流程 | — | 2026-11-23 |
 | [vendor-plugin-reference-index.md](dev/vendor-plugin-reference-index.md) | 四大厂商参考实现索引 | — | 2026-11-23 |
@@ -104,15 +104,15 @@
 |---|---|---|---|
 | [architecture.md](project/architecture.md) | 项目结构与架构 | — | 2026-11-23 |
 | [capture.md](project/capture.md) | 设备诊断（USB/HID 采集） | — | 2026-11-23 |
-| [changelog.md](project/changelog.md) | 变更历史（changelog） | — | 2026-11-24 |
+| [changelog.md](project/changelog.md) | 变更历史（changelog） | — | 2026-11-25 |
 | [code-flow.md](project/code-flow.md) | 代码流程 | — | 2026-11-23 |
-| [contributions.md](project/contributions.md) | 贡献记录 | — | 2026-11-23 |
+| [contributions.md](project/contributions.md) | 贡献记录 | — | 2026-11-25 |
 | [device-images-remote.md](project/device-images-remote.md) | 产品图远端化与按需下载（方案） | 未实施 | 2026-11-23 |
 | [device-images.md](project/device-images.md) | 设备产品图接入 | — | 2026-11-23 |
 | [experience.md](project/experience.md) | 项目经验 | 经验附录，不是规则 | 2026-11-23 |
-| [handoff.md](project/handoff.md) | 会话交接（给下一个 AI / 未来的自己） | — | 2026-11-24 |
+| [handoff.md](project/handoff.md) | 会话交接（给下一个 AI / 未来的自己） | — | 2026-11-25 |
 | [pointer-telemetry.md](project/pointer-telemetry.md) | 指针遥测（DPI / 回报率） | — | 2026-11-23 |
-| [release-notes.md](project/release-notes.md) | 更新日志（用户向） | — | 2026-10-28 |
+| [release-notes.md](project/release-notes.md) | 更新日志（用户向） | — | 2026-11-25 |
 
 ## reviews
 
@@ -124,9 +124,9 @@
 | [2026-11-23-backlog-triage.md](reviews/2026-11-23-backlog-triage.md) | BACKLOG 分诊表（2026-11-23） | — | 2026-11-23 |
 | [2026-11-24-active-query-capability-coverage.md](reviews/2026-11-24-active-query-capability-coverage.md) | 主动查询能力覆盖与证据盘点（2026-11-24） | M2 阶段 2 只读审计完成；未改代码、协议 JSON、设备目录、测试或运行行为 | 2026-11-24 |
 | [2026-11-24-manual-target-probing-design.md](reviews/2026-11-24-manual-target-probing-design.md) | 手动目标探测设计（2026-11-24） | 设计稿，待审查；未实施 | 2026-11-24 |
-| [2026-11-24-test-project-core-logic-extraction-plan.md](reviews/2026-11-24-test-project-core-logic-extraction-plan.md) | 测试工程去 Compile Include：抽取 VigilWatt.Core.Logic | 方案，待审查；未实施 | 2026-11-24 |
-| [BACKLOG.md](reviews/BACKLOG.md) | 审查发现 BACKLOG | — | 2026-11-23 |
-| [beta-1-release-readiness-audit.md](reviews/beta-1-release-readiness-audit.md) | VigilWatt Beta 1 发版准备审计 | 审计完成，结论 B（需要处理少量阻塞项后进入 Beta） | 2026-11-24 |
+| [2026-11-24-test-project-core-logic-extraction-plan.md](reviews/2026-11-24-test-project-core-logic-extraction-plan.md) | 测试工程去 Compile Include：抽取 VigilWatt.Core.Logic | 方案，待审查；未实施 | 2026-11-25 |
+| [BACKLOG.md](reviews/BACKLOG.md) | 审查发现 BACKLOG | — | 2026-11-25 |
+| [beta-1-release-readiness-audit.md](reviews/beta-1-release-readiness-audit.md) | VigilWatt Beta 1 发版准备审计 | 审计完成，结论 B（需要处理少量阻塞项后进入 Beta） | 2026-11-25 |
 
 ## reviews/archive
 
@@ -136,7 +136,7 @@
 | [ajazz-thunderobot-2026-10-19.md](reviews/archive/ajazz-thunderobot-2026-10-19.md) | 黑爵 / 雷神电量适配审查 | — | 2026-11-11 |
 | [akg-n9-2026-10-23.md](reviews/archive/akg-n9-2026-10-23.md) | AKG N9 Hybrid 改动审查 | — | 2026-10-24 |
 | [aula-hero68-air-2026-10-23.md](reviews/archive/aula-hero68-air-2026-10-23.md) | HERO 68 Air 适配审查 | — | 2026-10-23 |
-| [BACKLOG-CLOSED.md](reviews/archive/BACKLOG-CLOSED.md) | 已关闭的审查条目 | — | 2026-11-23 |
+| [BACKLOG-CLOSED.md](reviews/archive/BACKLOG-CLOSED.md) | 已关闭的审查条目 | — | 2026-11-25 |
 | [code-review-2026-10-06.md](reviews/archive/code-review-2026-10-06.md) | 全仓代码与架构审查（2026-10-06） | — | 2026-10-11 |
 | [code-review-followup-2026-10-06.md](reviews/archive/code-review-followup-2026-10-06.md) | 审查报告复核与优化路线图（2026-10-06） | — | 2026-11-11 |
 | [comment-audit-2026-10-09.md](reviews/archive/comment-audit-2026-10-09.md) | VigilWatt 注释精简审计与 docs 归并映射（2026-10-09） | — | 2026-11-11 |
@@ -154,4 +154,4 @@
 
 | 文档 | 标题 | 状态 | 最后提交 |
 |---|---|---|---|
-| [README.md](README.md) | 文档导航 | — | 2026-11-24 |
+| [README.md](README.md) | 文档导航 | — | 2026-11-25 |

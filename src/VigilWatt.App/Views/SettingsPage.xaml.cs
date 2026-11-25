@@ -38,10 +38,11 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
-        // 页面被缓存复用：构造函数只跑一次，所以"建一次"的活留这里，"每次进来都要重读"的活放 Loaded
+        // 懒缓存：首次进来构造一次、之后复用；启动期不再预热（预热一份 231 元素 + 19 个下拉框要 ~27MB 提交）
         NavigationCacheMode = NavigationCacheMode.Required;
         BuildOptions();
         Loaded += OnPageLoaded;
+        Unloaded += (_, _) => _highlightTimer?.Stop();
     }
 
     /// <summary>每次进页面都重读设置。搜索索引改为按需重建：折叠区展开后视觉树会变，缓存会过期。</summary>

@@ -202,7 +202,7 @@ public partial class App : Application
         Services.MainWindow.Activate();
         if (Services.Settings.StartMinimized)
         {
-            Services.MainWindow.AppWindow.Hide();
+            Services.MainWindow.HideToTray();
         }
 
         if (Services.Settings.WidgetEnabled)

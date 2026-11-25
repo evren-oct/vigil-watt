@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using VigilWatt.Core.Utils;
 
 namespace VigilWatt.App.Services;
 
@@ -8,6 +9,7 @@ namespace VigilWatt.App.Services;
 /// 功 能： 启动日志的身份快照：完整性级别决定能不能写用户目录、能不能跟任务栏说话。
 /// 2026/10/20 23:05:00 xliu
 /// 只读；失败返回"未知"，绝不让诊断本身变成启动失败的原因。判据见 runtime-pitfalls.md §20。
+/// 管理员与沙箱组只在日志级别 Debug 时计算：那两项要查域，启动路径上等不起。
 /// </summary>
 internal static class ProcessIdentity
 {
@@ -18,6 +20,12 @@ internal static class ProcessIdentity
         try
         {
             using var id = WindowsIdentity.GetCurrent();
+            var text = $"用户={id.Name} 会话={Process.GetCurrentProcess().SessionId} " +
+                       $"完整性={IntegrityLevel(id.Token)}";
+
+            // 组名翻译在域机上要逐个问 LSASS/AD（二三十个组近 1 秒），只在日志级别降到 Debug 时才算
+            if (!Log.IsEnabled(LogLevel.Debug)) return text;
+
             var sandbox = id.Groups?
                 .Select(g =>
                 {
@@ -28,9 +36,8 @@ internal static class ProcessIdentity
                 .ToArray() ?? Array.Empty<string>();
 
             var elevated = new WindowsPrincipal(id).IsInRole(WindowsBuiltInRole.Administrator) ? "是" : "否";
-            return $"用户={id.Name} 会话={Process.GetCurrentProcess().SessionId} 管理员={elevated} " +
-                   $"完整性={IntegrityLevel(id.Token)} " +
-                   $"沙箱组={(sandbox.Length == 0 ? "无" : string.Join("|", sandbox))}";
+            return text + $" 管理员={elevated} " +
+                          $"沙箱组={(sandbox.Length == 0 ? "无" : string.Join("|", sandbox))}";
         }
         catch (Exception ex)
         {

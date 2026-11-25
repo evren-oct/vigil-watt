@@ -145,6 +145,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         public int NotReadyScans;                       // 连续"整轮一个都没应答"的次数（接收器刚插上时会这样）
         public int? ReportedSlotCount;                  // 接收器自报的配对槽位容量（0xB5/0x03）；null = 没读到
         public bool SlotCountProbed;                    // 每开一次句柄只探一次，避免每轮都白等超时
+        public bool ReceiverInfoUnavailable;            // 0xB5 超时过一次：本会话不再试它的其他子寄存器
         public readonly Dictionary<byte, DevEntry> Devices = new();
         public readonly Dictionary<byte, DateTimeOffset> EmptySlotUntil = new();
 
@@ -217,6 +218,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
                     // 新句柄 = 新会话：自报槽位可能来自另一个固件/接口，重新探一次
                     session.SlotCountProbed = false;
                     session.ReportedSlotCount = null;
+                    session.ReceiverInfoUnavailable = false;
                     Log.Info($"罗技 HID++ 接口打开: {info} report=0x{session.Io.ReportId:X2}");
                 }
                 catch (UnauthorizedAccessException ex)
@@ -337,6 +339,8 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
         if (session.DirectDevice || session.Io is not { } io) return;
         if (HidppCatalog.FindReceiver(session.Info.ProductId) == null) return;
+        // 本会话已确认这颗接收器不实现 0xB5（下面超时那次记的），别再为另一个子寄存器白等 800ms
+        if (session.ReceiverInfoUnavailable) return;
 
         Span<byte> args = stackalloc byte[1] { HidppCodec.ReceiverInfoSubRegister };
         var resp = io.Request(0xFF, 0x83B5, args, patchSw: false,
@@ -351,6 +355,8 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         }
 
         // 失败是正常分支（部分接收器不实现 0xB5/0x03，Solaar 也把 C534 单列）：只留 Debug，别刷 Info。
+        // 没回包才记"不支持"：回包但解析不出说明这颗接收器答了，只是布局不同，不能连累别的子寄存器。
+        if (resp == null) session.ReceiverInfoUnavailable = true;
         Log.Debug($"罗技接收器配对槽位读取失败，退回目录值 pid=0x{session.Info.ProductId:X4} " +
                   $"resp={(resp == null ? "null" : Convert.ToHexString(resp))}");
     }
@@ -501,7 +507,7 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         ushort? wpid = null;
         DeviceKind pairedKind = DeviceKind.Unknown;
         if (!session.DirectDevice)
-            TryReadPairingInfo(io, session.Info.ProductId, idx, out wpid, out pairedKind);
+            TryReadPairingInfo(session, io, idx, out wpid, out pairedKind);
 
         // 类型优先级：0x0005 营销类型（权威）> 配对寄存器 > 按名字猜
         var kind = ReadDeviceKind(io, idx, nameIdx);
@@ -927,11 +933,15 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
 
     /// <summary>读接收器配对信息（HID++ 1.0 长寄存器 0xB5）：设备类型 + wireless PID。Unifying 子寄存器 0x20+(n-1)；Bolt 子寄存器 0x50+n。</summary>
     private static bool TryReadPairingInfo(
-        HidppIO io, ushort receiverPid, byte deviceIndex,
+        ReceiverSession session, HidppIO io, byte deviceIndex,
         out ushort? wirelessPid, out DeviceKind kind)
     {
         wirelessPid = null;
         kind = DeviceKind.Unknown;
+        // 0xB5 已确认不通（本会话超时过一次）：配对信息本来也读不到，跳过这次 800ms 空等
+        if (session.ReceiverInfoUnavailable) return false;
+
+        var receiverPid = session.Info.ProductId;
         var family = HidppCatalog.Family(receiverPid);
         byte subReg = family == ReceiverFamily.Bolt
             ? (byte)(0x50 + deviceIndex)
@@ -941,7 +951,11 @@ public sealed class LogitechPlugin : BatteryPluginBase, IBatteryPlugin
         // 0x83B5 = 长寄存器读 RECEIVER_INFO（0x2B5）
         var resp = io.Request(0xFF, 0x83B5, args, patchSw: false,
             timeout: TimeSpan.FromMilliseconds(800));
-        if (resp == null) return false;
+        if (resp == null)
+        {
+            session.ReceiverInfoUnavailable = true;
+            return false;
+        }
 
         if (family == ReceiverFamily.Bolt)
         {

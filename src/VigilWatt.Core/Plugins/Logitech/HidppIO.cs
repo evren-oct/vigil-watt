@@ -15,6 +15,9 @@ internal sealed class HidppIO : IDisposable
     /// <summary>单次泵出的时间预算：按时间不按条数，否则 N 条 × 请求超时会把这一个线程占满几分钟。</summary>
     private static readonly TimeSpan DrainBudget = TimeSpan.FromMilliseconds(200);
 
+    /// <summary>单次持锁读的上限：整段窗口持锁会让每个 Request 排队 ~500ms（2026-11-25 实测）。</summary>
+    private static readonly TimeSpan PumpSlice = TimeSpan.FromMilliseconds(50);
+
     /// <summary>写被系统拒绝后停写这么久。写失败说明接口本身不通（不是设备睡着），继续戳只会刷屏。</summary>
     private static readonly TimeSpan WriteBrokenCooldown = TimeSpan.FromSeconds(30);
 
@@ -111,18 +114,25 @@ internal sealed class HidppIO : IDisposable
     public void PumpNotifications(TimeSpan wait)
     {
         if (wait <= TimeSpan.Zero) return;
-        lock (_ioGate)
+        var deadline = DateTime.UtcNow + wait;
+        while (DateTime.UtcNow < deadline)
         {
-            var deadline = DateTime.UtcNow + wait;
-            while (DateTime.UtcNow < deadline)
+            byte[]? input;
+            lock (_ioGate)
             {
                 var remaining = deadline - DateTime.UtcNow;
-                var input = _handle.ReadInput(remaining > TimeSpan.FromMilliseconds(50)
-                    ? remaining
-                    : TimeSpan.FromMilliseconds(50));
-                if (input == null) break;
-                _notifications.TryEnqueue(input);
+                if (remaining <= TimeSpan.Zero) break;
+                input = _handle.ReadInput(remaining > PumpSlice ? PumpSlice : remaining);
             }
+
+            if (input == null)
+            {
+                // 空转一拍就把锁放掉：整段窗口持锁会让 Request 每个都排队一个窗口长度（2026-11-25 实测 500ms）
+                Thread.Sleep(1);
+                continue;
+            }
+
+            _notifications.TryEnqueue(input);
         }
 
         DrainNotifications();

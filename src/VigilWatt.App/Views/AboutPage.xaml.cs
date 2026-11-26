@@ -3,6 +3,7 @@ using VigilWatt.App.Services;
 using VigilWatt.Core.Utils;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace VigilWatt.App.Views;
@@ -49,7 +50,7 @@ public sealed partial class AboutPage : Page
             UpdateDownloadUi.ProgressChanged += OnUpdateProgressChanged;
         }
 
-        VersionText.Text = GetType().Assembly.GetName().Version?.ToString(3) ?? "—";
+        VersionText.Text = "v" + (GetType().Assembly.GetName().Version?.ToString(3) ?? "—");
         UpdateStatusText.Text = string.IsNullOrEmpty(App.UpdateStatusMessage)
             ? "检查更新"
             : App.UpdateStatusMessage;
@@ -67,26 +68,40 @@ public sealed partial class AboutPage : Page
 
         if (current != null)
         {
-            CurrentNotesHost.Children.Add(ReleaseNotesView.BuildVersionHeader(current));
-            CurrentNotesHost.Children.Add(ReleaseNotesView.BuildBody(current));
+            NotesHost.Children.Add(ReleaseNotesView.BuildVersionHeader(current));
+            NotesHost.Children.Add(ReleaseNotesView.BuildBody(current));
         }
         else
         {
-            CurrentNotesHost.Children.Add(ReleaseNotesView.BuildMissingHint(version ?? "—"));
+            NotesHost.Children.Add(ReleaseNotesView.BuildMissingHint(version ?? "—"));
+        }
+
+        int olderCount = ReleaseNotes.All.Count - (current == null ? 0 : 1);
+        if (olderCount > 0)
+        {
+            NotesHost.Children.Add(new Border
+            {
+                Height = 1,
+                Margin = new Thickness(0, 12, 0, 12),
+                Background = Application.Current.Resources["DividerStrokeColorDefaultBrush"] as Brush,
+            });
+            NotesHost.Children.Add(new TextBlock
+            {
+                Text = "更早的版本",
+                FontSize = 11,
+                FontWeight = Microsoft.UI.Text.FontWeights.Medium,
+                Foreground = Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush,
+            });
         }
 
         foreach (var section in ReleaseNotes.All)
         {
             if (ReferenceEquals(section, current)) continue;
-            var block = new StackPanel { Spacing = 6 };
+            var block = new StackPanel { Spacing = 6, Margin = new Thickness(0, 12, 0, 0) };
             block.Children.Add(ReleaseNotesView.BuildVersionHeader(section));
             block.Children.Add(ReleaseNotesView.BuildBody(section));
-            OlderNotesHost.Children.Add(block);
+            NotesHost.Children.Add(block);
         }
-
-        OlderNotesExpander.Visibility = OlderNotesHost.Children.Count > 0
-            ? Visibility.Visible
-            : Visibility.Collapsed;
     }
 
     private void OnUpdateProgressChanged(bool active, int percent, string message)

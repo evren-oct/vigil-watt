@@ -22,6 +22,8 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
 
     private string _name = "";
     private string _percentText = "----";
+    private string _percentNumber = "----";
+    private string _percentUnit = "";
     private string _sourceText = "";
     private string _receiverText = "";
     private string? _receiverIconKey;
@@ -40,6 +42,7 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     private Brush _sourceBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _sourceBackgroundBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _receiverBackgroundBrush = UiPalette.Brush(UiPalette.Offline);
+    private Brush _receiverBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _progressBrush = UiPalette.Brush(UiPalette.Offline);
     private Brush _percentBrush = UiPalette.Brush(UiPalette.Offline);
 
@@ -56,6 +59,12 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     public string Name { get => _name; private set => Set(ref _name, value); }
 
     public string PercentText { get => _percentText; private set => Set(ref _percentText, value); }
+
+    /// <summary>百分比数字（不含 %）：与单位分开排版，数字 22 号、单位 13 号。</summary>
+    public string PercentNumber { get => _percentNumber; private set => Set(ref _percentNumber, value); }
+
+    /// <summary>百分比单位：无读数时为空串，不把 "----" 写成 "----%"。</summary>
+    public string PercentUnit { get => _percentUnit; private set => Set(ref _percentUnit, value); }
 
     public double Progress { get => _progress; private set => Set(ref _progress, value); }
 
@@ -83,13 +92,16 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
     /// <summary>连接徽标胶囊底色（同色压淡）。</summary>
     public Brush SourceBackgroundBrush { get => _sourceBackgroundBrush; private set => Set(ref _sourceBackgroundBrush, value); }
 
-    /// <summary>体系标签底色：与链路同色相、更淡一档——它是链路的从属信息，不另起色相。</summary>
+    /// <summary>体系标签底色：中性灰，避免和链路徽标的来源色抢注意力。</summary>
     public Brush ReceiverBackgroundBrush { get => _receiverBackgroundBrush; private set => Set(ref _receiverBackgroundBrush, value); }
+
+    /// <summary>体系标签文字色：中性灰，不再跟链路色；链路徽标才承载来源色。</summary>
+    public Brush ReceiverBrush { get => _receiverBrush; private set => Set(ref _receiverBrush, value); }
 
     /// <summary>电量条着色：充电蓝 / 低电红 / 中等橙 / 正常绿 / 离线灰。</summary>
     public Brush ProgressBrush { get => _progressBrush; private set => Set(ref _progressBrush, value); }
 
-    /// <summary>百分比文字：仅异常状态着色（充电蓝 / 低电红 / 离线灰），正常态用主题前景色。
+    /// <summary>百分比文字：按电量状态取色（良好绿 / 中等橙 / 低电红 / 充电蓝 / 离线灰）。
     /// 注意 x:Bind 绑 null 会压掉样式默认前景导致文字不可见，此属性必须非空。</summary>
     public Brush PercentBrush { get => _percentBrush; private set => Set(ref _percentBrush, value); }
 
@@ -103,17 +115,19 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         var d = DevicePresentation.WithIconKind(DevicePresentation.Apply(source, settings), settings);
         var percent = d.BatteryPercent;
         bool charging = DeviceStatusFormatter.IsCharging(d.Charging);
+        bool online = d.IsOnline;
 
         Id = d.Id;
         Name = d.DisplayName;
         IconKind = d.Kind;
-        IconColor = PrimaryColor;
+        IconColor = online ? UiPalette.BatteryLevel(percent, charging) : UiPalette.Offline;
         // 无读数用 "----"：与 "100%" 同宽，右对齐时不会和相邻行差半个字
         PercentText = DeviceStatusFormatter.PercentText(percent, "----");
+        PercentNumber = percent?.ToString() ?? "----";
+        PercentUnit = percent.HasValue ? "%" : "";
         Progress = percent ?? 0;
         // 颜色先就位：体系图标与文本同一拍更新，晚一拍会闪一下透明或旧色
         // 离线徽标必须变灰并标"最后"，不能把历史链路显示成当前连接（M4-3B-2C-4）
-        bool online = d.IsOnline;
         SetSourceColor(online ? UiPalette.ConnectionTag(d.Connection, d.Source) : UiPalette.Offline);
         SourceText = DeviceConnectionInfo.Badge(d.Connection, d.Source, online);
         ReceiverText = DeviceConnectionInfo.ReceiverLabel(d.Receiver) ?? "";
@@ -123,11 +137,11 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         IsOnline = online;
 
         SetProgressColor(online ? UiPalette.BatteryLevel(percent, charging) : UiPalette.Offline);
-        // null = 用主题前景色（正常态），非空才换 UiPalette 的固定色
-        SetPercentColor(!online ? UiPalette.Offline
-            : charging ? UiPalette.Charging
-            : percent is <= 20 ? UiPalette.Low
-            : null);
+        SetPercentColor(online ? UiPalette.BatteryLevel(percent, charging) : UiPalette.Offline);
+        ReceiverBrush = Tertiary;
+        ReceiverBackgroundBrush = ThemeBrush("AppNeutralPillFillBrush",
+            UiPalette.Brush(UiPalette.Tint(UiPalette.Offline, 0x1A)));
+        ReceiverIconColor = TertiaryColor;
     }
 
     private void SetSourceColor(Color color)
@@ -136,9 +150,6 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         _sourceColor = color;
         SourceBrush = UiPalette.Brush(color);
         SourceBackgroundBrush = UiPalette.Brush(UiPalette.Tint(color));
-        // 体系标签压在链路之下：同色相、约一半浓度，并排时不会抢徽标的注意力
-        ReceiverBackgroundBrush = UiPalette.Brush(UiPalette.Tint(color, 0x1A));
-        ReceiverIconColor = color;
     }
 
     private void SetProgressColor(Color color)
@@ -148,11 +159,11 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
         ProgressBrush = UiPalette.Brush(color);
     }
 
-    private void SetPercentColor(Color? color)
+    private void SetPercentColor(Color color)
     {
         if (Nullable.Equals(_percentColor, color)) return;
         _percentColor = color;
-        PercentBrush = color is { } value ? UiPalette.Brush(value) : PrimaryBrush;
+        PercentBrush = UiPalette.Brush(color);
     }
 
     private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
@@ -164,10 +175,15 @@ public sealed class DeviceRowModel : INotifyPropertyChanged
 
     private void Raise(string? name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    private static Brush PrimaryBrush =>
-        Application.Current.Resources["TextFillColorPrimaryBrush"] as Brush ?? UiPalette.Brush(UiPalette.Offline);
+    private static Brush Tertiary =>
+        Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush ?? UiPalette.Brush(UiPalette.Offline);
 
-    private static Color PrimaryColor =>
-        (Application.Current.Resources["TextFillColorPrimaryBrush"] as SolidColorBrush)?.Color
+    private static Color TertiaryColor =>
+        (Application.Current.Resources["TextFillColorTertiaryBrush"] as SolidColorBrush)?.Color
         ?? Color.FromArgb(255, 80, 80, 80);
+
+    private static Brush ThemeBrush(string key, Brush fallback) =>
+        Application.Current.Resources.TryGetValue(key, out var value) && value is Brush brush
+            ? brush
+            : fallback;
 }

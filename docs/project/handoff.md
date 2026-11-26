@@ -11,6 +11,7 @@
 - 其余机型均为贡献者真机或仅实现待验，本机未复测；不要把贡献者读数当成维护者结论。协议与验证边界见各品牌文档。
 - 任务栏贴片是原生子窗口 `Services/TaskbarPillWindow.cs`（`SetParent` 进 `Shell_TrayWnd`），拖动走 16ms 轮询；小组件仍用 `TransparentWindowSurface`，Win10 上因此没有 DWM 投影（CR-57）。选屏见 `dev/monitor-identity.md`。
 - 页面已缓存（`NavigationCacheMode = Required`），订阅跟 `Loaded`/`Unloaded`；设置页可搜索；日志按日 `logs\app-日期.log`；插件开关即写入授权，没有第二套「写入许可」。
+- UI 改版（2026-11-26）：7 页统一令牌、侧栏分「监控 / 系统」、设置页折叠分组；侧栏与 10 种设备图标统一取 Tabler Icons 3.31.0（导航字体子集 + 设备 SVG 路径，XAML 与 GDI+ 同源）。本机 Win11 25H2 + 150% DPI 已看，Win10 与深色主题未复核（CR-182）。
 - 罗技 ReceiverIdentity 已全量开放，连接推断覆盖 Bolt / Unifying / LIGHTSPEED / Nano；C548 的 `0xB5/0x03` 真机无回包，容量走目录 6 槽；`0x0005` 设备名改按块读、上限 64，待真机复验（CR-163）。细节见 `hardware/logitech.md` §1。
 - 迈从主动查询已加目录能力白名单：未登记/未验证接口零写入；G87、G87 V2、CZ、0x4D、Gmouse、V9/X9、G75 Pro 保持查询。见 `hardware/safety.md` §3 与 `reviews/beta-1-release-readiness-audit.md`。
 - 设备列表支持右键改名/图标、忽略、删除离线设备与恢复；剩余时间估算至少 3 个时间点且有净下降才显示；贴片可按显示名筛选设备。见 `code-flow.md` §5。

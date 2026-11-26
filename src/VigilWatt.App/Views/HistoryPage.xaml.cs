@@ -3,6 +3,8 @@ using VigilWatt.App.Services;
 using VigilWatt.Core.Utils;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace VigilWatt.App.Views;
@@ -15,6 +17,7 @@ namespace VigilWatt.App.Views;
 public sealed partial class HistoryPage : Page
 {
     private List<HistoryDeviceRow> _rows = new();
+    private string _filter = "";
 
     public HistoryPage()
     {
@@ -40,7 +43,10 @@ public sealed partial class HistoryPage : Page
                 ? "暂无历史数据"
                 : $"共 {stats.TotalCount:N0} 条记录 · 覆盖 {stats.DeviceCount} 台设备 · {DateTime.Now:HH:mm:ss} 更新";
 
-            KpiFileSize.Text = ByteSize.Format(stats.FileBytes);
+            var fileSize = ByteSize.Format(stats.FileBytes);
+            int split = fileSize.LastIndexOf(' ');
+            KpiFileSizeNumber.Text = split > 0 ? fileSize[..split] : fileSize;
+            KpiFileSizeUnit.Text = split > 0 ? " " + fileSize[(split + 1)..] : "";
             KpiTotal.Text = $"{stats.TotalCount:N0}";
             KpiDevices.Text = $"{stats.DeviceCount}";
             if (stats.First is { } first)
@@ -58,11 +64,7 @@ public sealed partial class HistoryPage : Page
             {
                 Name = DevicePresentation.DisplayName(d.DeviceId, d.Name, App.Services.Settings),
             })).ToList();
-            DeviceList.ItemsSource = _rows;
-
-            bool empty = _rows.Count == 0;
-            DeviceList.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
-            EmptyState.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+            ApplyFilter();
 
             UpdateSelectionSummary();
         }
@@ -70,6 +72,29 @@ public sealed partial class HistoryPage : Page
         {
             Log.Error("历史管理页刷新失败", ex);
         }
+    }
+
+    private void DeviceSearch_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _filter = DeviceSearchBox.Text.Trim();
+        ApplyFilter();
+    }
+
+    /// <summary>过滤只换 ItemsSource；勾选状态留在行模型里，切回全部时不会丢。</summary>
+    private void ApplyFilter()
+    {
+        if (DeviceList == null) return;
+
+        var rows = string.IsNullOrEmpty(_filter)
+            ? _rows
+            : _rows.Where(r => r.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)).ToList();
+        DeviceList.ItemsSource = rows;
+
+        bool hasAny = _rows.Count > 0;
+        bool hasMatch = rows.Count > 0;
+        DeviceList.Visibility = hasMatch ? Visibility.Visible : Visibility.Collapsed;
+        EmptyState.Visibility = hasAny ? Visibility.Collapsed : Visibility.Visible;
+        NoMatchState.Visibility = hasAny && !hasMatch ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateSelectionSummary()
@@ -86,12 +111,26 @@ public sealed partial class HistoryPage : Page
     // 读 CheckBox 自身的 IsChecked 而不是绑定值：事件回调与绑定写回的先后顺序没有保证
     private void Row_CheckChanged(object sender, RoutedEventArgs e)
     {
-        if (sender is not CheckBox box || box.Tag is not string deviceId) return;
-        var row = _rows.FirstOrDefault(r => r.DeviceId == deviceId);
-        if (row == null) return;
+        // 用 DataContext 而不是 Tag：列表虚拟化后容器会复用，Tag 与 IsChecked 的更新顺序不可依赖
+        if (sender is not CheckBox box || box.DataContext is not HistoryDeviceRow row) return;
         row.IsSelected = box.IsChecked == true;
         UpdateSelectionSummary();
     }
+
+    private void Row_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Border border && HoverFill is { } brush) border.Background = brush;
+    }
+
+    private void Row_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Border border) border.ClearValue(Border.BackgroundProperty);
+    }
+
+    private static Brush? HoverFill =>
+        Application.Current.Resources.TryGetValue("AppHoverFillBrush", out var value)
+            ? value as Brush
+            : null;
 
     private async void DeleteRow_Click(object sender, RoutedEventArgs e)
     {

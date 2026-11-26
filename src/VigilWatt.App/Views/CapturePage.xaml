@@ -4,56 +4,72 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:v="using:VigilWatt.App.ViewModels">
 
-    <Grid x:Name="RootGrid" RowDefinitions="Auto,Auto,*" Padding="20,16" RowSpacing="12" SizeChanged="RootGrid_SizeChanged">
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,Auto,*" Padding="40,24,40,24" RowSpacing="20"
+          MaxWidth="900" SizeChanged="RootGrid_SizeChanged">
 
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+            <StackPanel Grid.Column="0" Spacing="7" VerticalAlignment="Center">
                 <TextBlock Text="设备诊断" Style="{StaticResource AppPageTitleStyle}" />
                 <TextBlock x:Name="SubtitleText" Text="为设备采集原始证据：选设备 → 选接口 → 预检 → 采集 → 出报告"
                            Style="{StaticResource AppPageSubtitleStyle}" TextWrapping="Wrap" />
+                <TextBlock Text="建议最大化窗口使用：左栏设备和右栏接口能同时看全。"
+                           FontSize="13" TextWrapping="Wrap"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                 <Border x:Name="WindowHint" Visibility="Collapsed" HorizontalAlignment="Left"
-                        CornerRadius="6" Padding="10,5" Margin="0,4,0,0">
-                    <TextBlock x:Name="WindowHintText" TextWrapping="Wrap" FontSize="12" FontWeight="SemiBold"
+                        CornerRadius="12" Padding="10,5" Margin="0,4,0,0">
+                    <TextBlock x:Name="WindowHintText" TextWrapping="Wrap" FontSize="13" FontWeight="Medium"
                                Text="窗口偏窄：最大化窗口后，步骤条和「引导 / 记录」两列会更清楚。" />
                 </Border>
             </StackPanel>
-            <Button x:Name="RefreshButton" Grid.Column="1" Click="Refresh_Click" VerticalAlignment="Top">
+            <HyperlinkButton x:Name="RefreshButton" Grid.Column="1" Click="Refresh_Click"
+                             Padding="0" VerticalAlignment="Top">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon FontSize="14" Glyph="&#xE72C;" />
-                    <TextBlock Text="刷新设备" />
+                    <FontIcon FontSize="14" Glyph="&#xE72C;"
+                              Foreground="{ThemeResource AppAccentBrush}" />
+                    <TextBlock Text="刷新设备" FontSize="15"
+                               Foreground="{ThemeResource AppAccentBrush}" />
                 </StackPanel>
-            </Button>
+            </HyperlinkButton>
         </Grid>
 
         <InfoBar x:Name="MessageBar" Grid.Row="1" IsOpen="False" IsClosable="True" />
 
         <Grid Grid.Row="2">
 
-            <!-- ========== 空闲态：选设备 / 选接口与预检（两栏）/ 结果 / 历史 ========== -->
-            <ScrollViewer x:Name="IdlePanel" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
-                <StackPanel Spacing="12" Padding="0,0,12,24">
+            <!-- ========== 空闲态：左边选设备（列表占满高度、自己滚），右边 02/03 单独滚 ========== -->
+            <Grid x:Name="IdlePanel" ColumnSpacing="20" SizeChanged="IdlePanel_SizeChanged">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.42*" MinWidth="250" />
+                    <ColumnDefinition Width="0.58*" />
+                </Grid.ColumnDefinitions>
 
-                    <Border Style="{StaticResource AppKpiCardStyle}">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="1 · 选择任务与设备" FontWeight="SemiBold" />
-                            <StackPanel Orientation="Horizontal" Spacing="16">
-                                <RadioButton x:Name="TaskUnknown" GroupName="CaptureTask" IsChecked="True"
-                                             Content="未知设备调查（找新协议）" Checked="Task_Checked" />
-                                <RadioButton x:Name="TaskSupported" GroupName="CaptureTask"
-                                             Content="已支持设备诊断（排查读数）" Checked="Task_Checked" />
-                            </StackPanel>
-                            <TextBlock x:Name="TaskHint" Style="{StaticResource AppCardFootnoteStyle}" TextWrapping="Wrap"
-                                       Text="列出系统里全部 HID 设备，未适配的排在前面。采集方式固定为 USB/HID，程序不会自动改用蓝牙或厂商软件。" />
+                <Border x:Name="DevicePickCard" Grid.Column="0" Style="{StaticResource AppCardPaddedStyle}">
+                    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="20">
+                            <TextBlock Text="01" FontSize="11" FontWeight="Medium"
+                                       Foreground="{ThemeResource AppAccentBrush}" Margin="0,4,0,0" />
+                            <TextBlock Text="选择任务与设备" FontSize="17" FontWeight="Medium" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Spacing="6">
+                            <RadioButton x:Name="TaskUnknown" GroupName="CaptureTask" IsChecked="True"
+                                         Checked="Task_Checked">
+                                <TextBlock Text="未知设备调查（找新协议）" TextWrapping="Wrap" />
+                            </RadioButton>
+                            <RadioButton x:Name="TaskSupported" GroupName="CaptureTask"
+                                         Checked="Task_Checked">
+                                <TextBlock Text="已支持设备诊断（排查读数）" TextWrapping="Wrap" />
+                            </RadioButton>
+                        </StackPanel>
+                        <TextBlock Grid.Row="2" x:Name="TaskHint" Style="{StaticResource AppCardFootnoteStyle}" TextWrapping="Wrap"
+                                   Text="列出系统里全部 HID 设备，未适配的排在前面。采集方式固定为 USB/HID，程序不会自动改用蓝牙或厂商软件。" />
 
-                            <ListView x:Name="DeviceList" SelectionMode="Single"
-                                      ScrollViewer.VerticalScrollMode="Disabled"
-                                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                      SelectionChanged="DeviceList_SelectionChanged">
+                        <ListView Grid.Row="3" x:Name="DeviceList" SelectionMode="Single"
+                                  SelectionChanged="DeviceList_SelectionChanged">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="v:CaptureDeviceRow">
                                         <StackPanel Spacing="1" Padding="0,4">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{x:Bind Title}" FontSize="15" FontWeight="Medium" />
                                                 <TextBlock Text="{x:Bind Status}" Style="{StaticResource AppCardFootnoteStyle}" />
                                             </StackPanel>
                                             <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource AppCardFootnoteStyle}"
@@ -61,27 +77,33 @@
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
-                            </ListView>
-                            <TextBlock x:Name="DeviceHint" Style="{StaticResource AppCardFootnoteStyle}" TextWrapping="Wrap"
-                                       Text="点「刷新设备」列出当前能枚举到的 HID 设备。" />
-                        </StackPanel>
-                    </Border>
+                        </ListView>
+                        <TextBlock Grid.Row="4" x:Name="DeviceHint" Style="{StaticResource AppCardFootnoteStyle}" TextWrapping="Wrap"
+                                   Text="点「刷新设备」列出当前能枚举到的 HID 设备。" />
+                    </Grid>
+                </Border>
 
-                    <Border Style="{StaticResource AppKpiCardStyle}">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="2 · 选择接口与预检" FontWeight="SemiBold" />
+                <ScrollViewer x:Name="DetailScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollMode="Disabled" HorizontalContentAlignment="Stretch">
+                    <StackPanel Spacing="20">
+                    <Border Style="{StaticResource AppCardPaddedStyle}">
+                        <StackPanel Spacing="16">
+                            <StackPanel Orientation="Horizontal" Spacing="20">
+                                <TextBlock Text="02" FontSize="11" FontWeight="Medium"
+                                           Foreground="{ThemeResource AppAccentBrush}" Margin="0,4,0,0" />
+                                <TextBlock Text="选择接口与预检" FontSize="17" FontWeight="Medium" />
+                            </StackPanel>
                             <!-- 左接口右预检：预检在选中接口时自动跑，这里的宽度比例与运行态两列一致 -->
                             <Grid x:Name="InterfaceProbeGrid" ColumnDefinitions="1*,1.2*" ColumnSpacing="16"
                                   RowSpacing="12" SizeChanged="InterfaceProbeGrid_SizeChanged">
                                 <StackPanel x:Name="InterfaceColumn" Grid.Column="0" Spacing="8">
                                     <ListView x:Name="InterfaceList" SelectionMode="Single" IsEnabled="False"
-                                              ScrollViewer.VerticalScrollMode="Disabled"
-                                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                              MaxHeight="260"
                                               SelectionChanged="InterfaceList_SelectionChanged">
                                         <ListView.ItemTemplate>
                                             <DataTemplate x:DataType="v:CaptureInterfaceRow">
                                                 <StackPanel Spacing="1" Padding="0,4">
-                                                    <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" />
+                                                    <TextBlock Text="{x:Bind Title}" FontSize="15" FontWeight="Medium" />
                                                     <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource AppCardFootnoteStyle}"
                                                                TextWrapping="Wrap" />
                                                 </StackPanel>
@@ -97,14 +119,12 @@
                                                TextWrapping="Wrap" Text="选中接口后自动预检，这里显示「几项可用、几项要处理」，默认只列需要你注意的项。" />
                                     <CheckBox x:Name="ShowAllCapsCheck" Content="显示全部能力项（含可用）" IsEnabled="False"
                                               Checked="ShowAllCaps_Changed" Unchecked="ShowAllCaps_Changed" />
-                                    <ListView x:Name="CapabilityList" SelectionMode="None"
-                                              ScrollViewer.VerticalScrollMode="Disabled"
-                                              ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                    <ListView x:Name="CapabilityList" SelectionMode="None" MaxHeight="240">
                                         <ListView.ItemTemplate>
                                             <DataTemplate x:DataType="v:CaptureCapabilityRow">
                                                 <StackPanel Spacing="1" Padding="0,4">
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" />
+                                                        <TextBlock Text="{x:Bind Title}" FontSize="15" FontWeight="Medium" />
                                                         <TextBlock Text="{x:Bind Status}" />
                                                     </StackPanel>
                                                     <TextBlock Text="{x:Bind Detail}" Style="{StaticResource AppCardFootnoteStyle}"
@@ -139,9 +159,13 @@
                         </StackPanel>
                     </Border>
 
-                    <Border x:Name="ResultCard" Style="{StaticResource AppKpiCardStyle}">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="3 · 结果与导出" FontWeight="SemiBold" />
+                    <Border x:Name="ResultCard" Style="{StaticResource AppCardPaddedStyle}">
+                        <StackPanel Spacing="16">
+                            <StackPanel Orientation="Horizontal" Spacing="20">
+                                <TextBlock Text="03" FontSize="11" FontWeight="Medium"
+                                           Foreground="{ThemeResource AppAccentBrush}" Margin="0,4,0,0" />
+                                <TextBlock Text="结果与导出" FontSize="17" FontWeight="Medium" />
+                            </StackPanel>
                             <TextBlock x:Name="ResultText" Style="{StaticResource AppCardFootnoteStyle}" TextWrapping="Wrap"
                                        Text="停止采集后这里会显示摘要，并生成 report.html 与 vigilwatt-capture.zip。放弃采集则不出报告，记录一起删除。" />
                             <!-- 整场没变的分组要在结果卡上直说：用户会看这里，报告里的结论他不一定翻 -->
@@ -158,17 +182,16 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Style="{StaticResource AppKpiCardStyle}">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="已保存的采集" FontWeight="SemiBold" />
+                    <Border Style="{StaticResource AppCardPaddedStyle}">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="已保存的采集" FontSize="17" FontWeight="Medium" />
                             <ListView x:Name="HistoryList" SelectionMode="Single"
                                       IsItemClickEnabled="True" ItemClick="HistoryList_ItemClick"
-                                      ScrollViewer.VerticalScrollMode="Disabled"
-                                      ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                      MaxHeight="260">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="v:CaptureHistoryRow">
                                         <StackPanel Spacing="1" Padding="0,4">
-                                            <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{x:Bind Title}" FontSize="15" FontWeight="Medium" />
                                             <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource AppCardFootnoteStyle}" />
                                         </StackPanel>
                                     </DataTemplate>
@@ -179,19 +202,20 @@
                         </StackPanel>
                     </Border>
 
-                </StackPanel>
-            </ScrollViewer>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
 
             <!-- ========== 运行态：设备横幅 + 步骤条 + 左引导/控制 + 右实时记录 ========== -->
             <Grid x:Name="RunningPanel" Visibility="Collapsed" RowDefinitions="Auto,Auto,*" RowSpacing="12"
                   SizeChanged="RunningPanel_SizeChanged">
 
                 <!-- 选择卡收起后，这里是唯一还能确认「采的是哪台、哪个接口」的地方 -->
-                <Border x:Name="DeviceBanner" Grid.Row="0" Style="{StaticResource AppCardStyle}" Padding="12,8">
+                <Border x:Name="DeviceBanner" Grid.Row="0" Style="{StaticResource AppCardStyle}" Padding="16,10">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                        <TextBlock x:Name="DeviceBannerName" Grid.Column="0" FontSize="13" FontWeight="SemiBold"
+                        <TextBlock x:Name="DeviceBannerName" Grid.Column="0" FontSize="15" FontWeight="Medium"
                                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                        <TextBlock x:Name="DeviceBannerMeta" Grid.Column="1" FontSize="11" VerticalAlignment="Center"
+                        <TextBlock x:Name="DeviceBannerMeta" Grid.Column="1" FontSize="13" VerticalAlignment="Center"
                                    TextWrapping="Wrap"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </Grid>
@@ -199,16 +223,16 @@
 
                 <Grid x:Name="StepBar" Grid.Row="1" ColumnSpacing="6" />
 
-                <Grid x:Name="RunningContent" Grid.Row="2" ColumnSpacing="12">
+                <Grid x:Name="RunningContent" Grid.Row="2" ColumnSpacing="24">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel x:Name="GuideColumn" Grid.Column="0" Spacing="12">
-                        <Border Style="{StaticResource AppKpiCardStyle}">
+                    <StackPanel x:Name="GuideColumn" Grid.Column="0" Spacing="24">
+                        <Border Style="{StaticResource AppCardPaddedStyle}">
                             <StackPanel Spacing="8">
-                                <TextBlock x:Name="GuideTitle" FontWeight="SemiBold" FontSize="15" TextWrapping="Wrap"
+                                <TextBlock x:Name="GuideTitle" FontWeight="Medium" FontSize="17" TextWrapping="Wrap"
                                            Text="第 1 / 5 步" />
                                 <TextBlock x:Name="GuideHint" TextWrapping="Wrap" Text="—" />
                                 <TextBlock x:Name="GuideDeviceWarning" TextWrapping="Wrap" Visibility="Collapsed"
@@ -265,9 +289,9 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Style="{StaticResource AppKpiCardStyle}">
+                        <Border Style="{StaticResource AppCardPaddedStyle}">
                             <StackPanel Spacing="8">
-                                <TextBlock Text="采集控制" FontWeight="SemiBold" />
+                                <TextBlock Text="采集控制" FontSize="17" FontWeight="Medium" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Button x:Name="PauseButton" Click="Pause_Click" IsEnabled="False"
                                             ToolTipService.ToolTip="Ctrl+P">
@@ -309,9 +333,9 @@
                             </StackPanel>
                         </Border>
 
-                        <Border x:Name="SendCard" Visibility="Collapsed" Style="{StaticResource AppKpiCardStyle}">
+                        <Border x:Name="SendCard" Visibility="Collapsed" Style="{StaticResource AppCardPaddedStyle}">
                             <StackPanel Spacing="8">
-                                <TextBlock Text="手动发帧（主机 → 设备）" FontWeight="SemiBold" />
+                                <TextBlock Text="手动发帧（主机 → 设备）" FontSize="17" FontWeight="Medium" />
                                 <TextBlock x:Name="SendHint" Style="{StaticResource AppCardFootnoteStyle}"
                                            TextWrapping="Wrap" />
                                 <TextBox x:Name="SendBox" PlaceholderText="例如 13 4A 00 00 …" />
@@ -321,11 +345,11 @@
                         </Border>
                     </StackPanel>
 
-                    <Border x:Name="RecordCard" Grid.Column="1" Style="{StaticResource AppKpiCardStyle}">
+                    <Border x:Name="RecordCard" Grid.Column="1" Style="{StaticResource AppCardPaddedStyle}">
                         <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
-                            <TextBlock Grid.Row="0" Text="实时记录" FontWeight="SemiBold" />
+                            <TextBlock Grid.Row="0" Text="实时记录" FontSize="17" FontWeight="Medium" />
                             <!-- 在等什么：按已采秒数升级，免得用户进来一两秒没看到报文就退掉 -->
-                            <TextBlock x:Name="WaitHint" Grid.Row="1" FontSize="11" TextWrapping="Wrap"
+                            <TextBlock x:Name="WaitHint" Grid.Row="1" FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             <ListView x:Name="RecordList" Grid.Row="2" SelectionMode="None">
                                 <!-- 新报文进来时跟着滚，用户不用手动拖到最底 -->
@@ -339,7 +363,7 @@
                                         <Grid>
                                             <!-- 分割行：进入某一步 / 打自定义标记时插一条，标出后面这批报文属于哪一段 -->
                                             <TextBlock Text="{x:Bind Header}" Visibility="{x:Bind HeaderVisibility}"
-                                                       FontWeight="SemiBold" FontSize="11" TextWrapping="Wrap"
+                                                       FontWeight="Medium" FontSize="11" TextWrapping="Wrap"
                                                        Margin="0,8,0,2"
                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                             <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="10" Padding="0,2"

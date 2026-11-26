@@ -5,25 +5,54 @@
     xmlns:v="using:VigilWatt.App.ViewModels"
     xmlns:controls="using:VigilWatt.App.Controls">
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="20,16">
+    <Page.Resources>
+        <!-- 图标选择：整块卡片就是单选按钮，去掉默认圆点；选中态由代码画描边 -->
+        <Style x:Key="IconChoiceStyle" TargetType="RadioButton">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <ContentPresenter
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="40,24,40,88" MaxWidth="900">
 
         <!-- 标题 + 副标题 + 右上操作（与统计 / 历史管理页同款） -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+            <StackPanel Grid.Column="0" Spacing="7" VerticalAlignment="Center">
                 <TextBlock Text="设备电量" Style="{StaticResource AppPageTitleStyle}" />
                 <TextBlock x:Name="SummaryText" Text="—" Style="{StaticResource AppPageSubtitleStyle}" />
             </StackPanel>
-            <Button x:Name="RefreshButton" Grid.Column="1" Click="Refresh_Click" VerticalAlignment="Top">
+            <HyperlinkButton x:Name="RefreshButton" Grid.Column="1" Click="Refresh_Click"
+                             Padding="0" VerticalAlignment="Top">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <ProgressRing x:Name="RefreshRing" Width="14" Height="14"
                                   IsActive="False" Visibility="Collapsed" />
-                    <FontIcon x:Name="RefreshIcon" FontSize="14" Glyph="&#xE72C;" />
-                    <TextBlock x:Name="RefreshText" Text="刷新" />
+                    <FontIcon x:Name="RefreshIcon" FontSize="14" Glyph="&#xE72C;"
+                              Foreground="{ThemeResource AppAccentBrush}" />
+                    <TextBlock x:Name="RefreshText" Text="刷新" FontSize="15"
+                               Foreground="{ThemeResource AppAccentBrush}" />
                 </StackPanel>
-            </Button>
+            </HyperlinkButton>
         </Grid>
 
-        <ListView x:Name="DeviceList" Grid.Row="1" Margin="0,12,0,0" SelectionMode="None"
+        <ListView x:Name="DeviceList" Grid.Row="1" Margin="0,24,0,0" SelectionMode="None"
                   IsItemClickEnabled="True" ItemClick="DeviceRow_Click">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
@@ -36,26 +65,28 @@
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="v:DeviceRowModel">
                     <Border Style="{StaticResource AppCardStyle}"
-                            Padding="16,11"
-                            Margin="0,0,0,8"
+                            Padding="18,20"
+                            Margin="0,0,0,12"
                             RightTapped="DeviceRow_RightTapped"
                             PointerEntered="DeviceRow_PointerEntered"
                             PointerExited="DeviceRow_PointerExited">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18">
                             <controls:DeviceIconPresenter Grid.Column="0" VerticalAlignment="Center"
                                                           Kind="{x:Bind IconKind, Mode=OneWay}"
                                                           IconColor="{x:Bind IconColor, Mode=OneWay}" />
-                            <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-                                    <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontSize="15" FontWeight="SemiBold"
-                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                    <Border Grid.Column="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                            <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{x:Bind Name, Mode=OneWay}"
+                                               Style="{StaticResource AppDeviceNameStyle}"
+                                               VerticalAlignment="Center" MaxWidth="360" />
+                                    <Border Style="{StaticResource AppPillStyle}"
                                             Background="{x:Bind SourceBackgroundBrush, Mode=OneWay}">
-                                        <TextBlock Text="{x:Bind SourceText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold"
+                                        <TextBlock Text="{x:Bind SourceText, Mode=OneWay}"
+                                                   Style="{StaticResource AppPillTextStyle}"
                                                    Foreground="{x:Bind SourceBrush, Mode=OneWay}" />
                                     </Border>
                                     <!-- 体系标签（Bolt / Unifying）：链路徽标之后、⚡ 之前；目录没登记就整块不占位 -->
-                                    <Border Grid.Column="2" CornerRadius="4" Padding="5,1" VerticalAlignment="Center"
+                                    <Border Style="{StaticResource AppPillStyle}"
                                             Background="{x:Bind ReceiverBackgroundBrush, Mode=OneWay}"
                                             Visibility="{x:Bind HasReceiver, Mode=OneWay}">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
@@ -64,22 +95,26 @@
                                                 IconKey="{x:Bind ReceiverIconKey, Mode=OneWay}"
                                                 IconColor="{x:Bind ReceiverIconColor, Mode=OneWay}"
                                                 VerticalAlignment="Center" />
-                                            <TextBlock Text="{x:Bind ReceiverText, Mode=OneWay}" FontSize="10"
-                                                       VerticalAlignment="Center"
-                                                       Foreground="{x:Bind SourceBrush, Mode=OneWay}" />
+                                            <TextBlock Text="{x:Bind ReceiverText, Mode=OneWay}"
+                                                       Style="{StaticResource AppPillTextStyle}"
+                                                       Foreground="{x:Bind ReceiverBrush, Mode=OneWay}" />
                                         </StackPanel>
                                     </Border>
-                                    <TextBlock Grid.Column="3" Text="⚡" FontSize="13" VerticalAlignment="Center"
-                                               Foreground="{x:Bind ProgressBrush, Mode=OneWay}"
-                                               Visibility="{x:Bind IsCharging, Mode=OneWay}" />
-                                </Grid>
-                                <ProgressBar Value="{x:Bind Progress, Mode=OneWay}" Maximum="100" Height="6"
-                                             CornerRadius="3" Foreground="{x:Bind ProgressBrush, Mode=OneWay}" />
+                                    <FontIcon Glyph="&#xE945;" FontSize="14"
+                                              VerticalAlignment="Center"
+                                              Foreground="{x:Bind ProgressBrush, Mode=OneWay}"
+                                              Visibility="{x:Bind IsCharging, Mode=OneWay}" />
+                                </StackPanel>
+                                <ProgressBar Value="{x:Bind Progress, Mode=OneWay}" Maximum="100" Height="4"
+                                             CornerRadius="2" Foreground="{x:Bind ProgressBrush, Mode=OneWay}" />
                             </StackPanel>
-                            <TextBlock Grid.Column="2" Text="{x:Bind PercentText, Mode=OneWay}" FontSize="26"
-                                       FontWeight="Bold" VerticalAlignment="Center"
-                                       MinWidth="78" TextAlignment="Right"
-                                       Foreground="{x:Bind PercentBrush, Mode=OneWay}" />
+                            <TextBlock Grid.Column="2" MinWidth="64" TextAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       Foreground="{x:Bind PercentBrush, Mode=OneWay}">
+                                <Run Text="{x:Bind PercentNumber, Mode=OneWay}" FontSize="22" FontWeight="Bold" />
+                                <Run Text="{x:Bind PercentUnit, Mode=OneWay}" FontSize="13"
+                                     Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            </TextBlock>
                         </Grid>
                     </Border>
                 </DataTemplate>
@@ -87,24 +122,26 @@
         </ListView>
 
         <StackPanel x:Name="EmptyState" Grid.Row="1" HorizontalAlignment="Center"
-                    VerticalAlignment="Center" Spacing="6" Visibility="Collapsed">
+                    VerticalAlignment="Center" Spacing="8" Visibility="Collapsed">
             <FontIcon Glyph="&#xE702;" FontSize="40" HorizontalAlignment="Center"
                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-            <TextBlock Text="未发现设备" FontSize="15" HorizontalAlignment="Center"
+            <TextBlock Text="未发现设备" FontSize="17" FontWeight="Medium" HorizontalAlignment="Center"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock x:Name="EmptyHint" Text="连接蓝牙设备或插入 2.4G 接收器，然后点击刷新" FontSize="12"
+            <TextBlock x:Name="EmptyHint" Text="连接蓝牙设备或插入 2.4G 接收器，然后点击刷新" FontSize="13"
                        HorizontalAlignment="Center"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
         </StackPanel>
 
         <!-- 不在列表里的设备只能从这里恢复：忽略与永久移除是两套名单，各给一个入口；都为 0 时整行隐藏 -->
-        <StackPanel x:Name="HiddenBars" Grid.Row="2" Orientation="Horizontal" Spacing="16"
-                    Margin="0,4,0,0" HorizontalAlignment="Left" Visibility="Collapsed">
+        <StackPanel x:Name="HiddenBars" Grid.Row="2" Orientation="Horizontal" Spacing="24"
+                    Margin="0,20,0,0" HorizontalAlignment="Left" Visibility="Collapsed">
             <HyperlinkButton x:Name="IgnoredBar" Padding="0" Click="ManageIgnored_Click" Visibility="Collapsed">
-                <TextBlock x:Name="IgnoredText" FontSize="12" />
+                <TextBlock x:Name="IgnoredText" FontSize="13"
+                           Foreground="{ThemeResource AppAccentBrush}" />
             </HyperlinkButton>
             <HyperlinkButton x:Name="BlockedBar" Padding="0" Click="ManageBlocked_Click" Visibility="Collapsed">
-                <TextBlock x:Name="BlockedText" FontSize="12" />
+                <TextBlock x:Name="BlockedText" FontSize="13"
+                           Foreground="{ThemeResource AppAccentBrush}" />
             </HyperlinkButton>
         </StackPanel>
     </Grid>

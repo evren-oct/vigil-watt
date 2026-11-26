@@ -5,7 +5,7 @@ namespace VigilWatt.App.ViewModels;
 /// <summary>
 /// 功 能： 历史管理页的设备行（一次性绑定，每次刷新重建）。
 /// 2026/10/06 16:58:42 xliu
-/// 勾选状态由 CheckBox 的 Checked/Unchecked 事件写回，**不做双向绑定**——事件回调与绑定更新的先后顺序没有保证， 读 CheckBox 自身的 IsChecked 才确定。
+/// 勾选状态与 CheckBox 双向绑定：列表虚拟化会复用行容器，只靠事件写回会让复用的行带错状态。
 /// </summary>
 public sealed class HistoryDeviceRow
 {
@@ -15,7 +15,7 @@ public sealed class HistoryDeviceRow
     public required DateTimeOffset First { get; init; }
     public required DateTimeOffset Last { get; init; }
 
-    /// <summary>勾选状态：仅由页面的事件处理器写入。</summary>
+    /// <summary>勾选状态：与 CheckBox 双向绑定，页面只读。</summary>
     public bool IsSelected { get; set; }
 
     public string CountText => $"{Count:N0} 条";

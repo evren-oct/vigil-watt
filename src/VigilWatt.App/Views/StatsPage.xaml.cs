@@ -59,7 +59,7 @@ public sealed partial class StatsPage : Page
 
     private void OnDevicesChanged() => DispatcherQueue.TryEnqueue(() => _ = ReloadDeviceListAsync());
 
-    /// <summary>当前选中的时间范围（小时）。按钮组互斥，默认 24 小时。</summary>
+    /// <summary>当前选中的时间范围（小时）。分段控件互斥，默认 24 小时。</summary>
     private int GetSelectedHours()
     {
         if (Range168?.IsChecked == true) return 168;
@@ -74,14 +74,13 @@ public sealed partial class StatsPage : Page
         _ => "最近 24 小时",
     };
 
-    /// <summary>按钮组切换：点谁谁亮，其余熄灭。ToggleButton 点击本身会取反，这里强制点回选中态。</summary>
+    /// <summary>时间范围切换：三个分段互斥，点谁谁亮。</summary>
     private void Range_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not ToggleButton clicked) return;
-        foreach (var tb in new[] { Range24, Range168, Range720 })
-            tb.IsChecked = ReferenceEquals(tb, clicked);
+        foreach (var button in new[] { Range24, Range168, Range720 })
+            button.IsChecked = ReferenceEquals(button, clicked);
 
-        // 时间范围变了，"有数据的设备"集合也会变，列表要跟着重算
         _ = ReloadDeviceListAsync();
     }
 
@@ -201,20 +200,17 @@ public sealed partial class StatsPage : Page
 
         SubtitleText.Text = $"{device.Name} · {GetRangeText()} · {samples.Count} 个采样点";
 
-        KpiCurrent.Text = $"{current}%";
-        KpiCurrent.Foreground = new SolidColorBrush(UiPalette.BatteryLevel(current, charging));
+        KpiCurrentNumber.Text = current.ToString();
+        KpiCurrentNumber.Foreground = new SolidColorBrush(UiPalette.BatteryLevel(current, charging));
         KpiCurrentSub.Text = $"{(live is not null ? "实时" : "最后记录")} · {last.Timestamp.LocalDateTime:HH:mm}";
 
-        KpiMax.Text = $"{max.Percent}%";
-        KpiMax.ClearValue(TextBlock.ForegroundProperty);
+        KpiMaxNumber.Text = max.Percent.ToString();
         KpiMaxSub.Text = $"{max.Timestamp.LocalDateTime:MM-dd HH:mm}";
 
-        KpiMin.Text = $"{min.Percent}%";
-        KpiMin.Foreground = new SolidColorBrush(UiPalette.BatteryLevel(min.Percent, false));
+        KpiMinNumber.Text = min.Percent.ToString();
         KpiMinSub.Text = $"{min.Timestamp.LocalDateTime:MM-dd HH:mm}";
 
-        KpiAvg.Text = $"{Math.Round(avg)}%";
-        KpiAvg.ClearValue(TextBlock.ForegroundProperty);
+        KpiAvgNumber.Text = Math.Round(avg).ToString("0");
         KpiAvgSub.Text = $"掉电 {max.Percent - min.Percent} 点";
     }
 
@@ -222,16 +218,16 @@ public sealed partial class StatsPage : Page
     {
         foreach (var (value, sub) in new[]
                  {
-                     (KpiCurrent, KpiCurrentSub),
-                     (KpiMax, KpiMaxSub),
-                     (KpiMin, KpiMinSub),
-                     (KpiAvg, KpiAvgSub),
+                     (KpiCurrentNumber, KpiCurrentSub),
+                     (KpiMaxNumber, KpiMaxSub),
+                     (KpiMinNumber, KpiMinSub),
+                     (KpiAvgNumber, KpiAvgSub),
                  })
         {
             value.Text = "—";
-            value.ClearValue(TextBlock.ForegroundProperty);
             sub.Text = "—";
         }
+        KpiCurrentNumber.Foreground = Primary;
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e)
@@ -272,4 +268,8 @@ public sealed partial class StatsPage : Page
         RefreshIcon.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
         RefreshText.Text = on ? "刷新中…" : "刷新";
     }
+
+    private static Brush Primary =>
+        Application.Current.Resources["TextFillColorPrimaryBrush"] as Brush
+        ?? UiPalette.Brush(UiPalette.Offline);
 }

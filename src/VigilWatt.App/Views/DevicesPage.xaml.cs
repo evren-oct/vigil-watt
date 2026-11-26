@@ -180,15 +180,18 @@ public sealed partial class DevicesPage : Page
         {
             Text = "名称不能为空。",
             FontSize = 12,
-            Foreground = new SolidColorBrush(Color.FromArgb(255, 196, 43, 28)),
+            Foreground = Application.Current.Resources["AppDangerBrush"] as Brush,
             Visibility = Visibility.Collapsed,
+            Margin = new Thickness(0, 6, 0, 0),
         };
         var nameHint = new TextBlock
         {
-            Text = "仅支持中文、英文、数字、空格及常见中英文标点。",
-            FontSize = 12,
-            Foreground = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush,
+            Text = "中文、英文、数字与常见标点，最多 20 个字。",
+            FontSize = 11,
+            Foreground = Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush,
+            Margin = new Thickness(0, 6, 0, 0),
         };
+        nameBox.Margin = new Thickness(0, 8, 0, 0);
         bool filteringName = false;
         nameBox.TextChanged += (_, _) =>
         {
@@ -213,9 +216,8 @@ public sealed partial class DevicesPage : Page
             ? DeviceKindGuesser.Guess(device.DisplayName)
             : device.Kind;
         DeviceKind? selectedKind = current?.IconKind;
-        var iconChoices = new List<(RadioButton Button, Border Card)>();
         const int iconColumns = 4;
-        var iconGrid = new Grid { ColumnSpacing = 8, RowSpacing = 8 };
+        var iconGrid = new Grid { ColumnSpacing = 10, RowSpacing = 10 };
         for (int i = 0; i < iconColumns; i++)
             iconGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var options = new (DeviceKind? Value, DeviceKind Preview, string Label)[]
@@ -230,40 +232,44 @@ public sealed partial class DevicesPage : Page
         // 行数由选项数推出来：以后再加图标只要往 options 里追加，不用动布局
         for (int i = 0; i < (options.Length + iconColumns - 1) / iconColumns; i++)
             iconGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var primaryBrush = Application.Current.Resources["TextFillColorPrimaryBrush"] as SolidColorBrush;
-        var iconColor = primaryBrush?.Color ?? Color.FromArgb(255, 80, 80, 80);
+
         Brush GetBrush(string key, Brush fallback) =>
             Application.Current.Resources.TryGetValue(key, out var value) && value is Brush brush ? brush : fallback;
-        var cardBrush = GetBrush("CardBackgroundFillColorDefaultBrush",
-            new SolidColorBrush(Color.FromArgb(255, 248, 248, 248)));
-        var borderBrush = GetBrush("CardStrokeColorDefaultBrush",
-            new SolidColorBrush(Color.FromArgb(255, 220, 220, 220)));
+        var primaryBrush = GetBrush("TextFillColorPrimaryBrush", new SolidColorBrush(Color.FromArgb(255, 30, 30, 30)));
+        var iconColor = (primaryBrush as SolidColorBrush)?.Color ?? Color.FromArgb(255, 80, 80, 80);
+        var tileFill = GetBrush("SubtleFillColorSecondaryBrush", new SolidColorBrush(Color.FromArgb(18, 0, 0, 0)));
+        var tileHover = GetBrush("SubtleFillColorTertiaryBrush", new SolidColorBrush(Color.FromArgb(36, 0, 0, 0)));
         var accentBrush = GetBrush("AccentFillColorDefaultBrush",
-            new SolidColorBrush(Color.FromArgb(255, 0, 120, 212)));
-        var accentColor = (accentBrush as SolidColorBrush)?.Color ?? Color.FromArgb(255, 0, 120, 212);
-        var accentTint = new SolidColorBrush(Color.FromArgb(28, accentColor.R, accentColor.G, accentColor.B));
+            new SolidColorBrush(Color.FromArgb(255, 0, 113, 227)));
+        var accentColor = (accentBrush as SolidColorBrush)?.Color ?? Color.FromArgb(255, 0, 113, 227);
+        var accentTint = new SolidColorBrush(Color.FromArgb(20, accentColor.R, accentColor.G, accentColor.B));
+        var transparentBrush = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
+        var iconChoiceStyle = (Style)Resources["IconChoiceStyle"];
+        var repainters = new List<Action>();
 
         for (int i = 0; i < options.Length; i++)
         {
             var option = options[i];
             var card = new Border
             {
-                CornerRadius = new CornerRadius(8),
-                BorderThickness = new Thickness(1),
-                Padding = new Thickness(4, 9, 4, 8),
-                Background = cardBrush,
-                BorderBrush = borderBrush,
+                CornerRadius = new CornerRadius(10),
+                BorderThickness = new Thickness(1.5),
+                Padding = new Thickness(6, 12, 6, 10),
+                MinHeight = 86,
+                Background = tileFill,
+                BorderBrush = transparentBrush,
                 Child = new StackPanel
                 {
-                    Spacing = 6,
+                    Spacing = 8,
                     HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
                     Children =
                     {
                         new Grid
                         {
                             Width = 28,
                             Height = 28,
-                            Children = { DeviceIconFactory.Glyph(option.Preview, iconColor) },
+                            Children = { DeviceIconFactory.Scaled(option.Preview, iconColor, 28) },
                         },
                         new TextBlock
                         {
@@ -280,43 +286,54 @@ public sealed partial class DevicesPage : Page
                 Tag = option.Value,
                 IsChecked = selectedKind == option.Value,
                 Content = card,
-                Padding = new Thickness(0),
-                HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                VerticalContentAlignment = VerticalAlignment.Stretch,
-                MinWidth = 0,
+                Style = iconChoiceStyle,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
             };
+
+            bool pointerOver = false;
+            void Paint()
+            {
+                bool selected = radio.IsChecked == true;
+                card.BorderBrush = selected ? accentBrush : transparentBrush;
+                card.Background = selected ? accentTint : pointerOver ? tileHover : tileFill;
+            }
+            card.PointerEntered += (_, _) => { pointerOver = true; Paint(); };
+            card.PointerExited += (_, _) => { pointerOver = false; Paint(); };
             radio.Checked += (_, _) =>
             {
                 selectedKind = option.Value;
-                UpdateIconChoiceCards();
+                foreach (var repaint in repainters) repaint();
             };
-            iconChoices.Add((radio, card));
+            repainters.Add(Paint);
+            Paint();
+
             Grid.SetColumn(radio, i % iconColumns);
             Grid.SetRow(radio, i / iconColumns);
             iconGrid.Children.Add(radio);
         }
 
-        void UpdateIconChoiceCards()
+        TextBlock SectionLabel(string text, double topMargin) => new()
         {
-            foreach (var (radio, card) in iconChoices)
-            {
-                bool selected = radio.IsChecked == true;
-                card.BorderBrush = selected ? accentBrush : borderBrush;
-                card.Background = selected ? accentTint : cardBrush;
-            }
-        }
-        UpdateIconChoiceCards();
+            Text = text,
+            FontSize = 13,
+            FontWeight = Microsoft.UI.Text.FontWeights.Medium,
+            Foreground = GetBrush("TextFillColorSecondaryBrush", primaryBrush),
+            Margin = new Thickness(0, topMargin, 0, 0),
+        };
 
-        var body = new StackPanel { Spacing = 10, MinWidth = 400 };
-        body.Children.Add(new TextBlock { Text = "设备名称", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        var body = new StackPanel { MinWidth = 500 };
+        body.Children.Add(SectionLabel("名称", 0));
         body.Children.Add(nameBox);
         body.Children.Add(nameHint);
         body.Children.Add(nameError);
+        body.Children.Add(SectionLabel("图标", 20));
         body.Children.Add(new TextBlock
         {
-            Text = "图标",
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            Margin = new Thickness(0, 4, 0, 0),
+            Text = "列表、小组件和详情页都按这里的选择显示。",
+            FontSize = 11,
+            Foreground = GetBrush("TextFillColorTertiaryBrush", primaryBrush),
+            Margin = new Thickness(0, 4, 0, 10),
         });
         body.Children.Add(iconGrid);
         var dialog = new ContentDialog
@@ -381,20 +398,20 @@ public sealed partial class DevicesPage : Page
         Frame.Navigate(typeof(DeviceDetailPage), id);
     }
 
-    /// <summary>悬停只换描边：卡片自带底色，ListViewItem 的悬停底被盖住，不换描边就看不出可点。</summary>
+    /// <summary>悬停换底色：卡片不再描边，ListViewItem 的悬停底被卡片盖住。</summary>
     private void DeviceRow_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        if (sender is Border border && HoverStroke is { } brush) border.BorderBrush = brush;
+        if (sender is Border border && HoverFill is { } brush) border.Background = brush;
     }
 
     private void DeviceRow_PointerExited(object sender, PointerRoutedEventArgs e)
     {
-        // 清掉本地值才会回落到样式里的 CardStrokeColorDefaultBrush，主题切换也能跟着变
-        if (sender is Border border) border.ClearValue(Border.BorderBrushProperty);
+        // 清掉本地值才会回落到样式里的卡片底，主题切换也能跟着变
+        if (sender is Border border) border.ClearValue(Border.BackgroundProperty);
     }
 
-    private static Brush? HoverStroke =>
-        Application.Current.Resources.TryGetValue("ControlStrokeColorDefaultBrush", out var value)
+    private static Brush? HoverFill =>
+        Application.Current.Resources.TryGetValue("AppHoverFillBrush", out var value)
             ? value as Brush
             : null;
 

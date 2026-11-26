@@ -48,7 +48,7 @@
 - [monitor-identity.md](dev/monitor-identity.md)：显示器身份与名称（贴片选屏），三套 API 实测对照与降级链。
 - [logging.md](dev/logging.md)：日志级别、文件位置、保留和排障用法。
 - [comment-style.md](dev/comment-style.md)：代码注释规范。
-- [ui-style.md](dev/ui-style.md)：界面视觉规则——状态色、来源徽标、图标、字号与卡片；颜色只表达电量状态。
+- [ui-style.md](dev/ui-style.md)：界面视觉规则——状态色、来源徽标、图标、字号与卡片；颜色只表达电量状态与可操作。
 - [review-standard.md](dev/review-standard.md)：审查标准、红线和闭环流程。
 - [plugin-standard.md](dev/plugin-standard.md)：厂商插件的职责边界、三种架构、目录/协议 JSON 切分与提交前清单。
 - [vendor-onboarding-process.md](dev/vendor-onboarding-process.md)：新厂商接入流程、实施红线与验证要求。

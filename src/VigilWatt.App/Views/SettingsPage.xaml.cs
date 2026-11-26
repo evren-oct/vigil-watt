@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
@@ -113,6 +114,7 @@ public sealed partial class SettingsPage : Page
         LogRetentionBox.Value = s.LogRetentionDays;
 
         UpdatePluginSummary();
+        UpdateGroupSummaries();
     }
 
     /// <summary>按 Tag 选中下拉框条目；值对不上任何一条（配置被手改过）时保持未选中。</summary>
@@ -599,6 +601,63 @@ public sealed partial class SettingsPage : Page
         UpdatePluginSummary();
     }
 
+    /// <summary>收起时显示当前值摘要：分组头右侧那一行是用户判断"要不要展开"的唯一线索。</summary>
+    private void UpdateGroupSummaries()
+    {
+        ReminderSummary.Text =
+            $"{NumberText(ThresholdBox.Value)}% · 估算{(RemainingTimeEstimateToggle.IsOn ? "开" : "关")}";
+        DataSummary.Text =
+            $"{NumberText(SampleBox.Value)} 分钟 · {NumberText(RetentionBox.Value)} 天";
+        WidgetSummary.Text =
+            $"{(WidgetToggle.IsOn ? "开" : "关")} · {SelectedInt(WidgetMaxCombo, WidgetMaxDevicesOptions.Default)} 台";
+        TaskbarSummary.Text =
+            $"{(TaskbarToggle.IsOn ? "开" : "关")} · {SelectedInt(TaskbarMaxCombo, TaskbarBatteryOptions.Default)} 台";
+        LogSummary.Text =
+            $"{SelectedLabel(LogLevelCombo, "信息")} · {NumberText(LogRetentionBox.Value)} 天";
+    }
+
+    private static string NumberText(double value) =>
+        double.IsNaN(value) ? "0" : ((int)Math.Round(value)).ToString();
+
+    private static int SelectedInt(ComboBox combo, int fallback) =>
+        combo.SelectedItem is ComboBoxItem { Tag: int value } ? value : fallback;
+
+    private static string SelectedLabel(ComboBox combo, string fallback) =>
+        combo.SelectedItem is ComboBoxItem { Content: string text } ? text : fallback;
+
+    private void Group_Expanding(Expander sender, ExpanderExpandingEventArgs args) => SetSummaryOpacity(sender, 0);
+
+    private void Group_Collapsed(Expander sender, ExpanderCollapsedEventArgs args)
+    {
+        UpdateGroupSummaries();
+        SetSummaryOpacity(sender, 1);
+    }
+
+    private static void SetSummaryOpacity(object sender, double opacity)
+    {
+        if (sender is Expander { Header: Grid header } &&
+            header.Children.Count > 1 &&
+            header.Children[1] is TextBlock summary)
+        {
+            summary.Opacity = opacity;
+        }
+    }
+
+    private void SettingsRow_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Grid row && HoverFill is { } brush) row.Background = brush;
+    }
+
+    private void SettingsRow_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Grid row) row.ClearValue(Panel.BackgroundProperty);
+    }
+
+    private static Brush? HoverFill =>
+        Application.Current.Resources.TryGetValue("AppHoverFillBrush", out var value)
+            ? value as Brush
+            : null;
+
     /// <summary>索引每次搜索都重建：折叠区一展开就往树里加元素，缓存下来的引用会指向已摘下的节点。</summary>
     private void RebuildSearchIndex()
     {
@@ -606,10 +665,25 @@ public sealed partial class SettingsPage : Page
         AddSearchEntries(SettingsContent);
     }
 
-    /// <summary>日志区默认收起，里面的行遍历不到——搜索前先摊开。品牌和设备已挪进弹窗，索引靠行的无障碍名兜住。</summary>
+    /// <summary>折叠区默认收起，里面的行遍历不到——搜索前先把所有分组摊开。品牌和设备已挪进弹窗，索引靠行的无障碍名兜住。</summary>
     private void ExpandForSearch()
     {
-        if (!LogExpander.IsExpanded) LogExpander.IsExpanded = true;
+        foreach (var expander in Descendants<Expander>(SettingsContent))
+        {
+            if (!expander.IsExpanded) expander.IsExpanded = true;
+        }
+        // 展开是异步布局：不强制量一次，折叠区里的行还不在视觉树里，搜索会漏。
+        SettingsContent.UpdateLayout();
+    }
+
+    private static IEnumerable<T> Descendants<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T match) yield return match;
+            foreach (var nested in Descendants<T>(child)) yield return nested;
+        }
     }
 
     private void AddSearchEntries(DependencyObject parent)
@@ -653,26 +727,46 @@ public sealed partial class SettingsPage : Page
     {
         for (var parent = VisualTreeHelper.GetParent(element); parent is not null; parent = VisualTreeHelper.GetParent(parent))
         {
-            // 日志区收进了 Expander，中间没有「标题行 + 卡片」的 section StackPanel，分类取 Header 文字
             if (parent is Expander expander)
             {
-                var headerText = (expander.Header as StackPanel)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text;
+                var headerText = FirstText(expander.Header);
                 if (!string.IsNullOrWhiteSpace(headerText)) return headerText;
             }
 
-            if (parent is not StackPanel section || section.Children.FirstOrDefault() is not StackPanel header) continue;
-            var title = header.Children.OfType<TextBlock>().FirstOrDefault()?.Text;
-            if (!string.IsNullOrWhiteSpace(title)) return title;
+            if (parent is StackPanel section &&
+                section.Children.FirstOrDefault() is TextBlock sectionTitle)
+            {
+                if (!string.IsNullOrWhiteSpace(sectionTitle.Text)) return sectionTitle.Text;
+            }
         }
 
         return string.Empty;
+    }
+
+    private static string? FirstText(object? node)
+    {
+        if (node is TextBlock text) return text.Text;
+        if (node is Panel panel)
+        {
+            foreach (var child in panel.Children)
+            {
+                var found = FirstText(child);
+                if (!string.IsNullOrWhiteSpace(found)) return found;
+            }
+        }
+        if (node is ContentControl { Content: { } content }) return FirstText(content);
+        return null;
     }
 
     private void SettingsSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
         var query = SettingsSearchBox.Text.Trim();
         // 先摊开折叠区再建索引：收起态的品牌行不在树里，搜「北通」会一条都命中不了
-        if (query.Length > 0) ExpandForSearch();
+        if (query.Length > 0)
+        {
+            ExpandForSearch();
+            SettingsScrollViewer.ChangeView(null, 0, null, true);
+        }
         RebuildSearchIndex();
         SearchResultsPanel.Children.Clear();
         SearchEmptyText.Visibility = Visibility.Collapsed;
@@ -739,7 +833,7 @@ public sealed partial class SettingsPage : Page
         _previousTitleWeight = entry.TitleBlock.FontWeight;
         _titleHighlightBrush = new SolidColorBrush(accent);
         entry.TitleBlock.Foreground = _titleHighlightBrush;
-        entry.TitleBlock.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+        entry.TitleBlock.FontWeight = Microsoft.UI.Text.FontWeights.Medium;
         _highlightTimer ??= DispatcherQueue.GetForCurrentThread().CreateTimer();
         _highlightTimer.Stop();
         _highlightTimer.Interval = TimeSpan.FromMilliseconds(950);
@@ -891,6 +985,7 @@ public sealed partial class SettingsPage : Page
         var feedback = autostartError == null
             ? s.LogLevel == LogLevelNames.Default ? "已保存" : "已保存（日志级别重启后生效）"
             : "已保存（开机自启未生效）";
+        UpdateGroupSummaries();
         ShowSavedFeedback(feedback);
 
         if (autostartError != null)

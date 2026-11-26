@@ -8,78 +8,226 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- 交互色固定为品牌蓝：不跟随系统强调色，避免和充电蓝 / 良好绿串味。HighContrast 交给系统。 -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="SystemAccentColor">#0071E3</Color>
+                    <Color x:Key="SystemAccentColorLight1">#2997FF</Color>
+                    <Color x:Key="SystemAccentColorLight2">#4AA8FF</Color>
+                    <Color x:Key="SystemAccentColorLight3">#64B5FF</Color>
+                    <Color x:Key="SystemAccentColorDark1">#0071E3</Color>
+                    <Color x:Key="SystemAccentColorDark2">#0066CC</Color>
+                    <Color x:Key="SystemAccentColorDark3">#005BB5</Color>
+
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="#0071E3" />
+                    <SolidColorBrush x:Key="AppAccentHoverBrush" Color="#0077ED" />
+                    <SolidColorBrush x:Key="AppHoverFillBrush" Color="#FAFAFC" />
+                    <SolidColorBrush x:Key="AppSearchFillBrush" Color="#EBEBED" />
+                    <SolidColorBrush x:Key="AppDangerBrush" Color="#E2445C" />
+                    <SolidColorBrush x:Key="AppNavSelectedBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AppNeutralPillFillBrush" Color="#EBEBED" />
+                    <SolidColorBrush x:Key="AppSelectorPillBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="AppSelectorTrackBrush" Color="#EBEBED" />
+
+                    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#0071E3" />
+                    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#0077ED" Opacity="0.9" />
+                    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#0077ED" Opacity="0.8" />
+                    <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#0071E3" />
+                    <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#0071E3" />
+                    <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#0071E3" />
+                    <SolidColorBrush x:Key="AccentFillColorSelectedTextBackgroundBrush" Color="#0071E3" />
+                    <SolidColorBrush x:Key="AccentButtonBackground" Color="#0071E3" />
+                    <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#0077ED" />
+                    <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#0066CC" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#0071E3" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#0077ED" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#0066CC" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#0071E3" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#0071E3" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#0077ED" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#0066CC" />
+                    <SolidColorBrush x:Key="SelectorBarBackground" Color="#EBEBED" />
+                    <SolidColorBrush x:Key="SelectorBarItemPillFill" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="SelectorBarItemForeground" Color="#6E6E73" />
+                    <SolidColorBrush x:Key="SelectorBarItemForegroundPointerOver" Color="#1D1D1F" />
+                    <SolidColorBrush x:Key="SelectorBarItemForegroundSelected" Color="#1D1D1F" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#FAFAFC" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#EBEBED" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#FAFAFC" />
+                    <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#6E6E73" />
+                    <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#1D1D1F" />
+                    <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#1D1D1F" />
+                </ResourceDictionary>
+
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="SystemAccentColor">#2997FF</Color>
+                    <Color x:Key="SystemAccentColorLight1">#4AA8FF</Color>
+                    <Color x:Key="SystemAccentColorLight2">#2997FF</Color>
+                    <Color x:Key="SystemAccentColorLight3">#64B5FF</Color>
+                    <Color x:Key="SystemAccentColorDark1">#0071E3</Color>
+                    <Color x:Key="SystemAccentColorDark2">#0066CC</Color>
+                    <Color x:Key="SystemAccentColorDark3">#005BB5</Color>
+
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="#2997FF" />
+                    <SolidColorBrush x:Key="AppAccentHoverBrush" Color="#3AA5FF" />
+                    <SolidColorBrush x:Key="AppHoverFillBrush" Color="#2A2A2C" />
+                    <SolidColorBrush x:Key="AppSearchFillBrush" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="AppDangerBrush" Color="#E2445C" />
+                    <SolidColorBrush x:Key="AppNavSelectedBrush" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="AppNeutralPillFillBrush" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="AppSelectorPillBrush" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="AppSelectorTrackBrush" Color="#2C2C2E" />
+
+                    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#2997FF" />
+                    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#3AA5FF" Opacity="0.9" />
+                    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#3AA5FF" Opacity="0.8" />
+                    <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#2997FF" />
+                    <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#2997FF" />
+                    <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#2997FF" />
+                    <SolidColorBrush x:Key="AccentFillColorSelectedTextBackgroundBrush" Color="#2997FF" />
+                    <SolidColorBrush x:Key="AccentButtonBackground" Color="#2997FF" />
+                    <SolidColorBrush x:Key="AccentButtonBackgroundPointerOver" Color="#3AA5FF" />
+                    <SolidColorBrush x:Key="AccentButtonBackgroundPressed" Color="#1F8AE6" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#2997FF" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#3AA5FF" />
+                    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#1F8AE6" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#2997FF" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#2997FF" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#3AA5FF" />
+                    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#1F8AE6" />
+                    <SolidColorBrush x:Key="SelectorBarBackground" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="SelectorBarItemPillFill" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="SelectorBarItemForeground" Color="#A1A1A6" />
+                    <SolidColorBrush x:Key="SelectorBarItemForegroundPointerOver" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="SelectorBarItemForegroundSelected" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#2A2A2C" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="#2C2C2E" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="#3A3A3C" />
+                    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="#2A2A2C" />
+                    <SolidColorBrush x:Key="NavigationViewItemForeground" Color="#A1A1A6" />
+                    <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="#FFFFFF" />
+                </ResourceDictionary>
+
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="AppAccentBrush" Color="#0071E3" />
+                    <SolidColorBrush x:Key="AppAccentHoverBrush" Color="#0077ED" />
+                    <SolidColorBrush x:Key="AppHoverFillBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="AppSearchFillBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="AppDangerBrush" Color="#E2445C" />
+                    <SolidColorBrush x:Key="AppNavSelectedBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="AppNeutralPillFillBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="AppSelectorPillBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="AppSelectorTrackBrush" Color="Transparent" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
             <!-- 字体钉死 Segoe UI：Win10 没有 Segoe UI Variable，用默认字体会宽 5~8% 导致排版走样（见 dev/runtime-pitfalls.md §13） -->
             <FontFamily x:Key="ContentControlThemeFontFamily">Segoe UI</FontFamily>
             <FontFamily x:Key="TextControlThemeFontFamily">Segoe UI</FontFamily>
 
-            <!-- 卡片统一语言：各页共用，避免各自重复写四条属性走样 -->
+            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+            <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
+            <CornerRadius x:Key="NavigationViewContentGridCornerRadius">0</CornerRadius>
+
+            <!-- 卡片统一语言：各页共用，避免各自重复写属性走样 -->
             <Style x:Key="AppCardStyle" TargetType="Border">
-                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="CornerRadius" Value="12" />
                 <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderThickness" Value="0" />
             </Style>
 
-            <!-- 指标卡比通用卡片紧凑，四张并排时留白要收着 -->
-            <Style x:Key="AppKpiCardStyle" TargetType="Border" BasedOn="{StaticResource AppCardStyle}">
-                <Setter Property="Padding" Value="14,10" />
+            <Style x:Key="AppCardPaddedStyle" TargetType="Border" BasedOn="{StaticResource AppCardStyle}">
+                <Setter Property="Padding" Value="20" />
             </Style>
 
-            <!-- 详情页卡片：比 KPI 卡高一点，事实格要呼吸 -->
-            <Style x:Key="AppDetailCardStyle" TargetType="Border" BasedOn="{StaticResource AppCardStyle}">
-                <Setter Property="Padding" Value="14,12,14,14" />
+            <Style x:Key="AppPageTitleStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="32" />
+                <Setter Property="FontWeight" Value="Bold" />
             </Style>
-
-            <!-- 详情页 Hero：全应用唯一超过 18 号的文字，22 号设备名 -->
-            <Style x:Key="AppHeroNameStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="22" />
-                <Setter Property="FontWeight" Value="SemiBold" />
+            <Style x:Key="AppPageSubtitleStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-                <Setter Property="MaxLines" Value="1" />
             </Style>
 
-            <!-- 电量数字借统计页 KPI 的 24，不新增档位 -->
+            <Style x:Key="AppDeviceNameStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="17" />
+                <Setter Property="FontWeight" Value="Medium" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+            <Style x:Key="AppRowTitleStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+            <Style x:Key="AppBodyStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="15" />
+            </Style>
+            <Style x:Key="AppSectionTitleStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontWeight" Value="Medium" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Style>
+
             <Style x:Key="AppBatteryFigureStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="24" />
-                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontWeight" Value="Bold" />
             </Style>
-
-            <!-- 指标数值借页面标题的 18，仅此处当数据用 -->
             <Style x:Key="AppMetricValueStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="18" />
-                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+            <Style x:Key="AppKpiLabelStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="Medium" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
+            </Style>
+            <Style x:Key="AppKpiValueStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontWeight" Value="Bold" />
+            </Style>
+            <Style x:Key="AppKpiSubStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 
-            <!-- 事实格：标签在上（11 三级灰）、值在下（13 主文字色） -->
             <Style x:Key="AppFactLabelStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="Medium" />
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
             </Style>
             <Style x:Key="AppFactValueStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontSize" Value="15" />
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 
-            <Style x:Key="AppPageTitleStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="18" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-            </Style>
-            <Style x:Key="AppPageSubtitleStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="12" />
-                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
-                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-            </Style>
-
             <Style x:Key="AppCardLabelStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontSize" Value="13" />
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
             </Style>
             <Style x:Key="AppCardFootnoteStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontSize" Value="13" />
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+
+            <Style x:Key="AppPillStyle" TargetType="Border">
+                <Setter Property="Height" Value="20" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="8,0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="AppPillTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="Medium" />
+                <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

@@ -113,6 +113,7 @@ public sealed partial class DeviceDetailPage : Page
 
         ApplyHero(raw, d, charging, online, color);
         ApplyBattery(percent, charging, online, color);
+        ApplyRemaining(d);
         ApplyMetrics(d);
         ApplyConnection(d, online);
         ApplyIdentity(raw, d);
@@ -143,10 +144,10 @@ public sealed partial class DeviceDetailPage : Page
         var family = DeviceConnectionInfo.ReceiverLabel(d.Receiver);
         var iconKey = DeviceConnectionInfo.ReceiverIconKey(d.Receiver);
         RecText.Text = family ?? "";
-        RecText.Foreground = UiPalette.Brush(tone);
+        RecText.Foreground = Tertiary;
         RecIcon.IconKey = iconKey;
-        RecIcon.IconColor = tone;
-        RecPill.Background = UiPalette.Brush(UiPalette.Tint(tone, 0x1A));
+        RecIcon.IconColor = TertiaryColor;
+        RecPill.Background = NeutralPill;
         RecPill.Visibility = family is null ? Visibility.Collapsed : Visibility.Visible;
 
         ChargeMark.Visibility = charging ? Visibility.Visible : Visibility.Collapsed;
@@ -185,7 +186,7 @@ public sealed partial class DeviceDetailPage : Page
         HeroImage.Source = null;
         HeroImage.Visibility = Visibility.Collapsed;
         HeroIconHost.Visibility = Visibility.Visible;
-        HeroIconHost.Content = DeviceIconFactory.Hero(d.Kind, color, 44);
+        HeroIconHost.Content = DeviceIconFactory.Hero(d.Kind, color, 80);
         Plate.Padding = new Thickness(0);
         Plate.Background = UiPalette.Brush(UiPalette.Tint(color, 0x1F));
         Plate.BorderThickness = new Thickness(0);
@@ -285,7 +286,7 @@ public sealed partial class DeviceDetailPage : Page
         Apply();
     }
 
-    /// <summary>第三行：状态 · 剩余 · 时刻。离线时不写"更新于"，改成"最后已知"。</summary>
+    /// <summary>第三行：状态 · 时刻。剩余时间单独放环下；不可用原因仍写在这里，避免信息丢失。</summary>
     private string StateLine(DeviceStatus d, bool charging, bool online)
     {
         if (!online) return $"离线 · 最后已知 {d.LastUpdated:MM-dd HH:mm}";
@@ -296,11 +297,8 @@ public sealed partial class DeviceDetailPage : Page
 
         var parts = new List<string> { charge };
         var remaining = App.Services.Manager.GetRemainingTimeEstimate(d);
-        if (remaining.IsAvailable)
-        {
-            parts.Add($"约{RemainingTimeEstimator.FormatWithTotalHours(remaining.Remaining!.Value)}剩余");
-        }
-        else if (remaining.Reason is not (RemainingTimeUnavailableReason.Charging or RemainingTimeUnavailableReason.Full))
+        if (!remaining.IsAvailable &&
+            remaining.Reason is not (RemainingTimeUnavailableReason.Charging or RemainingTimeUnavailableReason.Full))
         {
             // 充/满两种原因上面那个状态词已经说过了，别重复；其余原因要写出来，否则这一行看着像"没算"
             parts.Add(remaining.Explain());
@@ -315,13 +313,26 @@ public sealed partial class DeviceDetailPage : Page
         Ring.IsKnown = percent.HasValue;
         Ring.RingColor = color;
 
-        // 数字只在异常态上色：正常用主文字色，别让彩色数字跟环抢注意力
-        Color? figure = !online ? UiPalette.Offline
-            : charging ? UiPalette.Charging
-            : percent is <= 20 ? UiPalette.Low
-            : null;
-        PctText.Foreground = figure is { } value ? UiPalette.Brush(value) : Primary;
+        // 环和数字同一把尺子：数字也按电量状态取色
+        PctText.Foreground = UiPalette.Brush(color);
         PctNumber.Text = percent?.ToString() ?? "—";
+        PctUnit.Text = percent.HasValue ? "%" : "";
+    }
+
+    /// <summary>环下的剩余时间：只在估算可用时显示；不可用原因已经写在状态行。</summary>
+    private void ApplyRemaining(DeviceStatus d)
+    {
+        var remaining = App.Services.Manager.GetRemainingTimeEstimate(d);
+        if (remaining.IsAvailable)
+        {
+            RemainingText.Text = $"可用约 {RemainingTimeEstimator.Format(remaining.Remaining!.Value)}";
+            RemainingText.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            RemainingText.Text = "";
+            RemainingText.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void ApplyMetrics(DeviceStatus d)
@@ -348,7 +359,7 @@ public sealed partial class DeviceDetailPage : Page
         _metricsKey = "";
         MetricsHost.Children.Clear();
         MetricsHost.ColumnDefinitions.Clear();
-        MetricsCard.Visibility = Visibility.Collapsed;
+        MetricsSection.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>指标行按实际项数建列：1~3 项都成立，缺项不留空位（能力未声明就不出现）。</summary>
@@ -357,11 +368,7 @@ public sealed partial class DeviceDetailPage : Page
         MetricsHost.Children.Clear();
         MetricsHost.ColumnDefinitions.Clear();
 
-        MetricsCard.Visibility = Visibility.Visible;
-
-        Brush rule = UiPalette.Brush(Color.FromArgb(0x1A, 0, 0, 0));
-        if (Application.Current.Resources.TryGetValue("CardStrokeColorDefaultBrush", out var stroke) && stroke is Brush strokeBrush)
-            rule = strokeBrush;
+        MetricsSection.Visibility = Visibility.Visible;
 
         for (int i = 0; i < metrics.Count; i++)
             MetricsHost.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -375,7 +382,7 @@ public sealed partial class DeviceDetailPage : Page
             {
                 Text = metric.Label,
                 FontSize = 11,
-                FontWeight = FontWeights.SemiBold,
+                FontWeight = FontWeights.Medium,
                 Foreground = UiPalette.Brush(labelColor),
             };
             var value = new TextBlock
@@ -384,14 +391,14 @@ public sealed partial class DeviceDetailPage : Page
                 Foreground = metric.IsKnown ? Primary : Tertiary,
                 TextTrimming = TextTrimming.CharacterEllipsis,
             };
-            // 有值用 18 号（与页面标题同档）；未知降到 14 号，免得"未获取"比真值还显眼
+            // 有值用 22 号；未知降到 15 号，免得"未获取"比真值还显眼
             if (metric.IsKnown)
             {
                 value.Style = (Style)Application.Current.Resources["AppMetricValueStyle"];
             }
             else
             {
-                value.FontSize = 14;
+                value.FontSize = 15;
                 value.FontWeight = FontWeights.Normal;
             }
             var note = new TextBlock
@@ -402,17 +409,9 @@ public sealed partial class DeviceDetailPage : Page
                 TextTrimming = TextTrimming.CharacterEllipsis,
             };
 
-            var stack = new StackPanel { Spacing = 1, Children = { label, value, note } };
-            var cell = new Border
-            {
-                // 分隔线画在第 2 项起的左侧：第一项左边不留一条悬空竖线
-                BorderThickness = new Thickness(i == 0 ? 0 : 1, 0, 0, 0),
-                BorderBrush = rule,
-                Padding = new Thickness(i == 0 ? 0 : 16, 0, 0, 0),
-                Child = stack,
-            };
-            Grid.SetColumn(cell, i);
-            MetricsHost.Children.Add(cell);
+            var stack = new StackPanel { Spacing = 4, Children = { label, value, note } };
+            Grid.SetColumn(stack, i);
+            MetricsHost.Children.Add(stack);
         }
     }
 
@@ -475,6 +474,15 @@ public sealed partial class DeviceDetailPage : Page
 
     private static Brush Tertiary =>
         Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush ?? UiPalette.Brush(UiPalette.Offline);
+
+    private static Color TertiaryColor =>
+        (Application.Current.Resources["TextFillColorTertiaryBrush"] as SolidColorBrush)?.Color
+        ?? Color.FromArgb(255, 128, 128, 128);
+
+    private static Brush NeutralPill =>
+        Application.Current.Resources.TryGetValue("AppNeutralPillFillBrush", out var value) && value is Brush brush
+            ? brush
+            : UiPalette.Brush(UiPalette.Tint(UiPalette.Offline, 0x1A));
 
     private static Brush ThemeBrush(string key, Color fallback) =>
         Application.Current.Resources.TryGetValue(key, out var value) && value is Brush brush

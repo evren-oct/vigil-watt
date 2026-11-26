@@ -69,6 +69,9 @@
   <!-- 图标文件随输出一起拷贝：运行时 AppWindow.SetIcon 要从 exe 同目录读它 -->
   <ItemGroup>
     <None Update="Assets\VigilWatt.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- 导航图标字体：Tabler Icons 3.31.0 子集（6 个字形）+ MIT 许可 -->
+    <Content Include="Assets\tabler-icons.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\tabler-icons-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
     <!-- 设备产品图：只放缩略图与 manifest，随包分发；用户数据目录仍可覆盖 -->
     <Content Include="Assets\device-images\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />

@@ -4,44 +4,50 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:VigilWatt.App.Controls">
 
-    <Grid RowDefinitions="Auto,*" Padding="20,16">
+    <Grid RowDefinitions="Auto,*" Padding="40,24,40,88" MaxWidth="900">
 
         <!-- 页头：返回是面包屑式链接，右侧只留刷新；标题就是 Hero 里的设备名 -->
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
-            <HyperlinkButton x:Name="BackButton" Click="Back_Click" Padding="0,0,10,0"
+            <HyperlinkButton x:Name="BackButton" Click="Back_Click" Padding="0"
                              VerticalAlignment="Center" ToolTipService.ToolTip="返回设备列表（Esc）">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon Glyph="&#xE72B;" FontSize="13" />
-                    <TextBlock Text="设备电量" FontSize="12" />
+                    <FontIcon Glyph="&#xE72B;" FontSize="14"
+                              Foreground="{ThemeResource AppAccentBrush}" />
+                    <TextBlock Text="设备电量" FontSize="15"
+                               Foreground="{ThemeResource AppAccentBrush}" />
                 </StackPanel>
                 <HyperlinkButton.KeyboardAccelerators>
                     <KeyboardAccelerator Key="Escape" />
                 </HyperlinkButton.KeyboardAccelerators>
             </HyperlinkButton>
 
-            <Button x:Name="RefreshButton" Grid.Column="2" Click="Refresh_Click" VerticalAlignment="Center">
+            <HyperlinkButton x:Name="RefreshButton" Grid.Column="2" Click="Refresh_Click"
+                             Padding="0" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <ProgressRing x:Name="RefreshRing" Width="14" Height="14"
                                   IsActive="False" Visibility="Collapsed" />
-                    <FontIcon x:Name="RefreshIcon" FontSize="14" Glyph="&#xE72C;" />
-                    <TextBlock x:Name="RefreshText" Text="刷新" />
+                    <FontIcon x:Name="RefreshIcon" FontSize="14" Glyph="&#xE72C;"
+                              Foreground="{ThemeResource AppAccentBrush}" />
+                    <TextBlock x:Name="RefreshText" Text="刷新" FontSize="15"
+                               Foreground="{ThemeResource AppAccentBrush}" />
                 </StackPanel>
-            </Button>
+            </HyperlinkButton>
         </Grid>
 
-        <ScrollViewer Grid.Row="1" Margin="0,10,0,0" VerticalScrollBarVisibility="Hidden"
+        <ScrollViewer Grid.Row="1" Margin="0,20,0,0" VerticalScrollBarVisibility="Hidden"
+                      HorizontalContentAlignment="Stretch"
                       HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel Padding="0,0,0,8">
+            <StackPanel Spacing="24" Padding="0,0,0,8">
 
                 <!-- Hero：设备身份 + 电量，不着卡片底色 -->
-                <Grid ColumnSpacing="14">
+                <Grid ColumnSpacing="24">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <Border x:Name="Plate" Grid.Column="0" Width="120" Height="92" CornerRadius="16"
+                    <Border x:Name="Plate" Grid.Column="0" Width="132" Height="104" CornerRadius="12"
                             Padding="6" VerticalAlignment="Center"
                             PointerEntered="Plate_PointerEntered" PointerExited="Plate_PointerExited">
                         <Grid>
@@ -66,73 +72,77 @@
                         </Grid>
                     </Border>
 
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-                        <TextBlock x:Name="NameText" Style="{StaticResource AppHeroNameStyle}" />
-                        <TextBlock x:Name="MetaText" FontSize="12" TextTrimming="CharacterEllipsis"
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
+                        <TextBlock x:Name="NameText" Style="{StaticResource AppPageTitleStyle}"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock x:Name="MetaText" FontSize="13" TextTrimming="CharacterEllipsis"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <StackPanel Orientation="Horizontal" Spacing="7" Height="20">
-                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                <Ellipse x:Name="OnlineDot" Width="5" Height="5" VerticalAlignment="Center"
+                        <StackPanel Orientation="Horizontal" Spacing="8" Height="20">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Ellipse x:Name="OnlineDot" Width="6" Height="6" VerticalAlignment="Center"
                                          Fill="{ThemeResource TextFillColorTertiaryBrush}" />
-                                <TextBlock x:Name="OnlineText" FontSize="11" VerticalAlignment="Center"
+                                <TextBlock x:Name="OnlineText" FontSize="13" VerticalAlignment="Center"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
-                            <Border x:Name="ConnPill" CornerRadius="4" Height="18" Padding="6,0"
-                                    VerticalAlignment="Center">
+                            <Border x:Name="ConnPill" Style="{StaticResource AppPillStyle}">
                                 <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <TextBlock x:Name="ConnText" FontSize="10" FontWeight="SemiBold"
-                                               VerticalAlignment="Center" />
-                                    <TextBlock x:Name="ConnSuffix" Text="（推断）" FontSize="9.5"
+                                    <TextBlock x:Name="ConnText" Style="{StaticResource AppPillTextStyle}" />
+                                    <TextBlock x:Name="ConnSuffix" Text="（推断）" FontSize="11"
                                                VerticalAlignment="Center" Visibility="Collapsed" />
                                 </StackPanel>
                             </Border>
-                            <Border x:Name="RecPill" CornerRadius="4" Height="18" Padding="5,0"
-                                    VerticalAlignment="Center" Visibility="Collapsed">
+                            <Border x:Name="RecPill" Style="{StaticResource AppPillStyle}"
+                                    Visibility="Collapsed">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <controls:ReceiverIconPresenter x:Name="RecIcon" VerticalAlignment="Center" />
-                                    <TextBlock x:Name="RecText" FontSize="10" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="RecText" Style="{StaticResource AppPillTextStyle}" />
                                 </StackPanel>
                             </Border>
-                            <TextBlock x:Name="ChargeMark" Text="⚡" FontSize="13" VerticalAlignment="Center"
-                                       Visibility="Collapsed" />
+                            <FontIcon x:Name="ChargeMark" Glyph="&#xE945;" FontSize="14"
+                                      VerticalAlignment="Center" Visibility="Collapsed" />
                         </StackPanel>
-                        <TextBlock x:Name="StateText" FontSize="11" MaxLines="1" TextTrimming="CharacterEllipsis"
+                        <TextBlock x:Name="StateText" FontSize="13" MaxLines="1" TextTrimming="CharacterEllipsis"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
 
-                    <Grid Grid.Column="2" Width="76" Height="76" VerticalAlignment="Center">
-                        <controls:BatteryRing x:Name="Ring" />
-                        <!-- 环里只放数字，不带 %：百分号会把数字挤偏，而且环本身已经表达了"占比" -->
-                        <TextBlock x:Name="PctText" Style="{StaticResource AppBatteryFigureStyle}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Run x:Name="PctNumber" />
-                        </TextBlock>
-                    </Grid>
+                    <StackPanel Grid.Column="2" Spacing="12" VerticalAlignment="Center">
+                        <Grid Width="96" Height="96">
+                            <controls:BatteryRing x:Name="Ring" Diameter="96" />
+                            <TextBlock x:Name="PctText" Style="{StaticResource AppBatteryFigureStyle}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Run x:Name="PctNumber" />
+                                <Run x:Name="PctUnit" FontSize="13" />
+                            </TextBlock>
+                        </Grid>
+                        <TextBlock x:Name="RemainingText" FontSize="13" MaxWidth="180"
+                                   TextAlignment="Center" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Visibility="Collapsed" />
+                    </StackPanel>
                 </Grid>
 
                 <!-- 性能：1~3 个指标并排，单元格由代码按实际项数生成 -->
-                <Border x:Name="MetricsCard" Style="{StaticResource AppDetailCardStyle}" Margin="0,14,0,0">
-                    <StackPanel>
-                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,9">
-                            <TextBlock Text="性能" Style="{StaticResource AppCardLabelStyle}" />
-                            <!-- 说明常驻在卡头，但要有个图标提示"可以悬停" -->
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
-                                        ToolTipService.ToolTip="DPI 与回报率都是设备里保存的设置值，不是主机实测的每秒报文数；实测回报率尚未支持。">
-                                <FontIcon Glyph="&#xE946;" FontSize="11" VerticalAlignment="Center"
-                                          Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                                <TextBlock Text="设备当前设置" FontSize="11" VerticalAlignment="Center"
-                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            </StackPanel>
-                        </Grid>
-                        <Grid x:Name="MetricsHost" />
-                    </StackPanel>
-                </Border>
+                <StackPanel x:Name="MetricsSection" Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="性能" Style="{StaticResource AppSectionTitleStyle}" />
+                        <!-- 说明常驻在标题右侧，但要有个图标提示"可以悬停" -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="DPI 与回报率都是设备里保存的设置值，不是主机实测的每秒报文数；实测回报率尚未支持。">
+                            <FontIcon Glyph="&#xE946;" FontSize="11" VerticalAlignment="Center"
+                                      Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <TextBlock Text="设备当前设置" FontSize="11" VerticalAlignment="Center"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid x:Name="MetricsHost" ColumnSpacing="32" MaxWidth="640"
+                          Margin="0,6,0,0" />
+                </StackPanel>
 
                 <!-- 连接：链路与体系是两个维度，各占一格 -->
-                <Border Style="{StaticResource AppDetailCardStyle}" Margin="0,10,0,0">
-                    <StackPanel>
-                        <TextBlock Text="连接" Style="{StaticResource AppCardLabelStyle}" Margin="0,0,0,9" />
-                        <Grid ColumnSpacing="18" RowSpacing="13">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="连接" Style="{StaticResource AppSectionTitleStyle}" />
+                    <Border Style="{StaticResource AppCardPaddedStyle}">
+                        <Grid ColumnSpacing="40" RowSpacing="22">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
@@ -142,82 +152,85 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
                                 <TextBlock Text="连接方式" Style="{StaticResource AppFactLabelStyle}" />
-                                <Border x:Name="ConnFactPill" CornerRadius="4" Height="18" Padding="6,0"
-                                        HorizontalAlignment="Left" VerticalAlignment="Center">
-                                    <TextBlock x:Name="ConnFactText" FontSize="10" FontWeight="SemiBold"
-                                               VerticalAlignment="Center" />
+                                <Border x:Name="ConnFactPill" Style="{StaticResource AppPillStyle}"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock x:Name="ConnFactText" Style="{StaticResource AppPillTextStyle}" />
                                 </Border>
                             </StackPanel>
 
-                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
+                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6">
                                 <TextBlock Text="接收器体系" Style="{StaticResource AppFactLabelStyle}" />
                                 <TextBlock x:Name="ReceiverFamilyText" Style="{StaticResource AppFactValueStyle}" />
                             </StackPanel>
 
-                            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
+                            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6">
                                 <TextBlock Text="连接状态" Style="{StaticResource AppFactLabelStyle}" />
                                 <TextBlock x:Name="LinkStateText" Style="{StaticResource AppFactValueStyle}" />
                             </StackPanel>
 
-                            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
+                            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
                                 <TextBlock Text="判定依据" Style="{StaticResource AppFactLabelStyle}" />
                                 <TextBlock x:Name="LinkBasisText" Style="{StaticResource AppFactValueStyle}" />
                             </StackPanel>
                         </Grid>
-                    </StackPanel>
-                </Border>
+                    </Border>
+                </StackPanel>
 
                 <!-- 身份与硬件：本体与接收器并排，脚注专门解释两者不是一回事 -->
-                <Border Style="{StaticResource AppDetailCardStyle}" Margin="0,10,0,0">
-                    <StackPanel>
-                        <TextBlock Text="身份与硬件" Style="{StaticResource AppCardLabelStyle}" Margin="0,0,0,9" />
-                        <Grid ColumnSpacing="18" RowSpacing="13">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
+                <StackPanel Spacing="6">
+                    <TextBlock Text="身份与硬件" Style="{StaticResource AppSectionTitleStyle}" />
+                    <Border Style="{StaticResource AppCardPaddedStyle}">
+                        <StackPanel>
+                            <Grid ColumnSpacing="40" RowSpacing="22">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
 
-                            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
-                                <TextBlock Text="型号" Style="{StaticResource AppFactLabelStyle}" />
-                                <TextBlock x:Name="ModelText" Style="{StaticResource AppFactValueStyle}" />
-                            </StackPanel>
-                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
-                                <TextBlock Text="设备类型" Style="{StaticResource AppFactLabelStyle}" />
-                                <TextBlock x:Name="KindText" Style="{StaticResource AppFactValueStyle}" />
-                            </StackPanel>
-                            <StackPanel Grid.Row="0" Grid.Column="2" Spacing="2">
-                                <TextBlock Text="协议" Style="{StaticResource AppFactLabelStyle}" />
-                                <TextBlock x:Name="ProtocolText" Style="{StaticResource AppFactValueStyle}" />
-                            </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
+                                    <TextBlock Text="型号" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock x:Name="ModelText" Style="{StaticResource AppFactValueStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="设备类型" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock x:Name="KindText" Style="{StaticResource AppFactValueStyle}" />
+                                </StackPanel>
 
-                            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
-                                <TextBlock Text="本体身份" Style="{StaticResource AppFactLabelStyle}" />
-                                <TextBlock x:Name="BodyIdentityText" Style="{StaticResource AppFactValueStyle}" />
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
-                                <TextBlock Text="接收器身份" Style="{StaticResource AppFactLabelStyle}" />
-                                <TextBlock x:Name="ReceiverIdentityText" Style="{StaticResource AppFactValueStyle}" />
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Grid.Column="2" Spacing="2">
-                                <TextBlock Text="设备 ID" Style="{StaticResource AppFactLabelStyle}" />
-                                <TextBlock x:Name="DeviceIdText" Style="{StaticResource AppFactValueStyle}" />
-                            </StackPanel>
-                        </Grid>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6">
+                                    <TextBlock Text="协议" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock x:Name="ProtocolText" Style="{StaticResource AppFactValueStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="设备 ID" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock x:Name="DeviceIdText" Style="{StaticResource AppFactValueStyle}" />
+                                </StackPanel>
 
-                        <TextBlock x:Name="IdentityNote" Style="{StaticResource AppCardFootnoteStyle}"
-                                   Margin="0,11,0,0" TextWrapping="Wrap" TextTrimming="None" />
-                    </StackPanel>
-                </Border>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Spacing="6">
+                                    <TextBlock Text="本体身份" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock x:Name="BodyIdentityText" Style="{StaticResource AppFactValueStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="接收器身份" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock x:Name="ReceiverIdentityText" Style="{StaticResource AppFactValueStyle}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock x:Name="IdentityNote" Style="{StaticResource AppCardFootnoteStyle}"
+                                       Margin="0,18,0,0" TextWrapping="Wrap" TextTrimming="None"
+                                       MaxWidth="660" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 
                 <!-- 设备刚消失时的兜底：不留空白页 -->
-                <TextBlock x:Name="GoneText" Text="这台设备已不在列表中。" FontSize="12" Margin="0,12,0,0"
+                <TextBlock x:Name="GoneText" Text="这台设备已不在列表中。" FontSize="13"
                            Foreground="{ThemeResource TextFillColorTertiaryBrush}" Visibility="Collapsed" />
             </StackPanel>
         </ScrollViewer>

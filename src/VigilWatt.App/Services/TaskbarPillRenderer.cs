@@ -205,7 +205,7 @@ public static class TaskbarPillRenderer
         var state = UiPalette.ToDrawing(UiPalette.BatteryLevel(d.BatteryPercent, charging));
 
         float iconBox = (float)(IconBox * scale);
-        DeviceIconFactory.DrawGlyph(g, d.Kind, skin.IconStroke, new Gdi.RectangleF(x, (heightPx - iconBox) / 2f, iconBox, iconBox), scale);
+        DeviceIconFactory.DrawGlyph(g, d.Kind, skin.IconStroke, new Gdi.RectangleF(x, (heightPx - iconBox) / 2f, iconBox, iconBox));
         x += iconBox + (float)(IconTextGap * scale);
 
         if (charging)

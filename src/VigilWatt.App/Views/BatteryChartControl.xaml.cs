@@ -127,8 +127,9 @@ public sealed class BatteryChartControl : UserControl
         _tEnd = tEnd;
         _totalSec = (tEnd - tStart).TotalSeconds;
 
-        var gridBrush = Application.Current.Resources["DividerStrokeColorDefaultBrush"] as Brush
-                        ?? new SolidColorBrush(Color.FromArgb(60, 128, 128, 128));
+        var gridBrush = Application.Current.Resources["TextFillColorTertiaryBrush"] is SolidColorBrush tertiary
+                        ? new SolidColorBrush(Color.FromArgb(0x38, tertiary.Color.R, tertiary.Color.G, tertiary.Color.B))
+                        : new SolidColorBrush(Color.FromArgb(60, 128, 128, 128));
         var axisBrush = Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush
                         ?? new SolidColorBrush(Color.FromArgb(160, 128, 128, 128));
         var textBrush = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush
@@ -136,8 +137,8 @@ public sealed class BatteryChartControl : UserControl
 
         RenderLegend(textBrush);
 
-        // 横向网格线 + Y 标签（0/20/40/60/80/100，比 25 档更细）
-        foreach (int yPct in new[] { 0, 20, 40, 60, 80, 100 })
+        // 横向网格线 + Y 标签（只留 0/50/100，避免六条线把曲线压住）
+        foreach (int yPct in new[] { 0, 50, 100 })
         {
             double y = PctToY(yPct);
             _canvas.Children.Add(new Line
@@ -145,7 +146,7 @@ public sealed class BatteryChartControl : UserControl
                 X1 = PadL, Y1 = y, X2 = PadL + _plotW, Y2 = y,
                 Stroke = gridBrush, StrokeThickness = 1,
             });
-            var yLabel = MakeLabel($"{yPct}%", axisBrush, 10);
+            var yLabel = MakeLabel($"{yPct}%", axisBrush, 11);
             Canvas.SetLeft(yLabel, 6);
             Canvas.SetTop(yLabel, y - 8);
             _canvas.Children.Add(yLabel);
@@ -441,7 +442,7 @@ public sealed class BatteryChartControl : UserControl
         {
             Text = $"{point.Percent}%",
             FontSize = 16,
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            FontWeight = Microsoft.UI.Text.FontWeights.Medium,
             Foreground = primary,
         });
 

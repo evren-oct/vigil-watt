@@ -5,6 +5,7 @@ using VigilWatt.Core.Utils;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace VigilWatt.App;
 /// <summary>
@@ -17,6 +18,9 @@ public sealed partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
 
+    private bool _firstNavigation = true;
+    private bool _initialSizeApplied;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -24,11 +28,12 @@ public sealed partial class MainWindow : Window
         Title = "VigilWatt";
         AppWindow.Title = "VigilWatt";
         ApplyWindowIcon();
-        // AppWindow.Resize 用物理像素，按 DPI 换算成 800x600 DIP（runtime-pitfalls §6）
+        VersionHeader.Content = $"v{GetType().Assembly.GetName().Version?.ToString(3) ?? "—"}";
+        // 构造期 GetDpiForWindow 可能还是 96；先给一个兜底尺寸，Loaded 后再按真实 DPI 定尺
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
         var dpiScale = GetDpiForWindow(hwnd) / 96.0;
         AppWindow.Resize(new Windows.Graphics.SizeInt32(
-            (int)(800 * dpiScale), (int)(600 * dpiScale)));
+            (int)(900 * dpiScale), (int)(640 * dpiScale)));
 
             // 标题栏融入内容：Win11 / Win10 都做，与背景材质无关。
             // 旧版塞在 MicaController.IsSupported() 分支里，于是 Win10 上系统照常画标准标题栏，
@@ -39,7 +44,11 @@ public sealed partial class MainWindow : Window
         ApplyBackdrop();
         SyncTitleBarButtonColors();
         Activated += (_, _) => App.OnMainWindowActivated();
-        Root.Loaded += (_, _) => SyncTitleBarButtonColors();
+        Root.Loaded += (_, _) =>
+        {
+            SyncTitleBarButtonColors();
+            ApplyInitialSize();
+        };
         Root.ActualThemeChanged += (_, _) => SyncTitleBarButtonColors();
 
         // 关闭按钮 = 隐藏到托盘
@@ -51,6 +60,17 @@ public sealed partial class MainWindow : Window
 
         // 初次进入设备页
         ContentFrame.Navigate(typeof(DevicesPage));
+    }
+
+    /// <summary>窗口真正显示后再取一次 DPI：构造期常拿到 96，直接按物理像素算会在 150% 屏上缩成 600 DIP。</summary>
+    private void ApplyInitialSize()
+    {
+        if (_initialSizeApplied) return;
+        _initialSizeApplied = true;
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        var dpiScale = GetDpiForWindow(hwnd) / 96.0;
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(
+            (int)(900 * dpiScale), (int)(640 * dpiScale)));
     }
 
     /// <summary>隐藏到托盘并安排一次工作集修剪：用户 2026-11-25 明确，隐藏后要的就是任务管理器那个数字。</summary>
@@ -145,7 +165,7 @@ public sealed partial class MainWindow : Window
     private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (sender.SelectedItem is not NavigationViewItem item || item.Tag is not string tag) return;
-        ContentFrame.Navigate(tag switch
+        var page = tag switch
         {
             "devices" => typeof(DevicesPage),
             "stats" => typeof(StatsPage),
@@ -154,7 +174,11 @@ public sealed partial class MainWindow : Window
             "settings" => typeof(SettingsPage),
             "about" => typeof(AboutPage),
             _ => typeof(DevicesPage),
-        });
+        };
+        // 首屏不播转场：缓存页复用后切页才淡入，避免启动时闪一下。
+        var transition = _firstNavigation ? null : new EntranceNavigationTransitionInfo();
+        _firstNavigation = false;
+        ContentFrame.Navigate(page, null, transition);
         // 各页都已 NavigationCacheMode.Required 常驻，BackStack 只剩无界累积的簿记（CR-65）
         ContentFrame.BackStack.Clear();
     }

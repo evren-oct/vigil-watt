@@ -45,5 +45,5 @@ public sealed class DeviceIconPresenter : ContentControl
     private static void OnIconChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((DeviceIconPresenter)d).Rebuild();
 
-    private void Rebuild() => Content = DeviceIconFactory.Scaled(Kind, IconColor, 22);
+    private void Rebuild() => Content = DeviceIconFactory.Scaled(Kind, IconColor, 28);
 }

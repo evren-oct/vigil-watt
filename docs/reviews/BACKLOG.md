@@ -12,6 +12,7 @@
 
 | 编号 | 优先级 | 一句话 | 证据 | 状态 |
 |---|---|---|---|---|
+| **CR-182** | P2 | **UI 改版只在 Win11 25H2 + 150% DPI + 浅色/纯色下复核**：Win10（无 Mica）与深色主题未看，导航选中态、卡片分层、设置折叠与图标对比度可能不同；按 `ui-style.md` §9 需补两套系统各看一眼 | `App.xaml`、`MainWindow.xaml`、`docs/dev/ui-style.md` | `open` |
 | **CR-169** | P2 | **北通 `0x501E` / `0x502C` 未进运行目录**：BetopGame 2.6.2 包里这两个 PID 的 `RegisterDev*` 调用是注释掉的，P2 只登记了实际有效的 9 个宙斯 PID。下一版官方客户端若恢复注册，再补目录与测试 | `t9_app.js:3305-3307`、`t6p2a.js:3961-3963`、`hardware/reference/betop-catalog.md` §10.2 | `open` |
 | **CR-170** | P2 | **北通宙斯 `0x10` 占位帧现在无条件判离线**：旧判据要求 `byte1==0 && byte23==0x10`，`link.table` 只能看 byte23。现有 248 条样本里两者总同时出现；若见到 `byte1!=0` 的 `0x10`，要重新评估 | `Plugins/Betop/specs/betop.protocols.json:betop-zeus-keyevent`、`hardware/brands/betop.md` §1.4.2 | `open` |
 | **CR-171** | P2 | **北通 5 个歧义 PID 没有专属产品图**：`5125/5127/5145/5146/5074` 的 `model` 为空，产品串只能分到「鲲鹏20/40」系列，套单张图会挂错型号，故继续回退几何图标；等官方型号分流证据再补 | `docs/project/device-images.md` §7.7、`src/VigilWatt.Core/Plugins/Betop/betop-catalog.json:devices` | `open` |

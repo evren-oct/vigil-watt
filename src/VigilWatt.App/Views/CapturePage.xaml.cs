@@ -45,6 +45,7 @@ public sealed partial class CapturePage : Page
     private int _nextChannelColor;
     private bool _runningNarrow;
     private bool _idleNarrow;
+    private bool? _idleStacked;
 
     public CapturePage()
     {
@@ -321,7 +322,41 @@ public sealed partial class CapturePage : Page
     private void RootGrid_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (WindowHint == null) return;
-        WindowHint.Visibility = e.NewSize.Width < 900 ? Visibility.Visible : Visibility.Collapsed;
+        WindowHint.Visibility = e.NewSize.Width < 640 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>空闲态两栏：窄窗口退回上下堆叠（设备卡固定高度），宽窗口左侧设备列表占满剩余高度。</summary>
+    private void IdlePanel_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (IdlePanel == null || DevicePickCard == null || DetailScroll == null) return;
+        bool stacked = e.NewSize.Width < 520;
+        if (stacked == _idleStacked) return;
+        _idleStacked = stacked;
+
+        IdlePanel.ColumnDefinitions.Clear();
+        IdlePanel.RowDefinitions.Clear();
+        if (stacked)
+        {
+            IdlePanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            IdlePanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(320) });
+            IdlePanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            Grid.SetColumn(DevicePickCard, 0);
+            Grid.SetRow(DevicePickCard, 0);
+            Grid.SetColumn(DetailScroll, 0);
+            Grid.SetRow(DetailScroll, 1);
+            DetailScroll.Margin = new Thickness(0, 20, 0, 0);
+        }
+        else
+        {
+            IdlePanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.42, GridUnitType.Star), MinWidth = 250 });
+            IdlePanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.58, GridUnitType.Star) });
+            IdlePanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            Grid.SetColumn(DevicePickCard, 0);
+            Grid.SetRow(DevicePickCard, 0);
+            Grid.SetColumn(DetailScroll, 1);
+            Grid.SetRow(DetailScroll, 0);
+            DetailScroll.Margin = new Thickness(0);
+        }
     }
 
     private void FeatureCheck_Changed(object sender, RoutedEventArgs e)
@@ -595,7 +630,7 @@ public sealed partial class CapturePage : Page
             var title = new TextBlock
             {
                 Text = $"{(isDone ? "✓ " : "")}{index + 1} {step.Title}",
-                FontWeight = isCurrent ? FontWeights.SemiBold : FontWeights.Normal,
+                FontWeight = isCurrent ? FontWeights.Medium : FontWeights.Normal,
                 TextWrapping = TextWrapping.Wrap,
             };
             var state = new TextBlock

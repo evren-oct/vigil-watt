@@ -65,7 +65,8 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 - **设备验证状态只维护在 `docs/hardware/support-matrix.md`。** `README.md`、`handoff.md`、`protocols.md` 只链接，不复制状态表；新增或升级设备时先改矩阵，再改品牌文档。
 - **`handoff.md` 与 `changelog.md` 不许再写长。** 协议、坑、流程进专题文档，这两份只留指针。
   - `handoff.md` 只改 §1 现状和 §4 未完成待办。不追加本轮经过，不保留已完成待办，不抄发布过程。**全文超过 120 行，先删历史再写。**
-  - `changelog.md` 按日期追加：每条一两句（改了什么、为什么）。不记构建结果、打包耗时、文件清单。发版只在文末版本表加一行。单日新增超过 15 行，就是把专题文档抄进来了。
+  - `changelog.md` **只保留当月条目，全文上限 250 行**：按日期追加，每条一两句（改了什么、为什么），不记构建结果、打包耗时、文件清单；发版只在文末版本表加一行；单日超过 15 行说明细节该进专题文档。**跨月时跑 `python scripts/archive-changelog.py`** 把整月搬进 `docs/project/archive/` 下按月的 `changelog-YYYY-MM.md`（只搬不改，幂等，别手工搬）。`check-doc-health.py` 会拦「超 250 行」「残留旧月份」「归档没人引用」。
+  - `docs/dev/runtime-pitfalls.md` 已拆成**索引页**：每个 `§N` 保留稳定标题、一句话结论和分册链接，正文按主题放 `docs/dev/runtime-pitfalls/` 下。代码与其它文档按 `runtime-pitfalls.md §N` 引用了几十处，**不要改编号**；索引页超过 280 行就是把正文又写回来了。`check-doc-health.py` 会拦。
   - `docs/reviews/BACKLOG.md` 只留 `open` / `doing`，每条一行。关闭后立刻挪到 `docs/reviews/archive/BACKLOG-CLOSED.md`，编号不复用。调查过程写审查报告或专题文档。**全文超过 120 行，先挪已关闭的再写。**
 - **UI 改版：先出方案，用户确认后再改代码。**
 - 硬件写入类改动：先读 `docs/hardware/safety.md`（零写入原则、写入闸门；各插件开关现状见其 §3.1）。
@@ -120,7 +121,7 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 
 - **L0 机械层**：构建 `0 警告 0 错误`；改了帧解析 / 读数过滤 / 历史库 / 离线判定必须重跑对应测试类
   （用 `--no-build --filter "FullyQualifiedName~<类名>"`；沙箱内全量 `dotnet test` 会卡住，沙箱外可全量，见 `docs/dev/build.md` §0 / §4.1）。
-- **改了 `docs/` 的链接、文件名或章节号**：跑 `python scripts/check-doc-links.py` 与 `python scripts/check-doc-health.py`，要求 0 坏链、0 无效小节锚点、0 表格断裂、0 孤儿文档/编号错误。
+- **改了 `docs/` 下任何文件**：跑 `python scripts/check-doc-links.py` 与 `python scripts/check-doc-health.py`，要求 0 坏链、0 无效小节锚点、0 表格断裂、0 孤儿文档/编号错误（后者还查 changelog 的 250 行预算与按月归档）。
 - **L1 自查**：碰了红线区域（硬件写入 / 状态模型 / 线程 / 资源释放 / 异常）就对着 R 清单过一遍，
   标准见 `docs/dev/review-standard.md`。其中 **R2「插件必须继承 `BatteryPluginBase`」** 是历史事故的唯一成因，无例外。
 - **发现必须进 `docs/reviews/BACKLOG.md`**——只写在审查报告或 changelog 里等于没记。报告只承载证据与推理。

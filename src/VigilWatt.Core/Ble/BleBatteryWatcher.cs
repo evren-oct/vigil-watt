@@ -236,32 +236,42 @@ public sealed class BleBatteryWatcher : IDisposable
                 var svcResult = await ble
                     .GetGattServicesForUuidAsync(GattServiceUuids.Battery, BluetoothCacheMode.Uncached)
                     .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
-                if (svcResult.Status != GattCommunicationStatus.Success || svcResult.Services.Count == 0) return;
 
-                var chrResult = await svcResult.Services[0]
-                    .GetCharacteristicsForUuidAsync(GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Uncached)
-                    .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
-                if (chrResult.Status != GattCommunicationStatus.Success || chrResult.Characteristics.Count == 0) return;
-
-                var read = await chrResult.Characteristics[0]
-                    .ReadValueAsync(BluetoothCacheMode.Uncached)
-                    .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
-                if (read.Status != GattCommunicationStatus.Success) return;
-
-                var reader = DataReader.FromBuffer(read.Value);
-                int percent = reader.ReadByte();
-                if (percent is > 0 and <= 100)
+                // 不 Dispose 就要等 GC 终结器才 Release：期间 GATT 会话与设备句柄一直挂着（CR-80）。
+                // 只需关 service——GattCharacteristic 在投影里不实现 IDisposable，它属于这个会话。
+                try
                 {
-                    bool wasOffline = !status.IsOnline;
-                    status.IsOnline = true;
-                    status.BatteryPercent = percent;
-                    status.LastUpdated = DateTimeOffset.Now;
-                    if (status.Kind == DeviceKind.Unknown)
-                        status.Kind = DeviceKindGuesser.Guess(status.Name);
-                    DeviceUpdated?.Invoke(status);
-                    Log.Info(wasOffline
-                        ? $"BLE GATT 直读(恢复在线): {status.DisplayName} {percent}%"
-                        : $"BLE GATT 直读: {status.DisplayName} {percent}%");
+                    if (svcResult.Status != GattCommunicationStatus.Success || svcResult.Services.Count == 0) return;
+
+                    var chrResult = await svcResult.Services[0]
+                        .GetCharacteristicsForUuidAsync(GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Uncached)
+                        .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
+                    if (chrResult.Status != GattCommunicationStatus.Success || chrResult.Characteristics.Count == 0) return;
+
+                    var read = await chrResult.Characteristics[0]
+                        .ReadValueAsync(BluetoothCacheMode.Uncached)
+                        .AsTask().WaitAsync(TimeSpan.FromSeconds(8));
+                    if (read.Status != GattCommunicationStatus.Success) return;
+
+                    using var reader = DataReader.FromBuffer(read.Value);
+                    int percent = reader.ReadByte();
+                    if (percent is > 0 and <= 100)
+                    {
+                        bool wasOffline = !status.IsOnline;
+                        status.IsOnline = true;
+                        status.BatteryPercent = percent;
+                        status.LastUpdated = DateTimeOffset.Now;
+                        if (status.Kind == DeviceKind.Unknown)
+                            status.Kind = DeviceKindGuesser.Guess(status.Name);
+                        DeviceUpdated?.Invoke(status);
+                        Log.Info(wasOffline
+                            ? $"BLE GATT 直读(恢复在线): {status.DisplayName} {percent}%"
+                            : $"BLE GATT 直读: {status.DisplayName} {percent}%");
+                    }
+                }
+                finally
+                {
+                    foreach (var service in svcResult.Services) service.Dispose();
                 }
             }
         }
@@ -294,7 +304,15 @@ public sealed class BleBatteryWatcher : IDisposable
         try
         {
             var task = BluetoothLEDevice.FromIdAsync(aepId).AsTask();
-            if (await Task.WhenAny(task, Task.Delay(8000)) != task) return null;
+            if (await Task.WhenAny(task, Task.Delay(8000)) != task)
+            {
+                // 超时只是我们不等了；晚到的设备对象仍要释放，否则句柄挂到 GC 终结（CR-80）
+                _ = task.ContinueWith(static t =>
+                {
+                    if (t.Status == TaskStatus.RanToCompletion) t.Result?.Dispose();
+                }, TaskScheduler.Default);
+                return null;
+            }
             return task.Result;
         }
         catch

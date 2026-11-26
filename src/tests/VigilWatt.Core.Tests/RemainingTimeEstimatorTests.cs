@@ -126,6 +126,48 @@ public sealed class RemainingTimeEstimatorTests
     public void Format_UsesReadableChineseUnits(int minutes, string expected)
         => Assert.Equal(expected, RemainingTimeEstimator.Format(TimeSpan.FromMinutes(minutes)));
 
+    /// <summary>流式扫描是第二条判定路径，理由必须与整表路径逐条一致（CR-79）。</summary>
+    [Fact]
+    public void Evaluate_ScanReportsSameReasonsAsSampleList()
+    {
+        var t0 = DateTimeOffset.UtcNow.AddHours(-1);
+        var t1 = DateTimeOffset.UtcNow;
+
+        Assert.Equal(RemainingTimeUnavailableReason.CollectingSamples,
+            RemainingTimeEstimator.Evaluate(new DischargeScan(2, 2, false, t0, 90, t1, 88), 88).Reason);
+
+        Assert.Equal(RemainingTimeUnavailableReason.CollectingAfterCharge,
+            RemainingTimeEstimator.Evaluate(new DischargeScan(4, 1, true, t0, 90, t1, 88), 88).Reason);
+
+        Assert.Equal(RemainingTimeUnavailableReason.InvalidReading,
+            RemainingTimeEstimator.Evaluate(new DischargeScan(3, 3, false, t0, 90, t1, 88), 0).Reason);
+
+        Assert.Equal(RemainingTimeUnavailableReason.InvalidHistory,
+            RemainingTimeEstimator.Evaluate(new DischargeScan(3, 3, false, t1, 90, t1, 88), 88).Reason);
+
+        Assert.Equal(RemainingTimeUnavailableReason.WaitingForBatteryDrop,
+            RemainingTimeEstimator.Evaluate(new DischargeScan(3, 3, false, t0, 88, t1, 88), 88).Reason);
+    }
+
+    [Fact]
+    public void Evaluate_ScanComputesSameResultAsSampleList()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var samples = new[]
+        {
+            Sample(90, now.AddHours(-1)),
+            Sample(88, now.AddMinutes(-30)),
+            Sample(86, now),
+        };
+
+        var expected = RemainingTimeEstimator.Evaluate(samples, 86, now);
+        var actual = RemainingTimeEstimator.Evaluate(
+            new DischargeScan(3, 3, false, now.AddHours(-1), 90, now, 86), 86);
+
+        Assert.Equal(expected, actual);
+        Assert.Equal(TimeSpan.FromHours(21.5), actual.Remaining);
+    }
+
     [Theory]
     [InlineData(45, "45分钟")]              // 不足一天：不补括号
     [InlineData(120, "2小时")]

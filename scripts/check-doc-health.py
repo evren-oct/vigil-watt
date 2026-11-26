@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -111,6 +112,63 @@ def check_backlog_ids() -> list[str]:
     return warnings
 
 
+def check_changelog() -> tuple[list[str], list[str]]:
+    """changelog 的预算与归档。只写散文规则没人守——2026-11 之前它长到 504 行 / 42 个小节。
+
+    硬错误只留「结构性」的三条（超长、残留旧月份、归档没人引用）；单日超 15 行是质量提示，不阻断。
+    """
+    path = DOCS / "project" / "changelog.md"
+    if not path.exists():
+        return ["缺少 docs/project/changelog.md"], []
+
+    lines = read(path).splitlines()
+    errors, warnings = [], []
+    if len(lines) > 250:
+        errors.append(f"changelog.md 超过 250 行（{len(lines)}）：跑 scripts/archive-changelog.py"
+                      "（先搬旧月份，仍超预算会继续搬当月最老的几天）")
+
+    sections = [i for i, line in enumerate(lines) if re.match(r"^## \d{4}-\d{2}-\d{2}", line)]
+    if not sections:
+        return errors, warnings
+
+    newest = lines[sections[0]][3:].strip()[:7]
+    keep_month = max(date.today().strftime("%Y-%m"), newest)
+    for k, start in enumerate(sections):
+        end = sections[k + 1] if k + 1 < len(sections) else next(
+            (i for i in range(start, len(lines)) if lines[i].startswith("## 版本")), len(lines))
+        day, size = lines[start][3:].strip(), end - start
+        if day[:7] < keep_month:
+            errors.append(f"changelog.md 还留着 {day}（保留月份 {keep_month}）：跑 scripts/archive-changelog.py")
+        if size > 15:
+            warnings.append(f"changelog.md {day} 有 {size} 行（预算 15）：细节该进专题文档")
+
+    for archive in sorted((DOCS / "project" / "archive").glob("changelog-*.md")):
+        if archive.name not in read(path):
+            errors.append(f"归档没有从 changelog.md 引用：{archive.relative_to(ROOT)}")
+    return errors, warnings
+
+
+def check_pitfalls_index() -> tuple[list[str], list[str]]:
+    """runtime-pitfalls.md 是索引页：稳定 §N 锚点 + 一句话 + 分册链接，正文在分册里。
+
+    §N 被代码和其它文档引用了几十处，改编号等于批量造坏链；这条检查盯住索引页不要写回正文。
+    """
+    path = DOCS / "dev" / "runtime-pitfalls.md"
+    folder = DOCS / "dev" / "runtime-pitfalls"
+    if not path.exists():
+        return [], []
+    errors, warnings = [], []
+    index_text = read(path)
+    if len(index_text.splitlines()) > 280:
+        warnings.append(f"runtime-pitfalls.md 索引页 {len(index_text.splitlines())} 行（预算 280）："
+                        "正文应进 runtime-pitfalls/ 分册")
+    if folder.is_dir():
+        for volume in sorted(folder.glob("*.md")):
+            if volume.name not in index_text:
+                errors.append(f"分册没有从 runtime-pitfalls.md 链接：{volume.relative_to(ROOT)}")
+    return errors, warnings
+
+
 def main() -> int:
     files = sorted(DOCS.rglob("*.md"))
     errors = []
@@ -121,6 +179,12 @@ def main() -> int:
     errors += size_errors
     errors += check_matrix_coverage()
     errors += check_backlog_ids()
+    changelog_errors, changelog_warnings = check_changelog()
+    errors += changelog_errors
+    size_warnings += changelog_warnings
+    pitfall_errors, pitfall_warnings = check_pitfalls_index()
+    errors += pitfall_errors
+    size_warnings += pitfall_warnings
 
     if size_warnings:
         print("警告：")

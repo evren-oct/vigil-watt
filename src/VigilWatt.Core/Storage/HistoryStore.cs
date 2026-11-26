@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Utils;
 using Microsoft.Data.Sqlite;
@@ -15,6 +16,12 @@ public record HistoryStats(int TotalCount, int DeviceCount, DateTimeOffset? Firs
 /// <summary>单台设备的历史概况（删除设备确认框用）。没有记录时 First/Last 为 null。</summary>
 public record DeviceHistorySummary(int Count, DateTimeOffset? First, DateTimeOffset? Last);
 
+/// <summary>放电段扫描结果（<see cref="HistoryStore.ScanDischarge"/>）：只留评估需要的 7 个数，不物化行对象。
+/// 与「Query + RemainingTimeEstimator.Evaluate(samples,…)」逐条等价，两条路径并存是为了能对拍。</summary>
+public readonly record struct DischargeScan(
+    int Total, int Discharge, bool HadCharge,
+    DateTimeOffset First, int FirstPercent, DateTimeOffset Last, int LastPercent);
+
 /// <summary>
 /// 功 能： 电量历史 SQLite 存储。
 /// 2026/10/06 15:53:36 xliu
@@ -25,6 +32,11 @@ public class HistoryStore : IDisposable
     private readonly SqliteConnection _connection;
     private readonly object _writeGate = new();
     private readonly string _dbPath;
+
+    // 历史版本号：Insert 推某台设备的版本，清理/删除推全局 epoch。
+    // 用途是让"剩余时间估算"在历史没变时不必重扫 90 天全表（CR-79）。
+    private readonly ConcurrentDictionary<string, long> _versions = new();
+    private long _epoch;
 
     /// <param name="dbPath">库文件路径；null = 默认 %LOCALAPPDATA%\VigilWatt\history.db。
     /// 显式传入供单测用临时库，避免碰真实数据。</param>
@@ -99,8 +111,13 @@ public class HistoryStore : IDisposable
             cmd.Parameters.AddWithValue("$c", DeviceStatusFormatter.IsChargingOrFull(device.Charging) ? 1 : 0);
             cmd.Parameters.AddWithValue("$ts", device.LastUpdated.ToUnixTimeMilliseconds());
             cmd.ExecuteNonQuery();
+            _versions.AddOrUpdate(device.Id, 1, static (_, v) => v + 1);
         }
     }
+
+    /// <summary>某台设备的历史版本号（全局 epoch 左移拼接）。调用方拿它当缓存键：没变就不用重算。</summary>
+    public long VersionOf(string deviceId) =>
+        Interlocked.Read(ref _epoch) * 1_000_000_000L + _versions.GetValueOrDefault(deviceId);
 
     /// <summary>取时间范围内的采样，用于画曲线。</summary>
     public List<HistorySample> Query(string deviceId, DateTimeOffset from, DateTimeOffset to)
@@ -129,6 +146,68 @@ public class HistoryStore : IDisposable
             }
         }
         return list;
+    }
+
+    /// <summary>流式扫一遍放电段：不建 HistorySample、不跑 LINQ，只返回评估要用的 7 个数。
+    /// 同一时间戳取最后一条（等价 Query 的 OrderBy(ts).ThenBy(id) 后 GroupBy(ts).Last()）。</summary>
+    public DischargeScan ScanDischarge(string deviceId, DateTimeOffset from, DateTimeOffset to)
+    {
+        lock (_writeGate)
+        {
+            using var cmd = _connection.CreateCommand();
+            // 只 ORDER BY ts：索引 (device_id, ts) 的条目以 rowid 兜底，同 ts 的行天然按 id 升序出来
+            cmd.CommandText =
+                "SELECT ts, percent, charging FROM samples " +
+                "WHERE device_id = $id AND ts BETWEEN $from AND $to ORDER BY ts";
+            cmd.Parameters.AddWithValue("$id", deviceId);
+            cmd.Parameters.AddWithValue("$from", from.ToUnixTimeMilliseconds());
+            cmd.Parameters.AddWithValue("$to", to.ToUnixTimeMilliseconds());
+            using var reader = cmd.ExecuteReader();
+
+            int total = 0, discharge = 0;
+            bool hadCharge = false, has = false, charging = false;
+            long ts = 0, firstTs = 0, lastTs = 0;
+            int percent = 0, firstPercent = 0, lastPercent = 0;
+
+            // 一个时间戳（可能多行）收尾时调用：此时 ts/percent/charging 已是该组的最后一行
+            void Commit()
+            {
+                total++;
+                if (charging)
+                {
+                    hadCharge = true;
+                    discharge = 0;   // 只看最后一次充电之后的放电段
+                    return;
+                }
+                if (discharge == 0)
+                {
+                    firstTs = ts;
+                    firstPercent = percent;
+                }
+                lastTs = ts;
+                lastPercent = percent;
+                discharge++;
+            }
+
+            while (reader.Read())
+            {
+                long rowTs = reader.GetInt64(0);
+                int rowPercent = reader.GetInt32(1);
+                bool rowCharging = reader.GetInt32(2) == 1;
+                if (has && rowTs != ts) Commit();
+                has = true;
+                ts = rowTs;
+                percent = rowPercent;
+                charging = rowCharging;
+            }
+            if (has) Commit();
+
+            if (!has) return new DischargeScan(0, 0, false, default, 0, default, 0);
+            return discharge > 0
+                ? new DischargeScan(total, discharge, hadCharge,
+                    LocalTime(firstTs), firstPercent, LocalTime(lastTs), lastPercent)
+                : new DischargeScan(total, 0, hadCharge, default, 0, default, 0);
+        }
     }
 
     /// <summary>时间范围内有过采样的设备（历史页设备列表用：按库里的数据走，而不是当前在线设备）。
@@ -254,7 +333,9 @@ public class HistoryStore : IDisposable
             cmd.CommandText = $"DELETE FROM samples WHERE device_id IN ({string.Join(",", placeholders)})";
             int i = 0;
             foreach (var id in deviceIds) cmd.Parameters.AddWithValue($"$id{i++}", id);
-            return cmd.ExecuteNonQuery();
+            int removed = cmd.ExecuteNonQuery();
+            if (removed > 0) Interlocked.Increment(ref _epoch);   // 删过的设备不能再命中旧缓存
+            return removed;
         }
     }
 
@@ -265,7 +346,9 @@ public class HistoryStore : IDisposable
             using var cmd = _connection.CreateCommand();
             cmd.CommandText = "DELETE FROM samples WHERE ts < $cutoff";
             cmd.Parameters.AddWithValue("$cutoff", cutoff.ToUnixTimeMilliseconds());
-            return cmd.ExecuteNonQuery();
+            int removed = cmd.ExecuteNonQuery();
+            if (removed > 0) Interlocked.Increment(ref _epoch);
+            return removed;
         }
     }
 

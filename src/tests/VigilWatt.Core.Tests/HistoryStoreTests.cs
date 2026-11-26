@@ -1,3 +1,4 @@
+using VigilWatt.Core.Devices;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Storage;
 using VigilWatt.Core.Utils;
@@ -261,5 +262,61 @@ public sealed class HistoryStoreTests : IDisposable
             Assert.Equal(local.Offset, actual.Offset);
             Assert.Equal(local.ToString("HH:mm:ss"), actual.ToString("HH:mm:ss"));
         }
+    }
+
+    /// <summary>流式扫描与「Query + Evaluate」必须等价：它是估算的主路径，两条路径靠这条用例对拍（CR-79）。</summary>
+    [Fact]
+    public void H15_流式扫描与整表评估给出同一结果()
+    {
+        using var store = NewStore();
+        const string id = "hid:dev1";
+        store.Insert(Dev(id, "dev1", 100, T0));
+        store.Insert(Dev(id, "dev1", 96, T0.AddMinutes(10)));
+        store.Insert(Dev(id, "dev1", 95, T0.AddMinutes(20)));
+        store.Insert(Dev(id, "dev1", 94, T0.AddMinutes(20)));                    // 同 ts：后写的那条赢
+        store.Insert(Dev(id, "dev1", 90, T0.AddMinutes(30), charging: true));
+        store.Insert(Dev(id, "dev1", 92, T0.AddMinutes(40)));
+        store.Insert(Dev(id, "dev1", 90, T0.AddMinutes(50)));
+        store.Insert(Dev(id, "dev1", 88, T0.AddMinutes(60)));
+
+        var from = T0.AddHours(-1);
+        var to = T0.AddHours(2);
+        var samples = store.Query(id, from, to);
+        var scan = store.ScanDischarge(id, from, to);
+
+        Assert.Equal(7, scan.Total);            // 8 行、7 个时间点
+        Assert.True(scan.HadCharge);
+        Assert.Equal(3, scan.Discharge);        // 只看最后一次充电之后的 92 / 90 / 88
+        Assert.Equal(92, scan.FirstPercent);
+        Assert.Equal(88, scan.LastPercent);
+        Assert.Equal(T0.AddMinutes(40), scan.First);
+        Assert.Equal(T0.AddMinutes(60), scan.Last);
+
+        var expected = RemainingTimeEstimator.Evaluate(samples, 88, T0.AddMinutes(65));
+        var actual = RemainingTimeEstimator.Evaluate(scan, 88);
+        Assert.Equal(expected, actual);
+
+        var none = store.ScanDischarge("不存在的设备", from, to);
+        Assert.Equal(0, none.Total);
+        Assert.Equal(0, none.Discharge);
+    }
+
+    /// <summary>版本号是估算缓存的唯一失效依据：漏推会让"历史变了却不重算"，多推只是白算一次。</summary>
+    [Fact]
+    public void H16_历史版本号只在写库与清理后变化()
+    {
+        using var store = NewStore();
+        long empty = store.VersionOf("a");
+
+        store.Insert(Dev("a", "A", 80, T0));
+        long afterInsert = store.VersionOf("a");
+        Assert.NotEqual(empty, afterInsert);
+        Assert.Equal(afterInsert, store.VersionOf("a"));    // 没写就不变
+
+        store.Insert(Dev("b", "B", 70, T0));
+        Assert.Equal(afterInsert, store.VersionOf("a"));    // 别的设备写入不影响 a
+
+        store.CleanupOlderThan(T0.AddDays(1));              // 全删：epoch 前进
+        Assert.NotEqual(afterInsert, store.VersionOf("a"));
     }
 }

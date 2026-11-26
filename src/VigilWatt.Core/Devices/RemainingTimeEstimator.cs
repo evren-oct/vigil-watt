@@ -92,6 +92,38 @@ public static class RemainingTimeEstimator
         return new(TimeSpan.FromHours(hours), RemainingTimeUnavailableReason.None);
     }
 
+    /// <summary>流式扫描结果的判定：与 <see cref="Evaluate(IReadOnlyList{HistorySample}, int, DateTimeOffset)"/> 逐条等价
+    /// （两个入口并存只为让单测对拍——改判定必须两边一起改）。</summary>
+    public static RemainingTimeEstimateResult Evaluate(in DischargeScan scan, int currentPercent)
+    {
+        if (scan.Total < MinimumSamples)
+            return new(null, RemainingTimeUnavailableReason.CollectingSamples);
+
+        if (scan.Discharge < MinimumSamples)
+            return new(null, scan.HadCharge
+                ? RemainingTimeUnavailableReason.CollectingAfterCharge
+                : RemainingTimeUnavailableReason.CollectingSamples);
+
+        if (currentPercent <= 0 || currentPercent > 100)
+            return new(null, RemainingTimeUnavailableReason.InvalidReading);
+
+        var elapsed = scan.Last - scan.First;
+        int drop = scan.FirstPercent - scan.LastPercent;
+        if (elapsed <= TimeSpan.Zero)
+            return new(null, RemainingTimeUnavailableReason.InvalidHistory);
+        if (drop <= 0)
+            return new(null, RemainingTimeUnavailableReason.WaitingForBatteryDrop);
+
+        double pointsPerHour = drop / elapsed.TotalHours;
+        if (!double.IsFinite(pointsPerHour) || pointsPerHour <= 0)
+            return new(null, RemainingTimeUnavailableReason.InvalidHistory);
+
+        double hours = currentPercent / pointsPerHour;
+        if (!double.IsFinite(hours) || hours <= 0 || hours > TimeSpan.MaxValue.TotalHours)
+            return new(null, RemainingTimeUnavailableReason.InvalidHistory);
+        return new(TimeSpan.FromHours(hours), RemainingTimeUnavailableReason.None);
+    }
+
     public static string Format(TimeSpan remaining)
     {
         var totalMinutes = Math.Max(1, (int)Math.Round(remaining.TotalMinutes));

@@ -38,6 +38,8 @@ public sealed class DeviceManager : IDisposable
     private readonly DeviceClaimRegistry _claims = new();
     private readonly ConcurrentDictionary<string, DeviceStatus> _devices = new();
     private readonly ConcurrentDictionary<string, RemainingTimeEstimateResult> _remainingTimeEstimates = new();
+    /// <summary>估算缓存键 =（历史版本, 电量）。两者都没变就没有新信息，不必重扫 90 天（CR-79）。</summary>
+    private readonly ConcurrentDictionary<string, (long Version, int Percent)> _estimateKeys = new();
 
     /// <summary>每台设备"是否已就低电量提醒过"。电量回到阈值之上（或充电）就复位，下次跌破再提醒一次；
     /// 设备条目被移除时也一并清掉（见 <see cref="ExpireTombstones"/> / <see cref="DropDevicesOf"/>，CR-23）。</summary>
@@ -255,6 +257,7 @@ public sealed class DeviceManager : IDisposable
         _pollTimer?.Dispose();
         _sampleTimer?.Dispose();
         _discoveryTimer?.Dispose();
+        _cleanupTimer?.Dispose();   // 漏了它：每次 ApplySettings 都新建一个，旧的等 GC 终结前还会照跑
         // 首扫尽快跑（探测已是并行/短路，不再需要 2 秒缓冲）
         _pollTimer = new Timer(_ => _ = RequestPollAsync(), null,
             TimeSpan.FromMilliseconds(300), TimeSpan.FromMinutes(1));
@@ -296,6 +299,7 @@ public sealed class DeviceManager : IDisposable
         if (_devices.TryRemove(SystemBatteryWatcher.DeviceId, out _))
         {
             _remainingTimeEstimates.TryRemove(SystemBatteryWatcher.DeviceId, out _);
+            _estimateKeys.TryRemove(SystemBatteryWatcher.DeviceId, out _);
             _tombstoneIds.TryRemove(SystemBatteryWatcher.DeviceId, out _);
             _lowBatteryNotified.TryRemove(SystemBatteryWatcher.DeviceId, out _);
             Log.Info("已关闭本机电量监控，移除系统电量条目");
@@ -441,6 +445,7 @@ public sealed class DeviceManager : IDisposable
     {
         _devices.TryRemove(id, out _);
         _remainingTimeEstimates.TryRemove(id, out _);
+        _estimateKeys.TryRemove(id, out _);
         _tombstoneIds.TryRemove(id, out _);
         _lowBatteryNotified.TryRemove(id, out _);
     }
@@ -810,6 +815,7 @@ public sealed class DeviceManager : IDisposable
         {
             _tombstoneIds.TryRemove(ble.Id, out _);
             _remainingTimeEstimates.TryRemove(ble.Id, out _);
+            _estimateKeys.TryRemove(ble.Id, out _);
             _lowBatteryNotified.TryRemove(ble.Id, out _);
             Log.Info($"蓝牙双通道合并: {incoming.DisplayName}（丢弃 LE 端点）");
             DevicesChanged?.Invoke();
@@ -831,23 +837,42 @@ public sealed class DeviceManager : IDisposable
     {
         try
         {
+            // 开关只管过显示，后台照样每台每分钟扫一遍 90 天历史；关掉就必须一次都不查（CR-79）
+            if (!_settings.RemainingTimeEstimateEnabled)
+            {
+                _estimateKeys.TryRemove(device.Id, out _);   // 重新打开时立刻重算，不留旧值
+                return;
+            }
+
+            // 先判后查：墓碑与无读数设备查了也是 MissingReading
+            if (device.BatteryPercent is not { } percent)
+            {
+                _estimateKeys.TryRemove(device.Id, out _);
+                PublishEstimate(device, new(null, RemainingTimeUnavailableReason.MissingReading), notify);
+                return;
+            }
+
+            var key = (_history.VersionOf(device.Id), percent);
+            if (_estimateKeys.TryGetValue(device.Id, out var priorKey) && priorKey == key) return;
+            _estimateKeys[device.Id] = key;
+
             var now = DateTimeOffset.UtcNow;
-            var samples = _history.Query(device.Id, now - RemainingTimeEstimator.Window, now);
-            var result = device.BatteryPercent is { } percent
-                ? RemainingTimeEstimator.Evaluate(samples, percent, now)
-                : new(null, RemainingTimeUnavailableReason.MissingReading);
-            bool changed = !_remainingTimeEstimates.TryGetValue(device.Id, out var prior) || prior != result;
-            _remainingTimeEstimates[device.Id] = result;
-            if (notify && changed) DeviceUpdated?.Invoke(device);
+            var scan = _history.ScanDischarge(device.Id, now - RemainingTimeEstimator.Window, now);
+            PublishEstimate(device, RemainingTimeEstimator.Evaluate(scan, percent), notify);
         }
         catch (Exception ex)
         {
             Log.Error($"剩余时间估算失败: {device.DisplayName}", ex);
-            var failure = new RemainingTimeEstimateResult(null, RemainingTimeUnavailableReason.InvalidHistory);
-            bool changed = !_remainingTimeEstimates.TryGetValue(device.Id, out var prior) || prior != failure;
-            _remainingTimeEstimates[device.Id] = failure;
-            if (notify && changed) DeviceUpdated?.Invoke(device);
+            PublishEstimate(device, new(null, RemainingTimeUnavailableReason.InvalidHistory), notify);
         }
+    }
+
+    /// <summary>写入估算结果；结果变了才通知 UI（同一轮 N 台设备各发一次会把界面刷爆）。</summary>
+    private void PublishEstimate(DeviceStatus device, RemainingTimeEstimateResult result, bool notify)
+    {
+        bool changed = !_remainingTimeEstimates.TryGetValue(device.Id, out var prior) || prior != result;
+        _remainingTimeEstimates[device.Id] = result;
+        if (notify && changed) DeviceUpdated?.Invoke(device);
     }
 
     /// <summary>低电量提醒的骤降保护阈值（百分点）：降幅超过它先暂缓提醒，等下次读数确认。</summary>

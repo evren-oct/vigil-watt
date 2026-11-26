@@ -2,7 +2,7 @@
 
 > 本文件由 `python scripts/gen-doc-index.py` 生成，不要手改。
 > 新增/移动文档后重跑；`--check` 会在过期时退出码 1。日期取 git 最后提交，未入库文件用文件时间。
-> 共 97 份 Markdown；最后生成：2026-11-25。
+> 共 105 份 Markdown；最后生成：2026-11-26。
 
 ## architecture
 
@@ -30,6 +30,18 @@
 | [ui-style.md](dev/ui-style.md) | 界面视觉规则 | — | 2026-11-12 |
 | [vendor-onboarding-process.md](dev/vendor-onboarding-process.md) | 新厂商接入流程 | — | 2026-11-23 |
 | [vendor-plugin-reference-index.md](dev/vendor-plugin-reference-index.md) | 四大厂商参考实现索引 | — | 2026-11-23 |
+
+## dev/runtime-pitfalls
+
+| 文档 | 标题 | 状态 | 最后提交 |
+|---|---|---|---|
+| [01-hid-ble.md](dev/runtime-pitfalls/01-hid-ble.md) | 运行时坑 · HID / BLE 读取 | — | 2026-11-26 |
+| [02-shell-ui.md](dev/runtime-pitfalls/02-shell-ui.md) | 运行时坑 · 窗口、页面与列表 | — | 2026-11-26 |
+| [03-tray.md](dev/runtime-pitfalls/03-tray.md) | 运行时坑 · 托盘 | — | 2026-11-26 |
+| [04-widget.md](dev/runtime-pitfalls/04-widget.md) | 运行时坑 · 桌面小组件 | — | 2026-11-26 |
+| [05-taskbar-pill.md](dev/runtime-pitfalls/05-taskbar-pill.md) | 运行时坑 · 任务栏电量贴片 | — | 2026-11-26 |
+| [06-runtime-env.md](dev/runtime-pitfalls/06-runtime-env.md) | 运行时坑 · 构建与运行环境 | — | 2026-11-26 |
+| [07-device-state.md](dev/runtime-pitfalls/07-device-state.md) | 运行时坑 · 设备状态与内存 | — | 2026-11-26 |
 
 ## hardware
 
@@ -113,6 +125,12 @@
 | [handoff.md](project/handoff.md) | 会话交接（给下一个 AI / 未来的自己） | — | 2026-11-25 |
 | [pointer-telemetry.md](project/pointer-telemetry.md) | 指针遥测（DPI / 回报率） | — | 2026-11-23 |
 | [release-notes.md](project/release-notes.md) | 更新日志（用户向） | — | 2026-11-25 |
+
+## project/archive
+
+| 文档 | 标题 | 状态 | 最后提交 |
+|---|---|---|---|
+| [changelog-2026-10.md](project/archive/changelog-2026-10.md) | 变更历史归档 · 2026-10 | — | 2026-11-26 |
 
 ## reviews
 

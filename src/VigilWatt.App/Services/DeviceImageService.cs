@@ -4,6 +4,7 @@ using VigilWatt.Core.Media;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -21,8 +22,8 @@ public sealed class DeviceImageService
     {
         var builtInRoot = Path.Combine(AppContext.BaseDirectory, "Assets", "device-images");
         var userRoot = Path.Combine(AppPaths.RootDir, "device-images");
-        _builtIn = new Lazy<DeviceImageCatalog>(() => Load("内置", builtInRoot));
-        _user = new Lazy<DeviceImageCatalog>(() => Load("用户", userRoot));
+        _builtIn = new Lazy<DeviceImageCatalog>(() => Load(Strings.Current.Get("S_09ceea7644"), builtInRoot));
+        _user = new Lazy<DeviceImageCatalog>(() => Load(Strings.Current.Get("S_9ba763ea34"), userRoot));
     }
 
     /// <summary>315 个 manifest 常驻不到 1MB，但启动期没必要读 315 次盘；首次打开详情页时再付。</summary>

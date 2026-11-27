@@ -1,3 +1,5 @@
+using VigilWatt.Core.Localization;
+
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -21,8 +23,8 @@ public static class TaskbarBatteryMode
     /// <summary>设置页副标题用的一句话说明。</summary>
     public static string Describe(string? value) => Normalize(value) switch
     {
-        Lowest => "只显示电量最低的一台，贴片最窄",
-        _ => "每台在线设备一格，按电量从低到高排列",
+        Lowest => UiText.Get("S_562088c9a7", "只显示电量最低的一台，贴片最窄"),
+        _ => UiText.Get("S_1b3ec1f7b0", "每台在线设备一格，按电量从低到高排列"),
     };
 }
 

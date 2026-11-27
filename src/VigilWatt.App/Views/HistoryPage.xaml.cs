@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Views;
 
 /// <summary>
@@ -22,9 +23,12 @@ public sealed partial class HistoryPage : Page
     public HistoryPage()
     {
         InitializeComponent();
+        DataContext = Strings.Current;
         NavigationCacheMode = NavigationCacheMode.Required;
         // 页面被缓存复用、构造函数只跑一次，重查必须挂到 Loaded 上（本页不订阅设备事件）
         Loaded += (_, _) => _ = ReloadAsync();
+        // 行内标签走 x:Bind，不会跟随页面的 DataContext；语言切换后重建列表。
+        Strings.LanguageChanged += () => _ = ReloadAsync();
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await ReloadAsync();
@@ -40,8 +44,8 @@ public sealed partial class HistoryPage : Page
             var (stats, devices) = await Task.Run(() => (history.GetStats(), history.GetDeviceStats()));
 
             SubtitleText.Text = stats.TotalCount == 0
-                ? "暂无历史数据"
-                : $"共 {stats.TotalCount:N0} 条记录 · 覆盖 {stats.DeviceCount} 台设备 · {DateTime.Now:HH:mm:ss} 更新";
+                ? Strings.Current.Get("S_cab590185b")
+                : Strings.Current.Format("S_23c5d64448", stats.TotalCount, stats.DeviceCount, DateTime.Now);
 
             var fileSize = ByteSize.Format(stats.FileBytes);
             int split = fileSize.LastIndexOf(' ');
@@ -103,8 +107,8 @@ public sealed partial class HistoryPage : Page
 
         var selected = _rows.Where(r => r.IsSelected).ToList();
         SelectionText.Text = selected.Count == 0
-            ? "未选中设备"
-            : $"已选 {selected.Count} 台 · 将删除 {selected.Sum(r => r.Count):N0} 条记录";
+            ? Strings.Current.Get("S_7dad8bb8d4")
+            : Strings.Current.Format("S_e1e2b16945", selected.Count, selected.Sum(r => r.Count));
         DeleteSelectedButton.IsEnabled = selected.Count > 0;
     }
 
@@ -151,16 +155,16 @@ public sealed partial class HistoryPage : Page
     {
         int total = rows.Sum(r => r.Count);
         string detail = rows.Count == 1
-            ? $"设备：{rows[0].Name}\n时间范围：{rows[0].RangeText}\n记录数：{rows[0].CountText}"
+            ? Strings.Current.Format("S_69a63ddcff", rows[0].Name, rows[0].RangeText, rows[0].CountText)
             : string.Join("\n", rows.Select(r => $"· {r.Name}（{r.CountText}）"));
 
         var dialog = new ContentDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = $"删除 {total:N0} 条历史记录？",
-            Content = $"{detail}\n\n删除后无法恢复。",
-            PrimaryButtonText = "删除",
-            CloseButtonText = "取消",
+            Title = Strings.Current.Format("S_255ced362c", total),
+            Content = Strings.Current.Format("S_54b8b5f0b1", detail),
+            PrimaryButtonText = Strings.Current.Get("S_3755f56f2f"),
+            CloseButtonText = Strings.Current.Get("S_4d0b4688c7"),
             DefaultButton = ContentDialogButton.Close,
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
@@ -178,9 +182,9 @@ public sealed partial class HistoryPage : Page
             });
 
             ResultBar.Severity = InfoBarSeverity.Success;
-            ResultBar.Title = "已删除";
+            ResultBar.Title = Strings.Current.Get("S_fb5fe1e266");
             ResultBar.Message =
-                $"删除 {deleted:N0} 条记录，释放 {ByteSize.Format(before - after)}，库文件现有 {ByteSize.Format(after)}";
+                Strings.Current.Format("S_df737fec73", deleted, ByteSize.Format(before - after), ByteSize.Format(after));
             ResultBar.IsOpen = true;
             Log.Info($"历史管理：删除 {deleted} 条，库文件 {before} → {after} 字节");
         }
@@ -188,7 +192,7 @@ public sealed partial class HistoryPage : Page
         {
             Log.Error("删除历史失败", ex);
             ResultBar.Severity = InfoBarSeverity.Error;
-            ResultBar.Title = "删除失败";
+            ResultBar.Title = Strings.Current.Get("S_72250c5922");
             ResultBar.Message = ex.Message;
             ResultBar.IsOpen = true;
         }

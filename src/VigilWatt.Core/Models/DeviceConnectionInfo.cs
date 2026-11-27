@@ -1,3 +1,4 @@
+using VigilWatt.Core.Localization;
 namespace VigilWatt.Core.Models;
 
 /// <summary>连接徽标的取色档：UI 只按它选颜色，不在 UI 里重新判断链路。</summary>
@@ -24,10 +25,10 @@ public static class DeviceConnectionInfo
     /// <summary>链路短标签：有线 / 2.4G / 蓝牙 / 未知。</summary>
     public static string Label(ConnectionKind kind) => kind switch
     {
-        ConnectionKind.Wired => "有线",
+        ConnectionKind.Wired => UiText.Get("S_e0f5ebb4b8", "有线"),
         ConnectionKind.Wireless24G => "2.4G",
-        ConnectionKind.Bluetooth => "蓝牙",
-        _ => "未知",
+        ConnectionKind.Bluetooth => UiText.Get("S_c4dc12d3de", "蓝牙"),
+        _ => UiText.Get("S_d9c32a4c3d", "未知"),
     };
 
     /// <summary>
@@ -58,7 +59,7 @@ public static class DeviceConnectionInfo
     /// <summary>列表徽标：在线按链路；离线只标"最后 X"或"离线"，不把历史链路写成当前连接。</summary>
     public static string Badge(TelemetryValue<ConnectionKind> connection, DeviceSource source, bool isOnline)
         => isOnline ? Label(connection, source)
-            : IsKnown(connection) ? $"最后 {Label(connection.Value.GetValueOrDefault())}" : "离线";
+            : IsKnown(connection) ? UiText.Format("S_2c1804c27b", "最后 {0}", Label(connection.Value.GetValueOrDefault())) : UiText.Get("Tray_Offline", "离线");
 
     /// <summary>
     /// 带在线状态的完整描述。离线且无值时不写"最后已知"——没有证据就不该暗示曾经测到过。
@@ -67,8 +68,8 @@ public static class DeviceConnectionInfo
     {
         if (isOnline) return Label(connection, source);
         return IsKnown(connection)
-            ? $"离线 · 最后已知：{Label(connection.Value.GetValueOrDefault())}"
-            : $"离线 · {Label(connection, source)}";
+            ? UiText.Format("S_9cce87cbd4", "离线 · 最后已知：{0}", Label(connection.Value.GetValueOrDefault()))
+            : UiText.Format("S_b38c2806dd", "离线 · {0}", Label(connection, source));
     }
 
     /// <summary>取色档位：未知单独一档，绝不与 2.4G 共用紫色。</summary>
@@ -91,7 +92,7 @@ public static class DeviceConnectionInfo
     private static string Fallback(DeviceSource source)
         => source is DeviceSource.Ble or DeviceSource.BluetoothClassic or DeviceSource.System
             ? DeviceSourceInfo.ShortLabel(source)
-            : "未知";
+            : UiText.Get("S_d9c32a4c3d", "未知");
 
     private static ConnectionTone FallbackTone(DeviceSource source) => source switch
     {

@@ -1,3 +1,5 @@
+using VigilWatt.Core.Localization;
+
 namespace VigilWatt.Core.Capture;
 /// <summary>
 /// 功 能： 把扁平的 HID 接口列表整理成「一台物理设备 + 它的若干接口」，并标出是否已被适配。
@@ -61,10 +63,12 @@ public sealed class CaptureDeviceGroup
             var parts = new List<string>
             {
                 VidPid,
-                $"{Interfaces.Count} 个接口",
-                IsAdapted ? $"已适配（{ClaimedBy}）" : "未适配",
+                UiText.Format("S_cb8aca18f5", "{0} 个接口", Interfaces.Count),
+                IsAdapted
+                    ? UiText.Format("S_7656b7e221", "已适配（{0}）", ClaimedBy)
+                    : UiText.Get("S_e3d46eadfc", "未适配"),
             };
-            if (Interfaces.All(i => i.AccessDenied)) parts.Add("全部打不开");
+            if (Interfaces.All(i => i.AccessDenied)) parts.Add(UiText.Get("S_c38d8b1bfd", "全部打不开"));
             return string.Join(" · ", parts);
         }
     }
@@ -151,18 +155,30 @@ public static class CaptureDeviceCatalog
         var name = ShortInterface(device.InterfaceKey);
         var usage = $"usage 0x{device.UsagePage:X4}/0x{device.Usage:X4}";
         if (device.AccessDenied)
-            return $"{name} · {usage} · 打不开（Win32 {device.OpenError}，系统保护 collection）";
+            return $"{name} · {usage} · "
+                   + UiText.Format("S_354f21b44d", "打不开（Win32 {0}，系统保护 collection）", device.OpenError);
 
-        var channel = device.InputReportLength > 0
-            ? $"有输入通道（in {device.InputReportLength}" +
-              (device.InputReportIds.Count > 0 ? $"，report {Ids(device.InputReportIds)}）" : "）") +
-              (device.InputReportLength > 128 ? "，大缓冲通道通常不自发推送" : "")
-            : device.FeatureReportLength > 0
-                ? $"仅 Feature 通道（feat {device.FeatureReportLength}，report {Ids(device.FeatureReportIds)}）"
-                  + "；多为配置通道，可能没有状态数据"
-                : "无输入 / Feature 通道（被动监听采不到东西）";
+        string channel;
+        if (device.InputReportLength > 0)
+        {
+            channel = UiText.Format("S_586c0bdf09", "有输入通道（in {0}", device.InputReportLength);
+            if (device.InputReportIds.Count > 0) channel += ", report " + Ids(device.InputReportIds);
+            channel += ")";
+            if (device.InputReportLength > 128)
+                channel += UiText.Get("S_4a1f76212a", "，大缓冲通道通常不自发推送");
+        }
+        else if (device.FeatureReportLength > 0)
+        {
+            channel = UiText.Format("S_89fe5bab60", "仅 Feature 通道（feat {0}，report {1}）",
+                          device.FeatureReportLength, Ids(device.FeatureReportIds))
+                      + UiText.Get("S_6dbe83233a", "；多为配置通道，可能没有状态数据");
+        }
+        else
+        {
+            channel = UiText.Get("S_ca61f23c69", "无输入 / Feature 通道（被动监听采不到东西）");
+        }
         // 标准用途页只有键鼠/消费类报文，别让用户以为这里能出电量协议
-        if (!device.IsVendorDefined) channel += "；标准用途页，不会有厂商协议";
+        if (!device.IsVendorDefined) channel += UiText.Get("S_f6a7bbe6a5", "；标准用途页，不会有厂商协议");
         return $"{name} · {usage} · {channel}";
     }
 

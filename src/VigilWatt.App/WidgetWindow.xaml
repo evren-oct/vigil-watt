@@ -2,7 +2,7 @@
     x:Class="VigilWatt.App.WidgetWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="VigilWatt 小组件">
+    Title="VigilWatt">
 
     <!--
       间距常量必须与 WidgetWindow.xaml.cs 的 PadH/PadV/RowGap 一致（本文件的 ChipStack.Spacing 对应 RowGap），

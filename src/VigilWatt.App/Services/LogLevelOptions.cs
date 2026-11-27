@@ -1,5 +1,6 @@
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -12,11 +13,11 @@ public static class LogLevelOptions
     /// <summary>下拉框档位，顺序与展示一致：关闭 → 详细 → 信息 → 警告 → 错误。</summary>
     public static IReadOnlyList<(string Value, string Label)> Choices { get; } = new[]
     {
-        (LogLevelNames.Off, "关闭"),
-        (LogLevelNames.Debug, "详细"),
-        (LogLevelNames.Info, "信息"),
-        (LogLevelNames.Warn, "警告"),
-        (LogLevelNames.Error, "错误"),
+        (LogLevelNames.Off, Strings.Current.Get("S_6c14bd7f6f")),
+        (LogLevelNames.Debug, Strings.Current.Get("S_613f7a44e2")),
+        (LogLevelNames.Info, Strings.Current.Get("S_2da40f4073")),
+        (LogLevelNames.Warn, Strings.Current.Get("S_5521e368d8")),
+        (LogLevelNames.Error, Strings.Current.Get("S_b859c7be75")),
     };
 
     /// <summary>取值 → 中文标签。</summary>
@@ -25,16 +26,16 @@ public static class LogLevelOptions
         var v = LogLevelNames.Normalize(value);
         foreach (var (val, label) in Choices)
             if (val == v) return label;
-        return "信息";
+        return Strings.Current.Get("S_2da40f4073");
     }
 
     /// <summary>设置页副标题：说明当前档位意味着什么（统一带"需重启生效"）。</summary>
     public static string Describe(string? value) => LogLevelNames.Normalize(value) switch
     {
-        LogLevelNames.Off => "不记录任何日志（含错误）。改后需重启应用生效",
-        LogLevelNames.Debug => "记录全部细节，含逐帧转储与接口清单，日志量很大。改后需重启应用生效",
-        LogLevelNames.Warn => "只记录警告与错误。改后需重启应用生效",
-        LogLevelNames.Error => "只记录错误。改后需重启应用生效",
-        _ => "默认档：记录流程里程碑与协议解析结果。改后需重启应用生效",
+        LogLevelNames.Off => Strings.Current.Get("S_a923dc8ff7"),
+        LogLevelNames.Debug => Strings.Current.Get("S_448e2dcd51"),
+        LogLevelNames.Warn => Strings.Current.Get("S_f259d265d3"),
+        LogLevelNames.Error => Strings.Current.Get("S_3797e8cd1f"),
+        _ => Strings.Current.Get("S_7e9baf0ac8"),
     };
 }

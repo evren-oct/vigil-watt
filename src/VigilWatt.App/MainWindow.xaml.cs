@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App;
 /// <summary>
 /// 功 能： 主窗口，在设备、统计、历史、设置和关于之间切换。
@@ -24,6 +25,8 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Window 本身没有 DataContext；绑定要落在根 FrameworkElement 上。
+        Root.DataContext = Strings.Current;
 
         Title = "VigilWatt";
         AppWindow.Title = "VigilWatt";

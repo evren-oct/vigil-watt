@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -80,7 +81,7 @@ internal static class ReleaseNotesView
     {
         return new TextBlock
         {
-            Text = $"本版本（{version}）没有更新说明",
+            Text = Strings.Current.Format("S_30549b4725", version),
             FontSize = 13,
             Foreground = Secondary,
             TextWrapping = TextWrapping.Wrap,

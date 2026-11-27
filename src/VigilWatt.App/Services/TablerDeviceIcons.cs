@@ -6,6 +6,7 @@ using Windows.Foundation;
 using Gdi = System.Drawing;
 using Gdi2 = System.Drawing.Drawing2D;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -189,7 +190,7 @@ internal static class TablerDeviceIcons
             }
             else if (command == '\0')
             {
-                throw new FormatException($"SVG 路径缺少命令 @{i}");
+                throw new FormatException(Strings.Current.Format("S_519b492857", i));
             }
 
             bool relative = char.IsLower(command);
@@ -257,7 +258,7 @@ internal static class TablerDeviceIcons
                     break;
                 }
                 default:
-                    throw new NotSupportedException($"SVG 路径命令 {command} 尚未支持");
+                    throw new NotSupportedException(Strings.Current.Format("S_f439333fd7", command));
             }
         }
 
@@ -299,7 +300,7 @@ internal static class TablerDeviceIcons
             if (i < data.Length && data[i] is '+' or '-') i++;
             while (i < data.Length && char.IsAsciiDigit(data[i])) i++;
         }
-        if (i == start) throw new FormatException($"SVG 路径数字缺失 @{start}");
+        if (i == start) throw new FormatException(Strings.Current.Format("S_571ac97bd8", start));
         return double.Parse(data.AsSpan(start, i - start), NumberStyles.Float, CultureInfo.InvariantCulture);
     }
 

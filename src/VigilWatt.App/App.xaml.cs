@@ -1,5 +1,6 @@
 using System.Threading;
 using Velopack;
+using VigilWatt.App.Localization;
 using VigilWatt.App.Services;
 using VigilWatt.Core.Devices;
 using VigilWatt.Core.Settings;
@@ -8,6 +9,7 @@ using VigilWatt.Core.Utils;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
+using VigilWatt.Core.Localization;
 namespace VigilWatt.App;
 
 /// <summary>应用级服务容器。</summary>
@@ -65,7 +67,7 @@ public sealed class AppServices : IDisposable
 public partial class App : Application
 {
     public static AppServices Services { get; private set; } = null!;
-    private static string _updateStatusMessage = "启动时检查更新";
+    private static string _updateStatusMessage = UiText.Get("S_213f55e5e5", "启动时检查更新");
     public static event Action<string>? UpdateStatusChanged;
     public static string UpdateStatusMessage
     {
@@ -94,6 +96,8 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+        // 文案表单例：XAML 页面通过 DataContext 绑定它，C# 通过 Strings.Current 取文案
+        _ = new Strings();
 
         // 全局异常兜底：写日志便于排错。
         // 熔断（CR-08）：以前一律 e.Handled=true 无限吞掉，应用会"看起来在跑、实际什么都没做"。
@@ -166,7 +170,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            StartupGuard.Fatal("初始化服务与窗口", ex);
+            StartupGuard.Fatal(Strings.Current.Get("S_44542b2183"), ex);
             ShutdownLogging();
             Environment.Exit(1);
         }
@@ -179,13 +183,15 @@ public partial class App : Application
         // 进而没法判断到底卡在哪。先探一次，不行就明说，别让人对着一个哑巴应用猜。
         if (!Log.TryProbeWriter(out var logError))
         {
-            StartupGuard.Warn("VigilWatt 日志不可写",
-                $"无法写入日志文件：\r\n{logError}\r\n\r\n" +
-                "应用会继续运行，但日志、设置和历史记录都可能无法保存。\r\n" +
-                "常见原因：数据目录权限被改、磁盘已满、或被安全软件拦截。");
+            StartupGuard.Warn(Strings.Current.Get("S_c23ebb5b7a"),
+                Strings.Current.Format("S_29812524d6", logError) +
+                Strings.Current.Get("S_0e18b858ed") +
+                Strings.Current.Get("S_5b85f3f010"));
         }
 
         Services = new AppServices();
+        // 语言必须在任何窗口/托盘/贴片创建前定下来：XAML 绑定取的就是 Strings.Current 这张表
+        Strings.Current.Initialize(Services.Settings.Language);
         // 日志级别与按日保留天数：启动时应用（重启生效，不追求热更新）
         Log.MinLevel = LogLevelNames.Parse(Services.Settings.LogLevel);
         Log.RetentionDays = Services.Settings.LogRetentionDays;
@@ -216,6 +222,14 @@ public partial class App : Application
             Services.TaskbarBattery = new TaskbarPillManager();
         }
 
+        // 自绘界面不走 XAML 绑定：语言切换后按各自的重绘入口刷新
+        Strings.LanguageChanged += () =>
+        {
+            Services.Tray.RequestUpdate();
+            Services.TaskbarBattery?.RefreshFromSettings();
+            Services.Widget?.RefreshForLanguage();
+        };
+
         _ = CheckForStartupUpdateAsync();
     }
 
@@ -227,24 +241,24 @@ public partial class App : Application
             _startupUpdateService = updater;
             if (!updater.IsInstalled)
             {
-                UpdateStatusMessage = "当前是未安装的运行副本，无法自动安装更新";
+                UpdateStatusMessage = Strings.Current.Get("S_24da32d0e5");
                 Log.Info("当前运行副本未通过安装器安装，跳过启动更新检查");
                 return;
             }
 
-            UpdateStatusMessage = "正在检查更新…";
+            UpdateStatusMessage = Strings.Current.Get("S_c8bea479ed");
             Log.Info("启动时检查更新（GitHub 优先，失败回退 Gitee）");
             var update = await updater.CheckAsync();
             if (update == null)
             {
-                UpdateStatusMessage = $"已是最新版本（{updater.CurrentVersion}）";
+                UpdateStatusMessage = Strings.Current.Format("S_5ebfb7fe1e", updater.CurrentVersion);
                 Log.Info($"{updater.SourceName} 更新检查完成，当前已是最新版本 {updater.CurrentVersion}");
                 return;
             }
 
             _pendingStartupUpdate = update;
             var version = update.TargetFullRelease.Version.ToString();
-            UpdateStatusMessage = $"发现新版本 {version}";
+            UpdateStatusMessage = Strings.Current.Format("S_195a436a3a", version);
             Log.Info($"{updater.SourceName} 发现新版本 {version}");
             if (Services.Settings.StartMinimized)
             {
@@ -257,7 +271,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            UpdateStatusMessage = "自动检查失败：" + ex.Message;
+            UpdateStatusMessage = Strings.Current.Get("S_ff2c202cdc") + ex.Message;
             Log.Warn("启动时检查更新失败: " + ex.Message);
         }
     }
@@ -305,9 +319,9 @@ public partial class App : Application
 
             var updater = _startupUpdateService ?? new UpdateService();
             var version = update.TargetFullRelease.Version.ToString();
-            if (!await UpdatePrompt.ShowAsync(updater, update, root.XamlRoot, "稍后"))
+            if (!await UpdatePrompt.ShowAsync(updater, update, root.XamlRoot, Strings.Current.Get("S_479fcc1cc0")))
             {
-                UpdateStatusMessage = $"已选择稍后安装版本 {version}";
+                UpdateStatusMessage = Strings.Current.Format("S_4e3f70279f", version);
                 Log.Info($"用户选择稍后安装版本 {version}");
                 return;
             }
@@ -316,7 +330,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            UpdateStatusMessage = "更新安装失败：" + ex.Message;
+            UpdateStatusMessage = Strings.Current.Get("S_a39977f860") + ex.Message;
             Log.Warn("启动更新安装失败: " + ex.Message);
         }
         finally

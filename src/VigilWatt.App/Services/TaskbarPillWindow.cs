@@ -5,6 +5,7 @@ using VigilWatt.Core.Utils;
 using Gdi = System.Drawing;
 using GdiImaging = System.Drawing.Imaging;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -16,7 +17,7 @@ public sealed class TaskbarPillWindow : IDisposable
 {
     private const string ClassName = "VigilWattTaskbarPill";
     private const string TipClassName = "VigilWattTaskbarPillTip";
-    private const string WindowTitle = "VigilWatt 任务栏电量";
+    private static string WindowTitle => Strings.Current.Get("S_989d915a6b");
     private const int FollowIntervalMs = 1000;
 
     /// <summary>拖动轮询节拍；手停住时退到 <see cref="DragIdleTickMs"/>，见 docs/dev/runtime-pitfalls.md §16.5。</summary>

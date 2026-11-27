@@ -9,11 +9,11 @@
         <!-- 页头：返回是面包屑式链接，右侧只留刷新；标题就是 Hero 里的设备名 -->
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
             <HyperlinkButton x:Name="BackButton" Click="Back_Click" Padding="0"
-                             VerticalAlignment="Center" ToolTipService.ToolTip="返回设备列表（Esc）">
+                             VerticalAlignment="Center" ToolTipService.ToolTip="{Binding S_55ffda672c, Mode=OneWay}">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon Glyph="&#xE72B;" FontSize="14"
                               Foreground="{ThemeResource AppAccentBrush}" />
-                    <TextBlock Text="设备电量" FontSize="15"
+                    <TextBlock Text="{Binding S_25552a2501, Mode=OneWay}" FontSize="15"
                                Foreground="{ThemeResource AppAccentBrush}" />
                 </StackPanel>
                 <HyperlinkButton.KeyboardAccelerators>
@@ -28,7 +28,7 @@
                                   IsActive="False" Visibility="Collapsed" />
                     <FontIcon x:Name="RefreshIcon" FontSize="14" Glyph="&#xE72C;"
                               Foreground="{ThemeResource AppAccentBrush}" />
-                    <TextBlock x:Name="RefreshText" Text="刷新" FontSize="15"
+                    <TextBlock x:Name="RefreshText" Text="{Binding S_38108eaa1d, Mode=OneWay}" FontSize="15"
                                Foreground="{ThemeResource AppAccentBrush}" />
                 </StackPanel>
             </HyperlinkButton>
@@ -60,7 +60,7 @@
                                     Background="#B3000000" Foreground="White" BorderThickness="0"
                                     HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                                     Visibility="Collapsed" Click="AdjustImage_Click"
-                                    ToolTipService.ToolTip="调整产品图">
+                                    ToolTipService.ToolTip="{Binding S_46d44a2671, Mode=OneWay}">
                                 <Button.Resources>
                                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E6000000" />
                                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF000000" />
@@ -87,7 +87,7 @@
                             <Border x:Name="ConnPill" Style="{StaticResource AppPillStyle}">
                                 <StackPanel Orientation="Horizontal" Spacing="2">
                                     <TextBlock x:Name="ConnText" Style="{StaticResource AppPillTextStyle}" />
-                                    <TextBlock x:Name="ConnSuffix" Text="（推断）" FontSize="11"
+                                    <TextBlock x:Name="ConnSuffix" Text="{Binding S_1feb7c9ccc, Mode=OneWay}" FontSize="11"
                                                VerticalAlignment="Center" Visibility="Collapsed" />
                                 </StackPanel>
                             </Border>
@@ -124,13 +124,13 @@
                 <!-- 性能：1~3 个指标并排，单元格由代码按实际项数生成 -->
                 <StackPanel x:Name="MetricsSection" Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="性能" Style="{StaticResource AppSectionTitleStyle}" />
+                        <TextBlock Text="{Binding S_cb1df60765, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" />
                         <!-- 说明常驻在标题右侧，但要有个图标提示"可以悬停" -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="DPI 与回报率都是设备里保存的设置值，不是主机实测的每秒报文数；实测回报率尚未支持。">
+                                    ToolTipService.ToolTip="{Binding S_b5ab541c8b, Mode=OneWay}">
                             <FontIcon Glyph="&#xE946;" FontSize="11" VerticalAlignment="Center"
                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <TextBlock Text="设备当前设置" FontSize="11" VerticalAlignment="Center"
+                            <TextBlock Text="{Binding S_b7307f839e, Mode=OneWay}" FontSize="11" VerticalAlignment="Center"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
                     </Grid>
@@ -140,7 +140,7 @@
 
                 <!-- 连接：链路与体系是两个维度，各占一格 -->
                 <StackPanel Spacing="6">
-                    <TextBlock Text="连接" Style="{StaticResource AppSectionTitleStyle}" />
+                    <TextBlock Text="{Binding S_7328deebb5, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" />
                     <Border Style="{StaticResource AppCardPaddedStyle}">
                         <Grid ColumnSpacing="40" RowSpacing="22">
                             <Grid.ColumnDefinitions>
@@ -153,7 +153,7 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
-                                <TextBlock Text="连接方式" Style="{StaticResource AppFactLabelStyle}" />
+                                <TextBlock Text="{Binding S_999365fe74, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                 <Border x:Name="ConnFactPill" Style="{StaticResource AppPillStyle}"
                                         HorizontalAlignment="Left">
                                     <TextBlock x:Name="ConnFactText" Style="{StaticResource AppPillTextStyle}" />
@@ -161,17 +161,17 @@
                             </StackPanel>
 
                             <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6">
-                                <TextBlock Text="接收器体系" Style="{StaticResource AppFactLabelStyle}" />
+                                <TextBlock Text="{Binding S_774b680950, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                 <TextBlock x:Name="ReceiverFamilyText" Style="{StaticResource AppFactValueStyle}" />
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6">
-                                <TextBlock Text="连接状态" Style="{StaticResource AppFactLabelStyle}" />
+                                <TextBlock Text="{Binding S_b639d60c41, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                 <TextBlock x:Name="LinkStateText" Style="{StaticResource AppFactValueStyle}" />
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
-                                <TextBlock Text="判定依据" Style="{StaticResource AppFactLabelStyle}" />
+                                <TextBlock Text="{Binding S_ac64bf332d, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                 <TextBlock x:Name="LinkBasisText" Style="{StaticResource AppFactValueStyle}" />
                             </StackPanel>
                         </Grid>
@@ -180,7 +180,7 @@
 
                 <!-- 身份与硬件：本体与接收器并排，脚注专门解释两者不是一回事 -->
                 <StackPanel Spacing="6">
-                    <TextBlock Text="身份与硬件" Style="{StaticResource AppSectionTitleStyle}" />
+                    <TextBlock Text="{Binding S_0494361d55, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" />
                     <Border Style="{StaticResource AppCardPaddedStyle}">
                         <StackPanel>
                             <Grid ColumnSpacing="40" RowSpacing="22">
@@ -195,29 +195,29 @@
                                 </Grid.RowDefinitions>
 
                                 <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
-                                    <TextBlock Text="型号" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock Text="{Binding S_0132ce7298, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                     <TextBlock x:Name="ModelText" Style="{StaticResource AppFactValueStyle}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6">
-                                    <TextBlock Text="设备类型" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock Text="{Binding S_47a991d18c, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                     <TextBlock x:Name="KindText" Style="{StaticResource AppFactValueStyle}" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6">
-                                    <TextBlock Text="协议" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock Text="{Binding S_b0c431675b, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                     <TextBlock x:Name="ProtocolText" Style="{StaticResource AppFactValueStyle}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
-                                    <TextBlock Text="设备 ID" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock Text="{Binding S_9a04e46a8d, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                     <TextBlock x:Name="DeviceIdText" Style="{StaticResource AppFactValueStyle}" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Row="2" Grid.Column="0" Spacing="6">
-                                    <TextBlock Text="本体身份" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock Text="{Binding S_cccde45031, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                     <TextBlock x:Name="BodyIdentityText" Style="{StaticResource AppFactValueStyle}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.Column="1" Spacing="6">
-                                    <TextBlock Text="接收器身份" Style="{StaticResource AppFactLabelStyle}" />
+                                    <TextBlock Text="{Binding S_c1fd5ffb03, Mode=OneWay}" Style="{StaticResource AppFactLabelStyle}" />
                                     <TextBlock x:Name="ReceiverIdentityText" Style="{StaticResource AppFactValueStyle}" />
                                 </StackPanel>
                             </Grid>
@@ -230,7 +230,7 @@
                 </StackPanel>
 
                 <!-- 设备刚消失时的兜底：不留空白页 -->
-                <TextBlock x:Name="GoneText" Text="这台设备已不在列表中。" FontSize="13"
+                <TextBlock x:Name="GoneText" Text="{Binding S_0473975c6a, Mode=OneWay}" FontSize="13"
                            Foreground="{ThemeResource TextFillColorTertiaryBrush}" Visibility="Collapsed" />
             </StackPanel>
         </ScrollViewer>

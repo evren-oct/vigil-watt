@@ -8,7 +8,7 @@
         <!-- 标题栏：标题 + 当前上下文副标题 + 刷新 -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
             <StackPanel Grid.Column="0" Spacing="7" VerticalAlignment="Center">
-                <TextBlock Text="历史统计" Style="{StaticResource AppPageTitleStyle}" />
+                <TextBlock Text="{Binding S_c3abd81f53, Mode=OneWay}" Style="{StaticResource AppPageTitleStyle}" />
                 <TextBlock x:Name="SubtitleText" Text="—" Style="{StaticResource AppPageSubtitleStyle}" />
             </StackPanel>
             <HyperlinkButton x:Name="RefreshButton" Grid.Column="1" Click="Refresh_Click"
@@ -18,7 +18,7 @@
                                   IsActive="False" Visibility="Collapsed" />
                     <FontIcon x:Name="RefreshIcon" FontSize="14" Glyph="&#xE72C;"
                               Foreground="{ThemeResource AppAccentBrush}" />
-                    <TextBlock x:Name="RefreshText" Text="刷新" FontSize="15"
+                    <TextBlock x:Name="RefreshText" Text="{Binding S_38108eaa1d, Mode=OneWay}" FontSize="15"
                                Foreground="{ThemeResource AppAccentBrush}" />
                 </StackPanel>
             </HyperlinkButton>
@@ -27,7 +27,7 @@
         <!-- 筛选行：设备下拉 + 时间范围分段控件，不套卡 -->
         <Grid Grid.Row="1" Margin="0,24,0,0" ColumnDefinitions="Auto,*,Auto">
             <ComboBox x:Name="DeviceCombo" MinWidth="260" HorizontalAlignment="Left"
-                      DisplayMemberPath="Name" PlaceholderText="选择设备"
+                      DisplayMemberPath="Name" PlaceholderText="{Binding S_d1f8bd8360, Mode=OneWay}"
                       SelectionChanged="Device_SelectionChanged" />
             <Border Grid.Column="2" Background="{ThemeResource AppSelectorTrackBrush}"
                     CornerRadius="12" Padding="3">
@@ -58,11 +58,11 @@
                     </Style>
                 </Border.Resources>
                 <StackPanel Orientation="Horizontal">
-                    <ToggleButton x:Name="Range24" Content="24 小时" Tag="24" IsChecked="True"
+                    <ToggleButton x:Name="Range24" Content="{Binding S_284b075148, Mode=OneWay}" Tag="24" IsChecked="True"
                                   Style="{StaticResource SegmentedButtonStyle}" Click="Range_Click" />
-                    <ToggleButton x:Name="Range168" Content="7 天" Tag="168"
+                    <ToggleButton x:Name="Range168" Content="{Binding S_e45a81074f, Mode=OneWay}" Tag="168"
                                   Style="{StaticResource SegmentedButtonStyle}" Click="Range_Click" />
-                    <ToggleButton x:Name="Range720" Content="30 天" Tag="720"
+                    <ToggleButton x:Name="Range720" Content="{Binding S_9401eee769, Mode=OneWay}" Tag="720"
                                   Style="{StaticResource SegmentedButtonStyle}" Click="Range_Click" />
                 </StackPanel>
             </Border>
@@ -78,7 +78,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Spacing="4">
-                <TextBlock Text="当前电量" Style="{StaticResource AppKpiLabelStyle}" />
+                <TextBlock Text="{Binding S_7e80fb4374, Mode=OneWay}" Style="{StaticResource AppKpiLabelStyle}" />
                 <TextBlock>
                     <Run x:Name="KpiCurrentNumber" FontSize="22" FontWeight="Bold"
                          Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
@@ -89,7 +89,7 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Spacing="4">
-                <TextBlock Text="区间最高" Style="{StaticResource AppKpiLabelStyle}" />
+                <TextBlock Text="{Binding S_f55c6f2a00, Mode=OneWay}" Style="{StaticResource AppKpiLabelStyle}" />
                 <TextBlock>
                     <Run x:Name="KpiMaxNumber" FontSize="22" FontWeight="Bold"
                          Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
@@ -100,7 +100,7 @@
             </StackPanel>
 
             <StackPanel Grid.Column="2" Spacing="4">
-                <TextBlock Text="区间最低" Style="{StaticResource AppKpiLabelStyle}" />
+                <TextBlock Text="{Binding S_7c6a43ae11, Mode=OneWay}" Style="{StaticResource AppKpiLabelStyle}" />
                 <TextBlock>
                     <Run x:Name="KpiMinNumber" FontSize="22" FontWeight="Bold"
                          Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
@@ -111,7 +111,7 @@
             </StackPanel>
 
             <StackPanel Grid.Column="3" Spacing="4">
-                <TextBlock Text="平均电量" Style="{StaticResource AppKpiLabelStyle}" />
+                <TextBlock Text="{Binding S_d5672f231d, Mode=OneWay}" Style="{StaticResource AppKpiLabelStyle}" />
                 <TextBlock>
                     <Run x:Name="KpiAvgNumber" FontSize="22" FontWeight="Bold"
                          Foreground="{ThemeResource TextFillColorPrimaryBrush}" />

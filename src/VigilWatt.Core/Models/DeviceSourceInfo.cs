@@ -1,3 +1,4 @@
+using VigilWatt.Core.Localization;
 namespace VigilWatt.Core.Models;
 
 /// <summary>
@@ -18,8 +19,8 @@ public static class DeviceSourceInfo
     /// <summary>来源徽标短标签：蓝牙 / 2.4G / 本机。**只有前两者与"本机"能当链路用**，Hid24G 是接入栈。</summary>
     public static string ShortLabel(DeviceSource source) => source switch
     {
-        DeviceSource.Ble or DeviceSource.BluetoothClassic => "蓝牙",
-        DeviceSource.System => "本机",
+        DeviceSource.Ble or DeviceSource.BluetoothClassic => UiText.Get("S_c4dc12d3de", "蓝牙"),
+        DeviceSource.System => UiText.Get("S_8b4c1c5f0c", "本机"),
         _ => "2.4G",
     };
 }

@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -107,7 +108,7 @@ public sealed class TaskbarPillManager : IDisposable
                 if (taskbar != IntPtr.Zero)
                 {
                     target = primary;
-                    NoteOnce($"{target.Value.Label} 没有任务栏，改贴主屏");
+                    NoteOnce(Strings.Current.Format("S_3a69c0f363", target.Value.Label));
                 }
             }
         }

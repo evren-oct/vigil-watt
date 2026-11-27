@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -37,7 +38,7 @@ public static class AutostartService
             using var key = Registry.CurrentUser.CreateSubKey(RunKey);
             if (key == null)
             {
-                error = "无法打开 HKEY_CURRENT_USER 的 Run 键";
+                error = Strings.Current.Get("S_0d3b32cb90");
                 return false;
             }
 

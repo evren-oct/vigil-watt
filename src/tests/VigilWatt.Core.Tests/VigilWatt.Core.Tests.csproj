@@ -50,6 +50,8 @@
     <Compile Include="..\..\VigilWatt.Core\Plugins\Ajazz\AjazzCodec.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\BatteryPluginBase.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\AppSettings.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Localization\AppLanguage.cs" />
+    <Compile Include="..\..\VigilWatt.Core\Localization\UiText.cs" />
     <Compile Include="..\..\VigilWatt.Core\Settings\IgnoredDevice.cs" />
     <Compile Include="..\..\VigilWatt.Core\Devices\DeviceBlocklist.cs" />
     <Compile Include="..\..\VigilWatt.Core\Plugins\IBatteryPlugin.cs" />

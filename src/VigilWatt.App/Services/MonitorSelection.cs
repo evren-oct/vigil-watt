@@ -1,3 +1,5 @@
+using VigilWatt.Core.Localization;
+
 namespace VigilWatt.App.Services;
 
 /// <summary>一块活动显示器的快照：GDI 名、稳定身份、友好名、矩形与是否主屏。</summary>
@@ -37,7 +39,7 @@ public static class MonitorSelection
 
         var fallback = Primary(screens);
         if (fallback is { } f)
-            note = $"配置的屏幕当前不在，临时贴到 {f.Label}";
+            note = UiText.Format("S_d44b4cb920", "配置的屏幕当前不在，临时贴到 {0}", f.Label);
         return fallback;
     }
 
@@ -90,12 +92,12 @@ public static class MonitorSelection
     public static string Describe(MonitorScreen screen)
     {
         string text = $"{screen.Label} · {screen.Bounds.Width}×{screen.Bounds.Height}";
-        return screen.IsPrimary ? text + "（主显示器）" : text;
+        return screen.IsPrimary ? text + UiText.Get("S_24b4dbbd69", "（主显示器）") : text;
     }
 
     /// <summary>GDI 名退化文案：\\.\DISPLAY3 → 显示器 3。</summary>
     public static string FallbackLabel(string gdiName) =>
         gdiName.StartsWith(GdiPrefix, StringComparison.OrdinalIgnoreCase)
-            ? "显示器 " + gdiName[GdiPrefix.Length..].Replace("DISPLAY", "", StringComparison.OrdinalIgnoreCase)
+            ? UiText.Get("S_1ddb737336", "显示器 ") + gdiName[GdiPrefix.Length..].Replace("DISPLAY", "", StringComparison.OrdinalIgnoreCase)
             : gdiName;
 }

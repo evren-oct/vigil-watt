@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Security.Principal;
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -20,8 +21,8 @@ internal static class ProcessIdentity
         try
         {
             using var id = WindowsIdentity.GetCurrent();
-            var text = $"用户={id.Name} 会话={Process.GetCurrentProcess().SessionId} " +
-                       $"完整性={IntegrityLevel(id.Token)}";
+            var text = Strings.Current.Format("S_27d56b5cb8", id.Name, Process.GetCurrentProcess().SessionId) +
+                       Strings.Current.Format("S_b70d8e8742", IntegrityLevel(id.Token));
 
             // 组名翻译在域机上要逐个问 LSASS/AD（二三十个组近 1 秒），只在日志级别降到 Debug 时才算
             if (!Log.IsEnabled(LogLevel.Debug)) return text;
@@ -35,13 +36,13 @@ internal static class ProcessIdentity
                 .Where(n => n.Contains("Sandbox", StringComparison.OrdinalIgnoreCase))
                 .ToArray() ?? Array.Empty<string>();
 
-            var elevated = new WindowsPrincipal(id).IsInRole(WindowsBuiltInRole.Administrator) ? "是" : "否";
-            return text + $" 管理员={elevated} " +
-                          $"沙箱组={(sandbox.Length == 0 ? "无" : string.Join("|", sandbox))}";
+            var elevated = new WindowsPrincipal(id).IsInRole(WindowsBuiltInRole.Administrator) ? Strings.Current.Get("S_30160a21b9") : Strings.Current.Get("S_8bf5c10ad9");
+            return text + Strings.Current.Format("S_73e83b8f20", elevated) +
+                          Strings.Current.Format("S_f7f5db63ad", (sandbox.Length == 0 ? Strings.Current.Get("S_72077749f7") : string.Join("|", sandbox)));
         }
         catch (Exception ex)
         {
-            return "未知（" + ex.GetType().Name + "）";
+            return Strings.Current.Format("S_dc5038d7b7", ex.GetType().Name);
         }
     }
 
@@ -50,12 +51,12 @@ internal static class ProcessIdentity
     {
         int size;
         GetTokenInformation(token, TokenIntegrityLevel, IntPtr.Zero, 0, out size);
-        if (size <= 0) return "未知";
+        if (size <= 0) return Strings.Current.Get("S_d9c32a4c3d");
 
         var buffer = Marshal.AllocHGlobal(size);
         try
         {
-            if (!GetTokenInformation(token, TokenIntegrityLevel, buffer, size, out size)) return "未知";
+            if (!GetTokenInformation(token, TokenIntegrityLevel, buffer, size, out size)) return Strings.Current.Get("S_d9c32a4c3d");
 
             // TOKEN_MANDATORY_LABEL = { SID_AND_ATTRIBUTES { PSID Sid; DWORD Attributes } }
             var sid = Marshal.ReadIntPtr(buffer);

@@ -1,3 +1,4 @@
+using VigilWatt.Core.Localization;
 namespace VigilWatt.Core.Models;
 
 /// <summary>
@@ -9,15 +10,15 @@ public static class DeviceKindInfo
 {
     public static string Label(DeviceKind kind) => kind switch
     {
-        DeviceKind.Mouse => "鼠标",
-        DeviceKind.Keyboard => "键盘",
-        DeviceKind.Headset => "耳机",
-        DeviceKind.Speaker => "音箱",
-        DeviceKind.Gamepad => "手柄",
-        DeviceKind.Computer => "电脑",
-        DeviceKind.Phone => "手机",
-        DeviceKind.Tablet => "平板",
-        DeviceKind.Watch => "手表",
-        _ => "未识别",
+        DeviceKind.Mouse => UiText.Get("S_dec974e26a", "鼠标"),
+        DeviceKind.Keyboard => UiText.Get("S_e2766fb28a", "键盘"),
+        DeviceKind.Headset => UiText.Get("S_d5ca969dc3", "耳机"),
+        DeviceKind.Speaker => UiText.Get("S_049c7adb04", "音箱"),
+        DeviceKind.Gamepad => UiText.Get("S_c1f19102a6", "手柄"),
+        DeviceKind.Computer => UiText.Get("S_ec87a4b867", "电脑"),
+        DeviceKind.Phone => UiText.Get("S_9c01ad0911", "手机"),
+        DeviceKind.Tablet => UiText.Get("S_ca99b45978", "平板"),
+        DeviceKind.Watch => UiText.Get("S_68075dc4ab", "手表"),
+        _ => UiText.Get("S_face982a4a", "未识别"),
     };
 }

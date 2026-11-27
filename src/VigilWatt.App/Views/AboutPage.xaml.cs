@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Views;
 
 /// <summary>
@@ -24,6 +25,7 @@ public sealed partial class AboutPage : Page
     public AboutPage()
     {
         InitializeComponent();
+        DataContext = Strings.Current;
         NavigationCacheMode = NavigationCacheMode.Required;
         Loaded += OnPageLoaded;
         Unloaded += OnPageUnloaded;
@@ -52,7 +54,7 @@ public sealed partial class AboutPage : Page
 
         VersionText.Text = "v" + (GetType().Assembly.GetName().Version?.ToString(3) ?? "—");
         UpdateStatusText.Text = string.IsNullOrEmpty(App.UpdateStatusMessage)
-            ? "检查更新"
+            ? Strings.Current.Get("S_a6df38586d")
             : App.UpdateStatusMessage;
         RenderReleaseNotes();
     }
@@ -87,7 +89,7 @@ public sealed partial class AboutPage : Page
             });
             NotesHost.Children.Add(new TextBlock
             {
-                Text = "更早的版本",
+                Text = Strings.Current.Get("S_e23e6d53fa"),
                 FontSize = 11,
                 FontWeight = Microsoft.UI.Text.FontWeights.Medium,
                 Foreground = Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush,
@@ -131,14 +133,14 @@ public sealed partial class AboutPage : Page
     private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
     {
         CheckUpdateButton.IsEnabled = false;
-        App.UpdateStatusMessage = "正在检查更新…";
+        App.UpdateStatusMessage = Strings.Current.Get("S_c8bea479ed");
         UpdateStatusText.Text = App.UpdateStatusMessage;
         try
         {
             var svc = new UpdateService();
             if (!svc.IsInstalled)
             {
-                App.UpdateStatusMessage = "当前是未安装的运行副本（bin/publish），无法自动更新";
+                App.UpdateStatusMessage = Strings.Current.Get("S_9d61dfefd4");
                 UpdateStatusText.Text = App.UpdateStatusMessage;
                 return;
             }
@@ -147,15 +149,15 @@ public sealed partial class AboutPage : Page
             if (info == null)
             {
                 // 回退到 Gitee 说明 GitHub 那边不通，顺带告诉用户为什么慢了
-                var via = svc.SourceName == "Gitee" ? "（GitHub 不可达，已回退 Gitee）" : "";
-                App.UpdateStatusMessage = $"已是最新版本（{svc.CurrentVersion}）{via}";
+                var via = svc.SourceName == "Gitee" ? Strings.Current.Get("S_9adba325f8") : "";
+                App.UpdateStatusMessage = Strings.Current.Format("S_23f7210d20", svc.CurrentVersion, via);
                 UpdateStatusText.Text = App.UpdateStatusMessage;
                 return;
             }
 
-            if (!await UpdatePrompt.ShowAsync(svc, info, XamlRoot, "取消"))
+            if (!await UpdatePrompt.ShowAsync(svc, info, XamlRoot, Strings.Current.Get("S_4d0b4688c7")))
             {
-                App.UpdateStatusMessage = "已取消更新";
+                App.UpdateStatusMessage = Strings.Current.Get("S_8a2d2a670f");
                 UpdateStatusText.Text = App.UpdateStatusMessage;
                 return;
             }
@@ -165,8 +167,8 @@ public sealed partial class AboutPage : Page
         catch (Exception ex)
         {
             Log.Warn("检查更新失败: " + ex.Message);
-            if (!App.UpdateStatusMessage.StartsWith("更新安装失败", StringComparison.Ordinal))
-                App.UpdateStatusMessage = "检查更新失败：" + ex.Message;
+            if (!App.UpdateStatusMessage.StartsWith(Strings.Current.Get("S_680e3e57e7"), StringComparison.Ordinal))
+                App.UpdateStatusMessage = Strings.Current.Get("S_4c790c1808") + ex.Message;
             UpdateStatusText.Text = App.UpdateStatusMessage;
         }
         finally

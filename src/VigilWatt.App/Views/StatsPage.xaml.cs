@@ -8,6 +8,7 @@ using VigilWatt.Core.Models;
 using VigilWatt.Core.Storage;
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Views;
 /// <summary>
 /// 功 能： 历史统计页。
@@ -34,6 +35,7 @@ public sealed partial class StatsPage : Page
     public StatsPage()
     {
         InitializeComponent();
+        DataContext = Strings.Current;
         NavigationCacheMode = NavigationCacheMode.Required;
         Loaded += OnPageLoaded;
         Unloaded += OnPageUnloaded;
@@ -69,9 +71,9 @@ public sealed partial class StatsPage : Page
 
     private string GetRangeText() => GetSelectedHours() switch
     {
-        168 => "最近 7 天",
-        720 => "最近 30 天",
-        _ => "最近 24 小时",
+        168 => Strings.Current.Get("S_2a0a052cea"),
+        720 => Strings.Current.Get("S_279e4c240d"),
+        _ => Strings.Current.Get("S_eb9f889d6a"),
     };
 
     /// <summary>时间范围切换：三个分段互斥，点谁谁亮。</summary>
@@ -176,14 +178,14 @@ public sealed partial class StatsPage : Page
     {
         if (device is null)
         {
-            SubtitleText.Text = "所选时间范围内暂无设备记录";
+            SubtitleText.Text = Strings.Current.Get("S_1086c184e5");
             ResetKpis();
             return;
         }
 
         if (samples.Count == 0)
         {
-            SubtitleText.Text = $"{device.Name} · {GetRangeText()} · 暂无采样";
+            SubtitleText.Text = Strings.Current.Format("S_e51f2854a3", device.Name, GetRangeText());
             ResetKpis();
             return;
         }
@@ -198,11 +200,11 @@ public sealed partial class StatsPage : Page
         int current = live?.BatteryPercent ?? last.Percent;
         bool charging = (live?.Charging ?? ChargingState.Unknown) is ChargingState.Charging or ChargingState.Full;
 
-        SubtitleText.Text = $"{device.Name} · {GetRangeText()} · {samples.Count} 个采样点";
+        SubtitleText.Text = Strings.Current.Format("S_b22e321271", device.Name, GetRangeText(), samples.Count);
 
         KpiCurrentNumber.Text = current.ToString();
         KpiCurrentNumber.Foreground = new SolidColorBrush(UiPalette.BatteryLevel(current, charging));
-        KpiCurrentSub.Text = $"{(live is not null ? "实时" : "最后记录")} · {last.Timestamp.LocalDateTime:HH:mm}";
+        KpiCurrentSub.Text = Strings.Current.Format("S_938fbc04d9", (live is not null ? Strings.Current.Get("S_bd1ab15a74") : Strings.Current.Get("S_cd36ed4932")), last.Timestamp.LocalDateTime);
 
         KpiMaxNumber.Text = max.Percent.ToString();
         KpiMaxSub.Text = $"{max.Timestamp.LocalDateTime:MM-dd HH:mm}";
@@ -211,7 +213,7 @@ public sealed partial class StatsPage : Page
         KpiMinSub.Text = $"{min.Timestamp.LocalDateTime:MM-dd HH:mm}";
 
         KpiAvgNumber.Text = Math.Round(avg).ToString("0");
-        KpiAvgSub.Text = $"掉电 {max.Percent - min.Percent} 点";
+        KpiAvgSub.Text = Strings.Current.Format("S_3ab0df28e0", max.Percent - min.Percent);
     }
 
     private void ResetKpis()
@@ -266,7 +268,7 @@ public sealed partial class StatsPage : Page
         RefreshRing.IsActive = on;
         RefreshRing.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         RefreshIcon.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
-        RefreshText.Text = on ? "刷新中…" : "刷新";
+        RefreshText.Text = on ? Strings.Current.Get("S_ea0ab1492c") : Strings.Current.Get("S_38108eaa1d");
     }
 
     private static Brush Primary =>

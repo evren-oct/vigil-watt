@@ -15,7 +15,7 @@
         <StackPanel Spacing="0" MaxWidth="900">
 
             <TextBlock Text="VigilWatt" Style="{StaticResource AppPageTitleStyle}" />
-            <TextBlock Text="Windows 看不到 2.4G 外设电量，所以做了这个托盘。"
+            <TextBlock Text="{Binding S_5e6bbc543f, Mode=OneWay}"
                        Margin="0,7,0,0" FontSize="15" TextWrapping="Wrap" MaxWidth="620"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             <TextBlock x:Name="VersionText" Margin="0,4,0,0" FontSize="13"
@@ -24,47 +24,47 @@
             <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,20,0,0">
                 <Border Style="{StaticResource CapPillStyle}"
                         Background="{ThemeResource AppNeutralPillFillBrush}">
-                    <TextBlock Text="蓝牙耳机" FontSize="13" VerticalAlignment="Center"
+                    <TextBlock Text="{Binding S_c165ba296a, Mode=OneWay}" FontSize="13" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </Border>
                 <Border Style="{StaticResource CapPillStyle}"
                         Background="{ThemeResource AppNeutralPillFillBrush}">
-                    <TextBlock Text="2.4G 键鼠手柄" FontSize="13" VerticalAlignment="Center"
+                    <TextBlock Text="{Binding S_58887d70b1, Mode=OneWay}" FontSize="13" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </Border>
                 <Border Style="{StaticResource CapPillStyle}"
                         Background="{ThemeResource AppNeutralPillFillBrush}">
-                    <TextBlock Text="可选的本机电量" FontSize="13" VerticalAlignment="Center"
+                    <TextBlock Text="{Binding S_f9434a557c, Mode=OneWay}" FontSize="13" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </Border>
             </StackPanel>
 
             <!-- 软件更新 -->
-            <TextBlock Text="更新" Style="{StaticResource AppSectionTitleStyle}" Margin="0,24,0,6" />
+            <TextBlock Text="{Binding S_d9db02d07a, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" Margin="0,24,0,6" />
             <Border Style="{StaticResource AppCardStyle}">
                 <StackPanel>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="20,18" MinHeight="64">
                         <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                             <TextBlock x:Name="UpdateStatusText" FontSize="15" />
-                            <TextBlock Text="启动时自动检查 GitHub Release，连不上再回退 Gitee；发现新版本后会先征求确认"
+                            <TextBlock Text="{Binding S_63c3524b0a, Mode=OneWay}"
                                        FontSize="13" TextWrapping="Wrap" MaxWidth="560"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             <ProgressBar x:Name="UpdateProgressBar" Height="4" Margin="0,8,0,0"
                                          Minimum="0" Maximum="100" Visibility="Collapsed" />
                         </StackPanel>
-                        <HyperlinkButton Grid.Column="1" x:Name="CheckUpdateButton" Content="检查"
+                        <HyperlinkButton Grid.Column="1" x:Name="CheckUpdateButton" Content="{Binding S_40ffb34860, Mode=OneWay}"
                                          Padding="0" FontSize="15" VerticalAlignment="Center"
                                          Click="CheckUpdate_Click" />
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="20,18" MinHeight="64">
                         <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                            <TextBlock Text="更新日志" FontSize="15" />
-                            <TextBlock Text="每个版本改了什么，随安装包分发，离线可看"
+                            <TextBlock Text="{Binding S_185368440e, Mode=OneWay}" FontSize="15" />
+                            <TextBlock Text="{Binding S_fdbff9987c, Mode=OneWay}"
                                        FontSize="13" TextWrapping="Wrap"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
-                        <HyperlinkButton Grid.Column="1" Content="在 GitHub 查看"
+                        <HyperlinkButton Grid.Column="1" Content="{Binding S_f5ac314da6, Mode=OneWay}"
                                          Padding="0" FontSize="15" VerticalAlignment="Center"
                                          Click="OpenReleases_Click" />
                     </Grid>
@@ -84,18 +84,18 @@
             </Border>
 
             <!-- 功能简介 -->
-            <TextBlock Text="功能" Style="{StaticResource AppSectionTitleStyle}" Margin="0,24,0,6" />
+            <TextBlock Text="{Binding S_4e1ff3eb77, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" Margin="0,24,0,6" />
             <Border Style="{StaticResource AppCardStyle}">
                 <StackPanel>
                     <StackPanel Padding="20,18" Spacing="2">
-                        <TextBlock Text="剩余时间估算" FontSize="15" />
-                        <TextBlock Text="根据设备近期电量变化估算可用时间；采样不足或近期电量没有下降时，会提示当前原因。"
+                        <TextBlock Text="{Binding S_f72a2d2e3f, Mode=OneWay}" FontSize="15" />
+                        <TextBlock Text="{Binding S_71683c08ba, Mode=OneWay}"
                                    FontSize="13" TextWrapping="Wrap" MaxWidth="620"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
                     <StackPanel Padding="20,0,20,18" Spacing="2">
-                        <TextBlock Text="右键重命名" FontSize="15" />
-                        <TextBlock Text="在设备列表中右键设备，可设置更容易识别的自定义名称和图标。"
+                        <TextBlock Text="{Binding S_caabe86af6, Mode=OneWay}" FontSize="15" />
+                        <TextBlock Text="{Binding S_942a986c1f, Mode=OneWay}"
                                    FontSize="13" TextWrapping="Wrap" MaxWidth="620"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
@@ -103,7 +103,7 @@
             </Border>
 
             <!-- 项目 / 联系 -->
-            <TextBlock Text="项目" Style="{StaticResource AppSectionTitleStyle}" Margin="0,24,0,6" />
+            <TextBlock Text="{Binding S_22336e6b89, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" Margin="0,24,0,6" />
             <Border Style="{StaticResource AppCardStyle}">
                 <StackPanel>
                     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16" Padding="20,18" MinHeight="64">
@@ -112,7 +112,7 @@
                             <TextBlock Text="YGWG-LX / vigil-watt" FontSize="13"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
-                        <HyperlinkButton Grid.Column="1" Content="打开" Padding="0" FontSize="15"
+                        <HyperlinkButton Grid.Column="1" Content="{Binding S_65fc81e161, Mode=OneWay}" Padding="0" FontSize="15"
                                          VerticalAlignment="Center" Click="OpenRepo_Click" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16" Padding="20,18" MinHeight="64">
@@ -121,18 +121,18 @@
                             <TextBlock Text="evren-oct / vigil-watt" FontSize="13"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                         </StackPanel>
-                        <HyperlinkButton Grid.Column="1" Content="打开" Padding="0" FontSize="15"
+                        <HyperlinkButton Grid.Column="1" Content="{Binding S_65fc81e161, Mode=OneWay}" Padding="0" FontSize="15"
                                          VerticalAlignment="Center" Click="OpenGitHub_Click" />
                     </Grid>
                     <StackPanel Padding="20,0,20,18" Spacing="2">
-                        <TextBlock Text="联系" FontSize="15" />
+                        <TextBlock Text="{Binding S_4dd6926e26, Mode=OneWay}" FontSize="15" />
                         <HyperlinkButton Content="xliu-oct@qq.com" Padding="0" FontSize="13"
                                          NavigateUri="mailto:xliu-oct@qq.com" />
                     </StackPanel>
                 </StackPanel>
             </Border>
 
-            <TextBlock Text="MIT License · 本项目只读取设备状态，不修改任何设备配置"
+            <TextBlock Text="{Binding S_84862e6d50, Mode=OneWay}"
                        Margin="0,40,0,0" FontSize="11"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
         </StackPanel>

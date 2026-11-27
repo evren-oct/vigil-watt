@@ -16,7 +16,7 @@
         <Grid x:Name="AppTitleBar" Grid.Row="0" ColumnDefinitions="216,*">
             <StackPanel Grid.Column="0" Margin="22,0,0,0" VerticalAlignment="Center" Spacing="1">
                 <TextBlock Text="VigilWatt" FontSize="13" FontWeight="Bold" />
-                <TextBlock Text="无线设备电量监控" FontSize="11"
+                <TextBlock Text="{Binding S_d40cf2df84, Mode=OneWay}" FontSize="11"
                            Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
             </StackPanel>
         </Grid>
@@ -72,23 +72,23 @@
             </muxc:NavigationView.Resources>
 
             <muxc:NavigationView.MenuItems>
-                <muxc:NavigationViewItemHeader Content="监控" />
-                <muxc:NavigationViewItem Content="设备电量" Tag="devices" IsSelected="True">
+                <muxc:NavigationViewItemHeader Content="{Binding S_c87cbd5fc8, Mode=OneWay}" />
+                <muxc:NavigationViewItem Content="{Binding S_25552a2501, Mode=OneWay}" Tag="devices" IsSelected="True">
                     <muxc:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEA34;" FontFamily="{StaticResource TablerIconFont}" FontSize="18" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem Content="历史统计" Tag="stats">
+                <muxc:NavigationViewItem Content="{Binding S_c3abd81f53, Mode=OneWay}" Tag="stats">
                     <muxc:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEA59;" FontFamily="{StaticResource TablerIconFont}" FontSize="18" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem Content="历史管理" Tag="history">
+                <muxc:NavigationViewItem Content="{Binding S_70a2b88e7c, Mode=OneWay}" Tag="history">
                     <muxc:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEA88;" FontFamily="{StaticResource TablerIconFont}" FontSize="18" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem Content="设备诊断" Tag="capture">
+                <muxc:NavigationViewItem Content="{Binding S_7e2e1f2b8f, Mode=OneWay}" Tag="capture">
                     <muxc:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xED23;" FontFamily="{StaticResource TablerIconFont}" FontSize="18" />
                     </muxc:NavigationViewItem.Icon>
@@ -97,13 +97,13 @@
             </muxc:NavigationView.MenuItems>
 
             <muxc:NavigationView.FooterMenuItems>
-                <muxc:NavigationViewItemHeader Content="系统" />
-                <muxc:NavigationViewItem Content="设置" Tag="settings">
+                <muxc:NavigationViewItemHeader Content="{Binding S_1a1f6dff78, Mode=OneWay}" />
+                <muxc:NavigationViewItem Content="{Binding Settings_Title, Mode=OneWay}" Tag="settings">
                     <muxc:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEA03;" FontFamily="{StaticResource TablerIconFont}" FontSize="18" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem Content="关于" Tag="about">
+                <muxc:NavigationViewItem Content="{Binding S_bed172efc9, Mode=OneWay}" Tag="about">
                     <muxc:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xEAC5;" FontFamily="{StaticResource TablerIconFont}" FontSize="18" />
                     </muxc:NavigationViewItem.Icon>

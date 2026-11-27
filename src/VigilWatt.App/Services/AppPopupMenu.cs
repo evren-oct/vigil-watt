@@ -1,5 +1,6 @@
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -26,17 +27,17 @@ internal static class AppPopupMenu
             if (lockPosition.HasValue)
             {
                 uint flags = Native.MF_STRING | (lockPosition.Value ? Native.MF_CHECKED : 0);
-                Native.AppendMenuW(menu, flags, (IntPtr)IdLock, "锁定位置");
+                Native.AppendMenuW(menu, flags, (IntPtr)IdLock, Strings.Current.Get("S_0a541a715a"));
                 Native.AppendMenuW(menu, Native.MF_SEPARATOR, IntPtr.Zero, null);
             }
-            Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdOpen, "打开主窗口");
+            Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdOpen, Strings.Current.Get("Tray_OpenMain"));
             Native.AppendMenuW(menu, Native.MF_SEPARATOR, IntPtr.Zero, null);
-            Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdExit, "退出");
+            Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdExit, Strings.Current.Get("Tray_Exit"));
 
             // owner 必须是前台窗口，否则点菜单外不关闭。贴片的 WS_EX_NOACTIVATE 只挡"鼠标点击激活"，
             // 显式 SetForegroundWindow 仍有效；真失败时菜单会关不干净，记一条日志便于排查。
             if (Native.SetForegroundWindow(owner)) Log.ResetOnce(ForegroundKey);
-            else Log.Once(LogLevel.Warn, ForegroundKey, "右键菜单：SetForegroundWindow 失败，点菜单外可能不关闭");
+            else Log.Once(LogLevel.Warn, ForegroundKey, Strings.Current.Get("S_f11242b771"));
 
             var cmd = (uint)Native.TrackPopupMenuEx(menu,
                 Native.TPM_RETURNCMD | Native.TPM_RIGHTBUTTON, x, y, owner, IntPtr.Zero);

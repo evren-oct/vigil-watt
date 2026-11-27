@@ -83,11 +83,4 @@
     <ProjectReference Include="..\VigilWatt.Core\VigilWatt.Core.csproj" />
   </ItemGroup>
 
-  <!-- 工作区目录带 Low 完整性标签（沙箱标记），重建的 exe 会继承它 → 进程变 Low IL：
-       写不了 %LOCALAPPDATA% 与 HKCU\Run、Shell_NotifyIcon 失败、托盘与贴片全废。
-       每次构建都要显式提回 Medium，否则"改完还是崩"会反复出现。见 runtime-pitfalls.md §20。 -->
-  <Target Name="RestoreExeIntegrityLevel" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <Exec Command="icacls &quot;$(TargetDir)$(AssemblyName).exe&quot; /setintegritylevel Medium" ContinueOnError="true" />
-  </Target>
-
 </Project>

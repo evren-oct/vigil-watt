@@ -241,15 +241,4 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <!-- 工作区目录带 Low 完整性标签，NuGet 拷出的 testhost.exe 会继承它；testhost 启动后要
-       OpenProcess 父进程，Low IL 会被拒绝。每次构建提回 Medium，见 docs/dev/build.md §0。 -->
-  <Target Name="RestoreTestHostIntegrityLevel" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
-    <Exec Condition="Exists('$(TargetDir)testhost.exe')"
-          Command="icacls &quot;$(TargetDir)testhost.exe&quot; /setintegritylevel Medium"
-          ContinueOnError="true" />
-    <Exec Condition="Exists('$(TargetDir)testhost.x86.exe')"
-          Command="icacls &quot;$(TargetDir)testhost.x86.exe&quot; /setintegritylevel Medium"
-          ContinueOnError="true" />
-  </Target>
-
 </Project>

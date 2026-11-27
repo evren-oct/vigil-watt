@@ -81,17 +81,19 @@ VigilWatt：Windows 无线设备电量监控（WinUI 3 / .NET 8，个人自用�
 
 - 必须用 **.NET 8 SDK**（机器上只有运行时时：`winget install Microsoft.DotNet.SDK.8`）。
 - 构建：`dotnet build VigilWatt.sln -c Debug`
-- **Codex/AI 沙箱内不要构建或跑测试**：沙箱会占住 App 输出目录的 `VigilWatt.Core.dll`（`MSB3027`/`MSB3021`），
-  vstest 也会连不上 testhost。先申请沙箱外执行权限，再原样运行标准命令；不要换 `OutDir`/`BaseOutputPath`、
-  复制产物或其它绕行。见 `docs/dev/build.md` §0。
+- **AI 不要自己构建或跑测试，直接把命令原文交给用户**（2026-11-27 用户定）。用户要编译/运行时，
+  回复里给可复制的标准命令，由用户在自己的终端执行。理由：沙箱内构建会占住 App 输出目录的
+  `VigilWatt.Core.dll`（`MSB3027`/`MSB3021`）、vstest 连不上 testhost；需要提权的操作（`icacls` 等）
+  在 AI 会话里必然失败，反复换工具重试只会浪费时间。不要换 `OutDir`/`BaseOutputPath`、复制产物或其它绕行。
+  见 `docs/dev/build.md` §0。
 - 运行：从 `src\VigilWatt.App\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\` 启动。
   必须用 **sln** 构建（产物在 `bin\x64\...`），直接构建 csproj 的产物在 `bin\...`，不要混用。
 - **Debug 构建的数据目录在 `bin\x64\...\win-x64\data\`**（`AppPaths` 用 `#if DEBUG` 分流，Release 才用
   `%LOCALAPPDATA%\VigilWatt`），所以直接从 `bin` 双击就能跑，不碰用户目录、也不与正式版抢配置。
-- **exe 必须保持 Medium 完整性级别**：工作区目录带 `Low` 标签，重建的 exe 会继承它，进程变 Low IL 后
-  写不进 `%LOCALAPPDATA%`/`HKCU\Run`、`Shell_NotifyIcon` 失败（没托盘、贴片跑到原点）。csproj 的
-  `RestoreExeIntegrityLevel` 已在 Debug 构建后自动 `icacls /setintegritylevel Medium`；手工验证用
-  `icacls <exe> | findstr Mandatory`。见 `docs/dev/runtime-pitfalls.md` §20。
+- **exe 必须保持 Medium 完整性级别**：若构建目录带 `Low` 标签，重建的 exe 会继承它，进程变 Low IL 后
+  写不进 `%LOCALAPPDATA%`/`HKCU\Run`、`Shell_NotifyIcon` 失败（没托盘、贴片跑到原点）。构建流程**不再自动修**
+  （该自动化在普通终端恒失败，2026-11-27 移除）：先 `icacls <exe> | findstr Mandatory` 确认，再由维护者在
+  **管理员终端**执行 `icacls <exe> /setintegritylevel Medium`。见 `docs/dev/runtime-pitfalls.md` §20。
 - 测试：`dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedName~<类名>"`
 - 发布：`dotnet publish src/VigilWatt.App -c Release -p:Platform=x64 -o publish`
   发布前确认没有实例在运行——exe 被占用会导致 `MSB3027` 构建失败。

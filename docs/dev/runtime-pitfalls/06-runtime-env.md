@@ -51,15 +51,23 @@ icacls "<exe 路径>" | findstr Mandatory
 | `Low` | `Shell_NotifyIcon 失败` ×4、`写入开机自启失败: Access denied` |
 | `Medium` | `进程身份: … 完整性=Medium …` + `托盘图标已创建`，无任何失败 |
 
-**怎么办（已落地，不要临时手工改）**：
+**怎么办**：
 
-1. **构建后自动提回 Medium**：`VigilWatt.App.csproj` 的 `RestoreExeIntegrityLevel` target 在 Debug 构建后
-   执行 `icacls "$(TargetDir)$(AssemblyName).exe" /setintegritylevel Medium`。**每次重建 exe 都会重新继承
-   Low，所以这一步不能省**，否则"改完还是崩"会反复出现；
-2. `scripts\run-app.ps1` 启动前再提一次，兜住"直接跑旧产物"的情况；
+1. **先确认是不是这个坑**：`icacls <exe> | findstr Mandatory`。没有 `Mandatory` 行 = 默认 Medium，
+   症状另有原因，别顺着这条查；
+2. **确认是 Low 后，在管理员终端提回 Medium**：`icacls "<exe 路径>" /setintegritylevel Medium`。
+   **必须管理员上下文**——该操作写 SACL 的强制标签 ACE，需要 `WRITE_OWNER`；普通终端只有
+   `Authenticated Users:(I)(M)`（Modify，不含 `WRITE_OWNER`），必然 `拒绝访问`（退出码 5）。
+   每次重建 exe 都会重新继承 Low，所以每次都要重做；
 3. **不要改工作区目录本身的标签**（`icacls <dir> /setintegritylevel Medium`）：那是沙箱的隔离边界，
    可能被重置，而且会让沙箱侧的进程写不了源码；
-4. 旧办法仍然可用：`run-app.ps1 -Copy` 复制到工作区之外再启动（新目录天然是 Medium）。
+4. 想彻底绕开：`run-app.ps1 -Copy` 复制到工作区之外再启动（新目录天然是 Medium）。
+
+**已移除的自动化（2026-11-27）**：`VigilWatt.App.csproj` / `VigilWatt.Core.Tests.csproj` 的
+`RestoreExeIntegrityLevel` / `RestoreTestHostIntegrityLevel` 两个构建目标，以及 `run-app.ps1` 启动前的
+`icacls` 调用，全部删除。原因：它们在普通终端**从未成功过**（同上 `WRITE_OWNER` 限制），真出事时只留一条
+`MSB3075` 警告而不能修复，是净负收益的噪音；且当前工作区路径（`D:\project-personal\vigil-watt`）全链路
+无强制标签，前提本就不成立。**替代方式就是上面第 2 条：人工、管理员终端、按需执行。**
 
 **被放大的代码 bug（已修，别改回去）**：`AutostartService.SetEnabled` 把异常直接抛给
 `SettingsPage.Save_Click`，于是**每点一次保存就记一次未处理异常**；全局熔断器（`App.xaml.cs`，

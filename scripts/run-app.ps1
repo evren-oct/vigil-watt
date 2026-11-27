@@ -47,9 +47,5 @@ else {
 
 Write-Host "数据目录：$dataDir"
 
-# 工作区目录是 Low 完整性标签，exe 继承后进程变 Low IL：托盘、贴片、注册表全被拒。
-# 构建后 csproj 的 RestoreExeIntegrityLevel 已经提过一次，这里兜住"旧产物直接跑"的情况。
-& icacls $exe /setintegritylevel Medium 2>&1 | Out-Null
-
 Start-Process -FilePath $exe
 Write-Host "已启动：$exe"

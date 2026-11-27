@@ -23,13 +23,16 @@ dotnet test src/tests/VigilWatt.Core.Tests --no-build --filter "FullyQualifiedNa
 ```
 
 **不要**为了绕过沙箱去改 `OutDir` / `BaseOutputPath`、复制测试产物到工作区外、或反复重试。
-测试工程已用 `RestoreTestHostIntegrityLevel` 在每次 Build 后把输出目录里的
-`testhost.exe` / `testhost.x86.exe` 提回 Medium；不要改工作区目录本身的标签，也不要用
-`--arch x64`、`.runsettings` 或改 SDK 目录里的 `testhost.exe.config` 绕，这些都不解决 Low IL。
+不要改工作区目录本身的标签，也不要用 `--arch x64`、`.runsettings` 或改 SDK 目录里的
+`testhost.exe.config` 绕，这些都不解决 Low IL。
+
+`testhost.exe` / exe 若确为 Low IL，在**管理员终端**执行
+`icacls "<文件路径>" /setintegritylevel Medium` 提回；普通终端缺 `WRITE_OWNER`，必然失败（退出码 5）。
+2026-11-27 已删除 `RestoreTestHostIntegrityLevel` / `RestoreExeIntegrityLevel` 两个构建目标，以及
+`run-app.ps1` 里的同类调用——它们依赖提权，普通终端恒失败，只产出警告噪音。见 `runtime-pitfalls.md` §20。
 
 2026-11-19 已验证沙箱外标准命令 `dotnet build VigilWatt.sln -c Debug` 一次成功，**0 警告 0 错误**。
-2026-11-24 已验证：`testhost.exe` 为 Medium 时全量测试 **1982 通过 / 1 跳过 / 0 失败**；
-新增的构建目标在故意把 testhost 降回 Low 后仍能自动恢复为 Medium。
+2026-11-24 已验证：`testhost.exe` 为 Medium 时全量测试 **1982 通过 / 1 跳过 / 0 失败**。
 
 ## 1. XamlCompiler 静默崩溃（最阴的坑）
 

@@ -1,3 +1,4 @@
+using VigilWatt.Core.Localization;
 namespace VigilWatt.Core.Capture;
 /// <summary>
 /// 功 能： 采集功能的枚举与字符串契约（写进 JSONL，改动即破坏历史包兼容）。
@@ -212,8 +213,8 @@ public static class CaptureNames
 
     public static string Label(this CaptureTaskKind value)
         => value == CaptureTaskKind.SupportedDeviceDiagnosis
-            ? "已支持设备诊断（排查读数）"
-            : "未知设备调查（找新协议）";
+            ? UiText.Get("S_afe1cc98fc", "已支持设备诊断（排查读数）")
+            : UiText.Get("S_eb94933afe", "未知设备调查（找新协议）");
 
     public static string ToWire(this CapabilityStatus value) => value switch    {
         CapabilityStatus.Available => "available",
@@ -259,11 +260,11 @@ public static class CaptureNames
     /// <summary>能力状态的用户可见文案（界面与报告共用，避免两处写不一样）。</summary>
     public static string Label(this CapabilityStatus value) => value switch
     {
-        CapabilityStatus.Available => "可用",
-        CapabilityStatus.Unavailable => "不可用",
-        CapabilityStatus.Unverified => "未验证",
-        CapabilityStatus.NeedsPermission => "需要权限",
-        CapabilityStatus.NeedsExtraTool => "需要额外工具",
-        _ => "未知",
+        CapabilityStatus.Available => UiText.Get("S_e91365cf9e", "可用"),
+        CapabilityStatus.Unavailable => UiText.Get("S_beff4a1cd1", "不可用"),
+        CapabilityStatus.Unverified => UiText.Get("S_6815896741", "未验证"),
+        CapabilityStatus.NeedsPermission => UiText.Get("S_a0b02597af", "需要权限"),
+        CapabilityStatus.NeedsExtraTool => UiText.Get("S_72a9c734b4", "需要额外工具"),
+        _ => UiText.Get("S_d9c32a4c3d", "未知"),
     };
 }

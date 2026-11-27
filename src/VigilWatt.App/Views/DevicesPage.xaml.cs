@@ -14,6 +14,7 @@ using Windows.UI;
 using System.Collections.ObjectModel;
 using System.Text;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Views;
 /// <summary>
 /// 功 能： 设备电量列表页。
@@ -35,6 +36,7 @@ public sealed partial class DevicesPage : Page
     public DevicesPage()
     {
         InitializeComponent();
+        DataContext = Strings.Current;
         NavigationCacheMode = NavigationCacheMode.Required;
         DeviceList.ItemsSource = _rows;
         Loaded += OnPageLoaded;
@@ -119,16 +121,16 @@ public sealed partial class DevicesPage : Page
 
         var online = devices.Count(d => d.IsOnline);
         // 带上时间戳：即使设备数没变，用户也能一眼看出这次刷新确实跑过了
-        SummaryText.Text = $"{online} 台在线 / 共 {devices.Count} 台 · {DateTime.Now:HH:mm:ss} 更新";
+        SummaryText.Text = Strings.Current.Format("S_63ec387d75", online, devices.Count, DateTime.Now);
 
         // 不在列表里的设备只能从这里恢复，所以两个入口都要跟着名单实时变
         int blocked = App.Services.Manager.BlockedDevices.Count;
         BlockedBar.Visibility = blocked > 0 ? Visibility.Visible : Visibility.Collapsed;
-        BlockedText.Text = $"已屏蔽 {blocked} 台设备 · 管理";
+        BlockedText.Text = Strings.Current.Format("S_0959df313f", blocked);
 
         int ignored = App.Services.Manager.IgnoredDevices.Count;
         IgnoredBar.Visibility = ignored > 0 ? Visibility.Visible : Visibility.Collapsed;
-        IgnoredText.Text = $"已忽略 {ignored} 台设备 · 管理";
+        IgnoredText.Text = Strings.Current.Format("S_355437cca7", ignored);
 
         HiddenBars.Visibility = blocked > 0 || ignored > 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -137,8 +139,8 @@ public sealed partial class DevicesPage : Page
         EmptyState.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
         // 全被忽略时还说"未发现设备"会把人引向"是不是没扫到"，得指向真正的恢复入口
         EmptyHint.Text = ignored > 0
-            ? $"已忽略 {ignored} 台设备，可在下方恢复"
-            : "连接蓝牙设备或插入 2.4G 接收器，然后点击刷新";
+            ? Strings.Current.Format("S_9040773dbb", ignored)
+            : Strings.Current.Get("S_13f817fd67");
     }
 
     /// <summary>把 _rows 对齐到 fresh 的顺序：同实例同位置一律不动，只处理换位与新增（换位才会触发重排动画）。</summary>
@@ -174,11 +176,11 @@ public sealed partial class DevicesPage : Page
         {
             Text = current?.Name ?? device.DisplayName,
             MaxLength = 20,
-            PlaceholderText = "输入设备名称",
+            PlaceholderText = Strings.Current.Get("S_5e9b40fad7"),
         };
         var nameError = new TextBlock
         {
-            Text = "名称不能为空。",
+            Text = Strings.Current.Get("S_8e86429ab7"),
             FontSize = 12,
             Foreground = Application.Current.Resources["AppDangerBrush"] as Brush,
             Visibility = Visibility.Collapsed,
@@ -186,7 +188,7 @@ public sealed partial class DevicesPage : Page
         };
         var nameHint = new TextBlock
         {
-            Text = "中文、英文、数字与常见标点，最多 20 个字。",
+            Text = Strings.Current.Get("S_d152c13691"),
             FontSize = 11,
             Foreground = Application.Current.Resources["TextFillColorTertiaryBrush"] as Brush,
             Margin = new Thickness(0, 6, 0, 0),
@@ -222,12 +224,12 @@ public sealed partial class DevicesPage : Page
             iconGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var options = new (DeviceKind? Value, DeviceKind Preview, string Label)[]
         {
-            (null, automaticKind, "自动"), (DeviceKind.Unknown, DeviceKind.Unknown, "通用"),
-            (DeviceKind.Mouse, DeviceKind.Mouse, "鼠标"), (DeviceKind.Keyboard, DeviceKind.Keyboard, "键盘"),
-            (DeviceKind.Headset, DeviceKind.Headset, "耳机"), (DeviceKind.Speaker, DeviceKind.Speaker, "音箱"),
-            (DeviceKind.Gamepad, DeviceKind.Gamepad, "手柄"), (DeviceKind.Computer, DeviceKind.Computer, "电脑"),
-            (DeviceKind.Phone, DeviceKind.Phone, "手机"), (DeviceKind.Tablet, DeviceKind.Tablet, "平板"),
-            (DeviceKind.Watch, DeviceKind.Watch, "手表"),
+            (null, automaticKind, Strings.Current.Get("S_4afad87755")), (DeviceKind.Unknown, DeviceKind.Unknown, Strings.Current.Get("S_1a0fdce8f8")),
+            (DeviceKind.Mouse, DeviceKind.Mouse, Strings.Current.Get("S_dec974e26a")), (DeviceKind.Keyboard, DeviceKind.Keyboard, Strings.Current.Get("S_e2766fb28a")),
+            (DeviceKind.Headset, DeviceKind.Headset, Strings.Current.Get("S_d5ca969dc3")), (DeviceKind.Speaker, DeviceKind.Speaker, Strings.Current.Get("S_049c7adb04")),
+            (DeviceKind.Gamepad, DeviceKind.Gamepad, Strings.Current.Get("S_c1f19102a6")), (DeviceKind.Computer, DeviceKind.Computer, Strings.Current.Get("S_ec87a4b867")),
+            (DeviceKind.Phone, DeviceKind.Phone, Strings.Current.Get("S_9c01ad0911")), (DeviceKind.Tablet, DeviceKind.Tablet, Strings.Current.Get("S_ca99b45978")),
+            (DeviceKind.Watch, DeviceKind.Watch, Strings.Current.Get("S_68075dc4ab")),
         };
         // 行数由选项数推出来：以后再加图标只要往 options 里追加，不用动布局
         for (int i = 0; i < (options.Length + iconColumns - 1) / iconColumns; i++)
@@ -323,14 +325,14 @@ public sealed partial class DevicesPage : Page
         };
 
         var body = new StackPanel { MinWidth = 500 };
-        body.Children.Add(SectionLabel("名称", 0));
+        body.Children.Add(SectionLabel(Strings.Current.Get("S_1be7ae4fc2"), 0));
         body.Children.Add(nameBox);
         body.Children.Add(nameHint);
         body.Children.Add(nameError);
-        body.Children.Add(SectionLabel("图标", 20));
+        body.Children.Add(SectionLabel(Strings.Current.Get("S_1f24c1e5aa"), 20));
         body.Children.Add(new TextBlock
         {
-            Text = "列表、小组件和详情页都按这里的选择显示。",
+            Text = Strings.Current.Get("S_03ec7b47a1"),
             FontSize = 11,
             Foreground = GetBrush("TextFillColorTertiaryBrush", primaryBrush),
             Margin = new Thickness(0, 4, 0, 10),
@@ -339,11 +341,11 @@ public sealed partial class DevicesPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "设备外观",
+            Title = Strings.Current.Get("S_7ed1e14c30"),
             Content = body,
-            PrimaryButtonText = "保存",
-            SecondaryButtonText = "恢复默认",
-            CloseButtonText = "取消",
+            PrimaryButtonText = Strings.Current.Get("S_fadf24dbc5"),
+            SecondaryButtonText = Strings.Current.Get("S_a191935bc6"),
+            CloseButtonText = Strings.Current.Get("S_4d0b4688c7"),
             DefaultButton = ContentDialogButton.Primary,
         };
         dialog.PrimaryButtonClick += (_, args) =>
@@ -425,7 +427,7 @@ public sealed partial class DevicesPage : Page
         // 详情放第一项：它是唯一无损的动作，其余三项都会改状态
         var detail = new MenuFlyoutItem
         {
-            Text = "查看详情",
+            Text = Strings.Current.Get("S_faea8c1db9"),
             Tag = model.Id,
         };
         detail.Click += OpenDetail_Click;
@@ -433,7 +435,7 @@ public sealed partial class DevicesPage : Page
 
         var customize = new MenuFlyoutItem
         {
-            Text = "自定义名称和图标",
+            Text = Strings.Current.Get("S_c3e7dc0e04"),
             Tag = model.Id,
         };
         customize.Click += CustomizeDevice_Click;
@@ -442,7 +444,7 @@ public sealed partial class DevicesPage : Page
         // 忽略对在线设备也开放：直连电源的设备永远在线，"删除"那条路永远走不到（issue #52）
         var ignore = new MenuFlyoutItem
         {
-            Text = "忽略此设备（不在列表显示）",
+            Text = Strings.Current.Get("S_9ea78b8a22"),
             Tag = model.Id,
         };
         ignore.Click += IgnoreDevice_Click;
@@ -453,7 +455,7 @@ public sealed partial class DevicesPage : Page
         // 在线设备不给删：删了插件下一轮又报回来，等于什么都没做
         var delete = new MenuFlyoutItem
         {
-            Text = model.IsOnline ? "删除设备（离线后可删）" : "删除设备…",
+            Text = model.IsOnline ? Strings.Current.Get("S_96030ae365") : Strings.Current.Get("S_74df625ee0"),
             Tag = model.Id,
             IsEnabled = !model.IsOnline,
         };
@@ -473,14 +475,14 @@ public sealed partial class DevicesPage : Page
         // 条数要写进确认框：只说"无法恢复"用户没概念，写出多少条才知道代价
         var summary = await Task.Run(() => App.Services.History.GetDeviceSummary(id));
         string historyLine = summary.Count == 0
-            ? "该设备没有历史记录。"
-            : $"将同时删除 {summary.Count:N0} 条历史记录（{summary.First:MM-dd} ~ {summary.Last:MM-dd}），无法恢复。";
+            ? Strings.Current.Get("S_520cb0e751")
+            : Strings.Current.Format("S_0ec2fb5757", summary.Count, summary.First, summary.Last);
 
         var permanent = new CheckBox
         {
             Content = new TextBlock
             {
-                Text = "永久移除此设备（加入黑名单，以后不再扫描；需要恢复时到本页底部「已屏蔽设备」解除）",
+                Text = Strings.Current.Get("S_4a13900d1f"),
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 320,
             },
@@ -494,9 +496,9 @@ public sealed partial class DevicesPage : Page
         var receiver = DeviceConnectionInfo.ReceiverLabel(device.Receiver);
         body.Children.Add(new TextBlock
         {
-            Text = $"连接：{DeviceConnectionInfo.Describe(device.Connection, device.Source, device.IsOnline)}"
+            Text = Strings.Current.Format("S_f196a03a79", DeviceConnectionInfo.Describe(device.Connection, device.Source, device.IsOnline))
                    + (receiver is null ? "" : $"（{receiver}）")
-                   + $" · 最后更新 {device.LastUpdated:MM-dd HH:mm}",
+                   + Strings.Current.Format("S_d4c0b4bb13", device.LastUpdated),
             FontSize = 12,
             Foreground = secondary,
         });
@@ -511,7 +513,7 @@ public sealed partial class DevicesPage : Page
         });
         body.Children.Add(new TextBlock
         {
-            Text = "设备重新连接后会自动回到列表。",
+            Text = Strings.Current.Get("S_00273f9014"),
             FontSize = 12,
             Foreground = secondary,
         });
@@ -520,10 +522,10 @@ public sealed partial class DevicesPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = $"删除「{device.DisplayName}」？",
+            Title = Strings.Current.Format("S_33d2cb8f16", device.DisplayName),
             Content = body,
-            PrimaryButtonText = "删除",
-            CloseButtonText = "取消",
+            PrimaryButtonText = Strings.Current.Get("S_3755f56f2f"),
+            CloseButtonText = Strings.Current.Get("S_4d0b4688c7"),
             DefaultButton = ContentDialogButton.Close,   // 回车不误删
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
@@ -531,12 +533,12 @@ public sealed partial class DevicesPage : Page
         var result = App.Services.Manager.RemoveOfflineDevice(id, permanent.IsChecked == true);
         if (result != DeviceRemoveResult.Removed)
         {
-            await ShowMessageAsync("无法删除", result switch
+            await ShowMessageAsync(Strings.Current.Get("S_d42a1d1d29"), result switch
             {
-                DeviceRemoveResult.Online => "设备已经上线，未删除。",
-                DeviceRemoveResult.NotFound => "设备已不在列表中。",
-                DeviceRemoveResult.SystemDevice => "本机电量不能删除。",
-                _ => "设置写入失败，未删除。",
+                DeviceRemoveResult.Online => Strings.Current.Get("S_c560b9f6d7"),
+                DeviceRemoveResult.NotFound => Strings.Current.Get("S_ac7002789c"),
+                DeviceRemoveResult.SystemDevice => Strings.Current.Get("S_f6c40b9a26"),
+                _ => Strings.Current.Get("S_12ff0d9be8"),
             });
             Refresh();
             return;
@@ -556,7 +558,7 @@ public sealed partial class DevicesPage : Page
         catch (Exception ex)
         {
             Log.Error("删除设备历史失败", ex);
-            await ShowMessageAsync("历史未删净", $"设备已从列表移除，但历史删除失败：{ex.Message}");
+            await ShowMessageAsync(Strings.Current.Get("S_7e0dc51c77"), Strings.Current.Format("S_ed2da4669c", ex.Message));
         }
 
         Refresh();
@@ -568,7 +570,7 @@ public sealed partial class DevicesPage : Page
         // 可逆操作不弹确认框：底部「已忽略 N 台设备」就是恢复入口
         if (!App.Services.Manager.IgnoreDevice(id))
         {
-            _ = ShowMessageAsync("无法忽略", "设置写入失败，未忽略该设备。");
+            _ = ShowMessageAsync(Strings.Current.Get("S_857f377392"), Strings.Current.Get("S_c21b59a67a"));
             return;
         }
         Refresh();
@@ -576,23 +578,23 @@ public sealed partial class DevicesPage : Page
 
     private async void ManageBlocked_Click(object sender, RoutedEventArgs e)
         => await ShowManagedDialogAsync(
-            "已屏蔽的设备",
-            "没有已屏蔽的设备。",
+            Strings.Current.Get("S_132d44038e"),
+            Strings.Current.Get("S_b4a4a85346"),
             () => App.Services.Manager.BlockedDevices
-                .Select(kv => (kv.Id, kv.Info.Name, kv.Info.BlockedAt, "屏蔽于")).ToList(),
-            "解除",
+                .Select(kv => (kv.Id, kv.Info.Name, kv.Info.BlockedAt, Strings.Current.Get("S_fdaa7681f5"))).ToList(),
+            Strings.Current.Get("S_ec7ae06b09"),
             App.Services.Manager.UnblockDevice,
-            "解除失败：设置写入失败，未解除屏蔽。");
+            Strings.Current.Get("S_a864d705c9"));
 
     private async void ManageIgnored_Click(object sender, RoutedEventArgs e)
         => await ShowManagedDialogAsync(
-            "已忽略的设备",
-            "没有已忽略的设备。",
+            Strings.Current.Get("S_9e1fd62c3c"),
+            Strings.Current.Get("S_db0c3faaca"),
             () => App.Services.Manager.IgnoredDevices
-                .Select(kv => (kv.Id, kv.Info.Name, kv.Info.IgnoredAt, "忽略于")).ToList(),
-            "恢复",
+                .Select(kv => (kv.Id, kv.Info.Name, kv.Info.IgnoredAt, Strings.Current.Get("S_11e1a93972"))).ToList(),
+            Strings.Current.Get("S_79748ca1c6"),
             App.Services.Manager.UnignoreDevice,
-            "恢复失败：设置写入失败，未恢复该设备。");
+            Strings.Current.Get("S_1e785c875d"));
 
     /// <summary>「已忽略 / 已屏蔽」共用一套列表：两份名单只差标题、时间前缀和动作，抄两份早晚会改漏一边。</summary>
     private async Task ShowManagedDialogAsync(
@@ -618,7 +620,7 @@ public sealed partial class DevicesPage : Page
             XamlRoot = XamlRoot,
             Title = title,
             Content = root,
-            CloseButtonText = "关闭",
+            CloseButtonText = Strings.Current.Get("S_6c14bd7f6f"),
         };
 
         void Rebuild()
@@ -691,7 +693,7 @@ public sealed partial class DevicesPage : Page
             XamlRoot = XamlRoot,
             Title = title,
             Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
-            CloseButtonText = "知道了",
+            CloseButtonText = Strings.Current.Get("S_cb63c62e50"),
         };
         await dialog.ShowAsync();
     }
@@ -760,6 +762,6 @@ public sealed partial class DevicesPage : Page
         RefreshRing.IsActive = on;
         RefreshRing.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         RefreshIcon.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
-        RefreshText.Text = on ? "刷新中…" : "刷新";
+        RefreshText.Text = on ? Strings.Current.Get("S_ea0ab1492c") : Strings.Current.Get("S_38108eaa1d");
     }
 }

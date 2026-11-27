@@ -1,5 +1,6 @@
 using System.Globalization;
 
+using VigilWatt.Core.Localization;
 namespace VigilWatt.Core.Models;
 
 /// <summary>
@@ -36,7 +37,7 @@ public readonly record struct DetailMetric(
 public static class PointerTelemetryFormatter
 {
     /// <summary>统一未知文案。缺读数与已过期都落在这里，不另造"已过期"字样。</summary>
-    public const string UnknownText = "未获取";
+    public static string UnknownText => UiText.Get("S_8fcd5a384d", "未获取");
 
     private const string Sep = " · ";
 
@@ -105,13 +106,13 @@ public static class PointerTelemetryFormatter
         if (pointer.DpiLevel.HasValue)
         {
             string total = pointer.DpiLevelCount.HasValue ? $"/{Num(pointer.DpiLevelCount)}" : "";
-            return new DetailMetric(PointerMetricKind.Level, "档位",
+            return new DetailMetric(PointerMetricKind.Level, UiText.Get("S_2cfe7e4072", "档位"),
                 $"{Num(pointer.DpiLevel)}{total}{SourceSuffix(pointer.DpiLevel.Source)}", true,
                 Note(pointer.DpiLevel, device.IsOnline, now));
         }
 
         return Supported(device, DeviceCapability.DpiLevelRead)
-            ? new DetailMetric(PointerMetricKind.Level, "档位", UnknownText, false, UnknownNote(device.IsOnline))
+            ? new DetailMetric(PointerMetricKind.Level, UiText.Get("S_2cfe7e4072", "档位"), UnknownText, false, UnknownNote(device.IsOnline))
             : null;
     }
 
@@ -121,20 +122,20 @@ public static class PointerTelemetryFormatter
 
         if (pointer.ReportRateSettingHz.HasValue)
         {
-            return new DetailMetric(PointerMetricKind.Rate, "回报率",
+            return new DetailMetric(PointerMetricKind.Rate, UiText.Get("S_b1b21ff68b", "回报率"),
                 $"{Num(pointer.ReportRateSettingHz)} Hz{SourceSuffix(pointer.ReportRateSettingHz.Source)}", true,
                 Note(pointer.ReportRateSettingHz, device.IsOnline, now));
         }
 
         if (pointer.ReportRateMeasuredHz.HasValue)
         {
-            return new DetailMetric(PointerMetricKind.Rate, "回报率",
+            return new DetailMetric(PointerMetricKind.Rate, UiText.Get("S_b1b21ff68b", "回报率"),
                 $"≈{Num(pointer.ReportRateMeasuredHz)} Hz{SourceSuffix(pointer.ReportRateMeasuredHz.Source)}", true,
                 Note(pointer.ReportRateMeasuredHz, device.IsOnline, now));
         }
 
         return Supported(device, DeviceCapability.RateRead)
-            ? new DetailMetric(PointerMetricKind.Rate, "回报率", UnknownText, false, UnknownNote(device.IsOnline))
+            ? new DetailMetric(PointerMetricKind.Rate, UiText.Get("S_b1b21ff68b", "回报率"), UnknownText, false, UnknownNote(device.IsOnline))
             : null;
     }
 
@@ -143,12 +144,12 @@ public static class PointerTelemetryFormatter
     {
         if (!isOnline)
         {
-            return value.ObservedAt == default ? "最后已知" : $"最后已知 · {value.ObservedAt:MM-dd HH:mm}";
+            return value.ObservedAt == default ? UiText.Get("S_c528bf669f", "最后已知") : UiText.Format("S_d3894f08b2", "最后已知 · {0:MM-dd HH:mm}", value.ObservedAt);
         }
 
         if (value.ObservedAt != default && value.IsStale(now, PointerTelemetry.DefaultMaxAge))
         {
-            return $"已过期 · {value.ObservedAt:MM-dd HH:mm}";
+            return UiText.Format("S_2b9d2838d3", "已过期 · {0:MM-dd HH:mm}", value.ObservedAt);
         }
 
         return value.ObservedAt == default
@@ -158,15 +159,15 @@ public static class PointerTelemetryFormatter
 
     private static string SourceLabel(TelemetrySource source) => source switch
     {
-        TelemetrySource.DeviceReported => "设备上报",
-        TelemetrySource.VendorSdk => "厂商提供",
-        TelemetrySource.Inferred => "推断",
-        TelemetrySource.Estimated => "系统估算",
-        _ => "来源未知",
+        TelemetrySource.DeviceReported => UiText.Get("S_32df337af2", "设备上报"),
+        TelemetrySource.VendorSdk => UiText.Get("S_6c34f09098", "厂商提供"),
+        TelemetrySource.Inferred => UiText.Get("S_4ab7348381", "推断"),
+        TelemetrySource.Estimated => UiText.Get("S_6f39593eff", "系统估算"),
+        _ => UiText.Get("S_a48c5549eb", "来源未知"),
     };
 
     /// <summary>离线时别写"该设备未返回"——那是把"没读到"说成"设备不配合"。</summary>
-    private static string UnknownNote(bool isOnline) => isOnline ? "该设备未返回此项数据" : "设备离线，未读到该值";
+    private static string UnknownNote(bool isOnline) => isOnline ? UiText.Get("S_22f0692088", "该设备未返回此项数据") : UiText.Get("S_4370d05bfd", "设备离线，未读到该值");
 
     private static void Add(List<DetailMetric> metrics, DetailMetric? metric)
     {
@@ -205,11 +206,11 @@ public static class PointerTelemetryFormatter
         {
             string total = Fresh(pointer.DpiLevelCount, now) ? $"/{Num(pointer.DpiLevelCount)}" : "";
             string value = $"{Num(pointer.DpiLevel)}{total}{SourceSuffix(pointer.DpiLevel.Source)}";
-            return new PointerMetric(PointerMetricKind.Level, "档位", value, true);
+            return new PointerMetric(PointerMetricKind.Level, UiText.Get("S_2cfe7e4072", "档位"), value, true);
         }
 
         return Supported(device, DeviceCapability.DpiLevelRead)
-            ? new PointerMetric(PointerMetricKind.Level, "档位", UnknownText, false)
+            ? new PointerMetric(PointerMetricKind.Level, UiText.Get("S_2cfe7e4072", "档位"), UnknownText, false)
             : null;
     }
 
@@ -221,26 +222,26 @@ public static class PointerTelemetryFormatter
         if (Fresh(pointer.ReportRateSettingHz, now))
         {
             string value = $"{Num(pointer.ReportRateSettingHz)} Hz{SourceSuffix(pointer.ReportRateSettingHz.Source)}";
-            return new PointerMetric(PointerMetricKind.Rate, "回报率", value, true);
+            return new PointerMetric(PointerMetricKind.Rate, UiText.Get("S_b1b21ff68b", "回报率"), value, true);
         }
 
         if (Fresh(pointer.ReportRateMeasuredHz, now))
         {
             string value = $"≈{Num(pointer.ReportRateMeasuredHz)} Hz{SourceSuffix(pointer.ReportRateMeasuredHz.Source)}";
-            return new PointerMetric(PointerMetricKind.Rate, "回报率", value, true);
+            return new PointerMetric(PointerMetricKind.Rate, UiText.Get("S_b1b21ff68b", "回报率"), value, true);
         }
 
         return Supported(device, DeviceCapability.RateRead)
-            ? new PointerMetric(PointerMetricKind.Rate, "回报率", UnknownText, false)
+            ? new PointerMetric(PointerMetricKind.Rate, UiText.Get("S_b1b21ff68b", "回报率"), UnknownText, false)
             : null;
     }
 
     /// <summary>只有非设备直报的来源才挂标记：DeviceReported 是默认态，全挂标记会把卡片塞满。</summary>
     private static string SourceSuffix(TelemetrySource source) => source switch
     {
-        TelemetrySource.Estimated => "（估算）",
-        TelemetrySource.Inferred => "（推断）",
-        TelemetrySource.VendorSdk => "（厂商）",
+        TelemetrySource.Estimated => UiText.Get("S_5157e89e22", "（估算）"),
+        TelemetrySource.Inferred => UiText.Get("S_1feb7c9ccc", "（推断）"),
+        TelemetrySource.VendorSdk => UiText.Get("S_bf15bdaaca", "（厂商）"),
         _ => "",
     };
 

@@ -1,5 +1,6 @@
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -27,15 +28,15 @@ internal static class StartupGuard
         try { Log.Error($"启动失败（{stage}）", ex); } catch { /* 兜底不能自己炸 */ }
 
         var text =
-            $"VigilWatt 启动失败（{stage}）。\r\n\r\n" +
+            Strings.Current.Format("S_e558ef0417", stage) +
             $"{ex.GetType().Name}: {ex.Message}\r\n\r\n" +
-            $"日志目录: {AppPaths.RootDir}\\logs\r\n\r\n" +
-            "---- 调用栈 ----\r\n" +
+            Strings.Current.Format("S_5a07ebcbf3", AppPaths.RootDir) +
+            Strings.Current.Get("S_4241f9400c") +
             $"{ex.StackTrace}";
 
         try
         {
-            Native.MessageBoxW(IntPtr.Zero, text, "VigilWatt 启动失败", MB_OK | MB_ICONERROR | MB_TOPMOST);
+            Native.MessageBoxW(IntPtr.Zero, text, Strings.Current.Get("S_dfb0259f8b"), MB_OK | MB_ICONERROR | MB_TOPMOST);
         }
         catch { /* 连弹窗都失败就只剩日志了 */ }
     }

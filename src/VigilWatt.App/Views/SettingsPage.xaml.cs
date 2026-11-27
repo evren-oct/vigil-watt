@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Linq;
 using VigilWatt.App.Controls;
+using VigilWatt.App.Localization;
 using VigilWatt.App.Services;
+using VigilWatt.Core.Localization;
 using VigilWatt.Core.Plugins;
 using VigilWatt.Core.Settings;
 using VigilWatt.Core.Utils;
@@ -30,6 +32,7 @@ public sealed partial class SettingsPage : Page
     private readonly List<SearchEntry> _searchEntries = new();
     /// <summary>弹窗闸：同一时刻只允许一个 ContentDialog，否则 ShowAsync 抛异常、async void 里逃出去会崩进程。</summary>
     private bool _dialogOpen;
+    private bool _syncingLanguage;
     private DispatcherQueueTimer? _highlightTimer;
     private TextBlock? _highlightedTitle;
     private Brush? _previousTitleBrush;
@@ -39,6 +42,7 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
+        DataContext = Strings.Current;
         // 懒缓存：首次进来构造一次、之后复用；启动期不再预热（预热一份 231 元素 + 19 个下拉框要 ~27MB 提交）
         NavigationCacheMode = NavigationCacheMode.Required;
         BuildOptions();
@@ -54,9 +58,9 @@ public sealed partial class SettingsPage : Page
     {
         // 档位按统一范围生成，保证下拉框和取值收敛永远同源
         foreach (var n in WidgetMaxDevicesOptions.Choices)
-            WidgetMaxCombo.Items.Add(new ComboBoxItem { Content = $"{n} 个", Tag = n });
+            WidgetMaxCombo.Items.Add(new ComboBoxItem { Content = Strings.Current.Format("S_aedfa7a813", n), Tag = n });
         foreach (var n in TaskbarBatteryOptions.Choices)
-            TaskbarMaxCombo.Items.Add(new ComboBoxItem { Content = $"{n} 个", Tag = n });
+            TaskbarMaxCombo.Items.Add(new ComboBoxItem { Content = Strings.Current.Format("S_aedfa7a813", n), Tag = n });
         foreach (var (value, label) in LogLevelOptions.Choices)
             LogLevelCombo.Items.Add(new ComboBoxItem { Content = label, Tag = value });
     }
@@ -75,6 +79,9 @@ public sealed partial class SettingsPage : Page
     private void SyncFromSettings()
     {
         var s = App.Services.Settings;
+        _syncingLanguage = true;
+        try { SelectByTag(LanguageCombo, string.IsNullOrEmpty(s.Language) ? "auto" : s.Language); }
+        finally { _syncingLanguage = false; }
         ThresholdBox.Value = s.LowBatteryThreshold;
         RemainingTimeEstimateToggle.IsOn = s.RemainingTimeEstimateEnabled;
         SampleBox.Value = s.SampleIntervalMinutes;
@@ -153,15 +160,15 @@ public sealed partial class SettingsPage : Page
 
         if (names.Count == 0)
         {
-            TaskbarDeviceSummaryText.Text = "暂无已识别的设备";
+            TaskbarDeviceSummaryText.Text = Strings.Current.Get("S_ec8aab679a");
             return;
         }
 
         // 配置里记的名字可能指向已经拔掉的设备：只报台数，不逐个列名字，免得摘要里一堆查无此机
         int selected = App.Services.Settings.TaskbarBatterySelectedDevices?.Count ?? 0;
         TaskbarDeviceSummaryText.Text = selected == 0
-            ? $"{names.Count} 台全部显示"
-            : $"已选 {selected} 台 · 其余不进贴片";
+            ? Strings.Current.Format("S_0161d1b30a", names.Count)
+            : Strings.Current.Format("S_47a40bc22e", selected);
     }
 
     /// <summary>
@@ -219,8 +226,8 @@ public sealed partial class SettingsPage : Page
         {
             int on = chips.Count(c => c.IsChecked == true);
             countText.Text = on == 0
-                ? $"未勾选任何设备，{names.Count} 台全部显示"
-                : $"已选 {on} / {names.Count} 台";
+                ? Strings.Current.Format("S_27bafa2fdb", names.Count)
+                : Strings.Current.Format("S_a34a8a5c27", on, names.Count);
         }
 
         foreach (var chip in chips)
@@ -230,8 +237,8 @@ public sealed partial class SettingsPage : Page
         }
         RefreshCount();
 
-        var selectAll = new HyperlinkButton { Content = "全选", Padding = new Thickness(8, 4, 8, 4) };
-        var selectNone = new HyperlinkButton { Content = "清空", Padding = new Thickness(8, 4, 8, 4) };
+        var selectAll = new HyperlinkButton { Content = Strings.Current.Get("S_3e44b2a933"), Padding = new Thickness(8, 4, 8, 4) };
+        var selectNone = new HyperlinkButton { Content = Strings.Current.Get("S_84fcd70d42"), Padding = new Thickness(8, 4, 8, 4) };
         selectAll.Click += (_, _) => { foreach (var c in chips) c.IsChecked = true; };
         selectNone.Click += (_, _) => { foreach (var c in chips) c.IsChecked = false; };
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
@@ -241,7 +248,7 @@ public sealed partial class SettingsPage : Page
         var body = new StackPanel { Spacing = 10 };
         body.Children.Add(new TextBlock
         {
-            Text = "勾选后只有这些设备会出现在贴片里；一个都不勾 = 全部显示。",
+            Text = Strings.Current.Get("S_7bc446baa9"),
             Style = (Style)Resources["RowDescStyle"],
         });
         body.Children.Add(new ScrollViewer
@@ -255,10 +262,10 @@ public sealed partial class SettingsPage : Page
 
         var dialog = new ContentDialog
         {
-            Title = "选择任务栏显示设备",
+            Title = Strings.Current.Get("S_e8d9a738c8"),
             Content = body,
-            PrimaryButtonText = "确定",
-            CloseButtonText = "取消",
+            PrimaryButtonText = Strings.Current.Get("S_f526c89937"),
+            CloseButtonText = Strings.Current.Get("S_4d0b4688c7"),
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = XamlRoot,
         };
@@ -282,12 +289,23 @@ public sealed partial class SettingsPage : Page
 
         Native.MessageBoxW(
             IntPtr.Zero,
-            $"设置保存失败，无法写入：\r\n{AppPaths.RootDir}\\settings.json\r\n\r\n" +
-            $"错误：{AppSettings.LastSaveError}\r\n\r\n" +
-            "常见原因：目录不可写、磁盘空间不足、或被安全软件拦截。\r\n本次修改不会保留。",
-            "VigilWatt 保存失败",
+            Strings.Current.Format("S_74d7a70b04", AppPaths.RootDir) +
+            Strings.Current.Format("S_f7daeb6fbe", AppSettings.LastSaveError) +
+            Strings.Current.Get("S_3cf26bb1a4"),
+            Strings.Current.Get("S_0d7a3e0984"),
             0x00000010 /* MB_ICONERROR */);
         return false;
+    }
+
+    /// <summary>语言切换即时生效：XAML 绑定由 Strings 刷新，托盘/贴片/小组件由 LanguageChanged 重绘。</summary>
+    private void Language_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncingLanguage || LanguageCombo.SelectedItem is not ComboBoxItem item
+            || item.Tag is not string tag) return;
+        var settings = App.Services.Settings;
+        settings.Language = tag == "auto" ? AppLanguage.Auto : AppLanguage.Normalize(tag);
+        settings.Save();
+        Strings.Current.SetLanguage(tag);
     }
 
     private void Backdrop_Changed(object sender, SelectionChangedEventArgs e)
@@ -346,7 +364,7 @@ public sealed partial class SettingsPage : Page
 
         // 只有一块屏时"跟随主显示器"和它本身同义，不占位
         if (screens.Count > 1)
-            TaskbarScreenCombo.Items.Add(new ComboBoxItem { Content = "跟随主显示器", Tag = MonitorSelection.PrimaryToken });
+            TaskbarScreenCombo.Items.Add(new ComboBoxItem { Content = Strings.Current.Get("S_cd1ffa09b6"), Tag = MonitorSelection.PrimaryToken });
 
         string wanted = string.IsNullOrEmpty(configuredId) ? MonitorSelection.PrimaryToken : configuredId;
         if (wanted.Equals(MonitorSelection.PrimaryToken, StringComparison.OrdinalIgnoreCase) && screens.Count == 1)
@@ -363,7 +381,7 @@ public sealed partial class SettingsPage : Page
 
         // 配置的屏当前不在：仍列出它并标"未连接"，名字用上次记下的——保存时也不会被静默改回主屏
         string name = configuredLabel is { Length: > 0 } ? configuredLabel : NameOfMissingScreen(wanted);
-        var offline = new ComboBoxItem { Content = $"{name}（未连接）", Tag = wanted };
+        var offline = new ComboBoxItem { Content = Strings.Current.Format("S_916f2a70cc", name), Tag = wanted };
         TaskbarScreenCombo.Items.Add(offline);
         _screenLabels[wanted] = name;
         TaskbarScreenCombo.SelectedItem = offline;
@@ -374,7 +392,7 @@ public sealed partial class SettingsPage : Page
     {
         string? name = MonitorCatalog.FriendlyNameOf(id);
         if (!string.IsNullOrEmpty(name)) return name;
-        return id.StartsWith(@"\\.\", StringComparison.Ordinal) ? MonitorSelection.FallbackLabel(id) : "未知显示器";
+        return id.StartsWith(@"\\.\", StringComparison.Ordinal) ? MonitorSelection.FallbackLabel(id) : Strings.Current.Get("S_5270720394");
     }
 
     private void TaskbarScreenRefresh_Click(object sender, RoutedEventArgs e)
@@ -402,9 +420,9 @@ public sealed partial class SettingsPage : Page
             .ToList();
 
         PluginSummaryText.Text = enabled.Count == 0
-            ? $"{plugins.Count} 个品牌，当前都没开启"
-            : $"已开启 {enabled.Count} 个 · {string.Join("、", enabled.Take(3).Select(p => p.DisplayName))}"
-              + (enabled.Count > 3 ? " 等" : string.Empty);
+            ? Strings.Current.Format("S_ec6d86dffa", plugins.Count)
+            : Strings.Current.Format("S_1a6de83725", enabled.Count, string.Join("、", enabled.Take(3).Select(p => p.DisplayName)))
+              + (enabled.Count > 3 ? Strings.Current.Get("S_93ac7be2bc") : string.Empty);
 
         // 品牌行已挪进弹窗，搜索索引抓不到它们；把中英两名挂到行上，搜「北通」仍能定位到这一行
         AutomationProperties.SetName(PluginRowRoot,
@@ -457,8 +475,8 @@ public sealed partial class SettingsPage : Page
             // 初始化阶段字典还没填满，按 Values 数，别按 plugins 逐个查
             int on = toggles.Values.Count(t => t.IsOn);
             countText.Text = visibleCount == plugins.Count
-                ? $"已开启 {on} / {plugins.Count} 个品牌"
-                : $"匹配 {visibleCount} 个 · 已开启 {on} / {plugins.Count}";
+                ? Strings.Current.Format("S_febca6c10e", on, plugins.Count)
+                : Strings.Current.Format("S_b9454b9f7e", visibleCount, on, plugins.Count);
         }
 
         // 行元素只建一次，筛选时重排这批对象而不是重建控件——重建会让开关状态和焦点全部丢掉
@@ -479,7 +497,7 @@ public sealed partial class SettingsPage : Page
             {
                 var empty = new TextBlock
                 {
-                    Text = "没有匹配的品牌",
+                    Text = Strings.Current.Get("S_54d63cc0ba"),
                     Style = (Style)Resources["RowDescStyle"],
                     Margin = new Thickness(0, 12, 0, 12),
                 };
@@ -504,8 +522,8 @@ public sealed partial class SettingsPage : Page
         {
             var toggle = new ToggleSwitch
             {
-                OnContent = "开",
-                OffContent = "关",
+                OnContent = Strings.Current.Get("S_b4217093bc"),
+                OffContent = Strings.Current.Get("S_a3332f1c94"),
                 MinWidth = 0,
                 VerticalAlignment = VerticalAlignment.Center,
             };
@@ -531,11 +549,11 @@ public sealed partial class SettingsPage : Page
             toggle.IsOn = App.Services.Settings.PluginEnabled.TryGetValue(plugin.Name, out var on) && on;
         }
 
-        searchBox.PlaceholderText = "搜索品牌（中文或英文）";
+        searchBox.PlaceholderText = Strings.Current.Get("S_f9a070a5c6");
         searchBox.TextChanged += (_, _) => Relayout(searchBox.Text.Trim());
 
-        var selectAll = new HyperlinkButton { Content = "全开", Padding = new Thickness(8, 4, 8, 4) };
-        var selectNone = new HyperlinkButton { Content = "全关", Padding = new Thickness(8, 4, 8, 4) };
+        var selectAll = new HyperlinkButton { Content = Strings.Current.Get("S_d5179c4192"), Padding = new Thickness(8, 4, 8, 4) };
+        var selectNone = new HyperlinkButton { Content = Strings.Current.Get("S_91b9bc43b2"), Padding = new Thickness(8, 4, 8, 4) };
         selectAll.Click += (_, _) => SetVisible(true);
         selectNone.Click += (_, _) => SetVisible(false);
 
@@ -567,7 +585,7 @@ public sealed partial class SettingsPage : Page
         var body = new StackPanel { Spacing = 10 };
         body.Children.Add(new TextBlock
         {
-            Text = "开启某个品牌即授权它发送工作所需的帧；会写帧的品牌默认关闭。「全开 / 全关」只作用于搜索出来的品牌。",
+            Text = Strings.Current.Get("S_b62adfca1c"),
             Style = (Style)Resources["RowDescStyle"],
         });
         body.Children.Add(toolbar);
@@ -583,10 +601,10 @@ public sealed partial class SettingsPage : Page
 
         var dialog = new ContentDialog
         {
-            Title = "2.4G 设备插件",
+            Title = Strings.Current.Get("S_8b66d101bf"),
             Content = body,
-            PrimaryButtonText = "确定",
-            CloseButtonText = "取消",
+            PrimaryButtonText = Strings.Current.Get("S_f526c89937"),
+            CloseButtonText = Strings.Current.Get("S_4d0b4688c7"),
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = XamlRoot,
         };
@@ -605,15 +623,15 @@ public sealed partial class SettingsPage : Page
     private void UpdateGroupSummaries()
     {
         ReminderSummary.Text =
-            $"{NumberText(ThresholdBox.Value)}% · 估算{(RemainingTimeEstimateToggle.IsOn ? "开" : "关")}";
+            Strings.Current.Format("S_ac30a084bc", NumberText(ThresholdBox.Value), (RemainingTimeEstimateToggle.IsOn ? Strings.Current.Get("S_b4217093bc") : Strings.Current.Get("S_a3332f1c94")));
         DataSummary.Text =
-            $"{NumberText(SampleBox.Value)} 分钟 · {NumberText(RetentionBox.Value)} 天";
+            Strings.Current.Format("S_21f1bad1d9", NumberText(SampleBox.Value), NumberText(RetentionBox.Value));
         WidgetSummary.Text =
-            $"{(WidgetToggle.IsOn ? "开" : "关")} · {SelectedInt(WidgetMaxCombo, WidgetMaxDevicesOptions.Default)} 台";
+            Strings.Current.Format("S_9ab1c1113e", (WidgetToggle.IsOn ? Strings.Current.Get("S_b4217093bc") : Strings.Current.Get("S_a3332f1c94")), SelectedInt(WidgetMaxCombo, WidgetMaxDevicesOptions.Default));
         TaskbarSummary.Text =
-            $"{(TaskbarToggle.IsOn ? "开" : "关")} · {SelectedInt(TaskbarMaxCombo, TaskbarBatteryOptions.Default)} 台";
+            Strings.Current.Format("S_775e6421e2", (TaskbarToggle.IsOn ? Strings.Current.Get("S_b4217093bc") : Strings.Current.Get("S_a3332f1c94")), SelectedInt(TaskbarMaxCombo, TaskbarBatteryOptions.Default));
         LogSummary.Text =
-            $"{SelectedLabel(LogLevelCombo, "信息")} · {NumberText(LogRetentionBox.Value)} 天";
+            Strings.Current.Format("S_5b95ff9028", SelectedLabel(LogLevelCombo, Strings.Current.Get("S_2da40f4073")), NumberText(LogRetentionBox.Value));
     }
 
     private static string NumberText(double value) =>
@@ -983,8 +1001,8 @@ public sealed partial class SettingsPage : Page
 
         // 日志级别不热更新（重启生效），保存后给一句提示，避免用户以为"点了没反应"
         var feedback = autostartError == null
-            ? s.LogLevel == LogLevelNames.Default ? "已保存" : "已保存（日志级别重启后生效）"
-            : "已保存（开机自启未生效）";
+            ? s.LogLevel == LogLevelNames.Default ? Strings.Current.Get("S_cdfab96f75") : Strings.Current.Get("S_fbfadede29")
+            : Strings.Current.Get("S_2e9061c024");
         UpdateGroupSummaries();
         ShowSavedFeedback(feedback);
 
@@ -992,12 +1010,12 @@ public sealed partial class SettingsPage : Page
         {
             Native.MessageBoxW(
                 IntPtr.Zero,
-                "其他设置已保存，但开机自启没能写入注册表，本次不会生效。\r\n\r\n" +
-                $"错误：{autostartError}\r\n\r\n" +
-                "常见原因：进程跑在受限权限下（沙箱 / 安全软件 / 非当前用户配置），" +
-                "此时 HKEY_CURRENT_USER 的 Run 键是只读的。\r\n" +
-                "可以从资源管理器直接双击 VigilWatt.App.exe 再试一次。",
-                "VigilWatt 开机自启未生效",
+                Strings.Current.Get("S_4291e16ff4") +
+                Strings.Current.Format("S_3faff71558", autostartError) +
+                Strings.Current.Get("S_8f4e16bdc5") +
+                Strings.Current.Get("S_96314d25cc") +
+                Strings.Current.Get("S_35ce4a8ffa"),
+                Strings.Current.Get("S_2b6b27b20a"),
                 0x00000030 /* MB_ICONWARNING */);
         }
     }
@@ -1020,10 +1038,10 @@ public sealed partial class SettingsPage : Page
     {
         var dialog = new ContentDialog
         {
-            Title = "清空日志？",
-            Content = "将删除 logs 目录下的全部按日日志（app-日期.log）与 log-error.txt，且不可恢复。",
-            PrimaryButtonText = "清空",
-            CloseButtonText = "取消",
+            Title = Strings.Current.Get("S_18a42772ea"),
+            Content = Strings.Current.Get("S_cc33b14ab3"),
+            PrimaryButtonText = Strings.Current.Get("S_84fcd70d42"),
+            CloseButtonText = Strings.Current.Get("S_4d0b4688c7"),
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = XamlRoot,
         };
@@ -1043,12 +1061,12 @@ public sealed partial class SettingsPage : Page
                 if (File.Exists(err)) File.Delete(err);
             }
             Log.Info("日志已由设置页清空");
-            ShowSavedFeedback("日志已清空");
+            ShowSavedFeedback(Strings.Current.Get("S_6cfd6e9283"));
         }
         catch (Exception ex)
         {
             Log.Warn("清空日志失败: " + ex.Message);
-            ShowSavedFeedback("清空日志失败：" + ex.Message);
+            ShowSavedFeedback(Strings.Current.Get("S_59cfa9a896") + ex.Message);
         }
     }
 

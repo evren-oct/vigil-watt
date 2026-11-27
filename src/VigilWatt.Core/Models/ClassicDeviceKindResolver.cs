@@ -1,3 +1,4 @@
+using VigilWatt.Core.Localization;
 namespace VigilWatt.Core.Models;
 
 /// <summary>
@@ -49,9 +50,9 @@ public static class ClassicDeviceKindResolver
     /// <summary>服务 UUID → 协议描述（<see cref="DeviceStatus.Protocol"/>，UI 副标题会显示）。</summary>
     public static string DescribeProtocol(IReadOnlyCollection<string>? serviceUuids)
     {
-        if (HasAudioService(serviceUuids)) return "经典蓝牙 A2DP/HFP";
-        if (HasService(serviceUuids, "00001124")) return "经典蓝牙 HIDP";
-        return "经典蓝牙";
+        if (HasAudioService(serviceUuids)) return UiText.Get("S_c0cf56b55c", "经典蓝牙 A2DP/HFP");
+        if (HasService(serviceUuids, "00001124")) return UiText.Get("S_d77ac4c1ed", "经典蓝牙 HIDP");
+        return UiText.Get("S_793b7ab444", "经典蓝牙");
     }
 
     /// <summary>Windows 设备类别 → 类型（经典蓝牙读注册表，BLE 读 <c>System.Devices.Aep.Category</c>，两处共用）。

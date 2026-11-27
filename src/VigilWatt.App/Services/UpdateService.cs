@@ -3,6 +3,7 @@ using Velopack;
 using Velopack.Sources;
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -79,7 +80,7 @@ public sealed class UpdateService
         catch (Exception ex)
         {
             throw new InvalidOperationException(
-                $"GitHub 与 Gitee 都不可达（GitHub：{githubError}；Gitee：{ex.Message}）", ex);
+                Strings.Current.Format("S_6537db5fc7", githubError, ex.Message), ex);
         }
     }
 
@@ -116,7 +117,7 @@ public sealed class UpdateService
         {
             // 被放弃的任务还会继续跑，接住它后面的异常，免得变成 UnobservedTaskException
             _ = task.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
-            throw new TimeoutException($"{(int)ProbeTimeout.TotalSeconds} 秒内无响应");
+            throw new TimeoutException(Strings.Current.Format("S_2a17d1c2bb", (int)ProbeTimeout.TotalSeconds));
         }
 
         return await task.ConfigureAwait(false);

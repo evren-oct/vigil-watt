@@ -1,6 +1,7 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Runtime.InteropServices;
+using VigilWatt.App.Localization;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Utils;
 
@@ -214,7 +215,7 @@ public sealed class TrayService : IDisposable
         }
 
         var tip = lowest == null
-            ? "VigilWatt · 暂无在线设备"
+            ? Strings.Current.Get("Tray_NoDevices")
             : $"VigilWatt · {lowest.DisplayName} {lowest.BatteryPercent}%";
         return (bmp.GetHicon(), tip);
     }
@@ -277,7 +278,7 @@ public sealed class TrayService : IDisposable
         try
         {
             uint deviceIndex = 0;
-            Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdOpen, "打开主窗口");
+            Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdOpen, Strings.Current.Get("Tray_OpenMain"));
             Native.AppendMenuW(menu, Native.MF_SEPARATOR, IntPtr.Zero, null);
 
             foreach (var raw in _services.Manager.Devices)
@@ -287,13 +288,13 @@ public sealed class TrayService : IDisposable
                 var text = d.IsOnline
                     ? $"{d.DisplayName}　{DeviceStatusFormatter.PercentText(d.BatteryPercent, "?")}" +
                       (DeviceStatusFormatter.IsCharging(d.Charging) ? " ⚡" : "")
-                    : $"{d.DisplayName}　离线";
+                    : $"{d.DisplayName}　{Strings.Current.Get("Tray_Offline")}";
                 Native.AppendMenuW(menu, Native.MF_STRING | Native.MF_GRAYED,
                     (IntPtr)(IdDeviceBase + deviceIndex), text);
             }
 
             Native.AppendMenuW(menu, Native.MF_SEPARATOR, IntPtr.Zero, null);
-            Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdExit, "退出");
+            Native.AppendMenuW(menu, Native.MF_STRING, (IntPtr)IdExit, Strings.Current.Get("Tray_Exit"));
 
             // TrackPopupMenu 前必须 SetForegroundWindow，否则点击菜单外区域不会关闭
             Native.SetForegroundWindow(_hwnd);
@@ -353,8 +354,9 @@ public sealed class TrayService : IDisposable
                 hWnd = _hwnd,
                 uID = 1,
                 uFlags = Native.NIF_INFO,
-                szInfo = $"{device.DisplayName} 电量仅剩 {device.BatteryPercent}%，请及时充电",
-                szInfoTitle = "电量不足",
+                szInfo = Strings.Current.Format("Tray_LowBatteryBody", device.DisplayName,
+                    device.BatteryPercent?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "?"),
+                szInfoTitle = Strings.Current.Get("Tray_LowBatteryTitle"),
                 dwInfoFlags = Native.NIIF_WARNING,
             };
             Native.Shell_NotifyIconW(Native.NIM_MODIFY, ref data);
@@ -367,20 +369,23 @@ public sealed class TrayService : IDisposable
 
     public void ShowUpdateAvailable(string version)
     {
-        ShowBalloon("发现 VigilWatt 更新",
-            $"版本 {version} 已就绪。打开 VigilWatt 后可选择下载并安装。");
+        ShowBalloon(Strings.Current.Get("Tray_UpdateAvailableTitle"),
+            Strings.Current.Format("Tray_UpdateAvailableBody", version));
     }
 
     public void ShowUpdateDownloading(string version) =>
-        ShowBalloon("正在下载更新", $"正在下载 VigilWatt {version}…");
+        ShowBalloon(Strings.Current.Get("Tray_UpdateDownloadingTitle"),
+            Strings.Current.Format("Tray_UpdateDownloadingBody", version));
 
     public void ShowUpdateDownloadDone(string version) =>
-        ShowBalloon("下载完成", $"VigilWatt {version} 下载完成，即将重启安装");
+        ShowBalloon(Strings.Current.Get("Tray_UpdateDownloadDoneTitle"),
+            Strings.Current.Format("Tray_UpdateDownloadDoneBody", version));
 
     public void ShowUpdateDownloadFailed(string detail)
     {
-        var msg = string.IsNullOrWhiteSpace(detail) ? "请稍后重试或到设置页查看原因。" : TrimBalloon(detail);
-        ShowBalloon("更新下载失败", msg);
+        var msg = string.IsNullOrWhiteSpace(detail)
+            ? Strings.Current.Get("Tray_UpdateDownloadFailedRetry") : TrimBalloon(detail);
+        ShowBalloon(Strings.Current.Get("Tray_UpdateDownloadFailedTitle"), msg);
     }
 
     private void ShowBalloon(string title, string body)

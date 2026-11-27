@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.ApplicationModel.DataTransfer;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Views;
 /// <summary>
 /// 功 能： 设备诊断页：选任务/设备/接口 → 预检 → 只读采集 → 出报告，全程本地、不自动切换采集方式。
@@ -50,6 +51,7 @@ public sealed partial class CapturePage : Page
     public CapturePage()
     {
         InitializeComponent();
+        DataContext = Strings.Current;
         NavigationCacheMode = NavigationCacheMode.Required;
         // 醒目但不刺眼：琥珀底 + 黑字，深浅主题都读得清（UiPalette.Mid 是项目自己的色板）
         if (WindowHint != null) WindowHint.Background = UiPalette.Brush(UiPalette.Mid);
@@ -109,7 +111,7 @@ public sealed partial class CapturePage : Page
         if (DeviceList == null || DeviceHint == null) return;
         if (_active is { State: CaptureSessionState.Running or CaptureSessionState.Paused })
         {
-            ShowMessage("采集进行中，先停止再刷新设备。", InfoBarSeverity.Warning);
+            ShowMessage(Strings.Current.Get("S_0d23ee2a1d"), InfoBarSeverity.Warning);
             return;
         }
 
@@ -126,7 +128,7 @@ public sealed partial class CapturePage : Page
         catch (Exception ex)
         {
             Log.Warn($"采集页枚举设备失败: {ex.Message}");
-            ShowMessage($"枚举设备失败：{ex.Message}", InfoBarSeverity.Error);
+            ShowMessage(Strings.Current.Format("S_e59c839cf9", ex.Message), InfoBarSeverity.Error);
         }
     }
 
@@ -140,19 +142,19 @@ public sealed partial class CapturePage : Page
         ClearSelection();
 
         TaskHint.Text = CurrentTask == CaptureTaskKind.SupportedDeviceDiagnosis
-            ? "只列出 VigilWatt 插件正在认领的设备，用来排查「读不到 / 读数不对」。采集期间插件仍在轮询同一接口。"
-            : "列出系统里全部 HID 设备，未适配的排在前面。采集方式固定为 USB/HID，程序不会自动改用蓝牙或厂商软件。";
+            ? Strings.Current.Get("S_cac82fa320")
+            : Strings.Current.Get("S_eebe07616e");
 
         if (groups.Count == 0)
         {
-            DeviceHint.Text = "没有枚举到 HID 接口。确认设备已插好，或换个 USB 口再刷新。";
+            DeviceHint.Text = Strings.Current.Get("S_ae468ceee3");
             return;
         }
 
         DeviceHint.Text = CurrentTask == CaptureTaskKind.SupportedDeviceDiagnosis && filtered.Count == 0
-            ? "没有插件正在认领任何接口：可能插件都关着，或设备没插。改选「未知设备调查」可以看到全部设备。"
-            : $"共 {groups.Count} 台设备、{groups.Sum(g => g.Interfaces.Count)} 个接口，当前显示 {filtered.Count} 台。"
-              + "选中一台后，到第 2 步挑接口。";
+            ? Strings.Current.Get("S_380b91a527")
+            : Strings.Current.Format("S_9fa307a442", groups.Count, groups.Sum(g => g.Interfaces.Count), filtered.Count)
+              + Strings.Current.Get("S_aa4531ff39");
     }
 
     private void DeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -169,7 +171,7 @@ public sealed partial class CapturePage : Page
         var interfaces = row.Group.Interfaces.Select(device => new CaptureInterfaceRow
         {
             Title = CaptureDeviceCatalog.ShortInterface(device.InterfaceKey)
-                    + (ReferenceEquals(device, recommended) ? "（建议先试）" : ""),
+                    + (ReferenceEquals(device, recommended) ? Strings.Current.Get("S_ed44097716") : ""),
             Subtitle = CaptureDeviceCatalog.DescribeInterface(device),
             IsRecommended = ReferenceEquals(device, recommended),
             Info = device,
@@ -184,7 +186,7 @@ public sealed partial class CapturePage : Page
             _selected = null;
             ProbeButton.IsEnabled = false;
             StartButton.IsEnabled = false;
-            InterfaceHint.Text = "这台设备没有可打开的接口（全部被系统保护）。换一台设备试试。";
+            InterfaceHint.Text = Strings.Current.Get("S_88e482df25");
         }
     }
 
@@ -216,25 +218,25 @@ public sealed partial class CapturePage : Page
     private static string DescribeInterfaceHint(CaptureDeviceInfo device)
     {
         if (device.AccessDenied)
-            return "这个接口打不开（系统保护 collection），采不到报文。改选同一台设备的厂商定义接口。";
+            return Strings.Current.Get("S_c50c4cd4b8");
         if (!device.IsVendorDefined)
         {
             var kind = device.UsagePage switch
             {
-                0x000C => "消费类（媒体键）",
-                0x0001 => "键鼠",
-                0x000D => "数字化仪",
-                _ => "标准 HID",
+                0x000C => Strings.Current.Get("S_d8f7010598"),
+                0x0001 => Strings.Current.Get("S_f0ec6f2199"),
+                0x000D => Strings.Current.Get("S_b0b94daeed"),
+                _ => Strings.Current.Get("S_c1cd80bc57"),
             };
-            return $"这个接口是标准 HID 用途页（{kind}），只能读到标准输入报文，不会出现厂商电量协议。"
-                   + "如果这台设备在系统里没有 0xFF00 段的厂商接口，就说明它不通过 HID 暴露状态数据。";
+            return Strings.Current.Format("S_7502174118", kind)
+                   + Strings.Current.Get("S_da7d89ff47");
         }
         if (device.InputReportLength > 0)
-            return "这个接口有输入通道，被动监听就能采到报文。下一步执行预检。";
+            return Strings.Current.Get("S_cde87ad479");
         if (device.FeatureReportLength > 0)
-            return "这个接口只有 Feature 通道：要勾选「读取 Feature report」并选一个 report ID，否则不会有数据。"
-                   + "这类通道常见是配置/握手用途，勾了也可能一直返回同一帧——电量这类会变的量通常在输入通道上。";
-        return "这个接口既没有输入也没有 Feature 通道，采不到东西。换同一台设备的其他接口。";
+            return Strings.Current.Get("S_62a303b84a")
+                   + Strings.Current.Get("S_d231babe56");
+        return Strings.Current.Get("S_131b0ae4a0");
     }
 
     private async void Probe_Click(object sender, RoutedEventArgs e) => await RunProbeAsync();
@@ -276,16 +278,16 @@ public sealed partial class CapturePage : Page
             }
             if (AllowSendHint != null)
                 AllowSendHint.Text = canSend
-                    ? "勾选后本会话的句柄会申请写权限，采集页出现「手动发帧」。只有明确知道要发什么时才用——发错帧可能让设备进 bootloader。"
-                    : "该接口没有输出通道（caps 里 out=0），无法发帧。";
+                    ? Strings.Current.Get("S_6291cde9c3")
+                    : Strings.Current.Get("S_268cbd4d10");
             ShowMessage(device.AccessDenied
-                ? "预检完成：该接口被系统保护，只能看到元信息。"
-                : "预检完成。确认无误后可以开始采集。", InfoBarSeverity.Success);
+                ? Strings.Current.Get("S_3c9df4da2a")
+                : Strings.Current.Get("S_fcf4c5490a"), InfoBarSeverity.Success);
         }
         catch (Exception ex)
         {
             Log.Warn($"采集预检失败: {ex.Message}");
-            ShowMessage($"预检失败：{ex.Message}", InfoBarSeverity.Error);
+            ShowMessage(Strings.Current.Format("S_fb60b3b35a", ex.Message), InfoBarSeverity.Error);
         }
     }
 
@@ -300,16 +302,16 @@ public sealed partial class CapturePage : Page
 
     private string BuildCapabilitySummary(bool showAll)
     {
-        if (_capabilities.Count == 0) return "预检后这里显示「几项可用、几项要处理」。";
+        if (_capabilities.Count == 0) return Strings.Current.Get("S_ee21f07e93");
         var counts = _capabilities
             .GroupBy(c => c.Status)
             .OrderBy(g => g.Key)
             .Select(g => $"{g.Key.Label()} {g.Count()}");
-        var head = $"预检 {_capabilities.Count} 项 · {string.Join(" · ", counts)}";
+        var head = Strings.Current.Format("S_34f12a4864", _capabilities.Count, string.Join(" · ", counts));
         if (showAll) return head;
         return _capabilityRowsAttention.Count == 0
-            ? head + "。全部可用。"
-            : head + $"。下面只列需要你注意的 {_capabilityRowsAttention.Count} 项。";
+            ? head + Strings.Current.Get("S_9fb87cafd1")
+            : head + Strings.Current.Format("S_7ab8bced60", _capabilityRowsAttention.Count);
     }
 
     private void ShowAllCaps_Changed(object sender, RoutedEventArgs e)
@@ -370,7 +372,7 @@ public sealed partial class CapturePage : Page
         if (_selected == null || _capabilities.Count == 0) return;
         if (_active != null)
         {
-            ShowMessage("已经有一个采集会话，先停止它。", InfoBarSeverity.Warning);
+            ShowMessage(Strings.Current.Get("S_42d4c37781"), InfoBarSeverity.Warning);
             return;
         }
 
@@ -404,17 +406,17 @@ public sealed partial class CapturePage : Page
             _nextChannelColor = 0;
             AddStepHeaderForCurrent();
             if (BatteryBox != null) BatteryBox.Text = "";
-            if (BatteryStatus != null) BatteryStatus.Text = "尚未记录电量参照。";
+            if (BatteryStatus != null) BatteryStatus.Text = Strings.Current.Get("S_5de955fd0f");
             SetRunningState(true);
             RefreshRecords();
             ShowMessage(featureIds.Count > 0
-                ? $"开始采集（含 Feature 读取 {string.Join("、", featureIds.Select(i => $"0x{i:X2}"))}）。"
-                : "开始采集（仅被动监听输入报告）。", InfoBarSeverity.Success);
+                ? Strings.Current.Format("S_aa37a7d30b", string.Join("、", featureIds.Select(i => $"0x{i:X2}")))
+                : Strings.Current.Get("S_8a905715f3"), InfoBarSeverity.Success);
         }
         catch (Exception ex)
         {
             Log.Error("创建采集会话失败", ex);
-            ShowMessage($"无法开始采集：{ex.Message}", InfoBarSeverity.Error);
+            ShowMessage(Strings.Current.Format("S_830a200b88", ex.Message), InfoBarSeverity.Error);
         }
     }
 
@@ -426,20 +428,20 @@ public sealed partial class CapturePage : Page
             if (_active.State == CaptureSessionState.Running)
             {
                 await _active.PauseAsync();
-                if (PauseLabel != null) PauseLabel.Text = "继续";
-                ShowMessage("已暂停：暂停期间不读取设备，这段时间没有记录不代表没有数据。", InfoBarSeverity.Warning);
+                if (PauseLabel != null) PauseLabel.Text = Strings.Current.Get("S_1fc1afc5c5");
+                ShowMessage(Strings.Current.Get("S_af2dbe3482"), InfoBarSeverity.Warning);
             }
             else if (_active.State == CaptureSessionState.Paused)
             {
                 _active.Resume();
-                if (PauseLabel != null) PauseLabel.Text = "暂停";
-                ShowMessage("已继续采集。", InfoBarSeverity.Success);
+                if (PauseLabel != null) PauseLabel.Text = Strings.Current.Get("S_130448bce6");
+                ShowMessage(Strings.Current.Get("S_d2e4ea5d1e"), InfoBarSeverity.Success);
             }
         }
         catch (Exception ex)
         {
             Log.Warn($"暂停/继续失败: {ex.Message}");
-            ShowMessage($"操作失败：{ex.Message}", InfoBarSeverity.Error);
+            ShowMessage(Strings.Current.Format("S_b2a510be7d", ex.Message), InfoBarSeverity.Error);
         }
     }
 
@@ -450,9 +452,9 @@ public sealed partial class CapturePage : Page
     private void AddStepHeaderForCurrent()
     {
         if (_guide.Current is { } next)
-            AddStepHeader($"第 {_guide.CurrentIndex + 1} 步 · {next.Title}");
+            AddStepHeader(Strings.Current.Format("S_48367fdef0", _guide.CurrentIndex + 1, next.Title));
         else
-            AddStepHeader("步骤已完成 · 以下是清单外的记录");
+            AddStepHeader(Strings.Current.Get("S_d252747e6f"));
     }
 
     private void Mark_Click(object sender, RoutedEventArgs e)
@@ -461,9 +463,9 @@ public sealed partial class CapturePage : Page
         var note = MarkBox.Text.Trim();
         _active.Mark(note);
         MarkBox.Text = "";
-        AddStepHeader(string.IsNullOrEmpty(note) ? "自定义标记" : $"自定义标记 · {note}");
+        AddStepHeader(string.IsNullOrEmpty(note) ? Strings.Current.Get("S_99245369f0") : Strings.Current.Format("S_a124918159", note));
         // 标记的语义是「这一段到此结束」，所以文案要说清它划的是分界而不是起点
-        ShowMessage("已标记：这一段到此结束，之后的报文归下一段。", InfoBarSeverity.Informational);
+        ShowMessage(Strings.Current.Get("S_e56392bc58"), InfoBarSeverity.Informational);
     }
 
     /// <summary>用户从官方软件/设备屏幕读到的电量，作为核对参照。空或 0 = 不使用（不是输入错误）。</summary>
@@ -474,28 +476,28 @@ public sealed partial class CapturePage : Page
         var text = BatteryBox.Text.Trim();
         if (text.Length == 0 || text == "0")
         {
-            BatteryStatus.Text = "未记录：留空或 0 视为不使用电量核对。";
-            ShowMessage("没有记录电量（留空或 0 表示不使用）。", InfoBarSeverity.Informational);
+            BatteryStatus.Text = Strings.Current.Get("S_3d922fc9be");
+            ShowMessage(Strings.Current.Get("S_7f8a9f85ea"), InfoBarSeverity.Informational);
             return;
         }
 
         if (!int.TryParse(text, out var percent) || percent is < 1 or > 100)
         {
-            BatteryStatus.Text = "输入无效，没有记录。请填 1–100 的整数，或留空/填 0 表示不使用。";
-            ShowMessage("电量要填 1–100 的整数。", InfoBarSeverity.Warning);
+            BatteryStatus.Text = Strings.Current.Get("S_cd4d2f3c04");
+            ShowMessage(Strings.Current.Get("S_6ccb1c30aa"), InfoBarSeverity.Warning);
             return;
         }
 
         if (!_active.MarkBattery(percent))
         {
-            BatteryStatus.Text = "当前不在采集状态，没有记录。";
-            ShowMessage("当前不在采集状态，记不了电量。", InfoBarSeverity.Warning);
+            BatteryStatus.Text = Strings.Current.Get("S_e5ce4b13d6");
+            ShowMessage(Strings.Current.Get("S_80c04ed7d9"), InfoBarSeverity.Warning);
             return;
         }
 
         // 输入框**不清空**：留着用户才能确认自己填的是多少
-        BatteryStatus.Text = $"已记录 {percent}%（{DateTime.Now:HH:mm:ss}）。改完数值再点一次可再记一条。";
-        ShowMessage($"已记录电量参照 {percent}%，报告里会拿它和报文比对。", InfoBarSeverity.Success);
+        BatteryStatus.Text = Strings.Current.Format("S_98db3985b8", percent, DateTime.Now);
+        ShowMessage(Strings.Current.Format("S_c40bdad215", percent), InfoBarSeverity.Success);
     }
 
     private void GuideNext_Click(object sender, RoutedEventArgs e)
@@ -506,8 +508,8 @@ public sealed partial class CapturePage : Page
         AddStepHeaderForCurrent();
         UpdateGuideUi();
         ShowMessage(_guide.IsComplete
-            ? "全部步骤已完成，可以停止并生成报告。"
-            : $"已记录「{step.Title}」，接下来：{_guide.Current!.Title}", InfoBarSeverity.Success);
+            ? Strings.Current.Get("S_813f22f55f")
+            : Strings.Current.Format("S_68aff9a8b4", step.Title, _guide.Current!.Title), InfoBarSeverity.Success);
     }
 
     private void GuideRedo_Click(object sender, RoutedEventArgs e)
@@ -515,14 +517,14 @@ public sealed partial class CapturePage : Page
         if (_active == null || _guide.Current is not { } step) return;
         RedoStep(step);
         UpdateGuideUi();
-        ShowMessage($"重新记录「{step.Title}」。", InfoBarSeverity.Informational);
+        ShowMessage(Strings.Current.Format("S_d847b10d64", step.Title), InfoBarSeverity.Informational);
     }
 
     private void GuideBack_Click(object sender, RoutedEventArgs e)
     {
         if (_active == null || !_guide.Back()) return;
         UpdateGuideUi();
-        ShowMessage($"回到「{_guide.Current!.Title}」，可以重做。", InfoBarSeverity.Informational);
+        ShowMessage(Strings.Current.Format("S_d2605e08ab", _guide.Current!.Title), InfoBarSeverity.Informational);
     }
 
     /// <summary>标记只表示「这一步做完了」，所以本步窗口是上一条标记到这一刻，点完成时才封口。</summary>
@@ -584,18 +586,18 @@ public sealed partial class CapturePage : Page
         if (!running)
         {
             GuideTitle.Text = _active == null
-                ? "开始采集后，这里会一步步告诉你怎么操作设备"
-                : "采集已停止";
-            GuideHint.Text = "每一步做一件事，做完点「完成这一步」；程序会自动给这一步打标记，后面才能对照出差异。";
+                ? Strings.Current.Get("S_4985a7f09a")
+                : Strings.Current.Get("S_f7614b1d2f");
+            GuideHint.Text = Strings.Current.Get("S_ea0ff2f22b");
         }
         else if (_guide.IsComplete)
         {
-            GuideTitle.Text = "全部步骤已完成";
-            GuideHint.Text = "可以点「停止并生成报告」。如果还想试别的操作，用下面的自定义标记。";
+            GuideTitle.Text = Strings.Current.Get("S_02ee09d132");
+            GuideHint.Text = Strings.Current.Get("S_fdd7cf7060");
         }
         else
         {
-            GuideTitle.Text = $"第 {_guide.CurrentIndex + 1} / {_guide.Steps.Count} 步 · {_guide.Current!.Title}";
+            GuideTitle.Text = Strings.Current.Format("S_e34430bc71", _guide.CurrentIndex + 1, _guide.Steps.Count, _guide.Current!.Title);
             GuideHint.Text = _guide.Current.Hint;
         }
 
@@ -667,11 +669,11 @@ public sealed partial class CapturePage : Page
         // 当前步骤还没点过「完成」时没有条目，窗口起点用 _windowStartCount，这样数字从一开就跟着涨
         var start = entry?.CountAtStart ?? (index == _guide.CurrentIndex ? _windowStartCount : (int?)null);
         var done = entry?.CountAtDone ?? _active?.RecordCount;
-        var count = start is { } from && done is { } to ? $" · {Math.Max(0, to - from)} 条" : "";
+        var count = start is { } from && done is { } to ? Strings.Current.Format("S_60162d6a9a", Math.Max(0, to - from)) : "";
 
-        if (index < _guide.CurrentIndex) return "已完成" + count;
-        if (index == _guide.CurrentIndex) return "进行中" + count;
-        return "未开始";
+        if (index < _guide.CurrentIndex) return Strings.Current.Get("S_e99b48a29b") + count;
+        if (index == _guide.CurrentIndex) return Strings.Current.Get("S_6f1972e48e") + count;
+        return Strings.Current.Get("S_062e5e670f");
     }
 
     private static Brush? ResourceBrush(string key)
@@ -757,8 +759,8 @@ public sealed partial class CapturePage : Page
         var start = open?.CountAtStart ?? _windowStartCount;
         var live = _active != null ? Math.Max(0, _active.RecordCount - start) : 0;
         GuideProgress.Text = _active is { State: CaptureSessionState.Running or CaptureSessionState.Paused }
-            ? $"已完成 {done} 步 · 本步已采到 {live} 条报文"
-            : $"共完成 {done} 步";
+            ? Strings.Current.Format("S_054598c095", done, live)
+            : Strings.Current.Format("S_4917bcf0d6", done);
         // 步骤条上的每段条数跟着一起涨，否则只有底部这行在动
         for (var i = 0; i < _stepStateBlocks.Count && i < _guide.Steps.Count; i++)
             _stepStateBlocks[i].Text = StepStateText(i, _guide.Steps[i]);
@@ -781,7 +783,7 @@ public sealed partial class CapturePage : Page
             _lastSession = session;
             _active = null;
             SetRunningState(false);
-            CounterText.Text = $"已停止 · 记录 {bundle.Analysis.TotalRecords} 条 · 分组 {bundle.Analysis.Groups.Count} 个";
+            CounterText.Text = Strings.Current.Format("S_08c09bb5e4", bundle.Analysis.TotalRecords, bundle.Analysis.Groups.Count);
             ResultText.Text = BuildResultText(bundle, session) + BuildEmptyHint(bundle);
             SetResultWarning(bundle);
             OpenReportButton.IsEnabled = File.Exists(ReportPath(session));
@@ -790,8 +792,8 @@ public sealed partial class CapturePage : Page
             CopySummaryButton.IsEnabled = true;
             var hasStatic = bundle.Analysis.StaticGroups.Count > 0;
             ShowMessage(hasStatic
-                    ? "采集已停止，但整场没有任何变化——这条通道可能不是状态通道，别据此下结论。"
-                    : "采集已停止，报告与诊断包已生成。",
+                    ? Strings.Current.Get("S_0ddf9babdb")
+                    : Strings.Current.Get("S_65bd0c20f1"),
                 hasStatic ? InfoBarSeverity.Warning : InfoBarSeverity.Success);
             ResultCard?.StartBringIntoView();
             await RefreshHistoryAsync();
@@ -799,7 +801,7 @@ public sealed partial class CapturePage : Page
         catch (Exception ex)
         {
             Log.Error("停止采集失败", ex);
-            ShowMessage($"停止采集时出错：{ex.Message}", InfoBarSeverity.Error);
+            ShowMessage(Strings.Current.Format("S_05a3b0e45d", ex.Message), InfoBarSeverity.Error);
             StopButton.IsEnabled = true;
         }
     }
@@ -816,11 +818,11 @@ public sealed partial class CapturePage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "放弃这次采集？",
-            Content = $"已采到的 {count} 条原始记录会连同会话目录一起删除，不会生成报告和诊断包。\n\n"
-                      + "这个操作不能撤销。想留下证据请用「停止并生成报告」。",
-            PrimaryButtonText = "放弃并删除",
-            CloseButtonText = "继续采集",
+            Title = Strings.Current.Get("S_1a8b7de528"),
+            Content = Strings.Current.Format("S_e73c57dd5f", count)
+                      + Strings.Current.Get("S_6f34fa28fc"),
+            PrimaryButtonText = Strings.Current.Get("S_980d83641f"),
+            CloseButtonText = Strings.Current.Get("S_d388395729"),
             DefaultButton = ContentDialogButton.Close,
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
@@ -849,16 +851,16 @@ public sealed partial class CapturePage : Page
 
             if (session.RecordsDeleted)
             {
-                CounterText.Text = $"已放弃 · 删除 {bundle.Analysis.TotalRecords} 条记录";
-                ResultText.Text = "已放弃本次采集：记录与会话目录已删除，没有生成报告。";
-                ShowMessage("已放弃本次采集，记录已删除。", InfoBarSeverity.Informational);
+                CounterText.Text = Strings.Current.Format("S_0340e01c89", bundle.Analysis.TotalRecords);
+                ResultText.Text = Strings.Current.Get("S_79d60a2ba0");
+                ShowMessage(Strings.Current.Get("S_3a46080ca1"), InfoBarSeverity.Informational);
             }
             else
             {
                 // 删不掉就如实说，别让用户以为记录没了
-                CounterText.Text = $"已放弃 · {bundle.Analysis.TotalRecords} 条记录未能删除";
-                ResultText.Text = $"已放弃本次采集，但记录没能删掉（文件被占用）：\n{session.Directory}\n可以手动删除这个目录。";
-                ShowMessage("已放弃，但记录没能删除，位置写在结果里。", InfoBarSeverity.Warning);
+                CounterText.Text = Strings.Current.Format("S_bb2107d305", bundle.Analysis.TotalRecords);
+                ResultText.Text = Strings.Current.Format("S_f384754e66", session.Directory);
+                ShowMessage(Strings.Current.Get("S_075fa94b99"), InfoBarSeverity.Warning);
             }
             ResultCard?.StartBringIntoView();
             await RefreshHistoryAsync();
@@ -866,7 +868,7 @@ public sealed partial class CapturePage : Page
         catch (Exception ex)
         {
             Log.Error("放弃采集失败", ex);
-            ShowMessage($"放弃采集时出错：{ex.Message}", InfoBarSeverity.Error);
+            ShowMessage(Strings.Current.Format("S_8a99fa77b9", ex.Message), InfoBarSeverity.Error);
             StopButton.IsEnabled = true;
             AbandonButton.IsEnabled = true;
             PauseButton.IsEnabled = true;
@@ -895,20 +897,20 @@ public sealed partial class CapturePage : Page
                 SuggestedFileName = "vigilwatt-capture",
                 SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
             };
-            picker.FileTypeChoices.Add("ZIP 诊断包", [".zip"]);
+            picker.FileTypeChoices.Add(Strings.Current.Get("S_2479eda92b"), [".zip"]);
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.Services.MainWindow);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             var file = await picker.PickSaveFileAsync();
             if (file == null) return;
             File.Copy(source, file.Path, overwrite: true);
-            ShowMessage($"已另存到 {file.Path}", InfoBarSeverity.Success);
+            ShowMessage(Strings.Current.Format("S_6a051bf65c", file.Path), InfoBarSeverity.Success);
         }
         catch (Exception ex)
         {
             // 非打包 WinUI 下选择器可能不可用；退回到「复制路径 + 打开文件夹」，绝不静默失败。
             Log.Warn($"另存诊断包失败: {ex.Message}");
             CopyToClipboard(source);
-            ShowMessage($"系统保存对话框不可用，已把路径复制到剪贴板：{source}", InfoBarSeverity.Warning);
+            ShowMessage(Strings.Current.Format("S_26b841314b", source), InfoBarSeverity.Warning);
         }
     }
 
@@ -916,7 +918,7 @@ public sealed partial class CapturePage : Page
     {
         if (string.IsNullOrEmpty(_lastSummary)) return;
         CopyToClipboard(_lastSummary);
-        ShowMessage("调查摘要已复制，可直接贴到 Issue 或对话里。", InfoBarSeverity.Success);
+        ShowMessage(Strings.Current.Get("S_7125dc174d"), InfoBarSeverity.Success);
     }
 
     private async void HistoryList_ItemClick(object sender, ItemClickEventArgs e)
@@ -926,7 +928,7 @@ public sealed partial class CapturePage : Page
         {
             // 会话没收尾（应用在采集途中被关掉）：至少把原始记录所在目录打开，别让人以为记录丢了
             OpenWithShell(row.Directory);
-            ShowMessage("这条会话没有收尾（应用在采集途中被关闭），没有生成报告；已打开原始记录目录。", InfoBarSeverity.Warning);
+            ShowMessage(Strings.Current.Get("S_5d2fdf1b0b"), InfoBarSeverity.Warning);
             await Task.CompletedTask;
             return;
         }
@@ -944,15 +946,15 @@ public sealed partial class CapturePage : Page
             HistoryList.ItemsSource = sessions.Select(s => new CaptureHistoryRow
             {
                 Title = s.DisplayName,
-                Subtitle = $"{s.StartedUtc.ToLocalTime():yyyy-MM-dd HH:mm} · {s.RecordCount} 条记录 · {s.ErrorCount} 条错误"
-                           + (s.HasReport ? "" : " · 未生成报告（会话没收尾）"),
+                Subtitle = Strings.Current.Format("S_9de1c6a91e", s.StartedUtc.ToLocalTime(), s.RecordCount, s.ErrorCount)
+                           + (s.HasReport ? "" : Strings.Current.Get("S_e661dfeb53")),
                 Directory = s.Directory,
                 ReportPath = CaptureStore.PathOf(s.Directory, "report.html"),
                 HasReport = s.HasReport,
             }).ToList();
             HistoryHint.Text = sessions.Count == 0
-                ? "还没有保存过采集。"
-                : $"共 {sessions.Count} 条，单击打开报告。位置：{store.Root}";
+                ? Strings.Current.Get("S_f3816a36e6")
+                : Strings.Current.Format("S_7b7cd5cdeb", sessions.Count, store.Root);
         }
         catch (Exception ex)
         {
@@ -987,8 +989,8 @@ public sealed partial class CapturePage : Page
                     Note = record.Status switch
                     {
                         CaptureRecordStatus.Received => $"{record.Length}B",
-                        CaptureRecordStatus.Sent => "发出",
-                        _ => "失败",
+                        CaptureRecordStatus.Sent => Strings.Current.Get("S_3d391baa4f"),
+                        _ => Strings.Current.Get("S_3e3c8068bb"),
                     },
                     Accent = ChannelBrush(record),
                 });
@@ -999,11 +1001,11 @@ public sealed partial class CapturePage : Page
 
         CounterText.Text = _active.State switch
         {
-            CaptureSessionState.Running => $"采集中 · 记录 {_active.RecordCount} 条 · 错误 {_active.ErrorCount} 条"
+            CaptureSessionState.Running => Strings.Current.Format("S_46a179caea", _active.RecordCount, _active.ErrorCount)
                                            + GuideStateSuffix(),
-            CaptureSessionState.Paused => $"已暂停 · 记录 {_active.RecordCount} 条（暂停期间不读取设备）",
-            CaptureSessionState.Failed => $"采集已异常结束 · 记录 {_active.RecordCount} 条，已有证据保留",
-            _ => $"已停止 · 记录 {_active.RecordCount} 条",
+            CaptureSessionState.Paused => Strings.Current.Format("S_7efc52c500", _active.RecordCount),
+            CaptureSessionState.Failed => Strings.Current.Format("S_9429da1a0f", _active.RecordCount),
+            _ => Strings.Current.Format("S_7acaf5733c", _active.RecordCount),
         };
         UpdateGuideProgress();
         UpdateWaitHint();
@@ -1024,12 +1026,12 @@ public sealed partial class CapturePage : Page
     {
         if (SendHint == null || _selected is not { } device) return;
         var ids = device.OutputReportIds.Count > 0
-            ? "首字节是 report ID（" + string.Join("、", device.OutputReportIds.Select(i => $"0x{i:X2}")) + "）"
-            : "该接口不使用 report ID，首字节就是数据";
-        SendHint.Text = $"需要 {device.OutputReportLength} 字节，{ids}。\n"
-                        + "帧从哪来：USBPcap + Wireshark 抓官方软件的一次操作，抄 out 方向的 payload；"
-                        + "或厂商文档 / 开源项目里的请求帧。\n"
-                        + "发错帧可能让设备进 bootloader —— 不确定就别发。";
+            ? Strings.Current.Format("S_19e63d7d3a", string.Join("、", device.OutputReportIds.Select(i => $"0x{i:X2}")))
+            : Strings.Current.Get("S_54981e1871");
+        SendHint.Text = Strings.Current.Format("S_5a2b54e36a", device.OutputReportLength, ids)
+                        + Strings.Current.Get("S_34643010e4")
+                        + Strings.Current.Get("S_2e1b54f66d")
+                        + Strings.Current.Get("S_a3c83f9b47");
     }
 
     private async void Send_Click(object sender, RoutedEventArgs e)
@@ -1037,18 +1039,18 @@ public sealed partial class CapturePage : Page
         if (_active is not { } session || SendBox == null || SendButton == null) return;
         if (!CaptureHex.TryParse(SendBox.Text, out var bytes, out var error))
         {
-            ShowMessage($"帧格式不对：{error}", InfoBarSeverity.Error);
+            ShowMessage(Strings.Current.Format("S_8bd7b4e1fc", error), InfoBarSeverity.Error);
             return;
         }
 
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "确认发送这一帧？",
-            Content = $"将向设备发送 {bytes.Length} 字节：\n\n{CaptureHex.Format(bytes)}\n\n"
-                      + "发错帧可能让设备进入 bootloader 或失去响应。确定要继续吗？",
-            PrimaryButtonText = "发送",
-            CloseButtonText = "取消",
+            Title = Strings.Current.Get("S_3a8142c71f"),
+            Content = Strings.Current.Format("S_52f8f1cd34", bytes.Length, CaptureHex.Format(bytes))
+                      + Strings.Current.Get("S_4cd3698d30"),
+            PrimaryButtonText = Strings.Current.Get("S_1214d633a4"),
+            CloseButtonText = Strings.Current.Get("S_4d0b4688c7"),
             DefaultButton = ContentDialogButton.Close,
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
@@ -1058,12 +1060,12 @@ public sealed partial class CapturePage : Page
         {
             if (session.TrySend(bytes, out var sendError))
             {
-                ShowMessage($"已发送 {bytes.Length} 字节，记录已写进本次采集。", InfoBarSeverity.Success);
+                ShowMessage(Strings.Current.Format("S_9329f06a0f", bytes.Length), InfoBarSeverity.Success);
                 SendBox.Text = "";
             }
             else
             {
-                ShowMessage($"没有发出去：{sendError}", InfoBarSeverity.Error);
+                ShowMessage(Strings.Current.Format("S_b6e4f1c1dd", sendError), InfoBarSeverity.Error);
             }
         }
         finally
@@ -1084,7 +1086,7 @@ public sealed partial class CapturePage : Page
 
         if (_active.State == CaptureSessionState.Paused)
         {
-            WaitHint.Text = "已暂停：期间不读取设备，恢复后继续等";
+            WaitHint.Text = Strings.Current.Get("S_fe8f51cbbc");
             WaitHint.Foreground = UiPalette.Brush(UiPalette.Offline);
             return;
         }
@@ -1093,8 +1095,8 @@ public sealed partial class CapturePage : Page
         if (count > 0)
         {
             WaitHint.Text = _firstRecordMono is { } first
-                ? $"已收到 {count} 条 · 首帧在 {first / 1000.0:0.0} 秒"
-                : $"已收到 {count} 条";
+                ? Strings.Current.Format("S_2f1368aa8d", count, first / 1000.0)
+                : Strings.Current.Format("S_de96530a94", count);
             WaitHint.Foreground = UiPalette.Brush(UiPalette.Good);
             return;
         }
@@ -1103,23 +1105,23 @@ public sealed partial class CapturePage : Page
         var seconds = _active.ElapsedMs / 1000.0;
         if (seconds < 5)
         {
-            WaitHint.Text = "正在等第一帧 —— 多数设备 1~5 秒内会推一帧";
+            WaitHint.Text = Strings.Current.Get("S_3ff8c35b3e");
             WaitHint.Foreground = UiPalette.Brush(UiPalette.Offline);
         }
         else if (seconds < 15)
         {
-            WaitHint.Text = $"已等 {seconds:0} 秒还没收到：动一下设备（按键/移动），或确认接口选对";
+            WaitHint.Text = Strings.Current.Format("S_b25ec8e46f", seconds);
             WaitHint.Foreground = UiPalette.Brush(UiPalette.Mid);
         }
         else
         {
-            WaitHint.Text = $"已 {seconds:0} 秒无报文：这条通道可能不自发推送，换「有输入通道」的接口重采";
+            WaitHint.Text = Strings.Current.Format("S_8db3e34776", seconds);
             WaitHint.Foreground = UiPalette.Brush(UiPalette.Low);
         }
     }
 
     private string GuideStateSuffix()
-        => _guide.IsComplete ? " · 步骤已完成" : $" · 步骤 {_guide.CurrentIndex + 1}/{_guide.Steps.Count}";
+        => _guide.IsComplete ? Strings.Current.Get("S_7741f9cc14") : Strings.Current.Format("S_669814cbab", _guide.CurrentIndex + 1, _guide.Steps.Count);
 
     private void ResetRecordRows()
     {
@@ -1151,7 +1153,7 @@ public sealed partial class CapturePage : Page
         InterfaceList.IsEnabled = !running && _selectedGroup != null;
         TaskUnknown.IsEnabled = !running;
         TaskSupported.IsEnabled = !running;
-        if (!running && PauseLabel != null) PauseLabel.Text = "暂停";
+        if (!running && PauseLabel != null) PauseLabel.Text = Strings.Current.Get("S_130448bce6");
         UpdateGuideUi();
     }
 
@@ -1168,7 +1170,7 @@ public sealed partial class CapturePage : Page
         if (CapabilityList != null) CapabilityList.ItemsSource = null;
         _capabilityRowsAll = [];
         _capabilityRowsAttention = [];
-        if (CapabilitySummary != null) CapabilitySummary.Text = "预检后这里显示「几项可用、几项要处理」。";
+        if (CapabilitySummary != null) CapabilitySummary.Text = Strings.Current.Get("S_ee21f07e93");
         if (ShowAllCapsCheck != null)
         {
             ShowAllCapsCheck.IsEnabled = false;
@@ -1202,7 +1204,7 @@ public sealed partial class CapturePage : Page
         DeviceBannerName.Text = string.IsNullOrWhiteSpace(device.Product) ? device.VidPid : device.Product;
         var claimed = _selectedGroup?.ClaimedBy;
         DeviceBannerMeta.Text = $"{device.VidPid} · {CaptureDeviceCatalog.ShortInterface(device.InterfaceKey)} · "
-                                + (string.IsNullOrEmpty(claimed) ? "未适配" : $"已适配（{claimed}）");
+                                + (string.IsNullOrEmpty(claimed) ? Strings.Current.Get("S_e3d46eadfc") : Strings.Current.Format("S_7656b7e221", claimed));
         // 完整路径太长，只放悬停提示
         ToolTipService.SetToolTip(DeviceBanner,
             $"{device.InterfacePath}\nusage 0x{device.UsagePage:X4} / 0x{device.Usage:X4}");
@@ -1214,15 +1216,15 @@ public sealed partial class CapturePage : Page
         var subtitle = string.IsNullOrWhiteSpace(group.Manufacturer)
             ? group.VidPid
             : $"{group.Manufacturer} · {group.VidPid}";
-        subtitle += $" · {group.Interfaces.Count} 个接口";
-        if (group.Interfaces.All(i => i.AccessDenied)) subtitle += " · 全部打不开（系统保护）";
-        else if (recommended == null) subtitle += " · 没有厂商定义接口（只有标准键鼠/消费类）";
-        else subtitle += $" · 建议先试 {CaptureDeviceCatalog.ShortInterface(recommended.InterfaceKey)}";
+        subtitle += Strings.Current.Format("S_6dacf0b9f8", group.Interfaces.Count);
+        if (group.Interfaces.All(i => i.AccessDenied)) subtitle += Strings.Current.Get("S_69c48e1bff");
+        else if (recommended == null) subtitle += Strings.Current.Get("S_d5722df606");
+        else subtitle += Strings.Current.Format("S_7d0074d29a", CaptureDeviceCatalog.ShortInterface(recommended.InterfaceKey));
         return new CaptureDeviceRow
         {
             Title = group.Title,
             Subtitle = subtitle,
-            Status = group.IsAdapted ? $"已适配（{group.ClaimedBy}）" : "未适配",
+            Status = group.IsAdapted ? Strings.Current.Format("S_3ded5f5415", group.ClaimedBy) : Strings.Current.Get("S_e3d46eadfc"),
             Group = group,
         };
     }
@@ -1231,7 +1233,7 @@ public sealed partial class CapturePage : Page
     {
         var detail = cap.Status == CapabilityStatus.Available
             ? cap.Evidence ?? ""
-            : $"原因：{cap.Reason}　影响：{cap.Impact}　后续：{cap.NextStep}";
+            : Strings.Current.Format("S_f1462717e0", cap.Reason, cap.Impact, cap.NextStep);
         return new CaptureCapabilityRow
         {
             Title = cap.Title,
@@ -1243,17 +1245,17 @@ public sealed partial class CapturePage : Page
     private static string BuildResultText(CaptureBundle bundle, CaptureSession session)
     {
         var analysis = bundle.Analysis;
-        var text = $"记录 {analysis.ReceivedRecords} 条（失败 {analysis.FailedRecords}）· "
-                   + $"分组 {analysis.Groups.Count} 个 · 差异 {analysis.Changes.Count} 处 · "
-                   + $"错误 {analysis.TotalErrors} 条 · 耗时 {(bundle.Session.DurationMs ?? 0) / 1000.0:0.0} 秒";
-        if (bundle.Session.RecordsTruncated) text += " · 已达记录上限，采集被截断";
+        var text = Strings.Current.Format("S_909e63d7f6", analysis.ReceivedRecords, analysis.FailedRecords)
+                   + Strings.Current.Format("S_a6a9112c31", analysis.Groups.Count, analysis.Changes.Count)
+                   + Strings.Current.Format("S_55c1b91e9d", analysis.TotalErrors, (bundle.Session.DurationMs ?? 0) / 1000.0);
+        if (bundle.Session.RecordsTruncated) text += Strings.Current.Get("S_0abff1d67c");
         // 结果卡也要写清设备：截图/贴摘要时得知道这是哪台的结论
         if (bundle.Device is { } device)
         {
             var name = string.IsNullOrWhiteSpace(device.Product) ? device.VidPid : device.Product;
-            text += $"\n设备：{name}（{device.VidPid} · {CaptureDeviceCatalog.ShortInterface(device.InterfaceKey)}）";
+            text += Strings.Current.Format("S_81ef4351b2", name, device.VidPid, CaptureDeviceCatalog.ShortInterface(device.InterfaceKey));
         }
-        return text + $"\n位置：{session.Directory}";
+        return text + Strings.Current.Format("S_9e5439c2eb", session.Directory);
     }
 
     /// <summary>零报文时给出下一步，而不是让用户以为设备没协议。</summary>
@@ -1268,8 +1270,8 @@ public sealed partial class CapturePage : Page
             return;
         }
 
-        ResultWarn.Text = $"注意：{bundle.Analysis.StaticGroupText} 整场完全一致，没有任何变化。"
-                          + "这通常说明它不是状态通道（配置/握手通道常见），别据此判断设备行为。";
+        ResultWarn.Text = Strings.Current.Format("S_020484ddab", bundle.Analysis.StaticGroupText)
+                          + Strings.Current.Get("S_f73b3cac81");
         ResultWarn.Foreground = UiPalette.Brush(UiPalette.Low);
         ResultWarn.Visibility = Visibility.Visible;
     }
@@ -1278,14 +1280,14 @@ public sealed partial class CapturePage : Page
     {
         if (bundle.Analysis.ReceivedRecords > 0) return "";
         var recommended = _selectedGroup?.Recommended;
-        var hint = "\n没有采到报文：这不代表设备没有相关协议。";
+        var hint = Strings.Current.Get("S_f072b46239");
         if (_selected is { InputReportLength: 0 } && _selected.AccessDenied == false)
-            hint += "\n这个接口本身没有输入通道，换同一台设备的其他接口试试。";
+            hint += Strings.Current.Get("S_f8d8acd288");
         else if (recommended != null && !ReferenceEquals(recommended, _selected))
-            hint += $"\n建议改选 {CaptureDeviceCatalog.ShortInterface(recommended.InterfaceKey)}"
-                    + "（同设备里有输入通道的那个接口）。";
+            hint += Strings.Current.Format("S_e7ce6cb264", CaptureDeviceCatalog.ShortInterface(recommended.InterfaceKey))
+                    + Strings.Current.Get("S_79b7d43de7");
         else
-            hint += "\n设备可能不自发推送（需要先开会话），而本功能不写设备；也可能该通道要用 Feature 读取。";
+            hint += Strings.Current.Get("S_01ee19eea6");
         return hint;
     }
 

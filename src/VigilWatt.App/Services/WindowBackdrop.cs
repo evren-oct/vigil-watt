@@ -1,6 +1,7 @@
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml.Media;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -82,10 +83,10 @@ public static class WindowBackdrop
     /// <summary>设置页副标题用的一句话说明，直接告诉用户这台机器上实际生效的是什么。</summary>
     public static string Describe(string resolved, bool micaSupported) => resolved switch
     {
-        Mica => "云母 Mica：跟随桌面壁纸的半透明材质（仅 Windows 11）",
+        Mica => Strings.Current.Get("S_5fec9621c1"),
         Acrylic => micaSupported
-            ? "磨砂 Acrylic：桌面实时模糊"
-            : "磨砂 Acrylic：本机不支持 Mica（需 Windows 11），已自动改用 Acrylic",
-        _ => "纯色分层底：不做模糊，文字对比度最好、零性能开销",
+            ? Strings.Current.Get("S_926ffa7936")
+            : Strings.Current.Get("S_47ff50df51"),
+        _ => Strings.Current.Get("S_d92c70637a"),
     };
 }

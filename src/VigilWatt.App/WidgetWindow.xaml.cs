@@ -11,6 +11,7 @@ using System.Text;
 using Windows.Graphics;
 using Windows.UI;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App;
 
 /// <summary>
@@ -70,8 +71,10 @@ public sealed partial class WidgetWindow : Window
     public WidgetWindow()
     {
         InitializeComponent();
+        // Window 本身没有 DataContext；绑定要落在根 FrameworkElement 上。
+        Root.DataContext = Strings.Current;
 
-        Title = "VigilWatt 小组件";
+        Title = Strings.Current.Get("S_31cffd051e");
         AppWindow.Title = Title;
 
         if (AppWindow.Presenter is OverlappedPresenter presenter)
@@ -193,6 +196,15 @@ public sealed partial class WidgetWindow : Window
         }
     }
 
+    /// <summary>语言切换后更新标题并强制重建卡片：签名缓存不含语言，不清掉会继续显示旧文案。</summary>
+    public void RefreshForLanguage()
+    {
+        Title = Strings.Current.Get("S_31cffd051e");
+        AppWindow.Title = Title;
+        _lastSignature = null;
+        DispatcherQueue.TryEnqueue(RefreshContent);
+    }
+
     private void RefreshContent()
     {
         // 本方法经 DispatcherQueue.TryEnqueue 调用，回调里未捕获的异常会绕过
@@ -235,7 +247,7 @@ public sealed partial class WidgetWindow : Window
         {
             ChipStack.Children.Add(new TextBlock
             {
-                Text = "暂无在线设备",
+                Text = Strings.Current.Get("S_fbaff846cc"),
                 FontSize = 13,
                 Height = LineHeight,
                 Width = 100,

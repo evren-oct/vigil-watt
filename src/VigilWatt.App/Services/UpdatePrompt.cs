@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Velopack;
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -21,7 +22,7 @@ internal static class UpdatePrompt
         var panel = new StackPanel { Spacing = 12 };
         panel.Children.Add(new TextBlock
         {
-            Text = $"当前 {service.CurrentVersion} → 最新 {version}",
+            Text = Strings.Current.Format("S_8065a3acdf", service.CurrentVersion, version),
             FontSize = 13,
             Foreground = muted,
             TextWrapping = TextWrapping.Wrap,
@@ -32,7 +33,7 @@ internal static class UpdatePrompt
         {
             panel.Children.Add(new TextBlock
             {
-                Text = "更新内容",
+                Text = Strings.Current.Get("S_e86c7cc37a"),
                 FontSize = 12,
                 Foreground = muted,
                 Margin = new Thickness(0, 4, 0, 0),
@@ -46,7 +47,7 @@ internal static class UpdatePrompt
 
         panel.Children.Add(new TextBlock
         {
-            Text = "安装完成后应用会自动重启",
+            Text = Strings.Current.Get("S_e1fd9a1da1"),
             FontSize = 12,
             Foreground = muted,
             TextWrapping = TextWrapping.Wrap,
@@ -54,9 +55,9 @@ internal static class UpdatePrompt
 
         var dialog = new ContentDialog
         {
-            Title = "发现新版本 " + version,
+            Title = Strings.Current.Get("S_bdeaca9059") + version,
             Content = panel,
-            PrimaryButtonText = "下载并安装",
+            PrimaryButtonText = Strings.Current.Get("S_f4df9977ea"),
             CloseButtonText = closeText,
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = root,

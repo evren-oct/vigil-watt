@@ -8,7 +8,7 @@
 
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
             <StackPanel Grid.Column="0" Spacing="7" VerticalAlignment="Center">
-                <TextBlock Text="历史管理" Style="{StaticResource AppPageTitleStyle}" />
+                <TextBlock Text="{Binding S_70a2b88e7c, Mode=OneWay}" Style="{StaticResource AppPageTitleStyle}" />
                 <TextBlock x:Name="SubtitleText" Text="—" Style="{StaticResource AppPageSubtitleStyle}" />
             </StackPanel>
             <HyperlinkButton x:Name="RefreshButton" Grid.Column="1" Click="Refresh_Click"
@@ -16,7 +16,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon FontSize="14" Glyph="&#xE72C;"
                               Foreground="{ThemeResource AppAccentBrush}" />
-                    <TextBlock Text="刷新" FontSize="15"
+                    <TextBlock Text="{Binding S_38108eaa1d, Mode=OneWay}" FontSize="15"
                                Foreground="{ThemeResource AppAccentBrush}" />
                 </StackPanel>
             </HyperlinkButton>
@@ -35,7 +35,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Spacing="4">
-                <TextBlock Text="数据库大小" Style="{StaticResource AppKpiLabelStyle}" />
+                <TextBlock Text="{Binding S_ed9a685d54, Mode=OneWay}" Style="{StaticResource AppKpiLabelStyle}" />
                 <TextBlock>
                     <Run x:Name="KpiFileSizeNumber" FontSize="22" FontWeight="Bold"
                          Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
@@ -46,19 +46,19 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Spacing="4">
-                <TextBlock Text="采样总条数" Style="{StaticResource AppKpiLabelStyle}" />
+                <TextBlock Text="{Binding S_5121afe913, Mode=OneWay}" Style="{StaticResource AppKpiLabelStyle}" />
                 <TextBlock x:Name="KpiTotal" Text="—" FontSize="22" FontWeight="Bold" />
-                <TextBlock Text="全部设备合计" Style="{StaticResource AppKpiSubStyle}" />
+                <TextBlock Text="{Binding S_1103288876, Mode=OneWay}" Style="{StaticResource AppKpiSubStyle}" />
             </StackPanel>
 
             <StackPanel Grid.Column="2" Spacing="4">
-                <TextBlock Text="设备数" Style="{StaticResource AppKpiLabelStyle}" />
+                <TextBlock Text="{Binding S_7beb4b6b29, Mode=OneWay}" Style="{StaticResource AppKpiLabelStyle}" />
                 <TextBlock x:Name="KpiDevices" Text="—" FontSize="22" FontWeight="Bold" />
-                <TextBlock Text="含已离线的历史设备" Style="{StaticResource AppKpiSubStyle}" />
+                <TextBlock Text="{Binding S_d4fde29134, Mode=OneWay}" Style="{StaticResource AppKpiSubStyle}" />
             </StackPanel>
 
             <StackPanel Grid.Column="3" Spacing="4">
-                <TextBlock Text="最早记录" Style="{StaticResource AppKpiLabelStyle}" />
+                <TextBlock Text="{Binding S_680671fa66, Mode=OneWay}" Style="{StaticResource AppKpiLabelStyle}" />
                 <TextBlock x:Name="KpiEarliest" Text="—" FontSize="22" FontWeight="Bold" />
                 <TextBlock x:Name="KpiEarliestSub" Text="—" Style="{StaticResource AppKpiSubStyle}" />
             </StackPanel>
@@ -67,8 +67,8 @@
         <!-- 按设备清理：列表自己滚（虚拟化），设备再多也不把页面撑长 -->
         <Grid Grid.Row="3" Margin="0,24,0,0" RowDefinitions="Auto,Auto,*,Auto">
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                <TextBlock Text="按设备清理" Style="{StaticResource AppSectionTitleStyle}" />
-                <TextBlock Grid.Column="1" Text="勾选后可批量删除，删除不可恢复" FontSize="13"
+                <TextBlock Text="{Binding S_da530be47c, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" />
+                <TextBlock Grid.Column="1" Text="{Binding S_28250b12f2, Mode=OneWay}" FontSize="13"
                            VerticalAlignment="Center"
                            Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
             </Grid>
@@ -91,7 +91,7 @@
                 <FontIcon Glyph="&#xE721;" FontSize="14" Margin="12,0,0,0"
                           HorizontalAlignment="Left" VerticalAlignment="Center"
                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                <TextBox x:Name="DeviceSearchBox" PlaceholderText="搜索设备"
+                <TextBox x:Name="DeviceSearchBox" PlaceholderText="{Binding S_7e33b59810, Mode=OneWay}"
                          Background="Transparent" BorderThickness="0" CornerRadius="10"
                          Padding="34,8,10,8" Height="36" VerticalContentAlignment="Center"
                          TextChanged="DeviceSearch_TextChanged" />
@@ -127,7 +127,7 @@
                                         <TextBlock Grid.Column="3" Text="{x:Bind RangeText}" FontSize="13" Width="190"
                                                    TextAlignment="Right" VerticalAlignment="Center"
                                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                                        <Button Grid.Column="4" Content="删除" FontSize="13" Tag="{x:Bind DeviceId}"
+                                        <Button Grid.Column="4" Content="{x:Bind DeleteLabel, Mode=OneWay}" FontSize="13" Tag="{x:Bind DeviceId}"
                                                 Click="DeleteRow_Click" Padding="4,2"
                                                 Background="Transparent" BorderThickness="0"
                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}">
@@ -148,12 +148,12 @@
                                 VerticalAlignment="Center" Spacing="6" Padding="0,36" Visibility="Collapsed">
                         <FontIcon Glyph="&#xE9D2;" FontSize="34" HorizontalAlignment="Center"
                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        <TextBlock Text="暂无历史数据" FontSize="15" HorizontalAlignment="Center"
+                        <TextBlock Text="{Binding S_cab590185b, Mode=OneWay}" FontSize="15" HorizontalAlignment="Center"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <TextBlock Text="采集到电量读数后会出现在这里" FontSize="13" HorizontalAlignment="Center"
+                        <TextBlock Text="{Binding S_7941214abf, Mode=OneWay}" FontSize="13" HorizontalAlignment="Center"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
-                    <TextBlock x:Name="NoMatchState" Text="没有匹配的设备" FontSize="13"
+                    <TextBlock x:Name="NoMatchState" Text="{Binding S_88bb4b397d, Mode=OneWay}" FontSize="13"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                Visibility="Collapsed" />
@@ -164,7 +164,7 @@
                 <TextBlock x:Name="SelectionText" VerticalAlignment="Center" FontSize="13"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <Button x:Name="DeleteSelectedButton" Grid.Column="1" IsEnabled="False"
-                        Click="DeleteSelected_Click" Content="删除选中设备的历史"
+                        Click="DeleteSelected_Click" Content="{Binding S_7d4ca532b1, Mode=OneWay}"
                         FontSize="15" Padding="0" Background="Transparent" BorderThickness="0"
                         Foreground="{ThemeResource AppDangerBrush}">
                     <Button.Resources>

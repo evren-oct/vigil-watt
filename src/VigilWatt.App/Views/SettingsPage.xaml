@@ -40,8 +40,9 @@
              焦点一旦落到它（窗口激活、点击空白处），ScrollViewer 会 ScrollIntoView 把页面拽回顶部 -->
         <StackPanel Grid.Row="0" Margin="40,24,40,0" Spacing="12" MaxWidth="900">
             <StackPanel Spacing="7">
-                <TextBlock Text="设置" Style="{StaticResource AppPageTitleStyle}" />
-                <TextBlock Text="外观、提醒、数据采集、2.4G 插件"
+                <TextBlock Text="{Binding Settings_Title, Mode=OneWay}"
+                           Style="{StaticResource AppPageTitleStyle}" />
+                <TextBlock Text="{Binding Settings_Subtitle, Mode=OneWay}"
                            Style="{StaticResource AppPageSubtitleStyle}" />
             </StackPanel>
 
@@ -63,7 +64,7 @@
                 <FontIcon Glyph="&#xE721;" FontSize="15" Margin="14,0,0,0"
                           HorizontalAlignment="Left" VerticalAlignment="Center"
                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                <TextBox x:Name="SettingsSearchBox" PlaceholderText="搜索设置或设备插件"
+                <TextBox x:Name="SettingsSearchBox" PlaceholderText="{Binding S_353ed5859d, Mode=OneWay}"
                          Background="Transparent" BorderThickness="0" CornerRadius="12"
                          Padding="38,10,12,10" Height="40" VerticalContentAlignment="Center"
                          TextChanged="SettingsSearch_TextChanged" />
@@ -76,7 +77,7 @@
                     <StackPanel x:Name="SearchResultsPanel" />
                 </ScrollViewer>
             </Border>
-            <TextBlock x:Name="SearchEmptyText" Text="没有匹配的设置项" Visibility="Collapsed"
+            <TextBlock x:Name="SearchEmptyText" Text="{Binding S_fafc98f909, Mode=OneWay}" Visibility="Collapsed"
                        Style="{StaticResource RowDescStyle}" />
         </StackPanel>
 
@@ -86,23 +87,43 @@
 
                 <!-- 外观 -->
                 <StackPanel Spacing="6">
-                    <TextBlock Text="外观" Style="{StaticResource AppSectionTitleStyle}" />
+                    <TextBlock Text="{Binding S_09b58aa342, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" />
                     <Border Style="{StaticResource AppCardStyle}">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="20,18" MinHeight="64"
                               Background="Transparent"
                               PointerEntered="SettingsRow_PointerEntered"
                               PointerExited="SettingsRow_PointerExited">
                             <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                <TextBlock Text="窗口背景" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="{Binding Language_Title, Mode=OneWay}"
+                                           Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="{Binding Language_Description, Mode=OneWay}"
+                                           Style="{StaticResource RowDescStyle}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1" x:Name="LanguageCombo" Width="180"
+                                      VerticalAlignment="Center"
+                                      SelectionChanged="Language_Changed">
+                                <ComboBoxItem Content="{Binding Language_Auto, Mode=OneWay}" Tag="auto" />
+                                <ComboBoxItem Content="{Binding Language_Zh, Mode=OneWay}" Tag="zh-CN" />
+                                <ComboBoxItem Content="{Binding Language_Ru, Mode=OneWay}" Tag="ru-RU" />
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource AppCardStyle}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Padding="20,18" MinHeight="64"
+                              Background="Transparent"
+                              PointerEntered="SettingsRow_PointerEntered"
+                              PointerExited="SettingsRow_PointerExited">
+                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding S_9a70fbd2cc, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
                                 <TextBlock x:Name="BackdropHintText" Style="{StaticResource RowDescStyle}" />
                             </StackPanel>
                             <ComboBox Grid.Column="1" x:Name="BackdropCombo" Width="180"
                                       VerticalAlignment="Center"
                                       SelectionChanged="Backdrop_Changed">
-                                <ComboBoxItem Content="自动" Tag="Auto" />
-                                <ComboBoxItem Content="云母 Mica" Tag="Mica" />
-                                <ComboBoxItem Content="磨砂 Acrylic" Tag="Acrylic" />
-                                <ComboBoxItem Content="纯色" Tag="Solid" />
+                                <ComboBoxItem Content="{Binding S_4afad87755, Mode=OneWay}" Tag="Auto" />
+                                <ComboBoxItem Content="{Binding S_bc6d39ba88, Mode=OneWay}" Tag="Mica" />
+                                <ComboBoxItem Content="{Binding S_9419ed48c5, Mode=OneWay}" Tag="Acrylic" />
+                                <ComboBoxItem Content="{Binding S_c502e4a090, Mode=OneWay}" Tag="Solid" />
                             </ComboBox>
                         </Grid>
                     </Border>
@@ -113,7 +134,7 @@
                           Expanding="Group_Expanding" Collapsed="Group_Collapsed">
                     <Expander.Header>
                         <Grid Height="34" Padding="4,0,6,0" ColumnDefinitions="*,Auto">
-                            <TextBlock Text="提醒" Style="{StaticResource AppSectionTitleStyle}"
+                            <TextBlock Text="{Binding S_81944e48a3, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}"
                                        VerticalAlignment="Center" />
                             <TextBlock x:Name="ReminderSummary" Grid.Column="1" FontSize="11" Opacity="0"
                                        VerticalAlignment="Center"
@@ -127,8 +148,8 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="低电量提醒阈值" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="低于该电量时弹托盘提醒，0 表示关闭"
+                                    <TextBlock Text="{Binding S_242462245f, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_4dfddc9137, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <NumberBox Grid.Column="1" x:Name="ThresholdBox" Value="20"
@@ -140,12 +161,12 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="剩余时间估算" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="根据近期放电速度估算，并显示在设备列表和任务栏悬停提示"
+                                    <TextBlock Text="{Binding S_f72a2d2e3f, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_c75de5fb7a, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="RemainingTimeEstimateToggle"
-                                              OnContent="开" OffContent="关"
+                                              OnContent="{Binding S_b4217093bc, Mode=OneWay}" OffContent="{Binding S_a3332f1c94, Mode=OneWay}"
                                               MinWidth="0" VerticalAlignment="Center" />
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Padding="20,18" MinHeight="64"
@@ -153,12 +174,12 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="启动时最小化到托盘" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="开机后直接驻留托盘，不弹出主窗口"
+                                    <TextBlock Text="{Binding S_8a31bbf193, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_bbaf600d99, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="StartMinimizedToggle"
-                                              OnContent="开" OffContent="关"
+                                              OnContent="{Binding S_b4217093bc, Mode=OneWay}" OffContent="{Binding S_a3332f1c94, Mode=OneWay}"
                                               MinWidth="0" VerticalAlignment="Center" />
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Padding="20,18" MinHeight="64"
@@ -166,12 +187,12 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="开机自动启动" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="写入当前用户的开机启动项（HKCU Run）"
+                                    <TextBlock Text="{Binding S_8cbccd927d, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_ade3f755e0, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="AutostartToggle"
-                                              OnContent="开" OffContent="关"
+                                              OnContent="{Binding S_b4217093bc, Mode=OneWay}" OffContent="{Binding S_a3332f1c94, Mode=OneWay}"
                                               MinWidth="0" VerticalAlignment="Center" />
                             </Grid>
                         </StackPanel>
@@ -183,7 +204,7 @@
                           Expanding="Group_Expanding" Collapsed="Group_Collapsed">
                     <Expander.Header>
                         <Grid Height="34" Padding="4,0,6,0" ColumnDefinitions="*,Auto">
-                            <TextBlock Text="数据采集" Style="{StaticResource AppSectionTitleStyle}"
+                            <TextBlock Text="{Binding S_a68d470c54, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}"
                                        VerticalAlignment="Center" />
                             <TextBlock x:Name="DataSummary" Grid.Column="1" FontSize="11" Opacity="0"
                                        VerticalAlignment="Center"
@@ -197,8 +218,8 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="采样间隔" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="电量无变化时也按此间隔写一条历史（分钟）"
+                                    <TextBlock Text="{Binding S_01f122f48b, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_2bb5bcf0ab, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <NumberBox Grid.Column="1" x:Name="SampleBox" Value="5"
@@ -210,8 +231,8 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="历史保留天数" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="超过天数的历史记录会被自动清理（天）"
+                                    <TextBlock Text="{Binding S_d358c45c3c, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_77833f9923, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <NumberBox Grid.Column="1" x:Name="RetentionBox" Value="90"
@@ -223,12 +244,12 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="监控本机电量" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="把笔记本电池也显示在设备列表、小组件与历史统计里。台式机无电池时不显示"
+                                    <TextBlock Text="{Binding S_b9419e0773, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_5e2dfc2014, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="SystemBatteryToggle"
-                                              OnContent="开" OffContent="关"
+                                              OnContent="{Binding S_b4217093bc, Mode=OneWay}" OffContent="{Binding S_a3332f1c94, Mode=OneWay}"
                                               MinWidth="0" VerticalAlignment="Center" />
                             </Grid>
                         </StackPanel>
@@ -237,7 +258,7 @@
 
                 <!-- 2.4G 设备插件（品牌级：只列品牌，具体型号由扫描识别） -->
                 <StackPanel Spacing="6">
-                    <TextBlock Text="2.4G 设备插件" Style="{StaticResource AppSectionTitleStyle}" />
+                    <TextBlock Text="{Binding S_8b66d101bf, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}" />
                     <Border Style="{StaticResource AppCardStyle}">
                         <StackPanel>
                             <!-- 二十多个品牌平铺会把这一区撑到 1500px 以上，选择动作移进弹窗，这里只留摘要 -->
@@ -246,15 +267,15 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="品牌开关" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_dd776c8243, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
                                     <TextBlock x:Name="PluginSummaryText" Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
-                                <HyperlinkButton Grid.Column="1" x:Name="PluginManageButton" Content="管理"
+                                <HyperlinkButton Grid.Column="1" x:Name="PluginManageButton" Content="{Binding S_4989b5cf94, Mode=OneWay}"
                                                  Padding="0" FontSize="15"
                                                  VerticalAlignment="Center" Click="PluginManage_Click" />
                             </Grid>
                             <TextBlock Margin="20,0,20,18" Style="{StaticResource RowDescStyle}"
-                                       Text="开启某个品牌即授权它发送工作所需的帧（没有独立的「写入许可」开关），会写帧的品牌默认关闭。识别不到设备时看下方「日志」分组。" />
+                                       Text="{Binding S_2cc2e9d236, Mode=OneWay}" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -264,7 +285,7 @@
                           Expanding="Group_Expanding" Collapsed="Group_Collapsed">
                     <Expander.Header>
                         <Grid Height="34" Padding="4,0,6,0" ColumnDefinitions="*,Auto">
-                            <TextBlock Text="小组件" Style="{StaticResource AppSectionTitleStyle}"
+                            <TextBlock Text="{Binding S_f74efb4fda, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}"
                                        VerticalAlignment="Center" />
                             <TextBlock x:Name="WidgetSummary" Grid.Column="1" FontSize="11"
                                        VerticalAlignment="Center"
@@ -278,12 +299,12 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="桌面小组件" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="桌面悬浮电量条，可拖动、不进 Alt-Tab 与任务栏"
+                                    <TextBlock Text="{Binding S_f5f4160a69, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_72b1f9f267, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="WidgetToggle"
-                                              OnContent="开" OffContent="关"
+                                              OnContent="{Binding S_b4217093bc, Mode=OneWay}" OffContent="{Binding S_a3332f1c94, Mode=OneWay}"
                                               MinWidth="0" VerticalAlignment="Center" />
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Padding="20,18" MinHeight="64"
@@ -291,15 +312,15 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="显示方式" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_75589922ea, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
                                     <TextBlock x:Name="WidgetModeHintText" Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
                                 <ComboBox Grid.Column="1" x:Name="WidgetModeCombo" Width="180"
                                           VerticalAlignment="Center"
                                           SelectionChanged="WidgetMode_Changed">
-                                    <ComboBoxItem Content="浮在其它窗口上方" Tag="Topmost" />
-                                    <ComboBoxItem Content="普通窗口" Tag="Normal" />
-                                    <ComboBoxItem Content="固定在桌面" Tag="Desktop" />
+                                    <ComboBoxItem Content="{Binding S_e828716785, Mode=OneWay}" Tag="Topmost" />
+                                    <ComboBoxItem Content="{Binding S_cb618ebdb2, Mode=OneWay}" Tag="Normal" />
+                                    <ComboBoxItem Content="{Binding S_ab61cce9ed, Mode=OneWay}" Tag="Desktop" />
                                 </ComboBox>
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Padding="20,18" MinHeight="64"
@@ -307,8 +328,8 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="最多显示设备数" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="一屏只显示这么多条，其余用鼠标滚轮查看"
+                                    <TextBlock Text="{Binding S_69729065e4, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_ee42d1ee9f, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <!-- 档位由代码按 WidgetMaxDevicesOptions.Choices 生成，范围只有一处定义 -->
@@ -324,7 +345,7 @@
                           Expanding="Group_Expanding" Collapsed="Group_Collapsed">
                     <Expander.Header>
                         <Grid Height="34" Padding="4,0,6,0" ColumnDefinitions="*,Auto">
-                            <TextBlock Text="任务栏" Style="{StaticResource AppSectionTitleStyle}"
+                            <TextBlock Text="{Binding S_3405fcce4a, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}"
                                        VerticalAlignment="Center" />
                             <TextBlock x:Name="TaskbarSummary" Grid.Column="1" FontSize="11"
                                        VerticalAlignment="Center"
@@ -338,12 +359,12 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="任务栏电量贴片" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="在任务栏里（系统托盘左边）钉一条电量胶囊，按住可沿任务栏拖动（可在下方锁定）；本机电量不参与（系统已有电池图标）"
+                                    <TextBlock Text="{Binding S_33c08b2a0c, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_af0b59e37a, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="TaskbarToggle"
-                                              OnContent="开" OffContent="关"
+                                              OnContent="{Binding S_b4217093bc, Mode=OneWay}" OffContent="{Binding S_a3332f1c94, Mode=OneWay}"
                                               MinWidth="0" VerticalAlignment="Center" />
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Padding="20,18" MinHeight="64"
@@ -351,14 +372,14 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="显示内容" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_102d692a3b, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
                                     <TextBlock x:Name="TaskbarModeHintText" Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
                                 <ComboBox Grid.Column="1" x:Name="TaskbarModeCombo" Width="180"
                                           VerticalAlignment="Center"
                                           SelectionChanged="TaskbarMode_Changed">
-                                    <ComboBoxItem Content="全部在线设备" Tag="All" />
-                                    <ComboBoxItem Content="仅最低电量一台" Tag="Lowest" />
+                                    <ComboBoxItem Content="{Binding S_94a78d5371, Mode=OneWay}" Tag="All" />
+                                    <ComboBoxItem Content="{Binding S_a2d96674aa, Mode=OneWay}" Tag="Lowest" />
                                 </ComboBox>
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24" Padding="20,18" MinHeight="64"
@@ -366,8 +387,8 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="最多显示设备数" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="超出部分折叠成 +N（选「仅最低电量一台」时此项不生效）"
+                                    <TextBlock Text="{Binding S_69729065e4, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_0149536f24, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <!-- 档位由代码按 TaskbarBatteryOptions.Choices 生成，范围只有一处定义 -->
@@ -379,10 +400,10 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="选择显示设备" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_2c3913a887, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
                                     <TextBlock x:Name="TaskbarDeviceSummaryText" Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
-                                <HyperlinkButton Grid.Column="1" x:Name="TaskbarDeviceMoreButton" Content="更多"
+                                <HyperlinkButton Grid.Column="1" x:Name="TaskbarDeviceMoreButton" Content="{Binding S_9b0c6c7858, Mode=OneWay}"
                                                  Padding="0" FontSize="15"
                                                  VerticalAlignment="Center" Click="TaskbarDeviceMore_Click" />
                             </Grid>
@@ -391,8 +412,8 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="显示屏幕" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="贴片钉在哪块显示器的任务栏上；那块屏不在时临时贴主屏"
+                                    <TextBlock Text="{Binding S_651b087145, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_35218e55cd, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
@@ -401,8 +422,8 @@
                                     <!-- 插拔显示器后设置页不会自动重扫（页面被缓存复用），给一个手动重扫入口 -->
                                     <Button x:Name="TaskbarScreenRefreshBtn" Click="TaskbarScreenRefresh_Click"
                                             Width="36" Height="32" Padding="0"
-                                            ToolTipService.ToolTip="重新扫描显示器"
-                                            AutomationProperties.Name="重新扫描显示器">
+                                            ToolTipService.ToolTip="{Binding S_27cf2a8e22, Mode=OneWay}"
+                                            AutomationProperties.Name="{Binding S_27cf2a8e22, Mode=OneWay}">
                                         <FontIcon FontSize="14" Glyph="&#xE72C;" />
                                     </Button>
                                 </StackPanel>
@@ -412,12 +433,12 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="锁定贴片位置" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="锁定后按住贴片不会移动；右键贴片上也能切换"
+                                    <TextBlock Text="{Binding S_3f17e10afc, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_086aabc6db, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" x:Name="TaskbarLockToggle"
-                                              OnContent="开" OffContent="关"
+                                              OnContent="{Binding S_b4217093bc, Mode=OneWay}" OffContent="{Binding S_a3332f1c94, Mode=OneWay}"
                                               MinWidth="0" VerticalAlignment="Center"
                                               Toggled="TaskbarLock_Toggled" />
                             </Grid>
@@ -426,12 +447,12 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="重置贴片位置" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="将贴片恢复为默认位置（紧贴系统托盘左侧）"
+                                    <TextBlock Text="{Binding S_401f5099a6, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_9c09cc5fb1, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <Button Grid.Column="1" x:Name="TaskbarResetBtn"
-                                        Content="重置" Width="80"
+                                        Content="{Binding S_3d81345303, Mode=OneWay}" Width="80"
                                         VerticalAlignment="Center"
                                         Click="TaskbarReset_Click" />
                             </Grid>
@@ -444,7 +465,7 @@
                           Expanding="Group_Expanding" Collapsed="Group_Collapsed">
                     <Expander.Header>
                         <Grid Height="34" Padding="4,0,6,0" ColumnDefinitions="*,Auto">
-                            <TextBlock Text="日志" Style="{StaticResource AppSectionTitleStyle}"
+                            <TextBlock Text="{Binding S_4de50894b8, Mode=OneWay}" Style="{StaticResource AppSectionTitleStyle}"
                                        VerticalAlignment="Center" />
                             <TextBlock x:Name="LogSummary" Grid.Column="1" FontSize="11"
                                        VerticalAlignment="Center"
@@ -458,7 +479,7 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="日志级别" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_307ac59fee, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
                                     <TextBlock x:Name="LogLevelHintText" Style="{StaticResource RowDescStyle}" />
                                 </StackPanel>
                                 <!-- 档位由代码按 LogLevelOptions.Choices 生成，取值只有一处定义 -->
@@ -471,8 +492,8 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="日志保留天数" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="日志按日生成，超过天数的旧日志自动清理（天）。改后需重启应用生效"
+                                    <TextBlock Text="{Binding S_f5c57acd1a, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_fe3c1bbb3e, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <NumberBox Grid.Column="1" x:Name="LogRetentionBox" Value="14"
@@ -484,8 +505,8 @@
                                   PointerEntered="SettingsRow_PointerEntered"
                                   PointerExited="SettingsRow_PointerExited">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="日志文件" Style="{StaticResource RowTitleStyle}" />
-                                    <TextBlock Text="%LOCALAPPDATA%\VigilWatt\logs（按日：app-日期.log）"
+                                    <TextBlock Text="{Binding S_01516b6cd4, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{Binding S_05ae85825a, Mode=OneWay}"
                                                Style="{StaticResource RowDescStyle}" MaxWidth="460" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
@@ -493,13 +514,13 @@
                                     <Button x:Name="OpenLogDirButton" Click="OpenLogDir_Click">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <FontIcon Glyph="&#xE8B7;" FontSize="14" />
-                                            <TextBlock Text="打开目录" />
+                                            <TextBlock Text="{Binding S_031c105578, Mode=OneWay}" />
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="ClearLogsButton" Click="ClearLogs_Click">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <FontIcon Glyph="&#xE74D;" FontSize="14" />
-                                            <TextBlock Text="清空日志" />
+                                            <TextBlock Text="{Binding S_1ef9339dba, Mode=OneWay}" />
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -525,7 +546,7 @@
                         Click="Save_Click">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE74E;" FontSize="14" />
-                        <TextBlock Text="保存设置" />
+                        <TextBlock Text="{Binding S_bb79ec7c15, Mode=OneWay}" />
                     </StackPanel>
                 </Button>
             </Grid>

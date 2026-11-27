@@ -4,6 +4,7 @@ using Gdi = System.Drawing;
 using Gdi2 = System.Drawing.Drawing2D;
 using GdiImaging = System.Drawing.Imaging;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -139,7 +140,7 @@ public static class TaskbarPillRenderer
                 string tip = piece.Device.DisplayName;
                 if (remainingTimeEstimates != null && remainingTimeEstimates.TryGetValue(piece.Device.Id, out var remaining))
                     tip += remaining.IsAvailable
-                        ? $"\n约{RemainingTimeEstimator.Format(remaining.Remaining!.Value)}剩余"
+                        ? Strings.Current.Format("S_bf0d125de7", RemainingTimeEstimator.Format(remaining.Remaining!.Value))
                         : $"\n{remaining.Explain()}";
                 // 贴片横向放不下 DPI（单格会从 60px 涨到 120px），只挂在悬停提示里，宽度零成本
                 if (PointerTelemetryFormatter.Summary(piece.Device, DateTimeOffset.Now) is { } pointer)
@@ -183,7 +184,7 @@ public static class TaskbarPillRenderer
                     break;
 
                 case PieceKind.Empty:
-                    DrawText(g, "暂无在线设备", plainFont, Fade(skin.Text, 0.6f), new Gdi.RectangleF(x, 0, piece.Width, heightPx), sf);
+                    DrawText(g, Strings.Current.Get("S_fbaff846cc"), plainFont, Fade(skin.Text, 0.6f), new Gdi.RectangleF(x, 0, piece.Width, heightPx), sf);
                     break;
 
                 case PieceKind.Overflow:

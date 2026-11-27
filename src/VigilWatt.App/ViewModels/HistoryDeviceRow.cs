@@ -1,3 +1,4 @@
+using VigilWatt.App.Localization;
 using VigilWatt.Core.Storage;
 
 namespace VigilWatt.App.ViewModels;
@@ -18,7 +19,10 @@ public sealed class HistoryDeviceRow
     /// <summary>勾选状态：与 CheckBox 双向绑定，页面只读。</summary>
     public bool IsSelected { get; set; }
 
-    public string CountText => $"{Count:N0} 条";
+    public string CountText => Strings.Current.Format("S_2dafa614a9", Count);
+
+    /// <summary>DataTemplate 的 DataContext 是行本身，静态标签必须走行属性。</summary>
+    public string DeleteLabel => Strings.Current.Get("S_3755f56f2f");
 
     public string RangeText => $"{First.LocalDateTime:MM-dd HH:mm} ~ {Last.LocalDateTime:MM-dd HH:mm}";
 

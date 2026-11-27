@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Velopack;
 using VigilWatt.Core.Utils;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -22,11 +23,11 @@ internal static class UpdateDownloadUi
     {
         var version = info.TargetFullRelease.Version.ToString();
         var dispatcher = DispatcherQueue.GetForCurrentThread()
-            ?? throw new InvalidOperationException("更新下载必须在 UI 线程启动");
+            ?? throw new InvalidOperationException(Strings.Current.Get("S_5aa43f8953"));
 
         var statusText = new TextBlock
         {
-            Text = "正在准备下载…",
+            Text = Strings.Current.Get("S_5b612cbd3a"),
             TextWrapping = TextWrapping.Wrap,
         };
         var bar = new ProgressBar
@@ -42,7 +43,7 @@ internal static class UpdateDownloadUi
 
         var dialog = new ContentDialog
         {
-            Title = "正在下载版本 " + version,
+            Title = Strings.Current.Get("S_d180648db7") + version,
             Content = panel,
             XamlRoot = xamlRoot,
         };
@@ -52,8 +53,8 @@ internal static class UpdateDownloadUi
             if (!allowClose) e.Cancel = true;
         };
 
-        Publish(true, 0, $"正在下载版本 {version}…");
-        App.UpdateStatusMessage = $"正在下载版本 {version}…";
+        Publish(true, 0, Strings.Current.Format("S_5171766471", version));
+        App.UpdateStatusMessage = Strings.Current.Format("S_5171766471", version);
         try { App.Services.Tray.ShowUpdateDownloading(version); }
         catch (Exception ex) { Log.Warn($"下载开始托盘提示失败: {ex.Message}"); }
 
@@ -90,15 +91,15 @@ internal static class UpdateDownloadUi
                 {
                     lastLogBucket = bucket;
                     Log.Info(stageNow > 1
-                        ? $"更新下载进度 {display}%（原始 {pct}%，第 {stageNow} 段）"
-                        : $"更新下载进度 {display}%");
+                        ? Strings.Current.Format("S_0549429bf5", display, pct, stageNow)
+                        : Strings.Current.Format("S_f51d35c4a9", display));
                 }
                 if (display < 100 && lastUiMs >= 0 && now - lastUiMs < 300) return;
                 lastUiMs = now;
 
                 var msg = stageNow > 1
-                    ? $"正在下载版本 {version}… {display}%（第 {stageNow} 段）"
-                    : $"正在下载版本 {version}… {display}%";
+                    ? Strings.Current.Format("S_ff445d08fb", version, display, stageNow)
+                    : Strings.Current.Format("S_d1ee227f36", version, display);
                 var displayCopy = display;
                 dispatcher.TryEnqueue(() =>
                 {
@@ -116,7 +117,7 @@ internal static class UpdateDownloadUi
             dialog.Hide();
             try { await showTask.ConfigureAwait(true); } catch { /* Hide 后偶发取消 */ }
 
-            var done = $"版本 {version} 下载完成，正在重启应用…";
+            var done = Strings.Current.Format("S_eed676de7e", version);
             Publish(false, 100, done);
             App.UpdateStatusMessage = done;
             try { App.Services.Tray.ShowUpdateDownloadDone(version); }
@@ -131,7 +132,7 @@ internal static class UpdateDownloadUi
             try { dialog.Hide(); } catch { /* 对话框可能已关 */ }
             try { await showTask.ConfigureAwait(true); } catch { /* ignore */ }
 
-            var fail = "更新安装失败：" + ex.Message;
+            var fail = Strings.Current.Get("S_a39977f860") + ex.Message;
             Publish(false, 0, fail);
             App.UpdateStatusMessage = fail;
             try { App.Services.Tray.ShowUpdateDownloadFailed(ex.Message); }

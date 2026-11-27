@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using VigilWatt.Core.Localization;
 using VigilWatt.Core.Models;
 using VigilWatt.Core.Utils;
 
@@ -13,6 +14,9 @@ namespace VigilWatt.Core.Settings;
 
 public class AppSettings
 {
+    /// <summary>界面语言：空 = 跟随系统（首次启动按系统 culture 选一次），zh-CN / ru-RU；未知值回退 zh-CN。</summary>
+    public string Language { get; set; } = AppLanguage.Auto;
+
     /// <summary>低于该电量弹提醒，0 关闭。</summary>
     public int LowBatteryThreshold { get; set; } = 20;
 
@@ -174,6 +178,7 @@ public class AppSettings
             }
 
             _cached = loaded ?? new AppSettings();
+            _cached.Language = AppLanguage.Normalize(_cached.Language);
             _cached.DeviceCustomizations ??= new Dictionary<string, DeviceCustomization>();
             _cached.BlockedDevices ??= new ConcurrentDictionary<string, BlockedDevice>();
             _cached.DismissedDevices ??= new ConcurrentDictionary<string, long>();

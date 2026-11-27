@@ -1,3 +1,4 @@
+using VigilWatt.Core.Localization;
 namespace VigilWatt.Core.Models;
 
 /// <summary>
@@ -21,8 +22,8 @@ public static class DeviceStatusFormatter
     /// <summary>充电状态后缀（设备列表页用）：" ⚡充电中" / " 已充满" / 空串。</summary>
     public static string ChargeSuffix(ChargingState state) => state switch
     {
-        ChargingState.Charging => " ⚡充电中",
-        ChargingState.Full => " 已充满",
+        ChargingState.Charging => UiText.Get("S_cd8588eec1", " ⚡充电中"),
+        ChargingState.Full => UiText.Get("S_8d458b16f5", " 已充满"),
         _ => "",
     };
 }

@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.UI;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Views;
 
 /// <summary>
@@ -31,6 +32,7 @@ public sealed partial class DeviceDetailPage : Page
     public DeviceDetailPage()
     {
         InitializeComponent();
+        DataContext = Strings.Current;
         NavigationCacheMode = NavigationCacheMode.Required;
         Loaded += OnPageLoaded;
         Unloaded += OnPageUnloaded;
@@ -129,7 +131,7 @@ public sealed partial class DeviceDetailPage : Page
 
         ApplyHeroArt(raw, d, color);
 
-        OnlineText.Text = online ? "在线" : "离线";
+        OnlineText.Text = online ? Strings.Current.Get("S_0373ff9231") : Strings.Current.Get("Tray_Offline");
 
         var tone = online ? UiPalette.ConnectionTag(d.Connection, d.Source) : UiPalette.Offline;
         ConnText.Text = DeviceConnectionInfo.Badge(d.Connection, d.Source, online);
@@ -222,7 +224,7 @@ public sealed partial class DeviceDetailPage : Page
             MinWidth = 360,
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
-        combo.Items.Add(new ComboBoxItem { Content = "自动（按型号默认）", Tag = null });
+        combo.Items.Add(new ComboBoxItem { Content = Strings.Current.Get("S_c439ab067f"), Tag = null });
         foreach (var option in options)
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -257,7 +259,7 @@ public sealed partial class DeviceDetailPage : Page
         var body = new StackPanel { Spacing = 8 };
         body.Children.Add(new TextBlock
         {
-            Text = "官方 HUB 不读取设备配色；选错了随时可以在这里改。",
+            Text = Strings.Current.Get("S_35412651e4"),
             FontSize = 12,
             Foreground = Application.Current.Resources["TextFillColorSecondaryBrush"] as Brush,
         });
@@ -265,10 +267,10 @@ public sealed partial class DeviceDetailPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "产品图",
+            Title = Strings.Current.Get("S_9ae39426bc"),
             Content = body,
-            PrimaryButtonText = "保存",
-            CloseButtonText = "取消",
+            PrimaryButtonText = Strings.Current.Get("S_fadf24dbc5"),
+            CloseButtonText = Strings.Current.Get("S_4d0b4688c7"),
             DefaultButton = ContentDialogButton.Primary,
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
@@ -289,11 +291,11 @@ public sealed partial class DeviceDetailPage : Page
     /// <summary>第三行：状态 · 时刻。剩余时间单独放环下；不可用原因仍写在这里，避免信息丢失。</summary>
     private string StateLine(DeviceStatus d, bool charging, bool online)
     {
-        if (!online) return $"离线 · 最后已知 {d.LastUpdated:MM-dd HH:mm}";
+        if (!online) return Strings.Current.Format("S_b98799630f", d.LastUpdated);
 
         string charge = DeviceStatusFormatter.ChargeSuffix(d.Charging).Trim();
         if (charge.Length == 0)
-            charge = d.Charging == ChargingState.Discharging ? "放电中" : "充电状态未知";
+            charge = d.Charging == ChargingState.Discharging ? Strings.Current.Get("S_b549c1221e") : Strings.Current.Get("S_f80c70054c");
 
         var parts = new List<string> { charge };
         var remaining = App.Services.Manager.GetRemainingTimeEstimate(d);
@@ -303,7 +305,7 @@ public sealed partial class DeviceDetailPage : Page
             // 充/满两种原因上面那个状态词已经说过了，别重复；其余原因要写出来，否则这一行看着像"没算"
             parts.Add(remaining.Explain());
         }
-        parts.Add($"{d.LastUpdated:HH:mm:ss} 更新");
+        parts.Add(Strings.Current.Format("S_1e0514eb69", d.LastUpdated));
         return string.Join(" · ", parts);
     }
 
@@ -325,7 +327,7 @@ public sealed partial class DeviceDetailPage : Page
         var remaining = App.Services.Manager.GetRemainingTimeEstimate(d);
         if (remaining.IsAvailable)
         {
-            RemainingText.Text = $"可用约 {RemainingTimeEstimator.Format(remaining.Remaining!.Value)}";
+            RemainingText.Text = Strings.Current.Format("S_c2a8061806", RemainingTimeEstimator.Format(remaining.Remaining!.Value));
             RemainingText.Visibility = Visibility.Visible;
         }
         else
@@ -423,39 +425,39 @@ public sealed partial class DeviceDetailPage : Page
         ConnFactPill.Background = UiPalette.Brush(UiPalette.Tint(tone));
 
         var family = DeviceConnectionInfo.ReceiverLabel(d.Receiver);
-        SetFact(ReceiverFamilyText, family ?? "未知", family is not null);
+        SetFact(ReceiverFamilyText, family ?? Strings.Current.Get("S_d9c32a4c3d"), family is not null);
 
         bool hasReceiver = d.Receiver is not null && d.Usb is { IsValid: true };
-        SetFact(ReceiverIdentityText, hasReceiver ? FormatVidPid(d.Usb!.Value) : "未获取", hasReceiver);
+        SetFact(ReceiverIdentityText, hasReceiver ? FormatVidPid(d.Usb!.Value) : Strings.Current.Get("S_8fcd5a384d"), hasReceiver);
 
-        SetFact(LinkStateText, online ? $"在线 · {d.LastUpdated:HH:mm:ss}" : $"离线 · 最后应答 {d.LastUpdated:MM-dd HH:mm}", online);
+        SetFact(LinkStateText, online ? Strings.Current.Format("S_84249f546d", d.LastUpdated) : Strings.Current.Format("S_4299e0fd82", d.LastUpdated), online);
         SetFact(LinkBasisText, LinkBasis(d), d.Connection.HasValue || d.Source != DeviceSource.Hid24G);
     }
 
     /// <summary>链路判定的依据：推断要说清楚是"谁推断的"，别让用户以为设备自报了 2.4G。</summary>
     private static string LinkBasis(DeviceStatus d) => d.Connection.Source switch
     {
-        TelemetrySource.DeviceReported => "设备上报",
-        TelemetrySource.Inferred => "由接收器响应推断",
-        TelemetrySource.VendorSdk => "厂商提供",
-        TelemetrySource.Estimated => "系统估算",
-        _ => d.Source is DeviceSource.Ble or DeviceSource.BluetoothClassic ? "接入方式即链路" : "未声明",
+        TelemetrySource.DeviceReported => Strings.Current.Get("S_32df337af2"),
+        TelemetrySource.Inferred => Strings.Current.Get("S_44f84d7a3f"),
+        TelemetrySource.VendorSdk => Strings.Current.Get("S_6c34f09098"),
+        TelemetrySource.Estimated => Strings.Current.Get("S_6f39593eff"),
+        _ => d.Source is DeviceSource.Ble or DeviceSource.BluetoothClassic ? Strings.Current.Get("S_cb761f5c5e") : Strings.Current.Get("S_6cad9198f2"),
     };
 
     private void ApplyIdentity(DeviceStatus raw, DeviceStatus d)
     {
-        SetFact(ModelText, string.IsNullOrWhiteSpace(raw.Name) ? "未提供" : raw.Name, !string.IsNullOrWhiteSpace(raw.Name));
+        SetFact(ModelText, string.IsNullOrWhiteSpace(raw.Name) ? Strings.Current.Get("S_071fb244ea") : raw.Name, !string.IsNullOrWhiteSpace(raw.Name));
         SetFact(KindText, DeviceKindInfo.Label(d.Kind), d.Kind != DeviceKind.Unknown);
-        SetFact(ProtocolText, string.IsNullOrWhiteSpace(d.Protocol) ? "未声明" : d.Protocol, !string.IsNullOrWhiteSpace(d.Protocol));
+        SetFact(ProtocolText, string.IsNullOrWhiteSpace(d.Protocol) ? Strings.Current.Get("S_6cad9198f2") : d.Protocol, !string.IsNullOrWhiteSpace(d.Protocol));
 
         bool hasReported = d.Reported is { IsValid: true };
-        SetFact(BodyIdentityText, hasReported ? FormatVidPid(d.Reported!.Value.VendorId, d.Reported!.Value.ProductId) : "未知", hasReported);
+        SetFact(BodyIdentityText, hasReported ? FormatVidPid(d.Reported!.Value.VendorId, d.Reported!.Value.ProductId) : Strings.Current.Get("S_d9c32a4c3d"), hasReported);
 
         SetFact(DeviceIdText, d.Id, true);
 
         IdentityNote.Text = d.Receiver is null
-            ? "未登记接收器：这台设备的身份来自设备自身或接入方式，不会用接收器型号替代。"
-            : "接收器是传输通道，不是设备本体。本体身份需设备自报，未返回时显示「未知」——应用不会用接收器型号替代。";
+            ? Strings.Current.Get("S_648435f237")
+            : Strings.Current.Get("S_f2db247d31");
     }
 
     /// <summary>未知值统一走三级灰：值对了颜色，就不需要额外的感叹号。</summary>
@@ -529,6 +531,6 @@ public sealed partial class DeviceDetailPage : Page
         RefreshRing.IsActive = on;
         RefreshRing.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         RefreshIcon.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
-        RefreshText.Text = on ? "刷新中…" : "刷新";
+        RefreshText.Text = on ? Strings.Current.Get("S_ea0ab1492c") : Strings.Current.Get("S_38108eaa1d");
     }
 }

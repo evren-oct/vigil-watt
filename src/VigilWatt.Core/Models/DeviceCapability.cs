@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 
+using VigilWatt.Core.Localization;
 namespace VigilWatt.Core.Models;
 
 /// <summary>
@@ -90,9 +91,9 @@ public sealed class CapabilitySet
             ThrowIfUndefined(capability);
             if (!Enum.IsDefined(state))
                 throw new ArgumentOutOfRangeException(nameof(declared), (int)state,
-                    $"能力 {capability} 的状态 {(int)state} 不在三态内");
+                    UiText.Format("S_dbc54758fc", "能力 {0} 的状态 {1} 不在三态内", capability, (int)state));
             if (!map.TryAdd(capability, state))
-                throw new ArgumentException($"能力 {capability} 重复声明", nameof(declared));
+                throw new ArgumentException(UiText.Format("S_a65e169b47", "能力 {0} 重复声明", capability), nameof(declared));
         }
         return map.Count == 0 ? Empty : new CapabilitySet(map);
     }
@@ -101,6 +102,6 @@ public sealed class CapabilitySet
     {
         // 强转出来的 (DeviceCapability)99 / (DeviceCapability)(-1) 都不是"未声明"，必须报错
         if (!Enum.IsDefined(capability))
-            throw new ArgumentOutOfRangeException(nameof(capability), (int)capability, "不是已定义的设备能力");
+            throw new ArgumentOutOfRangeException(nameof(capability), (int)capability, UiText.Get("S_485b5d4308", "不是已定义的设备能力"));
     }
 }

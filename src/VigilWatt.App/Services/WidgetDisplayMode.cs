@@ -1,3 +1,4 @@
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Services;
 
 /// <summary>
@@ -24,9 +25,9 @@ public static class WidgetDisplayMode
     /// <summary>设置页副标题用的一句话说明。</summary>
     public static string Describe(string? value) => Normalize(value) switch
     {
-        Topmost => "置顶显示：始终浮在其它窗口之上",
-        Desktop => "钉在桌面：被其它窗口压住，最小化后才看得见",
-        _ => "普通窗口：会被其它窗口正常遮挡",
+        Topmost => Strings.Current.Get("S_bb2865dd66"),
+        Desktop => Strings.Current.Get("S_83f0ef83e9"),
+        _ => Strings.Current.Get("S_0ca7b17704"),
     };
 }
 

@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 using Windows.UI;
 
+using VigilWatt.App.Localization;
 namespace VigilWatt.App.Views;
 
 /// <summary>
@@ -314,14 +315,14 @@ public sealed class BatteryChartControl : UserControl
         });
         panel.Children.Add(new TextBlock
         {
-            Text = "暂无采样数据",
+            Text = Strings.Current.Get("S_60f304aeca"),
             FontSize = 14,
             HorizontalAlignment = HorizontalAlignment.Center,
             Foreground = textBrush,
         });
         panel.Children.Add(new TextBlock
         {
-            Text = "所选时间范围内没有记录，等待采集…",
+            Text = Strings.Current.Get("S_daba8f430e"),
             FontSize = 12,
             HorizontalAlignment = HorizontalAlignment.Center,
             Foreground = axisBrush,
@@ -457,7 +458,7 @@ public sealed class BatteryChartControl : UserControl
             // 读屏：时间与电量一并报出（图表本身对读屏不友好）
         };
         AutomationProperties.SetName(tip,
-            $"{point.Time.LocalDateTime:MM-dd HH:mm}，电量 {point.Percent}%");
+            Strings.Current.Format("S_6783cdc749", point.Time.LocalDateTime, point.Percent));
         tip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         double tw = tip.DesiredSize.Width;
         double th = tip.DesiredSize.Height;

@@ -7,7 +7,8 @@ namespace VigilWatt.Core.Tests;
 /// <summary>
 /// 功 能： AusdomCodec —— 阿斯盾 G04 接收器 report 0x0A 状态帧的纯解析。
 /// 2026/10/31 22:50:34 Zen
-/// 用例全部取自真机采集（vigilwatt-capture.zip）；短帧 C4 的 byte6 为充电位（0x01=充电、0x00=放电，见 ausdom.md §1.3）。
+/// 用例全部取自真机采集（vigilwatt-capture.zip / 20261128-164752-906F）。
+/// 充电态一律 Unknown：短帧 C4 的 byte6 是活动/唤醒标志而非充电位，见 ausdom.md §1.3。
 /// </summary>
 public class AusdomCodecTests
 {
@@ -20,17 +21,17 @@ public class AusdomCodecTests
         return frame;
     }
 
-    /// <summary>真机（tsMono 11447）：正常短帧，94%，byte6=0x00（放电态）。</summary>
+    /// <summary>真机（tsMono 11447）：正常短帧，94%，byte6=0x00（活动标志，非充电位）。</summary>
     private static readonly byte[] Short94 = Frame("0A1205C45E");
 
-    /// <summary>真机（tsMono 68705）：正常短帧，95%，byte6=0x00（放电态）。</summary>
+    /// <summary>真机（tsMono 68705）：正常短帧，95%，byte6=0x00（活动标志，非充电位）。</summary>
     private static readonly byte[] Short95 = Frame("0A1205C45F");
 
-    /// <summary>短帧 C4，91%，byte6=0x01（充电）。</summary>
-    private static readonly byte[] C4Discharging = Frame("0A1205C45B0001");
+    /// <summary>短帧 C4，91%，byte6=0x01（活动标志，非充电位）。</summary>
+    private static readonly byte[] C4Active = Frame("0A1205C45B0001");
 
-    /// <summary>短帧 C4，93%，byte6=0x00（放电）。</summary>
-    private static readonly byte[] C4Charging = Frame("0A1205C45D0000");
+    /// <summary>短帧 C4，93%，byte6=0x00（活动标志，非充电位）。</summary>
+    private static readonly byte[] C4Idle = Frame("0A1205C45D0000");
 
     /// <summary>真机（tsMono 28249）：长帧 C6，B4=0/B5=0x02/B6=94。</summary>
     private static readonly byte[] Long94 = Frame("0A1205C600025E");
@@ -65,8 +66,8 @@ public class AusdomCodecTests
     {
         var r = AusdomCodec.TryParse(Short94);
         Assert.Equal(94, r!.Value.Percent);
-        // byte6=0x00 → 放电（真机实测修正）。
-        Assert.Equal(ChargingState.Discharging, r.Value.Charging);
+        // 充电态一律 Unknown（byte6 是活动标志，非充电位）。
+        Assert.Equal(ChargingState.Unknown, r.Value.Charging);
     }
 
     [Fact]
@@ -145,11 +146,12 @@ public class AusdomCodecTests
     }
 
     [Fact]
-    public void A14_短帧C4_byte6映射充电位()
+    public void A14_短帧C4_byte6为活动标志_充电态Unknown()
     {
-        // 真机实测修正：byte6=0x01=充电，byte6=0x00=放电。
-        Assert.Equal(ChargingState.Charging, AusdomCodec.TryParse(C4Discharging)!.Value.Charging);
-        Assert.Equal(ChargingState.Discharging, AusdomCodec.TryParse(C4Charging)!.Value.Charging);
+        // 20261128 低电量复采：byte6 随「操作设备」在 00↔01 间翻转，与插拔电无关；拔电后仍长期 00。
+        // 故它不是充电位，充电态一律 Unknown（无论 byte6 是 0x00 还是 0x01）。
+        Assert.Equal(ChargingState.Unknown, AusdomCodec.TryParse(C4Active)!.Value.Charging);
+        Assert.Equal(ChargingState.Unknown, AusdomCodec.TryParse(C4Idle)!.Value.Charging);
 
         // 长帧 C6 的 byte6 是电量而非充电位，无可靠充电信息，保持 Unknown。
         Assert.Equal(ChargingState.Unknown, AusdomCodec.TryParse(Long94)!.Value.Charging);
@@ -176,10 +178,10 @@ public class AusdomCodecTests
     }
 
     [Fact]
-    public void A17_短帧C4_byte6异常值_充电态Unknown()
+    public void A17_短帧C4_byte6任意值_充电态仍Unknown()
     {
-        // byte6 只观察到 0x00/0x01 两个值；其它值视为未知，不影响电量解析。
-        var weird = WithByte(C4Discharging, 6, 0x7F);
+        // byte6 是活动标志（仅观察到 0x00/0x01），无论如何都影响不到充电态，电量照常解析。
+        var weird = WithByte(C4Active, 6, 0x7F);
         var r = AusdomCodec.TryParse(weird);
         Assert.Equal(91, r!.Value.Percent);
         Assert.Equal(ChargingState.Unknown, r.Value.Charging);

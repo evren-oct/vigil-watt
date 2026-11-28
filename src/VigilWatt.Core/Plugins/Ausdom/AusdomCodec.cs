@@ -5,8 +5,8 @@ namespace VigilWatt.Core.Plugins.Ausdom;
 /// <summary>
 /// 功 能： 解析 AUSDOM G04 接收器 report 0x0A 的状态帧（64 字节）。
 /// 2026/10/31 22:50:34 Zen
-/// 帧布局来自真机采集（vigilwatt-capture.zip），逐字节对齐见 docs/hardware/ausdom.md §1。
-/// 充电标志未验证，一律返回 Unknown（同 AKG N9 的保守做法，见该文 §1.3）。
+/// 帧布局来自真机采集（vigilwatt-capture.zip / 20261128-164752-906F），逐字节对齐见 docs/hardware/ausdom.md §1。
+/// 充电态一律 Unknown：短帧 C4 的 byte6 是「活动/唤醒」标志而非充电位，见该文 §1.3。
 /// </summary>
 internal static class AusdomCodec
 {
@@ -27,8 +27,8 @@ internal static class AusdomCodec
 
     /// <summary>
     /// 解析一帧。返回 null = 不是本协议的电池帧（其余字段无意义）。
-    /// 充电位：短帧 C4 的 byte6（0x01=充电，0x00=放电），依据真机实测修正（用户反馈第三次采集方向相反，见 ausdom.md §1.3）。
-    /// 长帧 C6 / 信息帧 0x13 未观察到可靠充电位，仍报 Unknown。
+    /// 充电态一律 Unknown：短帧 C4 的 byte6 经 20261128 低电量复采证实是「活动/唤醒」标志
+    /// （操作设备时 00→01，与插拔电无关；拔电后仍长期为 00），不是充电位。见 ausdom.md §1.3。
     /// </summary>
     public static (int Percent, ChargingState Charging)? TryParse(byte[] input)
     {
@@ -54,31 +54,21 @@ internal static class AusdomCodec
 
         byte b3 = input[3];
         int percent;
-        ChargingState charging;
 
         if (b3 == 0xC4)
         {
-            // 短帧 C4：byte4=电量，byte6=充电位。
-            // 真机实测（2026-11-01 用户反馈「充电状态相反」后修正）：byte6=0x01 → 充电，byte6=0x00 → 放电。
+            // 短帧 C4：byte4=电量。byte6 是活动/唤醒标志，不是充电位（见 §1.3），忽略。
             percent = input[4];
-            charging = input[6] switch
-            {
-                0x01 => ChargingState.Charging,
-                0x00 => ChargingState.Discharging,
-                _ => ChargingState.Unknown,
-            };
         }
         else if (b3 == 0xC7)
         {
             // 短帧 C7：byte4 直接是百分比，未观察到可靠充电位。
             percent = input[4];
-            charging = ChargingState.Unknown;
         }
         // 长帧（C6）：byte4==0 且 byte5==0x02 时，电量在 byte6；未观察到充电位。
         else if (b3 == 0xC6 && input[4] == 0 && input[5] == LongBatteryPresent)
         {
             percent = input[6];
-            charging = ChargingState.Unknown;
         }
         else
         {
@@ -88,6 +78,6 @@ internal static class AusdomCodec
         // 过滤休眠瞬态 / 越界值（基类异常过滤器会再挡一次 94→1 的跳变，这里先剔除明显非电池帧）。
         if (percent is < 1 or > 100) return null;
 
-        return (percent, charging);
+        return (percent, ChargingState.Unknown);
     }
 }
